@@ -4,6 +4,11 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    watch: {
+      ignored: ["**/src/assets/layers/**"]
+    }
+  },
   plugins: [
     svelte(),
     // to remove when this PR is merged https://github.com/shrhdk/text-to-svg/pull/76
