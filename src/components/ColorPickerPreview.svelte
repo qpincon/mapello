@@ -3,29 +3,35 @@
     import ColorPicker from "./ColorPicker.svelte";
     import type { Color } from "src/types";
 
-    let colorPicker: ColorPicker;
-    let changedManually: boolean = false;
-    export let value: Color = "#fff";
-    export let title: string = "";
-    export let id: string = "colorpickerid";
-    export let onChange: (newCol: Color) => void = (newCol: Color) => {};
-    export let additionalClasses: string = "";
-    export let labelAbove: boolean = false;
+    interface Props {
+        value: Color;
+        title: string;
+        id: string;
+        onChange: (newCol: Color) => void;
+        additionalClasses?: string;
+        labelAbove?: boolean;
+        popup: Options["popup"];
+    }
 
-    $: _onChange = (color: Color): void => {
+    let { value, title, id, onChange, additionalClasses, labelAbove, popup }: Props = $props();
+    let colorPicker: ColorPicker | null = $state(null);
+    let changedManually: boolean = $state(false);
+
+    function _onChange(color: Color): void {
         onChange(color);
         changedManually = true;
-    };
-    export let popup: Options["popup"] = "left";
-
-    $: if (value) {
-        if (!changedManually && colorPicker) {
-            setTimeout(() => {
-                if (colorPicker) colorPicker.init();
-            }, 0);
-        }
-        changedManually = false;
     }
+
+    $effect(() => {
+        if (value) {
+            if (!changedManually && colorPicker) {
+                setTimeout(() => {
+                    if (colorPicker) colorPicker.init();
+                }, 0);
+            }
+            changedManually = false;
+        }
+    });
 </script>
 
 <div class="{labelAbove ? 'd-flex flex-column justify-content-center' : 'row'} input-type {additionalClasses}">
@@ -35,8 +41,8 @@
     <div class="d-flex align-items-center col">
         <div
             class="color-preview border border-primary rounded-1"
-            on:click={(e: MouseEvent) => {
-                colorPicker.open();
+            onclick={() => {
+                colorPicker!.open();
             }}
             style="background-color: {value};"
         >
@@ -55,7 +61,7 @@
             class="ms-2 form-control"
             {id}
             bind:value
-            on:change={(e: Event) => onChange((e.target as HTMLInputElement).value as Color)}
+            onchange={(e: Event) => onChange((e.target as HTMLInputElement).value as Color)}
         />
     </div>
 </div>

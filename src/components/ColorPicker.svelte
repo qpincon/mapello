@@ -1,5 +1,6 @@
 <script lang="ts">
     import Picker, { type Options, type Color as ColorInternal } from "vanilla-picker";
+    import type ColorPicker from "vanilla-picker";
 
     import { onMount, onDestroy } from "svelte";
     import type { Color } from "src/types";
@@ -9,24 +10,51 @@
         openHandler: () => void;
     }
 
-    export let value: Color = "#AAAAAAFF";
-    export let options: Options = {};
-    export let onChange: (newColor: Color, oldColor?: Color) => void = () => {};
-    let self: HTMLElement;
-    let pickerElem: ExtendedPicker;
-
-    $: if (pickerElem || value.length) {
-        if (isHexColor(value)) pickerElem.setColor(value, true);
+    interface Props {
+        value: Color;
+        options?: Options;
+        onChange: (newColor: Color, oldColor?: Color) => void;
     }
+
+    let { value, options = {}, onChange }: Props = $props();
+
+    let self: HTMLElement | null = $state(null);
+    let pickerElem: ExtendedPicker | null = $state(null);
+
+    $effect(() => {
+        if (!pickerElem && self) {
+            options.onChange = (col) => {
+                setValue(col.hex as Color);
+            };
+            pickerElem = new Picker({
+                parent: self,
+                color: value,
+                ...options,
+            }) as ExtendedPicker;
+            pickerElem.__originalOpenHandler = pickerElem.openHandler;
+            pickerElem.openHandler = function () {
+                _onOpen();
+                this.__originalOpenHandler?.();
+            };
+        }
+    });
+
+    $effect(() => {
+        if (pickerElem && value.length && isHexColor(value)) {
+            pickerElem.setColor(value, true);
+        }
+    });
 
     export function setColor(hexString: Color): void {
         if (!isHexColor(hexString)) return;
-        pickerElem.setColor(hexString, true);
+        if (pickerElem) pickerElem.setColor(hexString, true);
     }
 
     export function open(): void {
-        pickerElem.show();
-        pickerElem.openHandler();
+        if (pickerElem) {
+            pickerElem.show();
+            pickerElem.openHandler();
+        }
     }
 
     function isHexColor(hex: Color): boolean {
@@ -39,42 +67,14 @@
         value = val;
     }
 
-    function _onChange(color: ColorInternal): void {
-        setValue(color.hex as Color);
-    }
-
-    onMount(() => {
-        _init(options);
-    });
-
     onDestroy(() => {
         if (pickerElem) {
             pickerElem.destroy();
         }
     });
 
-    export function init(): void {
-        _init(options);
-    }
-
     function _onOpen(): void {
         // Handler for when picker opens
-    }
-
-    function _init(opts: Options): void {
-        if (!self) return;
-        if (pickerElem) pickerElem.destroy();
-        opts.onChange = _onChange;
-        pickerElem = new Picker({
-            parent: self,
-            color: value,
-            ...opts,
-        }) as ExtendedPicker;
-        pickerElem.__originalOpenHandler = pickerElem.openHandler;
-        pickerElem.openHandler = function () {
-            _onOpen();
-            this.__originalOpenHandler?.();
-        };
     }
 </script>
 

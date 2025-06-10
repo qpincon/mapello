@@ -6,32 +6,19 @@
     import type { LegendDef } from "src/types";
     const dispatch = createEventDispatcher();
 
-    export let definition: LegendDef = {
-        x: 0,
-        y: 0,
-        lineWidth: 100,
-        rectWidth: 30,
-        rectHeight: 30,
-        significantDigits: 3,
-        maxWidth: 200,
-        direction: "v",
-        title: "Hello",
-        labelOnLeft: false,
-        noData: {
-            active: false,
-            manual: false,
-            text: "N/A",
-            color: "#AAAAAA",
-        },
-        changes: {},
-    };
-    export let categorical = false;
+    interface Props {
+        definition: LegendDef;
+        categorical?: boolean;
+    }
+
+    let { definition, categorical = false }: Props = $props();
 
     // dispatch event on each change
     function sendChange(e: Event) {
         const id = (e.target as HTMLElement).getAttribute("id");
         if (id === "vhSwitchV") {
-            definition.rectHeight = definition.rectWidth = 30;
+            definition.rectHeight = 30;
+            definition.rectWidth = 30;
         } else if (id === "vhSwitchH" && !categorical) {
             definition.rectHeight = 20;
             definition.rectWidth = 70;
@@ -40,7 +27,7 @@
     }
 </script>
 
-<form on:change={sendChange} class="m-2 mt-3">
+<form onchange={sendChange} class="m-2 mt-3">
     <div class="d-flex align-items-center">
         <div class="btn-group" role="group">
             <input
@@ -77,13 +64,41 @@
         {/if}
     </div>
     {#if definition.direction === "h" && categorical}
-        <RangeInput title="Max legend width" bind:value={definition.maxWidth} min="50" max="800" step="10" />
+        <RangeInput
+            id="maxWidth"
+            title="Max legend width"
+            bind:value={definition.maxWidth}
+            min="50"
+            max="800"
+            step="10"
+        />
     {/if}
     {#if !categorical}
-        <RangeInput title="Significant digits" bind:value={definition.significantDigits!} />
+        <RangeInput
+            id="significantDigits"
+            title="Significant digits"
+            bind:value={definition.significantDigits!}
+            min="0"
+            max="10"
+            step="1"
+        />
     {/if}
-    <RangeInput title="Legend color width" bind:value={definition.rectWidth} min="10" max="100" />
-    <RangeInput title="Legend color height" bind:value={definition.rectHeight} min="10" max="100" />
+    <RangeInput
+        id="rectWidth"
+        title="Legend color width"
+        bind:value={definition.rectWidth}
+        min="10"
+        max="100"
+        step="1"
+    />
+    <RangeInput
+        id="rectHeight"
+        title="Legend color height"
+        bind:value={definition.rectHeight}
+        min="10"
+        max="100"
+        step="1"
+    />
     <div class="form-check form-switch">
         <input
             type="checkbox"
@@ -91,7 +106,7 @@
             class="form-check-input"
             id="noDataActive"
             bind:checked={definition.noData.active}
-            on:change={() => (definition.noData.manual = true)}
+            onchange={() => (definition.noData.manual = true)}
         />
         <label for="noDataActive" class="form-check-label"> No data in legend </label>
     </div>

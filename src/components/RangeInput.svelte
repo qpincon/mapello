@@ -1,40 +1,43 @@
 <script lang="ts">
     import { tapHold } from "../util/common";
 
-    export let value: number;
-    export let title: string;
-    export let min: number | string = 0;
-    export let max: number | string = 10;
-    export let step: number | string = 1;
-    export let onChange: (newVal: number) => void = (newVal: number) => {};
-    export let id: string = "rangeinputid";
-    export let helpText: string | null = null;
-    export let labelAbove: boolean = false;
+    interface Props {
+        value: number;
+        title: string;
+        min: number | string;
+        max: number | string;
+        step?: number | string;
+        onChange?: (newVal: number) => void;
+        id: string;
+        helpText?: string | null;
+        labelAbove?: boolean;
+    }
 
-    // props are passed as strings most of the time
-    $: _step = parseFloat(step as string);
-    $: _min = parseFloat(min as string);
-    $: _max = parseFloat(max as string);
+    let { value = $bindable(), title, min, max, step, onChange, id, helpText, labelAbove }: Props = $props();
+
+    let _step: number = $derived(parseFloat(step as string));
+    let _min: number = $derived(parseFloat(min as string));
+    let _max: number = $derived(parseFloat(max as string));
 
     function countDecimals(val: number): number {
         if (Math.floor(val.valueOf()) === val.valueOf()) return 0;
         return val.toString().split(".")[1]?.length || 0;
     }
 
-    $: nbDecimals = countDecimals(_step);
+    let nbDecimals: number = $derived(countDecimals(_step));
 
     const increment = (): void => {
         if (value === null) value = _step;
         else if (value === _max) return;
         else value += _step;
-        onChange(value);
+        onChange!(value);
     };
 
     const decrement = (): void => {
         if (value === null) value = _min;
         else if (value === _min) return;
         else value -= _step;
-        onChange(value);
+        onChange!(value);
     };
 </script>
 
@@ -55,10 +58,10 @@
             min={_min}
             max={_max}
             step={_step}
-            on:change={(e) => {
+            onchange={(e) => {
                 if (e.target) {
                     if (e.target instanceof HTMLInputElement) {
-                        onChange(parseFloat(e.target.value));
+                        onChange!(parseFloat(e.target.value));
                     }
                 }
             }}
@@ -75,7 +78,7 @@
                         fill="currentColor"
                         viewBox="3 3 18 18"
                         use:tapHold={increment}
-                        on:click={increment}><path d="M7,15L12,10L17,15H7Z" /></svg
+                        onclick={increment}><path d="M7,15L12,10L17,15H7Z" /></svg
                     >
                 </div>
                 <div class="numeric-input">
@@ -85,7 +88,7 @@
                         fill="currentColor"
                         viewBox="3 3 18 18"
                         use:tapHold={increment}
-                        on:click={decrement}><path d="M7,10L12,15L17,10H7Z" /></svg
+                        onclick={decrement}><path d="M7,10L12,15L17,10H7Z" /></svg
                     >
                 </div>
             </div>

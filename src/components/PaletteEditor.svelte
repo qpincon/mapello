@@ -5,21 +5,32 @@
     import { debounce } from "lodash-es";
     import type { Color } from "src/types";
 
-    export let customCategoricalPalette: string[] = [];
-    export let onChange: (force?: boolean) => void = () => {};
-    export let mapping: Record<string, Set<string>> = {};
-
-    function _onChange(force?: boolean): void {
-        onChange(force);
+    interface Props {
+        customCategoricalPalette: string[];
+        onChange?: (force?: boolean) => void;
+        mapping?: Record<string, Set<string>>;
     }
 
-    $: _onChangeDebounced = debounce(_onChange, 300);
-    let colorPickers: ColorPicker[] = [];
+    let { customCategoricalPalette, onChange = () => {}, mapping = {} }: Props = $props();
 
-    let hoveringColor: number | null = null;
-    let dragStartIndex: number | null = null;
+    let colorPickers: (ColorPicker | null)[] = $state([]);
+    let hoveringColor: number | null = $state(null);
+    let dragStartIndex: number | null = $state(null);
+
+    $effect(() => {
+        if (colorPickers.length !== customCategoricalPalette.length) {
+            colorPickers = customCategoricalPalette.map(() => null);
+        }
+    });
+
+    function _onChange(force?: boolean): void {
+        if (onChange) onChange(force);
+    }
+
+    let _onChangeDebounced = $derived(debounce(_onChange, 300));
 
     function dropColor(event: DragEvent, target: number): void {
+        event.preventDefault();
         event.dataTransfer!.dropEffect = "move";
         const newList = [...customCategoricalPalette];
 
@@ -44,7 +55,7 @@
     }
 
     function findMatchedValues(color: string): string | null {
-        if (!(color in mapping)) return null;
+        if (!mapping || !(color in mapping)) return null;
         return [...mapping[color]].join(", ");
     }
 
@@ -60,15 +71,15 @@
             class="position-relative d-flex flex-column justify-content-center p-4 m-2 color-container border rounded-3"
             role="button"
             draggable="true"
-            on:dragstart={(event) => dragStartColor(event, i)}
-            on:drop|preventDefault={(event) => dropColor(event, i)}
-            on:dragover={() => false}
+            ondragstart={(event) => dragStartColor(event, i)}
+            ondrop={(event) => dropColor(event, i)}
+            ondragover={() => false}
             class:is-hovered-color={hoveringColor === i}
-            on:dragenter={() => (hoveringColor = i)}
+            ondragenter={() => (hoveringColor = i)}
         >
             <span
                 class="close-btn"
-                on:click={() => {
+                onclick={() => {
                     customCategoricalPalette.splice(i, 1);
                     customCategoricalPalette = customCategoricalPalette;
                     _onChangeDebounced(true);
@@ -77,8 +88,8 @@
             <div
                 class="border border border-primary rounded-1 color-preview"
                 style={`background-color: ${color};`}
-                on:click={(e: MouseEvent) => {
-                    colorPickers[i].open();
+                onclick={(e: MouseEvent) => {
+                    colorPickers[i]!.open();
                 }}
             >
                 <ColorPicker
@@ -97,7 +108,7 @@
     <div
         class="add-color d-flex align-items-center"
         role="button"
-        on:click={() => {
+        onclick={() => {
             customCategoricalPalette.push("#aaaaaa");
             customCategoricalPalette = customCategoricalPalette;
             _onChangeDebounced(true);

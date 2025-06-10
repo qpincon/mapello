@@ -12,17 +12,31 @@
 
     const noop: NoopFunction = () => {};
 
-    // Props
-    export let open: boolean = false;
-    export let dialogClasses: string = "";
-    export let modalWidth: string = "50%";
-    export let backdrop: boolean = true;
-    export let ignoreBackdrop: boolean = false;
-    export let keyboard: boolean = true;
-    export let describedby: string = "";
-    export let labelledby: string = "";
-    export let onOpened: NoopFunction = noop;
-    export let onClosed: NoopFunction = noop;
+    interface Props {
+        open: boolean;
+        dialogClasses?: string;
+        modalWidth?: string;
+        backdrop?: boolean;
+        ignoreBackdrop?: boolean;
+        keyboard?: boolean;
+        describedby?: string;
+        labelledby?: string;
+        onOpened?: NoopFunction;
+        onClosed?: NoopFunction;
+    }
+
+    let {
+        open,
+        dialogClasses = "",
+        modalWidth = "50%",
+        backdrop = true,
+        ignoreBackdrop = false,
+        keyboard = true,
+        describedby = "",
+        labelledby = "",
+        onOpened = noop,
+        onClosed = noop,
+    }: Props = $props();
 
     let _keyboardEvent: EventRemover | null = null;
 
@@ -82,14 +96,13 @@
         onClosed();
     }
 
-    // Watching changes for Open variable
-    $: {
+    $effect(() => {
         if (open) {
             modalOpen();
         } else {
             modalClose();
         }
-    }
+    });
 </script>
 
 {#if open}

@@ -4,17 +4,19 @@
     import { initTooltips, pascalCaseToSentence } from "../util/common";
     import type { Color, MicroLayerId, MicroPalette, MicroPaletteWithBorder } from "src/types";
 
-    export let layerDefinitions: MicroPalette;
-    export let onUpdate: (
-        layer: MicroLayerId,
-        key: string | string[],
-        value: number | Color | string | boolean,
-    ) => void = () => {};
-    export let onPaletteChange: (paletteId: string) => void = () => {};
-    export let availablePalettes: Record<string, MicroPaletteWithBorder> = {};
+    interface Props {
+        layerDefinitions: MicroPalette;
+        onUpdate?: (layer: MicroLayerId, key: string | string[], value: number | Color | string | boolean) => void;
+        onPaletteChange?: (paletteId: string) => void;
+        availablePalettes?: Record<string, MicroPaletteWithBorder>;
+    }
 
-    $: layers = Object.entries(layerDefinitions).filter(([layerId, _]) => layerId !== "borderParams");
-    let selectedPalette: string;
+    let { layerDefinitions, onUpdate = () => {}, onPaletteChange = () => {}, availablePalettes = {} }: Props = $props();
+
+    let layers: [string, any][] = $derived(
+        Object.entries(layerDefinitions).filter(([layerId, _]) => layerId !== "borderParams"),
+    );
+    let selectedPalette: string = $state("");
     function updated(layer: MicroLayerId, key: string | string[], value: number | Color | string | boolean) {
         console.log(layer, key, value);
         onUpdate(layer, key, value);
@@ -51,7 +53,7 @@
             id="palette-select"
             class="form-select form-select-sm me-4 col"
             bind:value={selectedPalette}
-            on:change={(e) => paletteChanged((e.target as HTMLSelectElement).value)}
+            onchange={(e) => paletteChanged((e.target as HTMLSelectElement).value)}
         >
             <option hidden selected>Chose a preset palette</option>
             {#each Object.keys(availablePalettes) as paletteId}
@@ -70,7 +72,7 @@
                     disabled={def.disabled}
                     id={title}
                     bind:checked={def.active}
-                    on:change={() => updated(title as MicroLayerId, ["active"], def.active!)}
+                    onchange={() => updated(title as MicroLayerId, ["active"], def.active!)}
                 />
                 <label for={title} class="form-check-label">
                     {pascalCaseToSentence(title)}
@@ -80,7 +82,7 @@
                 <div
                     class="toggle"
                     class:opened={def.menuOpened === true}
-                    on:click={() => collapseLayer(title as MicroLayerId)}
+                    onclick={() => collapseLayer(title as MicroLayerId)}
                 ></div>
             {/if}
         </div>
@@ -144,7 +146,7 @@
                                 class="form-check-input"
                                 id={`input-${def.pattern.id}`}
                                 bind:checked={def.pattern.active}
-                                on:change={() =>
+                                onchange={() =>
                                     updated(title as MicroLayerId, ["pattern", "active"], def.pattern!.active!)}
                             />
                             <label for={`input-${def.pattern.id}`} class="form-check-label"> Pattern </label>
@@ -153,7 +155,7 @@
                             <div
                                 class="toggle"
                                 class:opened={def.pattern.menuOpened === true}
-                                on:click={() => collapseLayerPattern(title as MicroLayerId)}
+                                onclick={() => collapseLayerPattern(title as MicroLayerId)}
                             ></div>
                         {/if}
                     </div>
@@ -176,7 +178,7 @@
                                     class="form-control"
                                     id={`${def.pattern.id}-hatch`}
                                     bind:value={def.pattern.hatch}
-                                    on:input={(e) => {
+                                    oninput={(e) => {
                                         let val = (e.target as HTMLInputElement).value;
                                         def.pattern!.hatch = val;
                                         updated(title as MicroLayerId, ["pattern", "hatch"], val);

@@ -3,9 +3,13 @@
 
     import { getColumns } from "../util/common";
 
-    export let data: ZoneDataRow[] = [];
+    interface Props {
+        data: ZoneDataRow[];
+    }
 
-    $: headers = getColumns(data);
+    let { data = [] }: Props = $props();
+
+    let headers: string[] = $derived(getColumns(data));
 </script>
 
 <table class="table table-light border table-striped">

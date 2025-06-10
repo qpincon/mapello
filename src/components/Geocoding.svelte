@@ -10,20 +10,28 @@
         lon: string;
     }
 
-    // Props
-    export let maplibreMap: MapLibreMap | null = null; // Reference to the MapLibre map instance
-    export let placeholder: string = "Search for a location...";
-    export let debounceTime: number = 300; // ms
-    export let apiUrl: string = "https://nominatim.openstreetmap.org/search";
+    interface Props {
+        maplibreMap: MapLibreMap | null;
+        placeholder?: string;
+        debounceTime?: number;
+        apiUrl?: string;
+    }
+
+    let {
+        maplibreMap,
+        placeholder = "Search for a location...",
+        debounceTime = 300,
+        apiUrl = "https://nominatim.openstreetmap.org/search",
+    }: Props = $props();
 
     // State
     let searchInput: HTMLInputElement;
-    let searchQuery: string = "";
-    let searchResults: SearchResult[] = [];
-    let isLoading: boolean = false;
-    let isResultsVisible: boolean = false;
-    let error: string | null = null;
-    let selectedIndex: number = -1;
+    let searchQuery: string = $state("");
+    let searchResults: SearchResult[] = $state([]);
+    let isLoading: boolean = $state(false);
+    let isResultsVisible: boolean = $state(false);
+    let error: string | null = $state(null);
+    let selectedIndex: number = $state(-1);
     let resultsContainer: HTMLDivElement;
 
     // Create debounced search function
@@ -57,10 +65,11 @@
         }
     }, debounceTime);
 
-    // Handle query changes
-    $: if (searchQuery !== undefined) {
-        debouncedSearch(searchQuery);
-    }
+    $effect(() => {
+        if (searchQuery !== undefined) {
+            debouncedSearch(searchQuery);
+        }
+    });
 
     // Select a location result
     function selectLocation(result: SearchResult): void {
@@ -167,7 +176,7 @@
         aria-owns={isResultsVisible ? "search-results-list" : null}
         aria-autocomplete="list"
         role="combobox"
-        on:keydown={handleKeydown}
+        onkeydown={handleKeydown}
     />
 
     {#if isResultsVisible}
@@ -182,8 +191,8 @@
                 {#each searchResults as result, i}
                     <div
                         class="search-result-item {i === selectedIndex ? 'selected' : ''}"
-                        on:click={() => selectLocation(result)}
-                        on:keydown={(e) => e.key === "Enter" && selectLocation(result)}
+                        onclick={() => selectLocation(result)}
+                        onkeydown={(e) => e.key === "Enter" && selectLocation(result)}
                         tabindex={i === selectedIndex ? 0 : -1}
                         role="option"
                         aria-selected={i === selectedIndex}

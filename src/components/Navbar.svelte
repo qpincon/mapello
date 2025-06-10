@@ -1,7 +1,13 @@
 <script lang="ts">
   import logo from "../assets/img/logo_brand.webp";
   import githubLogo from "../assets/img/github.svg?raw";
-  export let activeTitle: string = "index.html";
+  interface Props {
+    activeTitle: string;
+  }
+
+  let { activeTitle }: Props = $props();
+
+  if (!activeTitle) activeTitle = "index.html";
 </script>
 
 <div id="navbar">
