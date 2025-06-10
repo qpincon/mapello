@@ -2687,6 +2687,7 @@
                                     {#if curDataDefs.colorScale !== "category"}
                                         <div>
                                             <RangeInput
+                                                id="nbBreaks"
                                                 title="Number of breaks"
                                                 bind:value={curDataDefs.nbBreaks}
                                                 min="3"

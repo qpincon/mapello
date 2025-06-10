@@ -2,12 +2,10 @@
   import logo from "../assets/img/logo_brand.webp";
   import githubLogo from "../assets/img/github.svg?raw";
   interface Props {
-    activeTitle: string;
+    activeTitle?: string;
   }
 
-  let { activeTitle }: Props = $props();
-
-  if (!activeTitle) activeTitle = "index.html";
+  let { activeTitle = "index.html" }: Props = $props();
 </script>
 
 <div id="navbar">
