@@ -59,10 +59,8 @@
             max={_max}
             step={_step}
             onchange={(e) => {
-                if (e.target) {
-                    if (e.target instanceof HTMLInputElement) {
-                        onChange!(parseFloat(e.target.value));
-                    }
+                if (e.target && e.target instanceof HTMLInputElement) {
+                    onChange!(parseFloat(e.target.value));
                 }
             }}
         />

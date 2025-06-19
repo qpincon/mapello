@@ -1,83 +1,33 @@
 <script lang="ts">
     import { mount, onMount, tick } from "svelte";
     import type { GlobalState } from "./types";
-    import { defaultColorDef, defaultLegendDef, defaultState } from "./stateDefaults";
-    import * as topojson from "topojson-client";
-    import { presimplify, simplify } from "topojson-simplify";
-    import { scaleLinear, scalePow, scaleOrdinal, scaleQuantize, scaleQuantile } from "d3-scale";
-    import { color as d3Color } from "d3-color";
-    import { geoGraticule, geoPath } from "d3-geo";
     import { select, pointer } from "d3-selection";
     import { drag } from "d3-drag";
     import { zoom } from "d3-zoom";
-    import { extent } from "d3-array";
     import InlineStyleEditor from "inline-style-editor";
-    import { debounce, throttle } from "lodash-es";
-    import dataExplanation from "./assets/dataColor.svg";
+    import { debounce } from "lodash-es";
     import { drawCustomPaths, parseAndUnprojectPath } from "./svg/paths";
-    import { transitionCssMacro, transitionCssMicro } from "./svg/transition";
     import PathEditor from "./svg/pathEditor";
-    import { paramDefs, defaultParams, helpParams, noSatelliteParams, microDefaultParams } from "./params";
-    import { appendBgPattern, appendGlow } from "./svg/svgDefs";
-    import { splitMultiPolygons } from "./util/geojson";
-    import { createD3ProjectionFromMapLibre, getProjection, updateAltitudeRange } from "./util/projections";
-    import PaletteEditor from "./components/PaletteEditor.svelte";
     import Geocoding from "./components/Geocoding.svelte";
-    import {
-        download,
-        sortBy,
-        indexBy,
-        htmlToElement,
-        getNumericCols,
-        initTooltips,
-        getBestFormatter,
-        getColumns,
-        findProp,
-        formatUnicorn,
-        extractFileName,
-        pascalCaseToSentence,
-    } from "./util/common";
+    import { download, initTooltips, pascalCaseToSentence } from "./util/common";
     import * as shapes from "./svg/shapeDefs";
     import * as markers from "./svg/markerDefs";
-    import {
-        setTransformScale,
-        closestDistance,
-        duplicateContourCleanFirst,
-        pathStringFromParsed,
-        type DistanceQueryResult,
-    } from "./svg/svg";
+    import { setTransformScale, closestDistance, type DistanceQueryResult } from "./svg/svg";
     import { drawShapes } from "./svg/shape";
     import iso3Data from "./assets/data/iso3_filtered.json";
-    import DataTable from "./components/DataTable.svelte";
     import Examples from "./components/Examples.svelte";
-    import Legend from "./components/Legend.svelte";
     import defaultBaseCssMacro from "./assets/pagestyleMacro.css?raw";
-    import { drawLegend } from "./svg/legend";
     import { freeHandDrawPath } from "./svg/freeHandPath";
     import Modal from "./components/Modal.svelte";
-    import Accordions from "./components/Accordions.svelte";
     import Navbar from "./components/Navbar.svelte";
-    import ColorPickerPreview from "./components/ColorPickerPreview.svelte";
     import macroImg from "./assets/img/macro.png";
     import microImg from "./assets/img/micro.png";
     import Instructions from "./components/Instructions.svelte";
     import Icon from "./components/Icon.svelte";
-    import RangeInput from "./components/RangeInput.svelte";
-    import { reportStyle, exportStyleSheet, getUsedInlineFonts, applyStyles, DOM_PARSER, fontsToCss } from "./util/dom";
-    import { saveState, getState } from "./util/save";
-    import { exportSvg, exportFontChoices } from "./svg/export";
-    import { addTooltipListener } from "./tooltip";
-    import {
-        drawMicroFrame,
-        drawPrettyMap,
-        exportMicro,
-        generateCssFromState,
-        initLayersState,
-        onMicroParamChange,
-        replaceCssSheetContent,
-        syncLayerStateWithCss,
-        updateSvgPatterns,
-    } from "./detailed";
+    import { exportStyleSheet, getUsedInlineFonts, fontsToCss } from "./util/dom";
+    import { saveState } from "./util/save";
+    import { exportFontChoices } from "./svg/export";
+    import { initLayersState } from "./detailed";
     import { Map } from "maplibre-gl";
     import MicroLayerParams from "./components/MicroLayerParams.svelte";
     import * as _microPalettes from "./microPalettes";
@@ -94,195 +44,32 @@
         MicroPalette,
         MicroPaletteWithBorder,
         ContourParams,
-        LegendColor,
         ProvidedFont,
         CssDict,
         Color,
-        InlinePropsMacro,
         InlinePropsMicro,
-        MicroLayerId,
-        MacroGroupData,
-        FrameSelection,
         ParsedPath,
         ContextMenuInfo,
         MenuState,
         PathDefImage,
         MarkerName,
-        ZoneDataRow,
-        ZoneData,
         ShapeName,
-        FormatterObject,
         ColorDef,
-        SvgGSelection,
-        OrdinalMapping,
-        ColorScale,
         Mode,
     } from "./types";
-    import type { MacroParams, MicroParams } from "./params";
-    import type { Feature, FeatureCollection, MultiLineString, Polygon } from "geojson";
-    import { appendCountryImageNew, appendLandImageNew } from "./svg/contourMethods";
-    import {
-        CATEGORICAL_SCHEMES,
-        CONTINUOUS_SCHEMES,
-        type AnyScaleKey,
-        type CategoricalScaleKey,
-        type ContinuousScaleKey,
-    } from "./util/color-scales";
     import { Dropdown } from "bootstrap";
-    import { applyInlineStyles } from "./macro/drawing";
+    import { applyInlineStyles, drawMacroTotal } from "./macro/drawing";
     import MacroSidebar from "./macro/components/MacroSidebar.svelte";
+    import { appState, commonState, macroState, microState } from "./state.svelte";
+    import { icons } from "./shared/icons";
+    import { defaultState } from "./stateDefaults";
 
     const microPalettes = _microPalettes as Record<string, MicroPaletteWithBorder>;
-    //     const scalesHelp: string = `
-    // <div class="inline-tooltip">
-    //     <p>
-    //         <i> Quantiles </i> separate a population into intervals of similar sizes (the 10% poorest, the 50% tallest, the 1% richest…). It is defined by the data itself (a set of values).
-    //          <br/>
-    //         To <i> quantize </i> means to group values with discrete increments. It is defined by the extent (min/max) of the data.
-    //         </p>
-    //     <img src=${dataExplanation} width="460" height="60"> <br/>
-    //     Those scales are only available when numeric data is associated with the layer.
-    // </div>
-    // `;
-    const defaultTooltipStyle: string = `color:black; will-change: opacity; font-size: 14px; padding: 5px; background-color: #FFFFFF; border: 1px solid black; max-width: 15rem; width: max-content; border-radius:7px;`;
 
-    const icons: Record<string, string> = import.meta.glob("./assets/img/*.svg", {
-        eager: true,
-        query: "?raw",
-        import: "default",
-    });
-    Object.keys(icons).forEach((iconName) => {
-        const name = extractFileName(iconName);
-        icons[name] = icons[iconName];
-        delete icons[iconName];
-    });
-
-    let macroParams: MacroParams = JSON.parse(JSON.stringify(defaultParams));
-    let microParams: MicroParams = JSON.parse(JSON.stringify(microDefaultParams));
-    let currentParams: MacroParams | MicroParams = macroParams;
-    $: if (macroParams || microParams || currentMode) {
-        let prevParams = currentParams;
-        currentParams = currentMode === "micro" ? microParams : macroParams;
-        if (prevParams !== currentParams) projectAndDraw();
-    }
-
-    $: if (true || mainMenuSelection) {
-        tick().then(() => initTooltips());
-    }
-    const iso3DataById = indexBy(iso3Data, "alpha-3");
-    const resolvedAdmGeometry: Record<string, any> = {};
-    const resolvedAdmTopo: Record<string, any> = {};
-    const availableCountriesAdm1 = import.meta.glob("./assets/layers/adm1/*.json", { import: "default" });
-    Object.keys(availableCountriesAdm1).forEach((adm1FileName) => {
-        const name = extractFileName(adm1FileName);
-        const resolvedName = iso3DataById[name]?.name;
-        const finalName = resolvedName ? `${resolvedName} ADM1` : name;
-        availableCountriesAdm1[finalName] = availableCountriesAdm1[adm1FileName];
-        delete availableCountriesAdm1[adm1FileName];
-    });
-
-    const availableCountriesAdm2 = import.meta.glob("./assets/layers/adm2/*.json", { import: "default" });
-    Object.keys(availableCountriesAdm2).forEach((adm2FileName) => {
-        const name = extractFileName(adm2FileName);
-        const resolvedName = iso3DataById[name]?.name;
-        const finalName = resolvedName ? `${resolvedName} ADM2` : name;
-        availableCountriesAdm2[finalName] = availableCountriesAdm2[adm2FileName];
-        delete availableCountriesAdm2[adm2FileName];
-    });
-
-    const allAvailableAdm: string[] = [
-        ...Object.keys(availableCountriesAdm1),
-        ...Object.keys(availableCountriesAdm2),
-    ].sort();
-
-    const resolvedLocales = import.meta.glob<d3.FormatLocaleDefinition>("../node_modules/d3-format/locale/*.json", {
-        eager: true,
-        import: "default",
-    });
-    Object.keys(resolvedLocales).forEach((localeFileName) => {
-        const name = localeFileName.match(/\w+/)![0]; // remove extension
-        icons[name] = icons[localeFileName];
-        delete icons[localeFileName];
-    });
-
-    function resolveAdm(name: string): Promise<any> {
-        if (name.includes("ADM1")) return availableCountriesAdm1[name]();
-        return availableCountriesAdm2[name]();
-    }
-
-    const p = (propName: string, obj: MacroParams | MicroParams = currentParams ?? macroParams): any => {
-        return findProp(propName, obj);
-    };
-
-    const positionVars: string[] = [
-        "longitude",
-        "latitude",
-        "rotation",
-        "tilt",
-        "altitude",
-        "fieldOfView",
-        "projection",
-        "width",
-        "height",
-    ];
-    let redrawTimeoutId: number;
-    let visibleArea: number | undefined;
-    let countries: FeatureCollection<Polygon, { name: string }>;
-    let land: FeatureCollection<Polygon>;
-    let adm0Topo: any = null;
-    let simpleLand: Feature | null = null;
     let openContextMenuInfo: ContextMenuInfo;
 
-    const adm0LandTopoPromise = import("./assets/layers/world_adm0_simplified_topo.json").then((topoAdm0) => {
-        // @ts-expect-error
-        adm0Topo = presimplify(topoAdm0);
-    });
-
-    function updateLayerSimplification(): void {
-        updateAdm0LandAndCountries();
-        Object.keys(resolvedAdmTopo).forEach((countryAdm) => {
-            const simplified = simplify(resolvedAdmTopo[countryAdm], visibleArea);
-            const firstKey = Object.keys(simplified.objects)[0];
-            resolvedAdmGeometry[countryAdm] = topojson.feature(simplified, simplified.objects[firstKey]);
-        });
-    }
-
-    function updateAdm0LandAndCountries(): void {
-        const simplified = simplify(adm0Topo, visibleArea);
-        const firstKey = Object.keys(simplified.objects)[0];
-        countries = topojson.feature(simplified, simplified.objects[firstKey]) as FeatureCollection<
-            Polygon,
-            { name: string }
-        >;
-        countries.features.forEach((feat: any) => {
-            const propertiesFromIso = iso3DataById[feat.properties["shapeGroup"]];
-            feat.properties = propertiesFromIso || feat.properties;
-        });
-        // @ts-expect-error
-        land = topojson.merge(simplified, simplified.objects[firstKey].geometries);
-        land = splitMultiPolygons(
-            {
-                type: "FeatureCollection",
-                // @ts-expect-error
-                features: [{ type: "Feature", geometry: { ...land } }],
-            },
-            "land",
-        );
-    }
-
-    const verySimpleLand = import("./assets/layers/world_land_very_simplified.json").then((l) => {
-        const land = l as unknown as TopoJSON.Topology;
-        const firstKey = Object.keys(land.objects)[0];
-        simpleLand = topojson.feature(land, land.objects[firstKey]) as Feature;
-    });
-
-    const layerPromises = Promise.all([adm0LandTopoPromise, verySimpleLand]);
-
-    let path: d3.GeoPath<any, any>;
-    let pathLarger: d3.GeoPath<any, any>;
-    let projection: d3.GeoProjection;
-    let projectionLarger: d3.GeoProjection;
-    let svg: SvgSelection;
+    let macroSidebar: MacroSidebar | null = $state(null);
+    let svg: SvgSelection = $state(select("#map-container") as unknown as SvgSelection);
 
     // ====== State micro ====
     let microLayerDefinitions: MicroPalette = initLayersState(microPalettes["peach"]);
@@ -290,31 +77,19 @@
     // ====== State macro =======
     let baseCss = defaultBaseCssMacro;
     let providedPaths: PathDef[];
-    let providedShapes: ShapeDefinition[];
-    let chosenCountriesAdm: string[];
-    let inlinePropsMacro: InlinePropsMacro;
+    // let providedShapes: ShapeDefinition[];
+    // let chosenCountriesAdm: string[];
+    // let inlinePropsMacro: InlinePropsMacro;
     let inlinePropsMicro: InlinePropsMicro;
 
     let providedFonts: ProvidedFont[] = [];
     // TODO: remove and compute from shape + label size
     let shapeCount = 0;
-    let inlineStyles: InlineStyles;
-    let zonesData: ZonesData;
-    /** For each layer / admId, the filter selected */
-    let zonesFilter: Record<string, string>;
-    // TODO: remove and compute from last shape
-    let lastUsedLabelProps: CssDict;
-    let contourParams: ContourParams;
-    let tooltipDefs: TooltipDefs;
 
-    let colorDataDefs: Record<string, ColorDef>;
-    let legendDefs: Record<string, LegendDef>;
-    let orderedTabs: string[];
-    let customCategoricalPalette: Color[];
+    let cssFonts = $derived(fontsToCss(commonState.providedFonts));
 
     // ==== End state =====
 
-    let cssFonts: string | undefined;
     let commonCss: string | undefined;
     const menuStates: MenuState = {
         chosingPoint: false,
@@ -331,117 +106,16 @@
     let contextualMenu: HTMLDivElement & {
         opened?: boolean;
     };
-    let showModal = false;
     let showExportConfirm = false;
     let showInstructions = false;
     let exportForm: HTMLFormElement;
-    let htmlTooltipElem: HTMLElement;
-    let currentMacroLayerTab: string = "land";
 
-    let mainMenuSelection: string = "general";
-    let currentMode: Mode = "macro";
-
-    // Helper function to convert from flat structure to GlobalState
-    function toGlobalState(): GlobalState {
-        return {
-            stateMacro: {
-                macroParams,
-                inlinePropsMacro,
-                chosenCountriesAdm,
-                zonesData,
-                zonesFilter,
-                lastUsedLabelProps,
-                contourParams,
-                colorDataDefs,
-                legendDefs,
-                customCategoricalPalette,
-            },
-            stateMicro: {
-                microParams,
-                inlinePropsMicro,
-                microLayerDefinitions,
-            },
-            stateCommon: {
-                baseCss,
-                providedFonts,
-                providedShapes,
-                providedPaths,
-                orderedTabs,
-                inlineStyles,
-                shapeCount,
-                tooltipDefs,
-                currentMode,
-            },
-        };
-    }
-
-    // Helper function to convert from GlobalState to flat structure
-    function fromGlobalState(state: GlobalState): void {
-        console.log("fromGlobalState", state);
-        macroParams = state.stateMacro.macroParams;
-        microParams = state.stateMicro.microParams;
-        inlinePropsMacro = state.stateMacro.inlinePropsMacro;
-        inlinePropsMicro = state.stateMicro.inlinePropsMicro;
-        chosenCountriesAdm = state.stateMacro.chosenCountriesAdm;
-        zonesData = state.stateMacro.zonesData;
-        zonesFilter = state.stateMacro.zonesFilter;
-        lastUsedLabelProps = state.stateMacro.lastUsedLabelProps;
-        contourParams = state.stateMacro.contourParams;
-        colorDataDefs = state.stateMacro.colorDataDefs;
-        legendDefs = state.stateMacro.legendDefs;
-        customCategoricalPalette = state.stateMacro.customCategoricalPalette;
-        microLayerDefinitions = state.stateMicro.microLayerDefinitions;
-        baseCss = state.stateCommon.baseCss;
-        providedFonts = state.stateCommon.providedFonts;
-        providedShapes = state.stateCommon.providedShapes;
-        providedPaths = state.stateCommon.providedPaths;
-        orderedTabs = state.stateCommon.orderedTabs;
-        inlineStyles = state.stateCommon.inlineStyles;
-        shapeCount = state.stateCommon.shapeCount;
-        tooltipDefs = state.stateCommon.tooltipDefs;
-        currentMode = state.stateCommon.currentMode;
-    }
-
-    function applyState(state: GlobalState): void {
-        fromGlobalState(state);
-        changeAltitudeScale();
-        updateLayerSimplification();
-        projectAndDraw();
-        getZonesDataFormatters();
-        if (currentMode === "micro") {
-            updateSvgPatterns(
-                document.getElementById("static-svg-map") as unknown as SVGElement,
-                microLayerDefinitions,
-            );
-            replaceCssSheetContent(microLayerDefinitions);
-        }
-        setTimeout(() => {
-            if (maplibreMap) maplibreMap.jumpTo(inlinePropsMicro);
-        }, 500);
-        commonStyleSheetElemMacro.innerHTML = baseCss;
-    }
-
-    function restoreStateToDefault() {
-        applyState(defaultState);
-    }
-
-    function restoreStateFromSave() {
-        const savedState = getState();
-        applyState(savedState ?? defaultState);
-    }
-
-    $: if (true || mainMenuSelection) {
-        tick().then(() => initTooltips());
-    }
     // TODO: move in menuStates
     let editingPath = false;
     let isDrawingFreeHand = false;
     let isDrawingPath = false;
-    $: iseOnClickEnabled = !editingPath && !isDrawingFreeHand && !isDrawingPath;
-    // This contains the common CSS that can ben editor with inline-css-editor
-    // we also have a special svelte:head element containing all CSS that is not in baseCss (border style, legend colors, etc.)
-    let commonStyleSheetElemMacro: HTMLStyleElement;
-    let commonStyleSheetElemMicro: HTMLStyleElement;
+    let iseOnClickEnabled = $derived(!editingPath && !isDrawingFreeHand && !isDrawingPath);
+
     let zoomFunc: d3.ZoomBehavior<any, any>;
     let dragFunc: d3.DragBehavior<any, any, any>;
     /**
@@ -455,34 +129,12 @@
     let mapLoadedPromise: Promise<unknown>;
     let microLocked = false;
     onMount(async () => {
-        console.log("onmount", styleEditor);
-        commonStyleSheetElemMacro = document.createElement("style");
-        commonStyleSheetElemMacro.setAttribute("id", "common-style-sheet-elem-macro");
-        document.head.appendChild(commonStyleSheetElemMacro);
-
+        console.log("App onmount");
         /** Init bootstrap dropdowns */
         Array.from(document.querySelectorAll(".dropdown-toggle")).forEach((dropdownToggleEl) => {
             new Dropdown(dropdownToggleEl);
         });
-        await layerPromises;
-        restoreStateFromSave();
-        commonStyleSheetElemMacro.innerHTML = baseCss;
 
-        createMaplibreMap();
-
-        const microCss = generateCssFromState(microLayerDefinitions);
-        if (microCss) {
-            commonStyleSheetElemMicro = document.createElement("style");
-            commonStyleSheetElemMicro.setAttribute("id", "common-style-sheet-elem-micro");
-            document.head.appendChild(commonStyleSheetElemMicro);
-            commonStyleSheetElemMicro.innerHTML = microCss;
-        } else {
-            console.error("No generated CSS");
-        }
-
-        await mapLoadedPromise;
-
-        projectAndDraw();
         // @ts-expect-error
         styleEditor = mount(InlineStyleEditor, {
             target: document.body,
@@ -493,68 +145,9 @@
                     cssProp: string,
                     value: string,
                 ) => {
-                    const elemId = target.getAttribute("id")!;
-                    const eventAsRule = eventType as CSSStyleRule;
-                    if (currentMode === "micro") {
-                        if (eventType === "inline" && target.hasAttribute("id")) {
-                            handleInlineStyleChange(elemId, target, cssProp, value);
-                        }
-                        const layerDefChanged = syncLayerStateWithCss(eventType, cssProp, value, microLayerDefinitions);
-                        if (layerDefChanged) microLayerDefinitions = microLayerDefinitions;
-                        save();
-                        return;
+                    if (commonState.currentMode === "macro") {
+                        macroSidebar!.onStyleChanged(target, eventType, cssProp, value);
                     }
-                    /**
-                     * Due to a Firefox bug (the :hover selector is not applied when we move the DOM node when hovering a polygon)
-                     * we need to apply the :hover style to a custom class selector .hovered, that will be applied programatically
-                     */
-                    if (eventAsRule.selectorText?.includes?.(":hover")) {
-                        const selectorTextToModify = eventAsRule.selectorText.replace(":hover", ".hovered");
-                        const rule = Array.from(eventAsRule.parentStyleSheet!.cssRules)
-                            .filter((r) => r instanceof CSSStyleRule)
-                            .find((r: CSSStyleRule) => r.selectorText === selectorTextToModify);
-                        if (rule) {
-                            for (const propName of eventAsRule.style) {
-                                rule.style.setProperty(propName, eventAsRule.style.getPropertyValue(propName));
-                            }
-                        }
-                    }
-
-                    if (legendSample && legendSample.contains(target) && cssProp !== "fill") {
-                        legendDefs[currentMacroLayerTab].sampleHtml = legendSample.outerHTML;
-                        colorizeAndLegend();
-                    } else if (htmlTooltipElem && htmlTooltipElem.contains(target)) {
-                        tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem.outerHTML;
-                    } else if (eventType === "inline") {
-                        if (target.hasAttribute("id")) {
-                            handleInlineStyleChange(elemId, target, cssProp, value);
-                        }
-                    }
-                    /** Update <image> tag corresponding to changed element */
-                    if (
-                        (eventType === "inline" && target.classList.contains("country")) ||
-                        eventAsRule?.selectorText === ".country"
-                    ) {
-                        computedOrderedTabs.forEach((tab) => {
-                            if (tab.substring(0, tab.length - 5) !== elemId) return;
-                            const filter = zonesFilter[tab];
-                            const countryData = countries.features.find(
-                                (country) => country.properties?.name === elemId,
-                            )!;
-                            appendCountryImageNew.call(
-                                select(`[id='${elemId}-img']`).node() as SVGGElement,
-                                countryData,
-                                filter,
-                                applyInlineStyles,
-                                path,
-                                inlineStyles,
-                                false,
-                                true,
-                            );
-                            svg.selectAll("g[image-class]").classed("hidden-after", true);
-                        });
-                    }
-                    save();
                 },
                 getElems: (el: HTMLElement) => {
                     if (el.classList.contains("freehand")) {
@@ -646,6 +239,36 @@
         });
     });
 
+    function restoreStateToDefault() {
+        applyState(defaultState);
+    }
+
+    function attachListeners(): void {
+        const container = select("#map-container");
+        dragFunc = drag()
+            .filter((e) => commonState.currentMode === "macro" && !e.button) // Remove ctrlKey
+            .on("drag", (e) => {
+                if (commonState.currentMode === "macro") macroSidebar!.onDrag(e);
+            })
+            .on("start", () => {
+                if (menuStates.addingLabel) validateLabel();
+                styleEditor.close();
+                closeMenu();
+            });
+
+        zoomFunc = zoom()
+            .filter((e) => commonState.currentMode === "macro")
+            .wheelDelta((event) => -event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002))
+            .on("zoom", (e) => {
+                if (commonState.currentMode === "macro") macroSidebar!.onZoom(e);
+            })
+            .on("start", () => {
+                closeMenu();
+            });
+        container.call(dragFunc);
+        container.call(zoomFunc);
+    }
+
     function lockUnlock(isLocked: boolean) {
         microLocked = isLocked;
 
@@ -671,7 +294,7 @@
         });
 
         maplibreMap.on("moveend", (event) => {
-            if (currentMode !== "micro") return;
+            if (commonState.currentMode !== "micro") return;
             const center = maplibreMap.getCenter().toArray();
             if (center[0] !== 0 && center[1] !== 0) {
                 inlinePropsMicro = {
@@ -687,7 +310,7 @@
 
         maplibreMap.on("movestart", (event) => {
             // console.log('movestart');
-            if (currentMode !== "micro") return;
+            if (commonState.currentMode !== "micro") return;
             cancelStitch();
             select("#maplibre-map").style("opacity", 1);
         });
@@ -711,82 +334,43 @@
         mapLoadedPromise = maplibreMap.once("load") as Promise<unknown>;
     }
 
-    function handleMicroParamChange(
-        layer: MicroLayerId,
-        prop: string | string[],
-        value: number | Color | string | boolean,
-    ): void {
-        const shouldRedraw = onMicroParamChange(layer, prop, value, microLayerDefinitions);
-        if (shouldRedraw) draw();
-        save();
-    }
+    // function handleMicroParamChange(
+    //     layer: MicroLayerId,
+    //     prop: string | string[],
+    //     value: number | Color | string | boolean,
+    // ): void {
+    //     const shouldRedraw = onMicroParamChange(layer, prop, value, microLayerDefinitions);
+    //     if (shouldRedraw) draw();
+    //     save();
+    // }
 
-    function handleMicroPaletteChange(paletteId: string): void {
-        const palette = microPalettes[paletteId];
-        if (palette.borderParams) {
-            microParams["Border"] = {
-                ...microParams["Border"],
-                ...palette.borderParams,
-            };
-        }
-        microLayerDefinitions = initLayersState(palette);
-        updateSvgPatterns(document.getElementById("static-svg-map") as unknown as SVGSVGElement, microLayerDefinitions);
-        replaceCssSheetContent(microLayerDefinitions);
-        // handleMicroParamChange('other', ['pattern'])
-        draw();
-        save();
-    }
-
-    function handleInlineStyleChange(elemId: string, target: HTMLElement, cssProp: string, value: string): void {
-        if (elemId.includes("label")) {
-            lastUsedLabelProps[cssProp] = value;
-        }
-        if (elemId in inlineStyles) inlineStyles[elemId][cssProp] = value;
-        else inlineStyles[elemId] = { [cssProp]: value };
-        // update path markers
-        if (cssProp === "stroke" && target.hasAttribute("marker-end")) {
-            const markerId = target.getAttribute("marker-end")?.match(/url\(#(.*)\)/)?.[1];
-            if (!markerId) return;
-            const newMarkerId = `${markerId.split("-")[0]}-${value.substring(1)}`;
-            select(`#${markerId}`).attr("fill", value).attr("id", newMarkerId);
-            select(target).attr("marker-end", `url(#${newMarkerId})`);
-        }
-    }
+    // function handleMicroPaletteChange(paletteId: string): void {
+    //     const palette = microPalettes[paletteId];
+    //     if (palette.borderParams) {
+    //         microParams["Border"] = {
+    //             ...microParams["Border"],
+    //             ...palette.borderParams,
+    //         };
+    //     }
+    //     microLayerDefinitions = initLayersState(palette);
+    //     updateSvgPatterns(document.getElementById("static-svg-map") as unknown as SVGSVGElement, microLayerDefinitions);
+    //     replaceCssSheetContent(microLayerDefinitions);
+    //     // handleMicroParamChange('other', ['pattern'])
+    //     draw();
+    //     save();
+    // }
 
     function switchMode(newMode: Mode): void {
-        if (currentMode === newMode) return;
-        currentMode = newMode;
+        if (commonState.currentMode === newMode) return;
+        commonState.currentMode = newMode;
         const mapLibreContainer = select("#maplibre-map");
-        if (currentMode === "micro") {
+        if (commonState.currentMode === "micro") {
             mapLibreContainer.style("display", "block");
-            mainMenuSelection = "general";
             draw();
         } else {
-            projectAndDraw();
+            macroSidebar!.applyStateAndDraw();
         }
         setTimeout(() => initTooltips(), 0);
-    }
-
-    function attachListeners(): void {
-        const container = select("#map-container");
-        dragFunc = drag()
-            .filter((e) => currentMode === "macro" && !e.button) // Remove ctrlKey
-            .on("drag", dragged)
-            .on("start", () => {
-                if (menuStates.addingLabel) validateLabel();
-                styleEditor.close();
-                closeMenu();
-            });
-
-        zoomFunc = zoom()
-            .filter((e) => currentMode === "macro")
-            .wheelDelta((event) => -event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002))
-            .on("zoom", zoomed)
-            .on("start", () => {
-                closeMenu();
-            });
-        container.call(dragFunc);
-        container.call(zoomFunc);
     }
 
     function detachListeners(): void {
@@ -910,92 +494,58 @@
     //     projectionLarger = getProjection({ ...projectionParams, larger: true });
     // }
 
-    function computeCurrentTab(): void {
-        computedOrderedTabs = orderedTabs.filter((x) => {
-            if (x === "countries") return inlinePropsMacro.showCountries;
-            if (x === "land") return inlinePropsMacro.showLand;
-            return true;
-        });
-        if (!computedOrderedTabs.length || (computedOrderedTabs.length === 1 && computedOrderedTabs[0] === "land"))
-            currentMacroLayerTab = "land";
-        else if (computedOrderedTabs.length > 0 && currentMacroLayerTab === null) {
-            let i = 0;
-            while (computedOrderedTabs[i] === "land") ++i;
-            currentMacroLayerTab = computedOrderedTabs[i];
-        }
-    }
+    // function computeCurrentTab(): void {
+    //     computedOrderedTabs = orderedTabs.filter((x) => {
+    //         if (x === "countries") return inlinePropsMacro.showCountries;
+    //         if (x === "land") return inlinePropsMacro.showLand;
+    //         return true;
+    //     });
+    //     if (!computedOrderedTabs.length || (computedOrderedTabs.length === 1 && computedOrderedTabs[0] === "land"))
+    //         currentMacroLayerTab = "land";
+    //     else if (computedOrderedTabs.length > 0 && currentMacroLayerTab === null) {
+    //         let i = 0;
+    //         while (computedOrderedTabs[i] === "land") ++i;
+    //         currentMacroLayerTab = computedOrderedTabs[i];
+    //     }
+    // }
 
-    async function initializeAdms(simplified: boolean): Promise<void> {
-        for (const countryAdm of chosenCountriesAdm) {
-            if (!(countryAdm in resolvedAdmGeometry)) {
-                const resolved = await resolveAdm(countryAdm);
-                resolvedAdmTopo[countryAdm] = presimplify(resolved);
-                updateLayerSimplification();
-                draw(simplified);
-                return;
-            }
-            if (!(countryAdm in tooltipDefs)) {
-                const contentTemplate = defaultTooltipContent(false);
-                tooltipDefs[countryAdm] = {
-                    template: contentTemplate,
-                    content: defaultTooltipFull(contentTemplate),
-                    enabled: false,
-                    locale: "en-US",
-                };
-                colorDataDefs[countryAdm] = { ...defaultColorDef };
-                legendDefs[countryAdm] = JSON.parse(JSON.stringify(defaultLegendDef));
-            }
-            if (!(countryAdm in zonesData) && !zonesData?.[countryAdm]?.provided) {
-                const data: ZoneDataRow[] = sortBy(
-                    resolvedAdmGeometry[countryAdm].features.map((f: Feature) => f.properties),
-                    "name",
-                )!;
-                zonesData[countryAdm] = {
-                    data: data,
-                    provided: false,
-                    numericCols: getNumericCols(data),
-                };
-            }
-        }
-    }
-    const countryFilteredImages = new Set<string>();
     const freeHandDrawer = new FreehandDrawer();
     let firstDraw = true;
     // without 'countries' if unchecked
-    let computedOrderedTabs: string[] = [];
     async function draw(simplified = false) {
-        const width = p("width");
-        const height = p("height");
+        console.log("app draw", simplified);
+        // const width = p("width");
+        // const height = p("height");
         const container = select("#map-container");
-        const mapLibreContainer = select("#maplibre-map");
-        const animated = p("animate");
+        // const mapLibreContainer = select("#maplibre-map");
+        // const animated = p("animate");
 
-        countryFilteredImages.clear();
-        computeCurrentTab();
-        await initializeAdms(simplified);
+        // countryFilteredImages.clear();
+        // computeCurrentTab();
+        // await initializeAdms(simplified);
         container.html("");
-        const graticule = geoGraticule().step([p("graticuleStep"), p("graticuleStep")])();
-        if (!p("showGraticule")) graticule.coordinates = [];
-        if (simplified) {
-            let canvas = container.select<HTMLCanvasElement>("#canvas");
-            if (canvas.empty()) {
-                canvas = container.append("canvas").attr("id", "canvas").attr("width", width).attr("height", height);
-            }
-            const context = canvas!.node()!.getContext("2d")!;
-            context.fillStyle = "#55a4c5";
-            context.rect(0, 0, width, height);
-            context.fillStyle = "#cdb396";
-            path = geoPath(projection, context);
-            context.beginPath();
-            path(simplified ? simpleLand : land);
-            context.fill();
-            context.beginPath();
-            path(graticule);
-            context.strokeStyle = "#ddf";
-            context.globalAlpha = 0.8;
-            context.stroke();
-            return;
-        }
+        // const graticule = geoGraticule().step([p("graticuleStep"), p("graticuleStep")])();
+        // if (!p("showGraticule")) graticule.coordinates = [];
+        // if (simplified) {
+        //     let canvas = container.select<HTMLCanvasElement>("#canvas");
+        //     if (canvas.empty()) {
+        //         canvas = container.append("canvas").attr("id", "canvas").attr("width", width).attr("height", height);
+        //     }
+        //     const context = canvas!.node()!.getContext("2d")!;
+        //     context.fillStyle = "#55a4c5";
+        //     context.rect(0, 0, width, height);
+        //     context.fillStyle = "#cdb396";
+        //     path = geoPath(projection, context);
+        //     context.beginPath();
+        //     path(simplified ? simpleLand : land);
+        //     context.fill();
+        //     context.beginPath();
+        //     path(graticule);
+        //     context.strokeStyle = "#ddf";
+        //     context.globalAlpha = 0.8;
+        //     context.stroke();
+        //     return;
+        // }
         svg = container.select("svg") as unknown as SvgSelection;
         if (svg.empty())
             svg = container
@@ -1004,18 +554,14 @@
                 .attr("xmlns:xlink", "http://www.w3.org/1999/xlink")
                 .attr("id", "static-svg-map") as unknown as SvgSelection;
 
-        svg.classed("animate-transition", true).classed("animate", animated);
+        // svg.classed("animate-transition", true).classed("animate", animated);
 
-        if (p("useViewBox")) {
-            svg.attr("viewBox", `0 0 ${width} ${height}`);
-        } else {
-            svg.attr("width", `${width}`).attr("height", `${height}`);
-        }
-        container.style("width", `${width}px`).style("height", `${height}px`);
-        mapLibreContainer.style("width", `${width}px`).style("height", `${height}px`);
-        path = geoPath(projection);
-        pathLarger = geoPath(projectionLarger);
-        svg.html("");
+        // if (p("useViewBox")) {
+        //     svg.attr("viewBox", `0 0 ${width} ${height}`);
+        // } else {
+        //     svg.attr("width", `${width}`).attr("height", `${height}`);
+        // }
+        // svg.html("");
         svg.append("defs");
         svg.on(
             "contextmenu",
@@ -1052,98 +598,19 @@
             else if (iseOnClickEnabled) openEditor(e);
         });
 
-        const groupData: MacroGroupData[] = [];
-        if (currentMode === "macro") {
-            Object.values(zonesFilter).forEach((filterName) => {
-                if (!filterName) return;
-                appendGlow(svg, filterName, false, p(filterName));
-            });
-            mapLibreContainer.style("display", "none");
-            container.style("display", "block");
-            drawMacro(graticule, groupData);
-            appendBgPattern(svg, "noise", p("seaColor"), p("backgroundNoise"));
-        } else if (currentMode === "micro") await drawMicro();
-        drawCustomPaths(providedPaths, svg, projection, inlineStyles);
-
-        if (currentMode === "macro") {
-            select("#outline").style("fill", "url(#noise)");
-            colorizeAndLegend();
+        console.log(svg, commonState.currentMode);
+        if (commonState.currentMode === "macro") {
+            drawMacroTotal(svg, simplified);
         }
-        computeCss();
-        let frame: FrameSelection;
-        if (currentMode === "macro") frame = drawMacroFrame(groupData);
-        if (currentMode === "micro")
-            frame = drawMicroFrame(
-                svg,
-                width,
-                height,
-                p("borderWidth"),
-                p("borderRadius"),
-                p("borderPadding"),
-                p("borderColor"),
-                animated,
-            );
-
-        if (animated) {
-            frame!.on("animationend", (e) => {
-                setTimeout(() => {
-                    svg.classed("animate", false);
-                    svg.selectAll("path[pathLength]").attr("pathLength", null);
-                    if (currentMode === "macro") {
-                        const landElem = svg.select("#land");
-                        const landGroupDef = groupData.find((x) => x.type === "landImg")!;
-                        const countryGroupDefs = groupData.filter((x) => x.type === "filterImg");
-                        if (!landElem.empty() && landGroupDef) {
-                            appendLandImageNew.call(
-                                landElem.node() as SVGGElement,
-                                landGroupDef.showSource || false,
-                                zonesFilter,
-                                width,
-                                height,
-                                p("borderWidth"),
-                                contourParams,
-                                land,
-                                pathLarger,
-                                p(zonesFilter["land"]),
-                                false,
-                            );
-                        }
-                        countryGroupDefs.forEach((def) => {
-                            appendCountryImageNew.call(
-                                svg.select(`[id='${def.name}']`).node() as SVGGElement,
-                                def.countryData!,
-                                def.filter ?? null,
-                                applyInlineStyles,
-                                path,
-                                inlineStyles,
-                                false,
-                            );
-                        });
-                        duplicateContourCleanFirst(svg.node() as SVGSVGElement);
-                    }
-                    setTimeout(() => {
-                        svg.selectAll("g[image-class]").classed("hidden-after", true);
-                        svg.classed("animate-transition", false);
-                    }, 1500);
-                }, 200);
-            });
-        }
-
         drawAndSetupShapes();
         const map = document.getElementById("static-svg-map") as unknown as SVGSVGElement;
         if (!map) return;
         await tick();
-        if (currentMode === "macro") {
-            addTooltipListener(map, tooltipDefs, zonesData);
-            duplicateContourCleanFirst(svg.node() as SVGSVGElement);
-        }
-        if (firstDraw) maplibreMap.resize();
-        // if (firstDraw) mapLibreFitBounds();
-        firstDraw = false;
-        if (!animated) {
-            svg.selectAll("path[pathLength]").attr("pathLength", null);
-            svg.selectAll("g[image-class]").classed("hidden-after", true);
-        }
+        // firstDraw = false;
+        // if (!animated) {
+        //     svg.selectAll("path[pathLength]").attr("pathLength", null);
+        //     svg.selectAll("g[image-class]").classed("hidden-after", true);
+        // }
     }
 
     // function drawMacro(graticule: MultiLineString, groupData: MacroGroupData[]): void {
@@ -1300,31 +767,31 @@
     //         .attr("rx", rx);
     //     return frame;
     // }
-    async function drawMicro(): Promise<void> {
-        console.log("drawmicro");
-        if (!maplibreMap) return;
-        await mapLoadedPromise;
-        projection = createD3ProjectionFromMapLibre(maplibreMap);
-        path = geoPath(projection);
-        drawPrettyMap(maplibreMap, svg, path, microLayerDefinitions, microParams, microLocked);
-        freeHandDrawings.forEach((drawingGroup) => {
-            const gDrawing = svg.append("g");
-            for (const drawing of drawingGroup) {
-                const pathElem = gDrawing.append("path").attr("pathLength", 1).classed("freehand", true);
-                pathElem.attr("d", pathStringFromParsed(drawing, projection));
-            }
-        });
-        applyInlineStyles();
-    }
+    // async function drawMicro(): Promise<void> {
+    //     console.log("drawmicro");
+    //     if (!maplibreMap) return;
+    //     await mapLoadedPromise;
+    //     projection = createD3ProjectionFromMapLibre(maplibreMap);
+    //     path = geoPath(projection);
+    //     drawPrettyMap(maplibreMap, svg, path, microLayerDefinitions, microParams, microLocked);
+    //     freeHandDrawings.forEach((drawingGroup) => {
+    //         const gDrawing = svg.append("g");
+    //         for (const drawing of drawingGroup) {
+    //             const pathElem = gDrawing.append("path").attr("pathLength", 1).classed("freehand", true);
+    //             pathElem.attr("d", pathStringFromParsed(drawing, projection));
+    //         }
+    //     });
+    //     applyInlineStyles();
+    // }
 
-    function projectAndDraw(simplified = false): void {
-        changeProjection();
-        draw(simplified);
-    }
+    // function projectAndDraw(simplified = false): void {
+    //     changeProjection();
+    //     draw(simplified);
+    // }
 
     let totalCommonCss: string;
     // function computeCss(): void {
-    //     if (currentMode === "micro") {
+    //     if (commonState.currentMode === "micro") {
     //         let css = `
     //     #paths > path {
     //         stroke: #7c490ea0;
@@ -1355,7 +822,7 @@
     //     ${p("frameShadow") ? "filter: drop-shadow(2px 2px 8px rgba(0,0,0,.2));" : ""}
     // }`;
 
-    //     if (currentMode === "macro") {
+    //     if (commonState.currentMode === "macro") {
     //         borderCss += `#static-svg-map, #static-svg-map > svg {
     //         border-radius: ${radiusX}%/${radiusY}%;
     //     }`;
@@ -1365,35 +832,28 @@
     //     totalCommonCss = exportStyleSheet("#outline") + commonCss;
     // }
 
-    function save(): void {
-        baseCss = exportStyleSheet("#outline")!;
-        saveState(toGlobalState());
-    }
+    // function save(): void {
+    //     baseCss = exportStyleSheet("#outline")!;
+    //     saveState(toGlobalState());
+    // }
 
     function saveProject(): void {
         baseCss = exportStyleSheet("#outline")!;
-        const state = {
-            params: macroParams,
-            microParams,
-            inlineProps: inlinePropsMacro,
-            baseCss,
-            providedFonts,
-            providedShapes,
-            providedPaths,
-            chosenCountriesAdm,
-            orderedTabs,
-            inlineStyles,
-            shapeCount,
-            zonesData,
-            zonesFilter,
-            lastUsedLabelProps,
-            tooltipDefs,
-            contourParams,
-            colorDataDefs,
-            legendDefs,
-            customCategoricalPalette,
+        // TODO: is is this useful?
+        commonState.baseCss = baseCss;
+        const state: GlobalState = {
+            stateCommon: commonState,
+            stateMacro: macroState,
+            stateMicro: microState,
         };
         download(JSON.stringify(state), "text/json", "project.cartosvg");
+    }
+
+    function applyState(state: GlobalState): void {
+        Object.assign(commonState, state.stateCommon);
+        Object.assign(macroState, state.stateMacro);
+        Object.assign(microState, state.stateMicro);
+        saveState();
     }
 
     function loadProject(e: Event): void {
@@ -1404,8 +864,9 @@
             try {
                 const providedState: GlobalState = JSON.parse(reader.result as string);
                 applyState(providedState);
-                save();
-                projectAndDraw();
+                if (commonState.currentMode === "macro") {
+                    macroSidebar!.applyStateAndDraw();
+                }
             } catch (e) {
                 console.error("Unable to parse provided file. Should be valid JSON.");
             }
@@ -1420,9 +881,11 @@
             )
         )
             return;
+
         applyState(e.detail.projectParams);
-        save();
-        projectAndDraw();
+        if (commonState.currentMode === "macro") {
+            macroSidebar!.applyStateAndDraw();
+        }
     }
 
     // function applyInlineStyles(styleAll = false): void {
@@ -1444,20 +907,20 @@
         new PathEditor(pathElem, svg.node() as SVGSVGElement, (editedPathElem) => {
             // element was deleted
             if (!editedPathElem) {
-                providedPaths.splice(selectedPathIndex, 1);
+                commonState.providedPaths.splice(selectedPathIndex, 1);
             } else {
-                const parsed = parseAndUnprojectPath(editedPathElem, projection);
-                providedPaths[selectedPathIndex].d = parsed;
+                const parsed = parseAndUnprojectPath(editedPathElem, appState.projection!);
+                commonState.providedPaths[selectedPathIndex].d = parsed;
             }
             attachListeners();
             editingPath = false;
-            save();
+            saveState();
         });
     }
 
     function deletePath(): void {
         closeMenu();
-        providedPaths.splice(selectedPathIndex, 1);
+        commonState.providedPaths.splice(selectedPathIndex, 1);
         drawShapesAndSave();
     }
 
@@ -1478,53 +941,53 @@
         const reader = new FileReader();
         reader.addEventListener("load", () => {
             const newImage: PathDefImage = { name: fileName, content: reader.result as string };
-            providedPaths[selectedPathIndex].image = newImage;
-            if (!providedPaths[selectedPathIndex].duration) {
-                providedPaths[selectedPathIndex].duration = 10;
-                providedPaths[selectedPathIndex].width = 20;
-                providedPaths[selectedPathIndex].height = 10;
+            commonState.providedPaths[selectedPathIndex].image = newImage;
+            if (!commonState.providedPaths[selectedPathIndex].duration) {
+                commonState.providedPaths[selectedPathIndex].duration = 10;
+                commonState.providedPaths[selectedPathIndex].width = 20;
+                commonState.providedPaths[selectedPathIndex].height = 10;
             }
-            drawCustomPaths(providedPaths, svg, projection, inlineStyles);
+            drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
             applyInlineStyles();
-            save();
+            saveState();
         });
         reader.readAsDataURL(file);
     }
 
-    const saveDebounced = debounce(save, 200);
+    const saveDebounced = debounce(saveState, 200);
     function changeDurationAnimation(e: Event): void {
-        providedPaths[selectedPathIndex].duration = parseInt((e!.target! as HTMLInputElement).value);
+        commonState.providedPaths[selectedPathIndex].duration = parseInt((e!.target! as HTMLInputElement).value);
         drawShapesAndSave();
     }
 
     function changePathImageWidth(e: Event): void {
-        providedPaths[selectedPathIndex].width = parseInt((e!.target! as HTMLInputElement).value);
+        commonState.providedPaths[selectedPathIndex].width = parseInt((e!.target! as HTMLInputElement).value);
         drawShapesAndSave();
     }
 
     function changePathImageHeight(e: Event): void {
-        providedPaths[selectedPathIndex].height = parseInt((e!.target! as HTMLInputElement).value);
+        commonState.providedPaths[selectedPathIndex].height = parseInt((e!.target! as HTMLInputElement).value);
         drawShapesAndSave();
     }
 
     function changeMarker(markerName: MarkerName | "delete"): void {
         closeMenu();
         menuStates.chosingMarker = false;
-        if (markerName === "delete") delete providedPaths[selectedPathIndex].marker;
-        else providedPaths[selectedPathIndex].marker = markerName;
+        if (markerName === "delete") delete commonState.providedPaths[selectedPathIndex].marker;
+        else commonState.providedPaths[selectedPathIndex].marker = markerName;
         drawShapesAndSave();
     }
 
     function deleteImage(): void {
-        delete providedPaths[selectedPathIndex].image;
-        providedPaths[selectedPathIndex] = providedPaths[selectedPathIndex];
+        delete commonState.providedPaths[selectedPathIndex].image;
+        commonState.providedPaths[selectedPathIndex] = commonState.providedPaths[selectedPathIndex];
         drawShapesAndSave();
     }
 
     function drawShapesAndSave(): void {
-        drawCustomPaths(providedPaths, svg, projection, inlineStyles);
+        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
         applyInlineStyles();
-        saveDebounced();
+        saveState();
     }
 
     // function getFirstDataRow(zonesDataDef: ZoneData): ZoneDataRow | null {
@@ -1537,14 +1000,6 @@
     //     return row;
     // }
 
-    let currentTemplateHasNumeric = false;
-    function templateHasNumeric(layerName: string): boolean {
-        const toFind = zonesData[layerName]?.numericCols.map((colDef) => `{${colDef.column}}`);
-        const template = tooltipDefs[layerName]?.template;
-        return toFind?.some((str) => template.includes(str));
-    }
-
-    $: cssFonts = fontsToCss(providedFonts);
     function handleInputFont(e: Event): void {
         // @ts-expect-error
         const file = e.target.files[0];
@@ -1554,7 +1009,7 @@
             const newFont: ProvidedFont = { name: fileName, content: reader.result as string };
             providedFonts.push(newFont);
             providedFonts = providedFonts;
-            save();
+            saveState();
         });
         reader.readAsDataURL(file);
     }
@@ -1568,10 +1023,10 @@
             const d = finishedElem.getAttribute("d");
             if (!d) return;
             attachListeners();
-            const pathIndex = providedPaths.length;
+            const pathIndex = commonState.providedPaths.length;
             const id = `path-${pathIndex}`;
             finishedElem.setAttribute("id", id);
-            providedPaths.push({ d: parseAndUnprojectPath(d, projection) });
+            commonState.providedPaths.push({ d: parseAndUnprojectPath(d, appState.projection!) });
             saveDebounced();
             setTimeout(() => {
                 isDrawingPath = false;
@@ -1608,34 +1063,34 @@
         paths.forEach((pathElem) => {
             const d = pathElem.getAttribute("d");
             if (!d) return;
-            const parsed = parseAndUnprojectPath(d, projection);
+            const parsed = parseAndUnprojectPath(d, appState.projection!);
             unprojected.push(parsed);
             console.log(parsed);
         });
         if (unprojected.length) freeHandDrawings.push(unprojected);
     }
 
-    function handleChangeProp(event: CustomEvent<{ prop: string; value: unknown }>): void {
-        if (firstDraw) return;
-        const { prop, value } = event.detail;
-        if (positionVars.includes(prop)) {
-            // @ts-expect-error
-            inlinePropsMacro[prop] = value;
-        }
-        if (prop === "projection" || prop === "fieldOfView") {
-            changeAltitudeScale();
-        }
-        if (prop === "projection") {
-            inlinePropsMacro.translateX = 0;
-            inlinePropsMacro.translateY = 0;
-        }
-        if (prop === "height") {
-            Object.keys(legendDefs).forEach((tab) => {
-                legendDefs[tab].y = (value as number) - 100;
-            });
-        }
-        redrawThrottle(prop);
-    }
+    // function handleChangeProp(event: CustomEvent<{ prop: string; value: unknown }>): void {
+    //     if (firstDraw) return;
+    //     const { prop, value } = event.detail;
+    //     if (positionVars.includes(prop)) {
+    //         // @ts-expect-error
+    //         inlinePropsMacro[prop] = value;
+    //     }
+    //     if (prop === "projection" || prop === "fieldOfView") {
+    //         changeAltitudeScale();
+    //     }
+    //     if (prop === "projection") {
+    //         inlinePropsMacro.translateX = 0;
+    //         inlinePropsMacro.translateY = 0;
+    //     }
+    //     if (prop === "height") {
+    //         Object.keys(legendDefs).forEach((tab) => {
+    //             legendDefs[tab].y = (value as number) - 100;
+    //         });
+    //     }
+    //     redrawThrottle(prop);
+    // }
 
     function closeMenu(): void {
         contextualMenu.style.display = "none";
@@ -1670,17 +1125,17 @@
     function validateLabel(): void {
         if (typedText.length) {
             if (editedLabelId) {
-                const labelDef = providedShapes.find((def) => def.id === editedLabelId)!;
+                const labelDef = commonState.providedShapes.find((def) => def.id === editedLabelId)!;
                 labelDef.text = typedText;
             } else {
                 const labelId = `label-${shapeCount++}`;
-                providedShapes.push({
+                commonState.providedShapes.push({
                     pos: openContextMenuInfo.position,
                     scale: 1,
                     id: labelId,
                     text: typedText,
                 });
-                inlineStyles[labelId] = { ...lastUsedLabelProps };
+                commonState.inlineStyles[labelId] = { ...commonState.lastUsedLabelProps };
             }
             typedText = "";
         }
@@ -1691,14 +1146,14 @@
     function drawAndSetupShapes(): void {
         const container = document.getElementById("points-labels");
         if (!container) return;
-        drawShapes(providedShapes, container, projection, save);
+        drawShapes(commonState.providedShapes, container, appState.projection!, saveState);
         select(container).on("dblclick", (e) => {
             const target = e.target;
             let targetId = target.getAttribute("id");
             if (target.tagName == "tspan") targetId = target.parentNode.getAttribute("id");
             if (targetId.includes("label")) {
                 editedLabelId = targetId;
-                const labelDef = providedShapes.find((def) => def.id === editedLabelId)!;
+                const labelDef = commonState.providedShapes.find((def) => def.id === editedLabelId)!;
                 typedText = labelDef.text!;
                 addLabel();
                 showMenu(e);
@@ -1723,7 +1178,7 @@
     function showMenu(e: MouseEvent, target: EventTarget | null = null): void {
         openContextMenuInfo = {
             event: e,
-            position: projection.invert!(pointer(e))!,
+            position: appState.projection!.invert!(pointer(e))!,
             target: (target ? target : e.target) as SVGPathElement,
         };
         contextualMenu.opened = true;
@@ -1734,7 +1189,7 @@
 
     async function addShape(shapeName: ShapeName): Promise<void> {
         const shapeId = `${shapeName}-${shapeCount++}`;
-        providedShapes.push({
+        commonState.providedShapes.push({
             name: shapeName,
             pos: openContextMenuInfo.position,
             scale: 1,
@@ -1744,7 +1199,9 @@
         closeMenu();
         await tick();
         setTimeout(() => {
-            const lastShape = document.getElementById(providedShapes[providedShapes.length - 1].id)!;
+            const lastShape = document.getElementById(
+                commonState.providedShapes[commonState.providedShapes.length - 1].id,
+            )!;
             styleEditor.open(lastShape, openContextMenuInfo.event.pageX, openContextMenuInfo.event.pageY);
         }, 0);
     }
@@ -1754,133 +1211,120 @@
         if (openContextMenuInfo.target.tagName === "tspan") {
             objectId = (openContextMenuInfo.target.parentNode as HTMLElement).getAttribute("id");
         }
-        const newDef: ShapeDefinition = { ...providedShapes.find((def) => def.id === objectId)! };
-        const projected = projection(newDef.pos)!;
-        newDef.pos = projection.invert!([projected[0] - 10, projected[1]])!;
+        const newDef: ShapeDefinition = { ...commonState.providedShapes.find((def) => def.id === objectId)! };
+        const projected = appState.projection!(newDef.pos)!;
+        newDef.pos = appState.projection!.invert!([projected[0] - 10, projected[1]])!;
         const newShapeId = `${newDef.name ? newDef.name : "label"}-${shapeCount++}`;
-        inlineStyles[newShapeId] = { ...inlineStyles[newDef.id] };
+        commonState.inlineStyles[newShapeId] = { ...commonState.inlineStyles[newDef.id] };
         newDef.id = newShapeId;
-        providedShapes.push(newDef);
+        commonState.providedShapes.push(newDef);
         drawAndSetupShapes();
         closeMenu();
     }
 
     function deleteSelection(): void {
         let pointId = openContextMenuInfo.target.getAttribute("id")!;
-        delete inlineStyles[pointId];
+        delete commonState.inlineStyles[pointId];
         if (openContextMenuInfo.target.tagName === "tspan") {
             pointId = (openContextMenuInfo.target.parentNode as HTMLElement).getAttribute("id")!;
-            delete inlineStyles[pointId];
+            delete commonState.inlineStyles[pointId];
         }
-        providedShapes = providedShapes.filter((def) => def.id !== pointId);
+        commonState.providedShapes = commonState.providedShapes.filter((def) => def.id !== pointId);
         drawAndSetupShapes();
         closeMenu();
     }
 
-    const onModalClose = () => {
-        showModal = false;
-    };
+    // const onModalClose = () => {
+    //     showModal = false;
+    // };
 
-    function exportJson(data: any): void {
-        download(JSON.stringify(data, null, "\t"), "text/json", "data.json");
-    }
+    // function exportJson(data: any): void {
+    //     download(JSON.stringify(data, null, "\t"), "text/json", "data.json");
+    // }
 
-    function getZonesDataFormatters(): void {
-        Object.entries(zonesData).forEach(([name, def]) => {
-            const locale = tooltipDefs[name].locale;
-            const formatters: FormatterObject = {};
-            if (def.numericCols.length) {
-                def.numericCols.forEach((colDef) => {
-                    const col = colDef.column;
-                    formatters[col] = getBestFormatter(
-                        def.data.map((row) => row[col] as number),
-                        resolvedLocales[locale],
-                    );
-                });
-            }
-            zonesData[name].formatters = formatters;
-        });
-    }
+    // function getZonesDataFormatters(): void {
+    //     Object.entries(zonesData).forEach(([name, def]) => {
+    //         const locale = tooltipDefs[name].locale;
+    //         const formatters: FormatterObject = {};
+    //         if (def.numericCols.length) {
+    //             def.numericCols.forEach((colDef) => {
+    //                 const col = colDef.column;
+    //                 formatters[col] = getBestFormatter(
+    //                     def.data.map((row) => row[col] as number),
+    //                     resolvedLocales[locale],
+    //                 );
+    //             });
+    //         }
+    //         zonesData[name].formatters = formatters;
+    //     });
+    // }
 
-    function handleDataImport(e: Event): void {
-        const file = (e.target as HTMLInputElement).files![0];
-        const reader = new FileReader();
-        reader.addEventListener("load", () => {
-            try {
-                let parsed = JSON.parse(reader.result as string);
-                const currentNames = new Set<string | undefined>(
-                    zonesData[currentMacroLayerTab].data.map((line) => line.name),
-                );
-                currentNames.delete(undefined);
-                if (!Array.isArray(parsed)) {
-                    return window.alert("JSON should be a list of objects, each object reprensenting a line.");
-                }
-                const noNameLinesMsg = parsed.reduce((errorMsg, entry, index) => {
-                    if (entry.name === undefined) {
-                        errorMsg += `Entry ${index} is ${JSON.stringify(entry)} \n`;
-                    }
-                    return errorMsg;
-                }, "");
-                if (parsed.some((line) => line.name === undefined)) {
-                    return window.alert(`All lines should have a 'name' property \n${noNameLinesMsg}`);
-                }
-                const newNames = new Set(parsed.map((line) => line.name));
-                const difference = new Set([...currentNames].filter((x) => !newNames.has(x)));
-                if (difference.size) {
-                    return window.alert(`Missing names ${[...difference]}`);
-                }
-                zonesData[currentMacroLayerTab] = {
-                    data: parsed,
-                    provided: true,
-                    numericCols: getNumericCols(parsed),
-                };
-                getZonesDataFormatters();
-                autoSelectColors();
-                save();
-            } catch (e) {
-                console.log("Parse error:", e);
-                window.alert("Provided file should be valid JSON.");
-            }
-        });
-        reader.readAsText(file);
-    }
-
-    function defaultTooltipContent(isCountry: boolean): string {
-        return `<div>
-    <span> ${isCountry ? "Country" : "Region"}: {name}</span>
-</div>
-    `;
-    }
-
-    function defaultTooltipFull(template: string): string {
-        return `<div id="tooltip-preview" style="${defaultTooltipStyle}">
-        ${template}
-    </div>`;
-    }
+    // function handleDataImport(e: Event): void {
+    //     const file = (e.target as HTMLInputElement).files![0];
+    //     const reader = new FileReader();
+    //     reader.addEventListener("load", () => {
+    //         try {
+    //             let parsed = JSON.parse(reader.result as string);
+    //             const currentNames = new Set<string | undefined>(
+    //                 zonesData[currentMacroLayerTab].data.map((line) => line.name),
+    //             );
+    //             currentNames.delete(undefined);
+    //             if (!Array.isArray(parsed)) {
+    //                 return window.alert("JSON should be a list of objects, each object reprensenting a line.");
+    //             }
+    //             const noNameLinesMsg = parsed.reduce((errorMsg, entry, index) => {
+    //                 if (entry.name === undefined) {
+    //                     errorMsg += `Entry ${index} is ${JSON.stringify(entry)} \n`;
+    //                 }
+    //                 return errorMsg;
+    //             }, "");
+    //             if (parsed.some((line) => line.name === undefined)) {
+    //                 return window.alert(`All lines should have a 'name' property \n${noNameLinesMsg}`);
+    //             }
+    //             const newNames = new Set(parsed.map((line) => line.name));
+    //             const difference = new Set([...currentNames].filter((x) => !newNames.has(x)));
+    //             if (difference.size) {
+    //                 return window.alert(`Missing names ${[...difference]}`);
+    //             }
+    //             zonesData[currentMacroLayerTab] = {
+    //                 data: parsed,
+    //                 provided: true,
+    //                 numericCols: getNumericCols(parsed),
+    //             };
+    //             getZonesDataFormatters();
+    //             autoSelectColors();
+    //             save();
+    //         } catch (e) {
+    //             console.log("Parse error:", e);
+    //             window.alert("Provided file should be valid JSON.");
+    //         }
+    //     });
+    //     reader.readAsText(file);
+    // }
 
     // function editTooltip(e: MouseEvent): void {
     //     const rect = (e.target as HTMLElement).getBoundingClientRect();
     //     styleEditor.open(e.target as HTMLElement, rect.right, rect.bottom);
     // }
 
-    let templateErrorMessages: Record<string, boolean> = {};
-    function onTemplateChange(): void {
-        const parsed = DOM_PARSER.parseFromString(tooltipDefs[currentMacroLayerTab].template, "application/xml");
-        const errorNode = parsed.querySelector("parsererror");
-        if (errorNode) {
-            templateErrorMessages[currentMacroLayerTab] = true;
-        } else {
-            tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem.outerHTML;
-            currentTemplateHasNumeric = templateHasNumeric(currentMacroLayerTab);
-            delete templateErrorMessages[currentMacroLayerTab];
-        }
-        save();
-    }
+    // let templateErrorMessages: Record<string, boolean> = {};
+    // function onTemplateChange(): void {
+    //     const parsed = DOM_PARSER.parseFromString(tooltipDefs[currentMacroLayerTab].template, "application/xml");
+    //     const errorNode = parsed.querySelector("parsererror");
+    //     if (errorNode) {
+    //         templateErrorMessages[currentMacroLayerTab] = true;
+    //     } else {
+    //         tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem.outerHTML;
+    //         currentTemplateHasNumeric = templateHasNumeric(currentMacroLayerTab);
+    //         delete templateErrorMessages[currentMacroLayerTab];
+    //     }
+    //     save();
+    // }
 
-    function changeNumericFormatter(): void {
-        getZonesDataFormatters();
-        colorizeAndLegend();
-    }
+    // function changeNumericFormatter(): void {
+    //     getZonesDataFormatters();
+    //     colorizeAndLegend();
+    // }
 
     // async function onTabChanged(newTabTitle: string): Promise<void> {
     //     currentMacroLayerTab = newTabTitle;
@@ -1901,92 +1345,92 @@
     //     }
     // }
 
-    async function addNewCountry(e: Event): Promise<void> {
-        const target = e.target as HTMLSelectElement;
-        const newLayerName = target.value;
-        if (chosenCountriesAdm.includes(newLayerName)) return;
-        let searchedAdm;
-        if (newLayerName.slice(-1) === "1") searchedAdm = newLayerName.replace("ADM1", "ADM2");
-        else searchedAdm = newLayerName.replace("ADM2", "ADM1");
-        const existingIndex = chosenCountriesAdm.indexOf(searchedAdm);
-        if (existingIndex > -1) {
-            deleteCountry(searchedAdm, false);
-        }
-        chosenCountriesAdm.push(newLayerName);
-        orderedTabs.push(newLayerName);
-        chosenCountriesAdm = chosenCountriesAdm;
-        orderedTabs = orderedTabs;
-        target.selectedIndex = 0;
-        await draw();
-        onTabChanged(newLayerName);
-    }
+    // async function addNewCountry(e: Event): Promise<void> {
+    //     const target = e.target as HTMLSelectElement;
+    //     const newLayerName = target.value;
+    //     if (chosenCountriesAdm.includes(newLayerName)) return;
+    //     let searchedAdm;
+    //     if (newLayerName.slice(-1) === "1") searchedAdm = newLayerName.replace("ADM1", "ADM2");
+    //     else searchedAdm = newLayerName.replace("ADM2", "ADM1");
+    //     const existingIndex = chosenCountriesAdm.indexOf(searchedAdm);
+    //     if (existingIndex > -1) {
+    //         deleteCountry(searchedAdm, false);
+    //     }
+    //     chosenCountriesAdm.push(newLayerName);
+    //     orderedTabs.push(newLayerName);
+    //     chosenCountriesAdm = chosenCountriesAdm;
+    //     orderedTabs = orderedTabs;
+    //     target.selectedIndex = 0;
+    //     await draw();
+    //     onTabChanged(newLayerName);
+    // }
 
-    function deleteCountry(country: string, drawAfter = true): void {
-        chosenCountriesAdm = chosenCountriesAdm.filter((x) => x !== country);
-        orderedTabs = orderedTabs.filter((x) => x !== country);
-        currentMacroLayerTab = orderedTabs[0];
-        delete tooltipDefs[country];
-        delete legendDefs[country];
-        delete colorDataDefs[country];
-        delete zonesData[country];
-        if (drawAfter) draw();
-    }
+    // function deleteCountry(country: string, drawAfter = true): void {
+    //     chosenCountriesAdm = chosenCountriesAdm.filter((x) => x !== country);
+    //     orderedTabs = orderedTabs.filter((x) => x !== country);
+    //     currentMacroLayerTab = orderedTabs[0];
+    //     delete tooltipDefs[country];
+    //     delete legendDefs[country];
+    //     delete colorDataDefs[country];
+    //     delete zonesData[country];
+    //     if (drawAfter) draw();
+    // }
 
     // === Drag and drop behaviour ===
 
-    let hoveringTab: number | null = null;
-    let dragStartIndex = 0;
+    // let hoveringTab: number | null = null;
+    // let dragStartIndex = 0;
 
-    function drop(event: DragEvent, target: number): void {
-        event.dataTransfer!.dropEffect = "move";
-        const newList = orderedTabs;
+    // function drop(event: DragEvent, target: number): void {
+    //     event.dataTransfer!.dropEffect = "move";
+    //     const newList = orderedTabs;
 
-        if (dragStartIndex < target) {
-            newList.splice(target + 1, 0, newList[dragStartIndex]);
-            newList.splice(dragStartIndex, 1);
-        } else {
-            newList.splice(target, 0, newList[dragStartIndex]);
-            newList.splice(dragStartIndex + 1, 1);
-        }
-        orderedTabs = newList;
-        hoveringTab = null;
-        draw();
-    }
+    //     if (dragStartIndex < target) {
+    //         newList.splice(target + 1, 0, newList[dragStartIndex]);
+    //         newList.splice(dragStartIndex, 1);
+    //     } else {
+    //         newList.splice(target, 0, newList[dragStartIndex]);
+    //         newList.splice(dragStartIndex + 1, 1);
+    //     }
+    //     orderedTabs = newList;
+    //     hoveringTab = null;
+    //     draw();
+    // }
 
-    function dragstart(event: DragEvent, i: number, prevent = false): void {
-        if (prevent) {
-            return event.preventDefault();
-        }
-        event.dataTransfer!.effectAllowed = "move";
-        event.dataTransfer!.dropEffect = "move";
-        dragStartIndex = i;
-    }
+    // function dragstart(event: DragEvent, i: number, prevent = false): void {
+    //     if (prevent) {
+    //         return event.preventDefault();
+    //     }
+    //     event.dataTransfer!.effectAllowed = "move";
+    //     event.dataTransfer!.dropEffect = "move";
+    //     dragStartIndex = i;
+    // }
 
     function validateExport(): void {
         const formData = Object.fromEntries(new FormData(exportForm).entries());
         console.log("formData", formData);
-        if (currentMode === "macro") {
-            exportSvg(
-                svg,
-                p("width"),
-                p("height"),
-                tooltipDefs,
-                chosenCountriesAdm,
-                zonesData,
-                providedFonts,
-                true,
-                totalCommonCss,
-                p("animate"),
-                formData,
-            );
-            fetch("/exportSvgMacro");
-        } else {
-            const attributionColor = microLayerDefinitions["road-network"]["stroke"] ?? "#aaa";
-            console.log("attributionColor=", attributionColor);
-            exportMicro(svg, microParams, providedFonts, totalCommonCss, p("animate"), attributionColor, formData);
-            fetch("/exportSvgMicro");
-        }
-        showExportConfirm = false;
+        // if (commonState.currentMode === "macro") {
+        //     exportSvg(
+        //         svg,
+        //         p("width"),
+        //         p("height"),
+        //         tooltipDefs,
+        //         chosenCountriesAdm,
+        //         zonesData,
+        //         providedFonts,
+        //         true,
+        //         totalCommonCss,
+        //         p("animate"),
+        //         formData,
+        //     );
+        //     fetch("/exportSvgMacro");
+        // } else {
+        //     const attributionColor = microLayerDefinitions["road-network"]["stroke"] ?? "#aaa";
+        //     console.log("attributionColor=", attributionColor);
+        //     exportMicro(svg, microParams, providedFonts, totalCommonCss, p("animate"), attributionColor, formData);
+        //     fetch("/exportSvgMicro");
+        // }
+        // showExportConfirm = false;
     }
 
     let inlineFontUsed = false;
@@ -1994,7 +1438,7 @@
         const usedFonts = getUsedInlineFonts(svg.node()!);
         const usedProvidedFonts = providedFonts.filter((font) => usedFonts.has(font.name));
         inlineFontUsed = usedProvidedFonts.length > 0;
-        if (currentMode === "micro" && !inlineFontUsed) {
+        if (commonState.currentMode === "micro" && !inlineFontUsed) {
             validateExport();
             return;
         }
@@ -2003,202 +1447,202 @@
     // === Colorize by data behaviour ===
 
     // --- Computed ---
-    let availableColumns: string[] = [],
-        availablePalettes: string[] = [];
-    $: availableColorTypes = zonesData?.[currentMacroLayerTab]?.numericCols?.length
-        ? ["category", "quantile", "quantize"]
-        : ["category"];
-    $: curDataDefs = colorDataDefs?.[currentMacroLayerTab];
-    let currentIsColorByNumeric = ["quantile", "quantize"].includes(curDataDefs?.colorScale);
+    // let availableColumns: string[] = [],
+    //     availablePalettes: string[] = [];
+    // $: availableColorTypes = zonesData?.[currentMacroLayerTab]?.numericCols?.length
+    //     ? ["category", "quantile", "quantize"]
+    //     : ["category"];
+    // $: curDataDefs = colorDataDefs?.[currentMacroLayerTab];
+    // let currentIsColorByNumeric = ["quantile", "quantize"].includes(curDataDefs?.colorScale);
 
-    function autoSelectColors() {
-        if (!zonesData[currentMacroLayerTab]) return;
-        if (curDataDefs.colorScale === null) {
-            if (curDataDefs.colorColumn !== null) {
-                if (zonesData[currentMacroLayerTab].numericCols.find((x) => x.column === curDataDefs.colorColumn)) {
-                    curDataDefs.colorScale = "quantile";
-                } else curDataDefs.colorScale = "category";
-            } else curDataDefs.colorScale = "category";
-        }
-        availableColumns =
-            curDataDefs.colorScale === "category"
-                ? getColumns(zonesData[currentMacroLayerTab].data)
-                : zonesData?.[currentMacroLayerTab]?.numericCols.map((x) => x.column);
-        availablePalettes =
-            curDataDefs.colorScale === "category" ? Object.keys(CATEGORICAL_SCHEMES) : Object.keys(CONTINUOUS_SCHEMES);
-        if (!availableColumns.includes(curDataDefs.colorColumn)) {
-            curDataDefs.colorColumn = availableColumns[0];
-        }
-        if (!availablePalettes.includes(curDataDefs.colorPalette!))
-            curDataDefs.colorPalette = availablePalettes[0] as AnyScaleKey;
-        if (svg) colorizeAndLegend();
-    }
+    // function autoSelectColors() {
+    //     if (!zonesData[currentMacroLayerTab]) return;
+    //     if (curDataDefs.colorScale === null) {
+    //         if (curDataDefs.colorColumn !== null) {
+    //             if (zonesData[currentMacroLayerTab].numericCols.find((x) => x.column === curDataDefs.colorColumn)) {
+    //                 curDataDefs.colorScale = "quantile";
+    //             } else curDataDefs.colorScale = "category";
+    //         } else curDataDefs.colorScale = "category";
+    //     }
+    //     availableColumns =
+    //         curDataDefs.colorScale === "category"
+    //             ? getColumns(zonesData[currentMacroLayerTab].data)
+    //             : zonesData?.[currentMacroLayerTab]?.numericCols.map((x) => x.column);
+    //     availablePalettes =
+    //         curDataDefs.colorScale === "category" ? Object.keys(CATEGORICAL_SCHEMES) : Object.keys(CONTINUOUS_SCHEMES);
+    //     if (!availableColumns.includes(curDataDefs.colorColumn)) {
+    //         curDataDefs.colorColumn = availableColumns[0];
+    //     }
+    //     if (!availablePalettes.includes(curDataDefs.colorPalette!))
+    //         curDataDefs.colorPalette = availablePalettes[0] as AnyScaleKey;
+    //     if (svg) colorizeAndLegend();
+    // }
 
-    $: if (colorDataDefs?.[currentMacroLayerTab]) {
-        const x = { ...colorDataDefs[currentMacroLayerTab] };
-        console.log(x);
-        // TODO: test this works
-        autoSelectColors();
-    }
+    // $: if (colorDataDefs?.[currentMacroLayerTab]) {
+    //     const x = { ...colorDataDefs[currentMacroLayerTab] };
+    //     console.log(x);
+    //     // TODO: test this works
+    //     autoSelectColors();
+    // }
 
-    const colorsCssByTab: Record<string, string> = {};
-    let legendSample: SVGGElement;
-    let displayedLegend: Record<string, SvgGSelection> = {};
-    let sampleLegend = {
-        color: "black",
-        text: "test",
-    };
-    let showCustomPalette = false;
-    // tab => {x => color} used for custom palette
-    const ordinalMapping: OrdinalMapping = {};
-    async function colorizeAndLegend(e?: Event): Promise<void> {
-        await tick();
-        initTooltips();
-        legendDefs = legendDefs;
-        const legendEntries = select("#svg-map-legend");
-        if (!legendEntries.empty()) legendEntries.remove();
-        const legendSelection = svg.select("svg").append("g").attr("id", "svg-map-legend") as SvgGSelection;
-        Object.entries(colorDataDefs).forEach(([tab, dataColorDef], tabIndex) => {
-            if (!zonesData[tab]) return;
-            if (!legendDefs[tab].noData.manual) legendDefs[tab].noData.active = false;
-            // reset present classes
-            document.querySelectorAll(`g[id="${tab}"] [class*="ssc"]`).forEach((el) => {
-                [...el.classList].forEach((cls) => {
-                    if (cls.includes("ssc")) el.classList.remove(cls);
-                });
-            });
-            if (!dataColorDef.enabled) {
-                dataColorDef.legendEnabled = false;
-                colorsCssByTab[tab] = "";
-                if (displayedLegend[tab]) displayedLegend[tab].remove();
-                zonesData[tab].data.forEach((row) => {
-                    const d = row[dataColorDef.colorColumn];
-                    const key = row.name;
-                    const elem = document.querySelector(`g[id="${tab}"] [id="${key}"]`);
-                    if (!elem) return;
-                    [...elem.classList].forEach((cls) => {
-                        if (cls.includes("ssc")) elem.classList.remove(cls);
-                    });
-                });
-                return;
-            }
-            const paletteName = dataColorDef.colorPalette;
-            // filter out undef or null data
-            const data = zonesData[tab].data.reduce<(string | number)[]>((acc, row) => {
-                const d = row[dataColorDef.colorColumn];
-                if (d === null || d === undefined) {
-                    if (!legendDefs[tab].noData.manual) legendDefs[tab].noData.active = true;
-                    return acc;
-                }
-                acc.push(d);
-                return acc;
-            }, []);
-            let scale: ColorScale;
-            if (dataColorDef.colorScale === "category") {
-                if (dataColorDef.colorPalette === "Custom") {
-                    ordinalMapping[tab] = {};
-                    scale = scaleOrdinal(customCategoricalPalette);
-                } else scale = scaleOrdinal(CATEGORICAL_SCHEMES[paletteName as CategoricalScaleKey]);
-            } else if (dataColorDef.colorScale === "quantile") {
-                scale = scaleQuantile<string, number>()
-                    .domain(data as number[])
-                    .range(CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks]);
-            } else if (dataColorDef.colorScale === "quantize") {
-                const dataExtent = extent(data as number[]) as [number, number];
-                scale = scaleQuantize<string, number>()
-                    .domain(dataExtent)
-                    .range(CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks]);
-            }
-            const usedColors: Color[] = [];
-            zonesData[tab].data.forEach((row) => {
-                const d = row[dataColorDef.colorColumn];
-                const key = row.name;
-                const elem = document.querySelector(`g[id="${tab}"] [id="${key}"]`);
-                if (!elem) return;
-                let color: Color;
-                if (d === null || d === undefined) {
-                    color = legendDefs[tab].noData.color;
-                } else {
-                    // @ts-expect-error
-                    color = scale(d) as Color;
-                    if (ordinalMapping[tab]) {
-                        if (!ordinalMapping[tab][color]) ordinalMapping[tab][color] = new Set([d as string]);
-                        else ordinalMapping[tab][color].add(d as string);
-                    }
-                }
-                if (!usedColors.includes(color)) usedColors.push(color);
-                const cssClass = `ssc-${tabIndex}-${usedColors.indexOf(color)}`;
+    // const colorsCssByTab: Record<string, string> = {};
+    // let legendSample: SVGGElement;
+    // let displayedLegend: Record<string, SvgGSelection> = {};
+    // let sampleLegend = {
+    //     color: "black",
+    //     text: "test",
+    // };
+    // let showCustomPalette = false;
+    // // tab => {x => color} used for custom palette
+    // const ordinalMapping: OrdinalMapping = {};
+    // async function colorizeAndLegend(e?: Event): Promise<void> {
+    //     await tick();
+    //     initTooltips();
+    //     legendDefs = legendDefs;
+    //     const legendEntries = select("#svg-map-legend");
+    //     if (!legendEntries.empty()) legendEntries.remove();
+    //     const legendSelection = svg.select("svg").append("g").attr("id", "svg-map-legend") as SvgGSelection;
+    //     Object.entries(colorDataDefs).forEach(([tab, dataColorDef], tabIndex) => {
+    //         if (!zonesData[tab]) return;
+    //         if (!legendDefs[tab].noData.manual) legendDefs[tab].noData.active = false;
+    //         // reset present classes
+    //         document.querySelectorAll(`g[id="${tab}"] [class*="ssc"]`).forEach((el) => {
+    //             [...el.classList].forEach((cls) => {
+    //                 if (cls.includes("ssc")) el.classList.remove(cls);
+    //             });
+    //         });
+    //         if (!dataColorDef.enabled) {
+    //             dataColorDef.legendEnabled = false;
+    //             colorsCssByTab[tab] = "";
+    //             if (displayedLegend[tab]) displayedLegend[tab].remove();
+    //             zonesData[tab].data.forEach((row) => {
+    //                 const d = row[dataColorDef.colorColumn];
+    //                 const key = row.name;
+    //                 const elem = document.querySelector(`g[id="${tab}"] [id="${key}"]`);
+    //                 if (!elem) return;
+    //                 [...elem.classList].forEach((cls) => {
+    //                     if (cls.includes("ssc")) elem.classList.remove(cls);
+    //                 });
+    //             });
+    //             return;
+    //         }
+    //         const paletteName = dataColorDef.colorPalette;
+    //         // filter out undef or null data
+    //         const data = zonesData[tab].data.reduce<(string | number)[]>((acc, row) => {
+    //             const d = row[dataColorDef.colorColumn];
+    //             if (d === null || d === undefined) {
+    //                 if (!legendDefs[tab].noData.manual) legendDefs[tab].noData.active = true;
+    //                 return acc;
+    //             }
+    //             acc.push(d);
+    //             return acc;
+    //         }, []);
+    //         let scale: ColorScale;
+    //         if (dataColorDef.colorScale === "category") {
+    //             if (dataColorDef.colorPalette === "Custom") {
+    //                 ordinalMapping[tab] = {};
+    //                 scale = scaleOrdinal(customCategoricalPalette);
+    //             } else scale = scaleOrdinal(CATEGORICAL_SCHEMES[paletteName as CategoricalScaleKey]);
+    //         } else if (dataColorDef.colorScale === "quantile") {
+    //             scale = scaleQuantile<string, number>()
+    //                 .domain(data as number[])
+    //                 .range(CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks]);
+    //         } else if (dataColorDef.colorScale === "quantize") {
+    //             const dataExtent = extent(data as number[]) as [number, number];
+    //             scale = scaleQuantize<string, number>()
+    //                 .domain(dataExtent)
+    //                 .range(CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks]);
+    //         }
+    //         const usedColors: Color[] = [];
+    //         zonesData[tab].data.forEach((row) => {
+    //             const d = row[dataColorDef.colorColumn];
+    //             const key = row.name;
+    //             const elem = document.querySelector(`g[id="${tab}"] [id="${key}"]`);
+    //             if (!elem) return;
+    //             let color: Color;
+    //             if (d === null || d === undefined) {
+    //                 color = legendDefs[tab].noData.color;
+    //             } else {
+    //                 // @ts-expect-error
+    //                 color = scale(d) as Color;
+    //                 if (ordinalMapping[tab]) {
+    //                     if (!ordinalMapping[tab][color]) ordinalMapping[tab][color] = new Set([d as string]);
+    //                     else ordinalMapping[tab][color].add(d as string);
+    //                 }
+    //             }
+    //             if (!usedColors.includes(color)) usedColors.push(color);
+    //             const cssClass = `ssc-${tabIndex}-${usedColors.indexOf(color)}`;
 
-                elem.classList.add(cssClass);
-            });
-            let newCss = "";
-            usedColors.forEach((color, i) => {
-                newCss += `path.ssc-${tabIndex}-${i}{fill:${color};}
-            path.ssc-${tabIndex}-${i}.hovered{fill:${d3Color(color)!.brighter(0.2).hex()};}`;
-            });
-            colorsCssByTab[tab] = newCss;
-            const legendColors = getLegendColors(dataColorDef, tab, scale!, data);
-            if (!legendColors) return;
-            if (tab === currentMacroLayerTab)
-                sampleLegend = {
-                    color: legendColors[0][0],
-                    text: legendColors[0][1],
-                };
-            const sampleElem = htmlToElement<SVGSVGElement>(legendDefs[tab].sampleHtml!)!;
-            displayedLegend[tab] = drawLegend(
-                legendSelection,
-                legendDefs[tab],
-                legendColors,
-                dataColorDef.colorScale === "category",
-                sampleElem,
-                tab,
-                saveDebounced,
-                applyInlineStyles,
-            );
-        });
-        computeCss();
-        applyInlineStyles();
-        applyStylesToTemplate();
-    }
+    //             elem.classList.add(cssClass);
+    //         });
+    //         let newCss = "";
+    //         usedColors.forEach((color, i) => {
+    //             newCss += `path.ssc-${tabIndex}-${i}{fill:${color};}
+    //         path.ssc-${tabIndex}-${i}.hovered{fill:${d3Color(color)!.brighter(0.2).hex()};}`;
+    //         });
+    //         colorsCssByTab[tab] = newCss;
+    //         const legendColors = getLegendColors(dataColorDef, tab, scale!, data);
+    //         if (!legendColors) return;
+    //         if (tab === currentMacroLayerTab)
+    //             sampleLegend = {
+    //                 color: legendColors[0][0],
+    //                 text: legendColors[0][1],
+    //             };
+    //         const sampleElem = htmlToElement<SVGSVGElement>(legendDefs[tab].sampleHtml!)!;
+    //         displayedLegend[tab] = drawLegend(
+    //             legendSelection,
+    //             legendDefs[tab],
+    //             legendColors,
+    //             dataColorDef.colorScale === "category",
+    //             sampleElem,
+    //             tab,
+    //             saveDebounced,
+    //             applyInlineStyles,
+    //         );
+    //     });
+    //     computeCss();
+    //     applyInlineStyles();
+    //     applyStylesToTemplate();
+    // }
 
     // ==== Legend ===
 
-    function getLegendColors(
-        dataColorDef: ColorDef,
-        tab: string,
-        scale: ColorScale,
-        data: (string | number)[],
-    ): LegendColor[] | undefined {
-        if (!dataColorDef.legendEnabled) {
-            if (displayedLegend[tab]) displayedLegend[tab].remove();
-            return;
-        }
-        if (legendSample && legendDefs[tab].sampleHtml === null) legendDefs[tab].sampleHtml = legendSample.outerHTML;
-        if (legendDefs[tab].title === null) legendDefs[tab].title = dataColorDef.colorColumn;
-        let threshValues: number[];
-        let formatter = (x: number | string) => x;
-        if (dataColorDef.colorScale === "category") {
-            threshValues = [...new Set(data as number[])];
-        } else {
-            // @ts-expect-error
-            formatter = d3
-                .formatLocale(resolvedLocales[tooltipDefs[tab].locale])
-                .format(`,.${legendDefs[tab].significantDigits}r`);
-            const minValue = Math.min(...(data as number[]));
-            const scaleQuantile = scale as d3.ScaleQuantile<string, number>;
-            const scaleQuantize = scale as d3.ScaleQuantize<string, number>;
-            if (scaleQuantile.quantiles) threshValues = scaleQuantile.quantiles();
-            else if (scaleQuantize.thresholds) threshValues = scaleQuantize.thresholds();
-            threshValues!.unshift(minValue);
-        }
-        const legendColors = threshValues!.reduce((acc, cur) => {
-            // @ts-expect-error
-            acc.push([scale(cur) as Color, formatter(cur)]);
-            return acc;
-        }, [] as LegendColor[]);
-        if (legendDefs[tab].direction === "v") return legendColors.reverse();
-        return legendColors;
-    }
+    // function getLegendColors(
+    //     dataColorDef: ColorDef,
+    //     tab: string,
+    //     scale: ColorScale,
+    //     data: (string | number)[],
+    // ): LegendColor[] | undefined {
+    //     if (!dataColorDef.legendEnabled) {
+    //         if (displayedLegend[tab]) displayedLegend[tab].remove();
+    //         return;
+    //     }
+    //     if (legendSample && legendDefs[tab].sampleHtml === null) legendDefs[tab].sampleHtml = legendSample.outerHTML;
+    //     if (legendDefs[tab].title === null) legendDefs[tab].title = dataColorDef.colorColumn;
+    //     let threshValues: number[];
+    //     let formatter = (x: number | string) => x;
+    //     if (dataColorDef.colorScale === "category") {
+    //         threshValues = [...new Set(data as number[])];
+    //     } else {
+    //         // @ts-expect-error
+    //         formatter = d3
+    //             .formatLocale(resolvedLocales[tooltipDefs[tab].locale])
+    //             .format(`,.${legendDefs[tab].significantDigits}r`);
+    //         const minValue = Math.min(...(data as number[]));
+    //         const scaleQuantile = scale as d3.ScaleQuantile<string, number>;
+    //         const scaleQuantize = scale as d3.ScaleQuantize<string, number>;
+    //         if (scaleQuantile.quantiles) threshValues = scaleQuantile.quantiles();
+    //         else if (scaleQuantize.thresholds) threshValues = scaleQuantize.thresholds();
+    //         threshValues!.unshift(minValue);
+    //     }
+    //     const legendColors = threshValues!.reduce((acc, cur) => {
+    //         // @ts-expect-error
+    //         acc.push([scale(cur) as Color, formatter(cur)]);
+    //         return acc;
+    //     }, [] as LegendColor[]);
+    //     if (legendDefs[tab].direction === "v") return legendColors.reverse();
+    //     return legendColors;
+    // }
 
     // TODO: check menu opened to avoid it being display on page land
 </script>
@@ -2211,29 +1655,29 @@
 <div id="contextmenu" class="border rounded" bind:this={contextualMenu} class:hidden={!contextualMenu?.opened}>
     {#if menuStates.chosingPoint}
         {#each Object.keys(shapes) as shapeName (shapeName)}
-            <div role="button" class="px-2 py-1" on:click={() => addShape(shapeName as ShapeName)}>
+            <div role="button" class="px-2 py-1" onclick={() => addShape(shapeName as ShapeName)}>
                 {shapeName}
             </div>
         {/each}
     {:else if menuStates.addingLabel}
         <input type="text" bind:this={textInput} bind:value={typedText} />
     {:else if menuStates.pointSelected}
-        <div role="button" class="px-2 py-1" on:click={editStyles}>Edit styles</div>
-        <div role="button" class="px-2 py-1" on:click={copySelection}>Copy</div>
-        <div role="button" class="px-2 py-1" on:click={deleteSelection}>Delete</div>
+        <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>
+        <div role="button" class="px-2 py-1" onclick={copySelection}>Copy</div>
+        <div role="button" class="px-2 py-1" onclick={deleteSelection}>Delete</div>
     {:else if menuStates.pathSelected}
-        <div role="button" class="px-2 py-1" on:click={editPath}>Edit path</div>
-        <div role="button" class="px-2 py-1" on:click={editStyles}>Edit style</div>
-        <div role="button" class="px-2 py-1" on:click={deletePath}>Delete path</div>
-        <div role="button" class="px-2 py-1" on:click={addImageToPath}>Image along path</div>
-        <div role="button" class="px-2 py-1" on:click={choseMarker}>Chose marker</div>
+        <div role="button" class="px-2 py-1" onclick={editPath}>Edit path</div>
+        <div role="button" class="px-2 py-1" onclick={editStyles}>Edit style</div>
+        <div role="button" class="px-2 py-1" onclick={deletePath}>Delete path</div>
+        <div role="button" class="px-2 py-1" onclick={addImageToPath}>Image along path</div>
+        <div role="button" class="px-2 py-1" onclick={choseMarker}>Chose marker</div>
     {:else if menuStates.chosingMarker}
         <div class="d-flex">
-            <div role="button" class="px-2 py-1" on:click={() => changeMarker("delete")}>
+            <div role="button" class="px-2 py-1" onclick={() => changeMarker("delete")}>
                 <Icon fillColor="red" svg={icons["trash"]} />
             </div>
             {#each Object.entries(markers) as [markerName, markerDef] (markerName)}
-                <div role="button" class="px-2 py-1" on:click={() => changeMarker(markerName as MarkerName)}>
+                <div role="button" class="px-2 py-1" onclick={() => changeMarker(markerName as MarkerName)}>
                     <svg width="30" height="30" viewBox={`0 0 ${markerDef.width} ${markerDef.height}`}>
                         <path d={markerDef.d} />
                     </svg>
@@ -2244,11 +1688,11 @@
         <div class="d-flex align-items-center">
             <div class="m-1">
                 <label for="image-select" class="m-2 d-flex align-items-center btn btn-sm btn-light">
-                    File: {providedPaths[selectedPathIndex].image?.name || "Import image"}
+                    File: {commonState.providedPaths[selectedPathIndex].image?.name || "Import image"}
                 </label>
-                <input type="file" id="image-select" accept=".png,.jpg,.svg" on:change={importImagePath} />
+                <input type="file" id="image-select" accept=".png,.jpg,.svg" onchange={importImagePath} />
             </div>
-            <div role="button" class="" on:click={deleteImage}>
+            <div role="button" class="" onclick={deleteImage}>
                 <Icon fillColor="red" svg={icons["trash"]} />
             </div>
         </div>
@@ -2259,8 +1703,8 @@
                     id="duration-select"
                     class="form-control form-control-sm"
                     type="number"
-                    value={providedPaths[selectedPathIndex].duration}
-                    on:change={changeDurationAnimation}
+                    value={commonState.providedPaths[selectedPathIndex].duration}
+                    onchange={changeDurationAnimation}
                 />
             </div>
         </div>
@@ -2271,8 +1715,8 @@
                     id="path-img-width"
                     class="form-control form-control-sm"
                     type="number"
-                    value={providedPaths[selectedPathIndex].width}
-                    on:change={changePathImageWidth}
+                    value={commonState.providedPaths[selectedPathIndex].width}
+                    onchange={changePathImageWidth}
                 />
             </div>
         </div>
@@ -2283,17 +1727,17 @@
                     id="path-img-height"
                     class="form-control form-control-sm"
                     type="number"
-                    value={providedPaths[selectedPathIndex].height}
-                    on:change={changePathImageHeight}
+                    value={commonState.providedPaths[selectedPathIndex].height}
+                    onchange={changePathImageHeight}
                 />
             </div>
         </div>
     {:else}
-        <div role="button" class="px-2 py-1" on:click={editStyles}>Edit styles</div>
-        <div role="button" class="px-2 py-1" on:click={addPath}>Draw path</div>
-        <div role="button" class="px-2 py-1" on:click={drawFreeHand}>Draw freehand</div>
-        <div role="button" class="px-2 py-1" on:click={addPoint}>Add point</div>
-        <div role="button" class="px-2 py-1" on:click={addLabel}>Add label</div>
+        <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>
+        <div role="button" class="px-2 py-1" onclick={addPath}>Draw path</div>
+        <div role="button" class="px-2 py-1" onclick={drawFreeHand}>Draw freehand</div>
+        <div role="button" class="px-2 py-1" onclick={addPoint}>Add point</div>
+        <div role="button" class="px-2 py-1" onclick={addLabel}>Add label</div>
     {/if}
 </div>
 
@@ -2306,11 +1750,15 @@
                     class="btn-check"
                     name="mainModeSwitch"
                     id="switchMacro"
-                    on:change={(e) => switchMode(e.currentTarget.value as Mode)}
+                    onchange={(e) => switchMode(e.currentTarget.value as Mode)}
                     value="macro"
                     autocomplete="off"
                 />
-                <label class="btn btn-outline-primary fs-3" for="switchMacro" class:active={currentMode === "macro"}>
+                <label
+                    class="btn btn-outline-primary fs-3"
+                    for="switchMacro"
+                    class:active={commonState.currentMode === "macro"}
+                >
                     <img src={macroImg} width="50" height="50" />
                     Macro
                 </label>
@@ -2321,10 +1769,14 @@
                     name="mainModeSwitch"
                     id="switchMicro"
                     autocomplete="off"
-                    on:change={(e) => switchMode(e.currentTarget.value as Mode)}
+                    onchange={(e) => switchMode(e.currentTarget.value as Mode)}
                     value="micro"
                 />
-                <label class="btn btn-outline-primary fs-3" for="switchMicro" class:active={currentMode === "micro"}>
+                <label
+                    class="btn btn-outline-primary fs-3"
+                    for="switchMicro"
+                    class:active={commonState.currentMode === "micro"}
+                >
                     Detailed
                     <img src={microImg} width="50" height="50" />
                 </label>
@@ -2355,8 +1807,8 @@
                 </ul>
             </div> -->
             <div id="main-menu" class="mt-4">
-                {#if currentMode === "macro"}
-                    <MacroSidebar></MacroSidebar>
+                {#if commonState.currentMode === "macro"}
+                    <MacroSidebar bind:this={macroSidebar} {draw} {svg} {styleEditor}></MacroSidebar>
                 {:else}
                     <div>Nothing for now</div>
                 {/if}
@@ -2369,7 +1821,7 @@
                         otherParams={accordionVisiblityParams}
                         on:change={handleChangeProp}
                     ></Accordions>
-                {:else if mainMenuSelection === "layers" && currentMode === "macro"}
+                {:else if mainMenuSelection === "layers" && commonState.currentMode === "macro"}
                     <div class="border border-primary rounded">
                         <div class="p-2">
                             <div class="form-check form-switch">
@@ -2776,25 +2228,21 @@
                             {/if}
                         </div>
                     </div> -->
-                {#if mainMenuSelection === "layers" && currentMode === "micro"}
+                <!-- {#if mainMenuSelection === "layers" && commonState.currentMode === "micro"}
                     <MicroLayerParams
                         layerDefinitions={microLayerDefinitions}
                         onUpdate={handleMicroParamChange}
                         availablePalettes={microPalettes}
                         onPaletteChange={handleMicroPaletteChange}
                     ></MicroLayerParams>
-                {/if}
+                {/if} -->
             </div>
         </div>
     </aside>
     <div class="w-auto d-flex flex-grow-1 flex-column align-items-center h-100">
         <Navbar>
             <div class="d-flex justify-content-center align-items-center">
-                <span
-                    class="px-2 py-1 btn btn-outline-primary"
-                    role="button"
-                    on:click={() => (showInstructions = true)}
-                >
+                <span class="px-2 py-1 btn btn-outline-primary" role="button" onclick={() => (showInstructions = true)}>
                     <Icon marginRight="0px" width="1.8rem" svg={icons["help"]} />
                     Instructions
                 </span>
@@ -2802,7 +2250,7 @@
             </div>
         </Navbar>
         <div class="d-flex flex-column justify-content-center align-items-center h-100">
-            {#if currentMode === "micro"}
+            {#if commonState.currentMode === "micro"}
                 <div class="micro-top mb-4 mx-auto d-flex align-items-center justify-content-between">
                     <Geocoding {maplibreMap}></Geocoding>
                     <div class="d-flex mx-2 align-items-center justify-content-center">
@@ -2811,7 +2259,7 @@
                             class="btn-check"
                             id="lock-unlock"
                             bind:checked={microLocked}
-                            on:change={(e) => lockUnlock(microLocked)}
+                            onchange={(e) => lockUnlock(microLocked)}
                         />
                         <label class="btn btn-outline-primary" class:active={microLocked} for="lock-unlock">
                             <Icon svg={microLocked ? icons["lock"] : icons["unlock"]} />
@@ -2825,7 +2273,7 @@
                 <div id="map-container" class="col mx-4"></div>
                 <div id="maplibre-map"></div>
             </div>
-            {#if currentMode === "micro"}
+            {#if commonState.currentMode === "micro"}
                 <div class="ms-auto me-4 mt-2">
                     Map data:
                     <a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a>
@@ -2839,7 +2287,7 @@
                     <label for="fontinput" class="m-2 d-flex align-items-center btn btn-outline-primary">
                         <Icon svg={icons["font"]} /> Add font</label
                     >
-                    <input type="file" id="fontinput" accept=".ttf,.woff,.woff2,.otf" on:change={handleInputFont} />
+                    <input type="file" id="fontinput" accept=".ttf,.woff,.woff2,.otf" onchange={handleInputFont} />
                 </div>
                 <div class="dropdown mx-2">
                     <button
@@ -2852,12 +2300,12 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li>
-                            <a class="dropdown-item" href="#" on:click={() => restoreStateToDefault()}>
+                            <a class="dropdown-item" href="#" onclick={() => restoreStateToDefault()}>
                                 <Icon svg={icons["reset"]} />Reset
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item" href="#" on:click={saveProject}>
+                            <a class="dropdown-item" href="#" onclick={saveProject}>
                                 <Icon fillColor="none" svg={icons["save"]} />
                                 Save project
                             </a>
@@ -2867,13 +2315,13 @@
                                 <label role="button" for="project-import">
                                     <Icon svg={icons["restore"]} /> Load project</label
                                 >
-                                <input id="project-import" type="file" accept=".cartosvg" on:change={loadProject} />
+                                <input id="project-import" type="file" accept=".cartosvg" onchange={loadProject} />
                             </a>
                         </li>
                     </ul>
                 </div>
                 <div class="dropdown mx-2">
-                    <button class="btn btn-outline-success" type="button" on:click={onExportSvgClicked}>
+                    <button class="btn btn-outline-success" type="button" onclick={onExportSvgClicked}>
                         <Icon fillColor="none" svg={icons["download"]} /> Export
                     </button>
                 </div>
@@ -2881,9 +2329,9 @@
         </div>
     </div>
 </div>
-<Modal open={showModal} onClosed={() => onModalClose()}>
+<!-- <Modal open={showModal} onClosed={() => onModalClose()}>
     <DataTable slot="content" data={zonesData?.[currentMacroLayerTab]?.["data"]}></DataTable>
-</Modal>
+</Modal> -->
 
 <Modal open={showExportConfirm} onClosed={() => (showExportConfirm = false)} modalWidth="35%">
     <div slot="header">
@@ -2965,7 +2413,7 @@
                 </label>
             </div>
         {/if}
-        {#if currentMode === "macro"}
+        {#if commonState.currentMode === "macro"}
             <h3 class="fs-4">Resize</h3>
             <div class="form-check form-switch">
                 <input
@@ -3002,7 +2450,7 @@
         {/if}
     </form>
     <div slot="footer" class="d-flex justify-content-end">
-        <button type="button" class="btn btn-success" data-goatcounter-click="export-svg" on:click={validateExport}>
+        <button type="button" class="btn btn-success" data-goatcounter-click="export-svg" onclick={validateExport}>
             Export
         </button>
     </div>
@@ -3017,12 +2465,12 @@
     </div>
 </Modal>
 
-<Modal open={showCustomPalette} onClosed={() => (showCustomPalette = false)}>
+<!-- <Modal open={showCustomPalette} onClosed={() => (showCustomPalette = false)}>
     <div slot="content">
         <PaletteEditor {customCategoricalPalette} mapping={ordinalMapping[currentMacroLayerTab]} onChange={draw}
         ></PaletteEditor>
     </div>
-</Modal>
+</Modal> -->
 
 <style lang="scss" scoped>
     #params {
@@ -3061,61 +2509,11 @@
         }
     }
 
-    .micro-top {
-        width: 40rem;
-    }
-
-    #country-select:hover ~ span {
-        color: #aeafaf;
-    }
-
-    .data-table {
-        max-height: 10rem;
-        overflow-y: scroll;
-    }
     .tooltip-preview {
         padding: 5px;
     }
     #map-container {
         margin: 0 auto;
         flex: 0 0 auto;
-    }
-    #maplibre-map {
-        position: absolute;
-        top: 0px;
-        left: 1.5rem;
-        background-color: white;
-    }
-    #country-select {
-        opacity: 0;
-        position: absolute;
-        height: 38px;
-        width: 4rem;
-    }
-
-    input[type="file"] {
-        display: none;
-    }
-
-    :global(.is-dnd-hovering-right) {
-        border-right: 3px solid black;
-    }
-    :global(.is-dnd-hovering-left) {
-        border-left: 3px solid black;
-    }
-    .delete-tab {
-        position: absolute;
-        right: 2px;
-        top: 7px;
-        &:hover {
-            color: #67777a;
-        }
-    }
-    .grabbable {
-        cursor: grab !important;
-    }
-
-    textarea {
-        font-size: 0.82rem;
     }
 </style>

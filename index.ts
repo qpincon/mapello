@@ -1,9 +1,9 @@
 import { mount } from 'svelte'
 
-import Map from './src/Map.svelte';
+import App from './src/App.svelte';
 import './src/assets/global.scss';
 
-const app = mount(Map, {
+const app = mount(App, {
   target: document.getElementById('app-content')!
 });
 

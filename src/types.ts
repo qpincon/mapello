@@ -260,11 +260,10 @@ export type InlinePropsMicro = {
 export interface StateMacro {
     macroParams: MacroParams;
     inlinePropsMacro: InlinePropsMacro;
+    orderedTabs: string[];
     chosenCountriesAdm: string[];
     zonesData: ZonesData;
     zonesFilter: Record<string, string>;
-    // TODO: remove and compute from last shape
-    lastUsedLabelProps: CssDict;
     // Use for land contour
     contourParams: ContourParams;
     // TODO: check what this is actually
@@ -284,12 +283,13 @@ export interface StateCommon {
     providedFonts: ProvidedFont[];
     providedShapes: ShapeDefinition[];
     providedPaths: PathDef[];
-    orderedTabs: string[];
     inlineStyles: InlineStyles;
     // TODO: remove and compute from shape + label size
     shapeCount: number;
     tooltipDefs: TooltipDefs;
     currentMode: Mode;
+    // TODO: remove and compute from last shape
+    lastUsedLabelProps: CssDict;
 }
 
 export interface GlobalState {

@@ -118,14 +118,14 @@ export const defaultLegendDef: LegendDef = {
 
 export const defaultCustomCategoricalPalette: Color[] = ["#ff0000ff", "#00ff00ff", "#0000ffff"];
 
-function defaultTooltipContent(isCountry: boolean): string {
+export function defaultTooltipContent(isCountry: boolean): string {
     return `<div>
 <span> ${isCountry ? "Country" : "Region"}: {name}</span>
 </div>
 `;
 }
 
-function defaultTooltipFull(template: string): string {
+export function defaultTooltipFull(template: string): string {
     return `<div id="tooltip-preview" style="${styleDictToCssRulesStr(defaultTooltipStyle)}">
     ${template}
 </div>`;
@@ -143,6 +143,18 @@ export const defaultTooltipStyle: Record<string, string> = {
 
 export const defaultInlineStyles: Record<string, any> = {};
 
+export const macroPositionVars: string[] = [
+    "longitude",
+    "latitude",
+    "rotation",
+    "tilt",
+    "altitude",
+    "fieldOfView",
+    "projection",
+    "width",
+    "height",
+];
+
 export const defaultState: GlobalState = {
     stateMacro: {
         macroParams: defaultMacroParams,
@@ -150,11 +162,11 @@ export const defaultState: GlobalState = {
         chosenCountriesAdm: [],
         zonesData: {},
         zonesFilter: defaultZonesFilter,
-        lastUsedLabelProps: defaultLastUsedLabelProps,
         contourParams: defaultContourParams,
         colorDataDefs: { countries: defaultColorDef },
         legendDefs: { "countries": defaultLegendDef },
         customCategoricalPalette: defaultCustomCategoricalPalette,
+        orderedTabs: ["countries", "land"],
     },
     stateMicro: {
         microParams: defaultMicroParams,
@@ -162,11 +174,11 @@ export const defaultState: GlobalState = {
         microLayerDefinitions: initLayersState(peach),
     },
     stateCommon: {
+        lastUsedLabelProps: defaultLastUsedLabelProps,
         baseCss: defaultBaseCssMacro,
         providedFonts: [],
         providedShapes: [],
         providedPaths: [],
-        orderedTabs: ["countries", "land"],
         inlineStyles: defaultInlineStyles,
         shapeCount: 0,
         tooltipDefs: {

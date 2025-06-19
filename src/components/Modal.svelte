@@ -113,9 +113,9 @@
         aria-labelledby={labelledby}
         aria-describedby={describedby}
         aria-modal="true"
-        on:click|self={handleBackdrop}
-        on:introend={onModalOpened}
-        on:outroend={onModalClosed}
+        onclick={handleBackdrop}
+        onintroend={onModalOpened}
+        onoutroend={onModalClosed}
         transition:fade
         style:--bs-modal-width={modalWidth}
     >
@@ -133,7 +133,7 @@
                         class="btn-close me-2"
                         data-bs-dismiss="modal"
                         aria-label="Close"
-                        on:click={() => (open = false)}
+                        onclick={() => (open = false)}
                     ></button>
                 </div>
                 <div class="modal-body p-3">

@@ -1,7 +1,9 @@
+import { commonState, macroState, microState } from "src/state.svelte";
 import type { GlobalState } from "src/types";
 
 const LOCAL_STORAGE_KEY = "map-builder-state";
-export function saveState(params: GlobalState) {
+export function saveState() {
+    const params = { commonState, macroState, microState };
     const serialized = JSON.stringify(params);
     localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
 }

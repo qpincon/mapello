@@ -1,6 +1,5 @@
 <script lang="ts">
     import Picker, { type Options, type Color as ColorInternal } from "vanilla-picker";
-    import type ColorPicker from "vanilla-picker";
 
     import { onMount, onDestroy } from "svelte";
     import type { Color } from "src/types";

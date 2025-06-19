@@ -194,7 +194,7 @@ export function discriminateCssForExport(cssToTransform: string): { mapId: strin
     return { mapId: id, finalCss: transformed };
 }
 
-export function formatUnicorn(str: string, args: Record<string, string>): string {
+export function formatUnicorn(str: string, args: Record<string, string | number>): string {
     if (args) {
         for (const key in args) {
             str = str.replace(new RegExp("\\{" + key + "\\}", "gi"), args[key]);
