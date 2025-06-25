@@ -13,7 +13,6 @@ export function drawCustomPaths(
     inlineStyles: InlineStyles = {}
 ): void {
     if (!pathDefs) return;
-
     let elem: D3Selection<SVGGElement> = svg.select('#paths');
     if (elem.empty()) elem = svg.append('g').attr('id', 'paths');
     else elem.html('');

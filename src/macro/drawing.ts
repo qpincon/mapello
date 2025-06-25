@@ -5,7 +5,6 @@ import { geometriesState, initializeAdms, resolvedAdmGeometry, updateLayerSimpli
 import type { FrameSelection, MacroGroupData, SvgSelection } from "src/types";
 import { appendBgPattern, appendGlow } from "src/svg/svgDefs";
 import type { MultiLineString } from "geojson";
-import { drawCustomPaths } from "src/svg/paths";
 import { appendCountryImageNew, appendLandImageNew } from "src/svg/contourMethods";
 import { getNumericCols, sortBy } from "src/util/common";
 import { applyStyles } from "src/util/dom";
@@ -37,10 +36,10 @@ export async function drawMacroTotal(svg: SvgSelection, simplified = false) {
 
     appState.countryFilteredImages.clear();
     await initializeAdms();
-    container.html("");
     const graticule = geoGraticule().step([macroState.macroParams.Background.graticuleStep, macroState.macroParams.Background.graticuleStep])();
     if (!macroState.macroParams.Background.showGraticule) graticule.coordinates = [];
     if (simplified) {
+        svg.remove();
         let canvas = container.select<HTMLCanvasElement>("#canvas");
         if (canvas.empty()) {
             canvas = container.append("canvas").attr("id", "canvas").attr("width", width).attr("height", height);
@@ -60,13 +59,6 @@ export async function drawMacroTotal(svg: SvgSelection, simplified = false) {
         context.stroke();
         return;
     }
-    // svg = container.select("svg") as unknown as SvgSelection;
-    // if (svg.empty())
-    //     svg = container
-    //         .append("svg")
-    //         .attr("xmlns", "http://www.w3.org/2000/svg")
-    //         .attr("xmlns:xlink", "http://www.w3.org/1999/xlink")
-    //         .attr("id", "static-svg-map") as unknown as SvgSelection;
 
     svg.classed("animate-transition", true).classed("animate", animated);
 
@@ -76,11 +68,11 @@ export async function drawMacroTotal(svg: SvgSelection, simplified = false) {
         svg.attr("width", `${width}`).attr("height", `${height}`);
     }
     container.style("width", `${width}px`).style("height", `${height}px`);
-    mapLibreContainer.style("width", `${width}px`).style("height", `${height}px`);
+    // mapLibreContainer.style("width", `${width}px`).style("height", `${height}px`);
     appState.path = geoPath(appState.projection);
     appState.pathLarger = geoPath(appState.projectionLarger);
-    svg.html("");
-    svg.append("defs");
+    // svg.html("");
+    // svg.append("defs");
 
     const groupData: MacroGroupData[] = [];
     Object.values(macroState.zonesFilter).forEach((filterName) => {
@@ -91,11 +83,11 @@ export async function drawMacroTotal(svg: SvgSelection, simplified = false) {
     container.style("display", "block");
     drawMacro(svg, graticule, groupData, computedOrderedTabs);
     appendBgPattern(svg, "noise", macroState.macroParams.Background.seaColor, macroState.macroParams.Background.backgroundNoise);
-    drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
 
     select("#outline").style("fill", "url(#noise)");
     // colorizeAndLegend();
     // computeCss();
+
     let frame: FrameSelection;
     frame = drawMacroFrame(svg);
 
@@ -142,14 +134,12 @@ export async function drawMacroTotal(svg: SvgSelection, simplified = false) {
         });
     }
 
-    // drawAndSetupShapes();
-    const map = document.getElementById("static-svg-map") as unknown as SVGSVGElement;
-    if (!map) return;
-    await tick();
-    addTooltipListener(map, commonState.tooltipDefs, macroState.zonesData);
+    // const map = document.getElementById("static-svg-map") as unknown as SVGSVGElement;
+    // if (!map) return;
+    // await tick();
+    console.log(svg.node())
+    addTooltipListener(svg.node() as SVGSVGElement, commonState.tooltipDefs, macroState.zonesData);
     duplicateContourCleanFirst(svg.node() as SVGSVGElement);
-    // if (firstDraw) maplibreMap.resize();
-    // firstDraw = false;
     if (!animated) {
         svg.selectAll("path[pathLength]").attr("pathLength", null);
         svg.selectAll("g[image-class]").classed("hidden-after", true);
@@ -239,13 +229,15 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     });
     // const groups = svg.selectAll('svg').data(groupData).join('svg').attr('id', d => d.name);
     const groups = svg
-        .append("svg")
+        // .append("svg")
         .selectAll("g")
         .data(groupData)
         .join("g")
         .attr("id", (d) => d.name!);
     // .attr('clip-path', 'url(#clipMapBorder)')
+
     function drawPaths(this: SVGGElement, data: MacroGroupData) {
+        console.log('drawPaths', data);
         if (data.type === "landImg")
             return appendLandImageNew.call(
                 this,

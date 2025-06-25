@@ -167,6 +167,7 @@ export const defaultState: GlobalState = {
         legendDefs: { "countries": defaultLegendDef },
         customCategoricalPalette: defaultCustomCategoricalPalette,
         orderedTabs: ["countries", "land"],
+        visibleArea: 0.02
     },
     stateMicro: {
         microParams: defaultMicroParams,

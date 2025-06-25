@@ -16,7 +16,6 @@
     import { drawShapes } from "./svg/shape";
     import iso3Data from "./assets/data/iso3_filtered.json";
     import Examples from "./components/Examples.svelte";
-    import defaultBaseCssMacro from "./assets/pagestyleMacro.css?raw";
     import { freeHandDrawPath } from "./svg/freeHandPath";
     import Modal from "./components/Modal.svelte";
     import Navbar from "./components/Navbar.svelte";
@@ -75,7 +74,6 @@
     let microLayerDefinitions: MicroPalette = initLayersState(microPalettes["peach"]);
 
     // ====== State macro =======
-    let baseCss = defaultBaseCssMacro;
     let providedPaths: PathDef[];
     // let providedShapes: ShapeDefinition[];
     // let chosenCountriesAdm: string[];
@@ -379,97 +377,7 @@
         container.on(".zoom", null);
     }
 
-    // const redrawThrottle = throttle(redraw, 50);
-    // function redraw(propName?: string): void {
-    //     if (propName && positionVars.includes(propName)) {
-    //         // mapLibreFitBounds();
-    //         projectAndDraw(true);
-    //     }
-    //     clearTimeout(redrawTimeoutId);
-    //     redrawTimeoutId = setTimeout(() => {
-    //         updateLayerSimplification();
-    //         draw(false);
-    //     }, 300);
-    // }
-
-    // let altScale = scaleLinear().domain([1, 0]).range([100, 10000]);
-    // // scale for simplification according to zoom
-    // let threshScale = scalePow().domain([0, 1]).range([0.1, 0]).exponent(0.08);
-    // function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
-    //     if (!event.sourceEvent) return;
-    //     if (event.sourceEvent.type === "dblclick") return;
-    //     if (!projection) return;
-    //     // @ts-expect-error
-    //     event.transform.k = Math.max(Math.min(event.transform.k, 1), 0.00001);
-    //     let newAltitude = Math.round(altScale(event.transform.k));
-    //     // Ensure that zooming at max of scale actlually decreases altitude
-    //     if (event.transform.k === 1) {
-    //         if (p("projection") === "satellite") newAltitude = inlinePropsMacro.altitude - 30;
-    //         else newAltitude = inlinePropsMacro.altitude + 30;
-    //         newAltitude = Math.max(newAltitude, 30);
-    //     }
-    //     visibleArea = threshScale(event.transform.k);
-    //     macroParams["General"].altitude = newAltitude;
-    //     inlinePropsMacro.altitude = newAltitude;
-    //     redrawThrottle("altitude");
-    // }
-
-    // const sensitivity = 75;
-    // function dragged(event: d3.D3DragEvent<SVGSVGElement, unknown, unknown>): void {
-    //     inlinePropsMacro.translateX += event.dx;
-    //     inlinePropsMacro.translateY += event.dy;
-    //     const isSatellite = macroParams["General"].projection === "satellite";
-    //     if (isSatellite && event.sourceEvent.shiftKey) {
-    //         inlinePropsMacro.tilt += event.dy / 10;
-    //     } else if (isSatellite && (event.sourceEvent.metaKey || event.sourceEvent.ctrlKey)) {
-    //         inlinePropsMacro.rotation -= event.dx / 10;
-    //     } else if (projection.rotate) {
-    //         const rotate = projection.rotate();
-    //         let rotRad = (inlinePropsMacro.rotation / 180) * Math.PI;
-    //         if (!isSatellite) rotRad = 0;
-    //         const [xPartX, xPartY] = [Math.cos(rotRad), Math.sin(rotRad)];
-    //         const [yPartX, yPartY] = [-Math.sin(rotRad), Math.cos(rotRad)];
-    //         const k = sensitivity / projection.scale();
-    //         const adjustedDx = (event.dx * xPartX + event.dy * yPartX) * k;
-    //         const adjustedDy = (event.dy * yPartY + event.dx * xPartY) * k;
-    //         inlinePropsMacro.longitude = -rotate[0] - adjustedDx;
-    //         inlinePropsMacro.latitude = -rotate[1] + adjustedDy;
-    //     }
-    //     redraw("longitude");
-    // }
-
-    // function changeAltitudeScale(autoAdjustAltitude = true): void {
-    //     const projName = p("projection");
-    //     const fov = p("fieldOfView");
-    //     let invertAlt = false;
-    //     if (projName === "satellite") {
-    //         const newAltScale = updateAltitudeRange(fov);
-    //         if (newAltScale) altScale = newAltScale;
-    //         invertAlt = true;
-    //     } else {
-    //         altScale = scaleLinear().domain([0, 1]).range([90, 2000]);
-    //     }
-    //     const altitude = inlinePropsMacro.altitude || macroParams["General"].altitude;
-    //     const originalScale = altScale.invert(altitude);
-    //     visibleArea = threshScale(originalScale);
-    //     if (!autoAdjustAltitude) return;
-    //     let altChanged = false;
-    //     const firstScaleVal = altScale(invertAlt ? 1 : 0);
-    //     const secondScaleVal = altScale(invertAlt ? 0 : 1);
-    //     if (altitude < firstScaleVal) {
-    //         inlinePropsMacro.altitude = firstScaleVal;
-    //         altChanged = true;
-    //     }
-    //     if (altitude > secondScaleVal) {
-    //         inlinePropsMacro.altitude = secondScaleVal;
-    //         altChanged = true;
-    //     }
-    //     if (altChanged) {
-    //         macroParams["General"].altitude = inlinePropsMacro.altitude;
-    //     }
-    // }
-
-    let accordionVisiblityParams = {};
+    // let accordionVisiblityParams = {};
     // function changeProjection(): void {
     //     const projName = p("projection");
     //     if (projName !== "satellite") {
@@ -562,6 +470,7 @@
         //     svg.attr("width", `${width}`).attr("height", `${height}`);
         // }
         // svg.html("");
+        console.log(svg.node());
         svg.append("defs");
         svg.on(
             "contextmenu",
@@ -598,11 +507,11 @@
             else if (iseOnClickEnabled) openEditor(e);
         });
 
-        console.log(svg, commonState.currentMode);
         if (commonState.currentMode === "macro") {
             drawMacroTotal(svg, simplified);
         }
         drawAndSetupShapes();
+        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
         const map = document.getElementById("static-svg-map") as unknown as SVGSVGElement;
         if (!map) return;
         await tick();
@@ -838,7 +747,7 @@
     // }
 
     function saveProject(): void {
-        baseCss = exportStyleSheet("#outline")!;
+        const baseCss = exportStyleSheet("#outline")!;
         // TODO: is is this useful?
         commonState.baseCss = baseCss;
         const state: GlobalState = {

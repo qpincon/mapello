@@ -270,6 +270,7 @@ export interface StateMacro {
     colorDataDefs: Record<string, ColorDef>;
     legendDefs: Record<string, LegendDef>;
     customCategoricalPalette: Color[];
+    visibleArea: number;
 }
 
 export interface StateMicro {

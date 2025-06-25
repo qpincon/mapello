@@ -35,7 +35,7 @@
 
     import { saveState } from "src/util/save";
     import DataTable from "src/components/DataTable.svelte";
-    import { defaultTooltipStyle } from "src/stateDefaults";
+    import { defaultState, defaultTooltipStyle } from "src/stateDefaults";
     import type InlineStyleEditor from "inline-style-editor";
     import Legend from "src/components/Legend.svelte";
     import { select } from "d3-selection";
@@ -81,18 +81,18 @@
         delete icons[localeFileName];
     });
 
-    let mainMenuSelection = $state("general");
-    let hoveringTab: number = $state(-1);
-    let dragStartIndex: number = $state(-1);
-    let currentMacroLayerTab: string = $state("land");
-    let currentTemplateHasNumeric: boolean = $state(false);
-    let showModal: boolean = $state(false);
-    let templateErrorMessages: Record<string, boolean> = $state({});
-    let commonCss: string | undefined = $state();
-    let availableColumns: string[] = $state([]);
-    let availablePalettes: string[] = $state([]);
-    let showCustomPalette: boolean = $state(false);
-    let htmlTooltipElem: HTMLElement | null = $state(null);
+    let mainMenuSelection = $state<string>("general");
+    let hoveringTab = $state<number>(-1);
+    let dragStartIndex = $state<number>(-1);
+    let currentMacroLayerTab = $state<string>("land");
+    let currentTemplateHasNumeric = $state<boolean>(false);
+    let showModal = $state<boolean>(false);
+    let templateErrorMessages = $state<Record<string, boolean>>({});
+    let commonCss = $state<string | undefined>();
+    let availableColumns = $state<string[]>([]);
+    let availablePalettes = $state<string[]>([]);
+    let showCustomPalette = $state<boolean>(false);
+    let htmlTooltipElem = $state<HTMLElement | null>(null);
     let legendSample: SVGGElement | null = $state(null);
     // This contains the common CSS that can ben editor with inline-css-editor
     // we also have a special svelte:head element containing all CSS that is not in baseCss (border style, legend colors, etc.)
@@ -136,7 +136,9 @@
         commonStyleSheetElemMacro = document.createElement("style");
         commonStyleSheetElemMacro.setAttribute("id", "common-style-sheet-elem-macro");
         document.head.appendChild(commonStyleSheetElemMacro);
-        drawMacroTotal(svg);
+        commonStyleSheetElemMacro.innerHTML = defaultState.stateCommon.baseCss;
+        // await tick();
+        draw();
     });
 
     export function applyStateAndDraw(simplified = false) {
@@ -486,6 +488,7 @@
     }
 
     async function colorizeAndLegend(svg: SvgSelection, e?: Event): Promise<void> {
+        console.log("colorizeAndLegend");
         await tick();
         initTooltips();
         const legendEntries = select("#svg-map-legend");
@@ -660,7 +663,7 @@
 <div id="main-menu" class="mt-4">
     {#if mainMenuSelection === "general"}
         <Accordions
-            sections={macroState.macroParams as unknown as Record<string, Record<string, number>>}
+            bind:sections={macroState.macroParams as unknown as Record<string, Record<string, number>>}
             {paramDefs}
             {helpParams}
             otherParams={accordionVisiblityParams}

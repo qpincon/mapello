@@ -7,15 +7,20 @@
   import { camelCaseToSentence } from "../util/common";
   import type { OtherParams, ParamDefinitions, ParamKey } from "src/params";
   import type { Color } from "src/types";
-  export let sections: Record<string, Record<string, number | Color>>;
-  export let paramDefs: ParamDefinitions;
-  export let level = 0;
-  export let helpParams: Record<string, string> = {};
-  export let otherParams: OtherParams = {};
 
   const dispatch = createEventDispatcher();
 
+  interface Props {
+    sections: Record<string, Record<string, number | Color>>;
+    paramDefs: ParamDefinitions;
+    helpParams: Record<string, string>;
+    otherParams: OtherParams;
+  }
+
+  let { sections = $bindable(), paramDefs, helpParams = {}, otherParams = {} }: Props = $props();
+
   function propChanged(prop: string, value: string | number | boolean) {
+    console.log("propChanged", prop, value);
     const payload = { prop, value };
     dispatch("change", payload);
   }
@@ -49,7 +54,7 @@
       </h3>
       {@html "<!-- Buggy - collaspe on any click inside... class:show={level === 0 && i < 4}-->"}
       <div id={`panel-${title}-collapse`} class="accordion-collapse collapse show">
-        <div class="accordion-body" style="border-left: solid {2 * level}px var(--bs-accordion-active-bg);">
+        <div class="accordion-body">
           {#each Object.keys(sections[title]) as key, i (key)}
             {#if otherParams[key]?.disabled !== true}
               <div class="field">
@@ -66,7 +71,6 @@
                       onChange={(val) => {
                         sections[title][key] = val;
                         propChanged(key, val);
-                        sections = sections;
                       }}
                     />
                   {:else if paramDefs[key].type == "select"}
@@ -76,7 +80,7 @@
                         id={`form-${key}`}
                         class="form-select form-select-sm me-4 col"
                         bind:value={sections[title][key]}
-                        on:change={(e) => propChanged(key, (e.target as HTMLSelectElement).value)}
+                        onchange={(e) => propChanged(key, (e.target as HTMLSelectElement).value)}
                       >
                         {#each paramDefs[key].choices as opt}
                           <option value={opt}>
@@ -104,9 +108,7 @@
                       class="form-check-input"
                       id={`form-${key}`}
                       bind:checked={sections[title][key]}
-                      on:change={(e) => {
-                        propChanged(key, (e.target as HTMLInputElement).checked);
-                      }}
+                      onchange={(e) => propChanged(key, (e.target as HTMLInputElement).checked)}
                     />
                   </div>
                 {:else if key.toLowerCase().includes("color")}
@@ -118,7 +120,6 @@
                     onChange={(col) => {
                       sections[title][key] = col;
                       propChanged(key, col);
-                      sections = sections;
                     }}
                   />
                 {:else}
@@ -131,7 +132,7 @@
                       class="form-control"
                       id={`form-${key}`}
                       bind:value={sections[title][key]}
-                      on:change={(e) => propChanged(key, parseFloat((e.target as HTMLInputElement).value))}
+                      onchange={(e) => propChanged(key, parseFloat((e.target as HTMLInputElement).value))}
                     />
                   </div>
                 {/if}

@@ -3,7 +3,6 @@ import { appState, macroState } from "src/state.svelte";
 import { updateAltitudeRange } from "src/util/projections";
 
 
-type AfterInteraction = (prop: string) => void;
 let altScale = scaleLinear().domain([1, 0]).range([100, 10000]);
 // scale for simplification according to zoom
 let threshScale = scalePow().domain([0, 1]).range([0.1, 0]).exponent(0.08);
@@ -20,7 +19,7 @@ export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): number | 
         else newAltitude = macroState.inlinePropsMacro.altitude + 30;
         newAltitude = Math.max(newAltitude, 30);
     }
-    appState.visibleArea = threshScale(event.transform.k);
+    macroState.visibleArea = threshScale(event.transform.k);
     macroState.macroParams.General.altitude = newAltitude;
     macroState.inlinePropsMacro.altitude = newAltitude;
 }
@@ -61,7 +60,7 @@ export function changeAltitudeScale(autoAdjustAltitude = true): void {
     }
     const altitude = macroState.inlinePropsMacro.altitude || macroState.macroParams.General.altitude;
     const originalScale = altScale.invert(altitude);
-    appState.visibleArea = threshScale(originalScale);
+    macroState.visibleArea = threshScale(originalScale);
     if (!autoAdjustAltitude) return;
     let altChanged = false;
     const firstScaleVal = altScale(invertAlt ? 1 : 0);
