@@ -138,9 +138,6 @@ body {
     margin-bottom: 1rem;
 }
 
-#main-menu>div {
-    background-color: white;
-}
 
 .icon-add svg {
     color: #253446;
@@ -177,19 +174,23 @@ aside .nav-link.active {
     width: 100%;
     position: relative;
     color: $primary;
+
     &:first-child {
         border-top: 0;
     }
 }
+
 #main-menu {
     color: $primary;
     font-size: 14px;
     width: 90%;
 }
+
 .popup.popup_right {
     left: 30px !important;
 }
 
-.hidden, .hidden-after {
+.hidden,
+.hidden-after {
     display: none;
 }

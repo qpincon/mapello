@@ -127,7 +127,7 @@
 - [x] Micro: Debug right click
 - [x] Micro: Fill pattern hover
 - [x] Micro: Stop computations when moving
-- [ ] Click on increment range on significant digits legend does nothing
+- [ ] Bug: Click on increment range on significant digits legend does nothing
 - [ ] Remove labels off canvas
 - [ ] Freehand: style group with ISE (add custom CSS rule on the fly on <g> parent)
 - [ ] Freehand: Allow drag drawing
@@ -148,6 +148,8 @@
   - use color modes
   - pass mode as input of Map
 - [ ] Macro: Render simplified while changing altitude / fov
+- [ ] Macro: Use same border method as micro (clip-path + remove geo entirely outside) 
+
 - [ ] Allow external link on click of entity
 - [ ] Text / icons / images / freehand : use https://github.com/daybrush/moveable
 - [ ] Text: just use Maj+Enter for new line instead of ++
@@ -165,7 +167,9 @@
   - [-] Allow parametrization of modal width
   - [ ] Callback function to allow to go up the DOM tree of selected element
   - [x] Export type declarations
-  - [ ] Svelte 5
+  - [x] Svelte 5
+
+- [ ] Bugfix: handle input wrong color in color picker text
 
 - [ ] Separate (lazy-load) micro and macro
 - [ ] Migrate to svelte 5

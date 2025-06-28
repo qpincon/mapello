@@ -14,6 +14,14 @@ export default defineConfig({
       ignored: ["**/src/assets/layers/**"]
     }
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern', // or "modern", "legacy"
+        silenceDeprecations: ["import", "color-functions", "global-builtin"]
+      },
+    },
+  },
   plugins: [
     svelte(),
     // to remove when this PR is merged https://github.com/shrhdk/text-to-svg/pull/76

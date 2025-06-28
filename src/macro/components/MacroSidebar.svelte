@@ -670,7 +670,7 @@
             on:change={(e) => handleChangeProp(e)}
         ></Accordions>
     {:else if mainMenuSelection === "layers"}
-        <div class="border border-primary rounded">
+        <div class="border border-primary rounded layers">
             <div class="p-2">
                 <div class="form-check form-switch">
                     <input
@@ -1126,5 +1126,9 @@
 
     textarea {
         font-size: 0.82rem;
+    }
+
+    .layers {
+        background-color: white;
     }
 </style>

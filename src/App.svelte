@@ -5,7 +5,7 @@
     import { drag } from "d3-drag";
     import { zoom } from "d3-zoom";
     import InlineStyleEditor from "inline-style-editor";
-    import { debounce } from "lodash-es";
+    import { debounce, merge } from "lodash-es";
     import { drawCustomPaths, parseAndUnprojectPath } from "./svg/paths";
     import PathEditor from "./svg/pathEditor";
     import Geocoding from "./components/Geocoding.svelte";
@@ -24,7 +24,7 @@
     import Instructions from "./components/Instructions.svelte";
     import Icon from "./components/Icon.svelte";
     import { exportStyleSheet, getUsedInlineFonts, fontsToCss } from "./util/dom";
-    import { saveState } from "./util/save";
+    import { getState, saveState } from "./util/save";
     import { exportFontChoices } from "./svg/export";
     import { initLayersState } from "./detailed";
     import { Map } from "maplibre-gl";
@@ -57,7 +57,7 @@
         Mode,
     } from "./types";
     import { Dropdown } from "bootstrap";
-    import { applyInlineStyles, drawMacroTotal } from "./macro/drawing";
+    import { applyInlineStyles, changeProjection, drawMacroTotal } from "./macro/drawing";
     import MacroSidebar from "./macro/components/MacroSidebar.svelte";
     import { appState, commonState, macroState, microState } from "./state.svelte";
     import { icons } from "./shared/icons";
@@ -228,6 +228,7 @@
         contextualMenu.style.display = "none";
         contextualMenu.style.position = "absolute";
         contextualMenu.opened = false;
+        restoreStateFromSave();
         attachListeners();
         // maplibreMap.showTileBoundaries = true;
         window.addEventListener("keydown", (e) => {
@@ -377,83 +378,12 @@
         container.on(".zoom", null);
     }
 
-    // let accordionVisiblityParams = {};
-    // function changeProjection(): void {
-    //     const projName = p("projection");
-    //     if (projName !== "satellite") {
-    //         accordionVisiblityParams = noSatelliteParams;
-    //     } else accordionVisiblityParams = {};
-    //     const alt = inlinePropsMacro.altitude || macroParams["General"].altitude;
-    //     const projectionParams = {
-    //         projectionName: projName,
-    //         fov: p("fieldOfView"),
-    //         width: p("width"),
-    //         height: p("height"),
-    //         translateX: inlinePropsMacro.translateX,
-    //         translateY: inlinePropsMacro.translateY,
-    //         longitude: inlinePropsMacro.longitude,
-    //         latitude: inlinePropsMacro.latitude,
-    //         rotation: inlinePropsMacro.rotation,
-    //         altitude: alt,
-    //         tilt: inlinePropsMacro.tilt,
-    //         borderWidth: p("borderWidth"),
-    //     };
-    //     projection = getProjection(projectionParams);
-    //     projectionLarger = getProjection({ ...projectionParams, larger: true });
-    // }
-
-    // function computeCurrentTab(): void {
-    //     computedOrderedTabs = orderedTabs.filter((x) => {
-    //         if (x === "countries") return inlinePropsMacro.showCountries;
-    //         if (x === "land") return inlinePropsMacro.showLand;
-    //         return true;
-    //     });
-    //     if (!computedOrderedTabs.length || (computedOrderedTabs.length === 1 && computedOrderedTabs[0] === "land"))
-    //         currentMacroLayerTab = "land";
-    //     else if (computedOrderedTabs.length > 0 && currentMacroLayerTab === null) {
-    //         let i = 0;
-    //         while (computedOrderedTabs[i] === "land") ++i;
-    //         currentMacroLayerTab = computedOrderedTabs[i];
-    //     }
-    // }
-
     const freeHandDrawer = new FreehandDrawer();
-    let firstDraw = true;
     // without 'countries' if unchecked
     async function draw(simplified = false) {
-        console.log("app draw", simplified);
-        // const width = p("width");
-        // const height = p("height");
+        console.log("draw", simplified);
         const container = select("#map-container");
-        // const mapLibreContainer = select("#maplibre-map");
-        // const animated = p("animate");
-
-        // countryFilteredImages.clear();
-        // computeCurrentTab();
-        // await initializeAdms(simplified);
         container.html("");
-        // const graticule = geoGraticule().step([p("graticuleStep"), p("graticuleStep")])();
-        // if (!p("showGraticule")) graticule.coordinates = [];
-        // if (simplified) {
-        //     let canvas = container.select<HTMLCanvasElement>("#canvas");
-        //     if (canvas.empty()) {
-        //         canvas = container.append("canvas").attr("id", "canvas").attr("width", width).attr("height", height);
-        //     }
-        //     const context = canvas!.node()!.getContext("2d")!;
-        //     context.fillStyle = "#55a4c5";
-        //     context.rect(0, 0, width, height);
-        //     context.fillStyle = "#cdb396";
-        //     path = geoPath(projection, context);
-        //     context.beginPath();
-        //     path(simplified ? simpleLand : land);
-        //     context.fill();
-        //     context.beginPath();
-        //     path(graticule);
-        //     context.strokeStyle = "#ddf";
-        //     context.globalAlpha = 0.8;
-        //     context.stroke();
-        //     return;
-        // }
         svg = container.select("svg") as unknown as SvgSelection;
         if (svg.empty())
             svg = container
@@ -462,15 +392,6 @@
                 .attr("xmlns:xlink", "http://www.w3.org/1999/xlink")
                 .attr("id", "static-svg-map") as unknown as SvgSelection;
 
-        // svg.classed("animate-transition", true).classed("animate", animated);
-
-        // if (p("useViewBox")) {
-        //     svg.attr("viewBox", `0 0 ${width} ${height}`);
-        // } else {
-        //     svg.attr("width", `${width}`).attr("height", `${height}`);
-        // }
-        // svg.html("");
-        console.log(svg.node());
         svg.append("defs");
         svg.on(
             "contextmenu",
@@ -512,186 +433,8 @@
         }
         drawAndSetupShapes();
         drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
-        const map = document.getElementById("static-svg-map") as unknown as SVGSVGElement;
-        if (!map) return;
-        await tick();
-        // firstDraw = false;
-        // if (!animated) {
-        //     svg.selectAll("path[pathLength]").attr("pathLength", null);
-        //     svg.selectAll("g[image-class]").classed("hidden-after", true);
-        // }
+        if (!simplified) saveState();
     }
-
-    // function drawMacro(graticule: MultiLineString, groupData: MacroGroupData[]): void {
-    //     const width = p("width"),
-    //         height = p("height");
-    //     const borderWidth = p("borderWidth");
-    //     const animated = p("animate");
-    //     const outline = { type: "Sphere" };
-    //     groupData.push({
-    //         name: "outline",
-    //         data: [outline],
-    //         id: null,
-    //         props: [],
-    //         class: "outline",
-    //         filter: null,
-    //     });
-    //     groupData.push({
-    //         name: "graticule",
-    //         data: [graticule],
-    //         id: null,
-    //         props: [],
-    //         class: "graticule",
-    //         filter: null,
-    //     });
-    //     computedOrderedTabs.forEach((layer, i) => {
-    //         const filter = zonesFilter[layer] ? zonesFilter[layer] : null;
-    //         if (layer === "countries" && inlinePropsMacro.showCountries && countries) {
-    //             if (!("countries" in zonesData) && !zonesData?.["countries"]?.provided) {
-    //                 const countryProps = countries.features.map((f) => f.properties);
-    //                 sortBy(countryProps, "name")!;
-    //                 zonesData["countries"] = {
-    //                     data: countryProps,
-    //                     numericCols: getNumericCols(countryProps),
-    //                 };
-    //                 getZonesDataFormatters();
-    //             }
-    //             groupData.push({
-    //                 name: "countries",
-    //                 data: countries,
-    //                 id: "name",
-    //                 props: [],
-    //                 containerClass: "choro",
-    //                 class: "country",
-    //                 filter: filter,
-    //             });
-    //         }
-    //         if (layer === "land" && inlinePropsMacro.showLand) groupData.push({ type: "landImg", showSource: i === 0 });
-    //         // selected country
-    //         else if (layer !== "countries") {
-    //             groupData.push({
-    //                 name: layer,
-    //                 data: resolvedAdmGeometry[layer],
-    //                 id: "name",
-    //                 props: [],
-    //                 containerClass: "choro",
-    //                 class: "adm",
-    //                 filter: null,
-    //             });
-    //             const countryOutlineId = layer.substring(0, layer.length - 5);
-    //             const countryData = countries.features.find((country) => country.properties.name === countryOutlineId);
-    //             countryFilteredImages.add(countryOutlineId);
-    //             groupData.push({
-    //                 name: `${countryOutlineId}-img`,
-    //                 type: "filterImg",
-    //                 countryData,
-    //                 filter,
-    //             });
-    //         }
-    //     });
-    //     groupData.push({
-    //         name: "paths",
-    //         data: [],
-    //         props: [],
-    //         filter: null,
-    //     });
-    //     groupData.push({
-    //         name: "points-labels",
-    //         data: [],
-    //         props: [],
-    //         filter: null,
-    //     });
-    //     // const groups = svg.selectAll('svg').data(groupData).join('svg').attr('id', d => d.name);
-    //     const groups = svg
-    //         .append("svg")
-    //         .selectAll("g")
-    //         .data(groupData)
-    //         .join("g")
-    //         .attr("id", (d) => d.name!);
-    //     // .attr('clip-path', 'url(#clipMapBorder)')
-    //     function drawPaths(this: SVGGElement, data: MacroGroupData) {
-    //         if (data.type === "landImg")
-    //             return appendLandImageNew.call(
-    //                 this,
-    //                 data.showSource ?? false,
-    //                 zonesFilter,
-    //                 width,
-    //                 height,
-    //                 borderWidth,
-    //                 contourParams,
-    //                 land,
-    //                 pathLarger,
-    //                 p(zonesFilter["land"]),
-    //                 animated,
-    //             );
-    //         if (data.type === "filterImg")
-    //             return appendCountryImageNew.call(
-    //                 this,
-    //                 data.countryData!,
-    //                 data.filter ?? null,
-    //                 applyInlineStyles,
-    //                 path,
-    //                 inlineStyles,
-    //                 animated,
-    //             );
-    //         if (!data.data) return;
-    //         const parentPathElem = select(this).style("will-change", "opacity");
-    //         if (data.containerClass) parentPathElem.classed(data.containerClass, true);
-    //         const pathElem = parentPathElem
-    //             .selectAll("path")
-    //             // @ts-expect-error
-    //             .data(data.data.features ? data.data.features : data.data)
-    //             .join("path")
-    //             .attr("pathLength", 1)
-    //             .attr("d", (d) => {
-    //                 return path(d);
-    //             });
-    //         // @ts-expect-error
-    //         if (data.id) pathElem.attr("id", (d) => d.properties[data.id]);
-    //         if (data.class) pathElem.attr("class", data.class);
-    //         if (data.filter) parentPathElem.attr("filter", `url(#${data.filter})`);
-    //         // data.props?.forEach((prop) => pathElem.attr(prop, (d) => d.properties[prop]));
-    //     }
-    //     // @ts-expect-error
-    //     groups.each(drawPaths);
-    // }
-
-    // function drawMacroFrame(groupData: any[]): FrameSelection {
-    //     const borderWidth = p("borderWidth");
-    //     const borderRadius = p("borderRadius");
-    //     const width = p("width"),
-    //         height = p("height");
-    //     const rx = Math.max(width, height) * (borderRadius / 100);
-    //     const frame = svg
-    //         .append("rect")
-    //         .attr("x", borderWidth / 2)
-    //         .attr("y", borderWidth / 2)
-    //         .attr("id", "frame")
-    //         .attr("pathLength", 1)
-    //         .attr("stroke", p("borderColor"))
-    //         .attr("stroke-width", borderWidth)
-    //         .attr("fill", "none")
-    //         .attr("width", width - borderWidth)
-    //         .attr("height", height - borderWidth)
-    //         .attr("rx", rx);
-    //     return frame;
-    // }
-    // async function drawMicro(): Promise<void> {
-    //     console.log("drawmicro");
-    //     if (!maplibreMap) return;
-    //     await mapLoadedPromise;
-    //     projection = createD3ProjectionFromMapLibre(maplibreMap);
-    //     path = geoPath(projection);
-    //     drawPrettyMap(maplibreMap, svg, path, microLayerDefinitions, microParams, microLocked);
-    //     freeHandDrawings.forEach((drawingGroup) => {
-    //         const gDrawing = svg.append("g");
-    //         for (const drawing of drawingGroup) {
-    //             const pathElem = gDrawing.append("path").attr("pathLength", 1).classed("freehand", true);
-    //             pathElem.attr("d", pathStringFromParsed(drawing, projection));
-    //         }
-    //     });
-    //     applyInlineStyles();
-    // }
 
     // function projectAndDraw(simplified = false): void {
     //     changeProjection();
@@ -762,7 +505,18 @@
         Object.assign(commonState, state.stateCommon);
         Object.assign(macroState, state.stateMacro);
         Object.assign(microState, state.stateMicro);
+        // merge(commonState, state.stateCommon);
+        // merge(macroState, state.stateMacro);
+        // merge(microState, state.stateMicro);
+        changeProjection();
+        draw();
         saveState();
+    }
+
+    function restoreStateFromSave() {
+        const savedState = getState();
+        console.log("savedState=", savedState);
+        applyState(savedState ?? defaultState);
     }
 
     function loadProject(e: Event): void {
@@ -1721,430 +1475,6 @@
                 {:else}
                     <div>Nothing for now</div>
                 {/if}
-
-                <!-- {#if mainMenuSelection === "general"}
-                    <Accordions
-                        sections={currentParams as unknown as Record<string, Record<string, number>>}
-                        {paramDefs}
-                        {helpParams}
-                        otherParams={accordionVisiblityParams}
-                        on:change={handleChangeProp}
-                    ></Accordions>
-                {:else if mainMenuSelection === "layers" && commonState.currentMode === "macro"}
-                    <div class="border border-primary rounded">
-                        <div class="p-2">
-                            <div class="form-check form-switch">
-                                <input
-                                    class="form-check-input"
-                                    type="checkbox"
-                                    role="switch"
-                                    id="showLand"
-                                    bind:checked={inlinePropsMacro.showLand}
-                                    on:change={() => draw()}
-                                />
-                                <label class="form-check-label" for="showLand"> Show land</label>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input
-                                    class="form-check-input"
-                                    type="checkbox"
-                                    role="switch"
-                                    id="showCountries"
-                                    bind:checked={inlinePropsMacro.showCountries}
-                                    on:change={() => draw()}
-                                />
-                                <label class="form-check-label" for="showCountries"> Show countries</label>
-                            </div>
-                        </div>
-
-                        <ul class="nav nav-tabs align-items-center m-1">
-                            {#each computedOrderedTabs as tabTitle, index (tabTitle)}
-                                {@const isLand = tabTitle === "land"}
-                                <li
-                                    class="nav-item d-flex align-items-center mx-1"
-                                    draggable={isLand}
-                                    on:dragstart={(event) => dragstart(event, index, tabTitle !== "land")}
-                                    on:drop|preventDefault={(event) => drop(event, index)}
-                                    on:dragover={() => false}
-                                    on:dragenter={() => (hoveringTab = index)}
-                                    class:is-dnd-hovering-right={hoveringTab === index && index > dragStartIndex}
-                                    class:is-dnd-hovering-left={hoveringTab === index && index < dragStartIndex}
-                                    class:grabbable={isLand}
-                                >
-                                    <a
-                                        href="javascript:;"
-                                        class:active={currentMacroLayerTab === tabTitle}
-                                        class="nav-link d-flex align-items-center position-relative"
-                                        on:click={() => onTabChanged(tabTitle)}
-                                    >
-                                        {#if isLand}
-                                            <Icon svg={icons["draggable"]} />
-                                        {/if}
-                                        {tabTitle}
-                                        {#if tabTitle !== "countries" && !isLand}
-                                            <span
-                                                role="button"
-                                                class="delete-tab"
-                                                on:click={() => deleteCountry(tabTitle)}
-                                            >
-                                                ✕
-                                            </span>
-                                        {/if}
-                                    </a>
-                                </li>{/each}
-
-                            <li class="nav-item icon-add">
-                                <select role="button" id="country-select" on:change={addNewCountry}>
-                                    <option disabled selected value> -- select a country -- </option>
-                                    {#each allAvailableAdm as country}
-                                        <option value={country}>{country}</option>
-                                    {/each}
-                                </select>
-                                <span class="nav-link d-flex">
-                                    <Icon fillColor="none" svg={icons["add"]} />
-                                </span>
-                            </li>
-                        </ul>
-                        <div class="p-2">
-                            {#if currentMacroLayerTab !== "countries"}
-                                <div class="d-flex m-1 align-items-center">
-                                    <div class="form-floating flex-grow-1">
-                                        <select
-                                            id="choseFilter"
-                                            class="form-select form-select-sm"
-                                            bind:value={zonesFilter[currentMacroLayerTab]}
-                                            on:change={() => draw()}
-                                        >
-                                            <option value={null}> None </option>
-                                            <option value="firstGlow"> First glow </option>
-                                            <option value="secondGlow"> Second glow </option>
-                                        </select>
-                                        <label for="choseFilter">Glow filter</label>
-                                    </div>
-                                    <span
-                                        class="help-tooltip"
-                                        data-bs-toggle="tooltip"
-                                        data-bs-title="Two filters are available, that are customizable in the 'General' panel (first / second glow sections)."
-                                        >?</span
-                                    >
-                                </div>
-                            {/if}
-                            {#if currentMacroLayerTab === "land"}
-                                <div>
-                                    <div class="field">
-                                        <RangeInput
-                                            id="contourwidth"
-                                            title="Contour width"
-                                            onChange={() => redraw()}
-                                            bind:value={contourParams.strokeWidth}
-                                            min="0"
-                                            max="5"
-                                            step="0.5"
-                                        ></RangeInput>
-                                    </div>
-                                    <div class="field">
-                                        <ColorPickerPreview
-                                            id="contourpicker"
-                                            popup="right"
-                                            title="Contour color"
-                                            value={contourParams.strokeColor}
-                                            onChange={(col) => {
-                                                contourParams.strokeColor = col;
-                                                redraw();
-                                            }}
-                                        ></ColorPickerPreview>
-                                    </div>
-                                    <div class="field">
-                                        <RangeInput
-                                            id="contour dash"
-                                            title="Contour dash"
-                                            onChange={() => redraw()}
-                                            bind:value={contourParams.strokeDash}
-                                            min="0"
-                                            max="20"
-                                            step="0.5"
-                                        ></RangeInput>
-                                    </div>
-                                    {#if computedOrderedTabs.findIndex((x) => x === "land") === 0}
-                                        <ColorPickerPreview
-                                            id="fillpicker"
-                                            popup="right"
-                                            title="Fill color"
-                                            value={contourParams.fillColor}
-                                            onChange={(col) => {
-                                                contourParams.fillColor = col;
-                                                redraw();
-                                            }}
-                                        ></ColorPickerPreview>
-                                    {/if}
-                                </div>
-                            {/if}
-                            {#if zonesData?.[currentMacroLayerTab]?.["data"]}
-                                <div class="d-flex align-items-center">
-                                    <div>
-                                        <label for="data-input-json" class="m-2 btn btn-light">
-                                            Import data for {currentMacroLayerTab}
-                                        </label>
-                                        <input
-                                            id="data-input-json"
-                                            type="file"
-                                            accept=".json"
-                                            on:change={(e) => handleDataImport(e)}
-                                        />
-                                    </div>
-                                    <span
-                                        class="help-tooltip"
-                                        data-bs-toggle="tooltip"
-                                        data-bs-title="Import data for current layer. The 'name' property must be defined for each line. You can export the default data to have a template to start from."
-                                        >?</span
-                                    >
-                                    <div
-                                        class="mx-2 ms-auto btn btn-outline-primary"
-                                        on:click={() => exportJson(zonesData?.[currentMacroLayerTab]?.["data"])}
-                                    >
-                                        Export JSON
-                                    </div>
-                                </div>
-                                <div class="data-table border rounded-2 mb-2" on:click={() => (showModal = true)}>
-                                    <DataTable data={zonesData?.[currentMacroLayerTab]?.["data"]}></DataTable>
-                                </div>
-                                <div class="mx-2 form-check form-switch">
-                                    <input
-                                        type="checkbox"
-                                        role="switch"
-                                        class="form-check-input"
-                                        id="showTooltip"
-                                        bind:checked={tooltipDefs[currentMacroLayerTab].enabled}
-                                        on:click={() =>
-                                            setTimeout(() => {
-                                                initTooltips();
-                                                save();
-                                                applyStylesToTemplate();
-                                            }, 0)}
-                                    />
-                                    <label for="showTooltip" class="form-check-label"> Show tooltip on hover </label>
-                                </div>
-                                {#if tooltipDefs[currentMacroLayerTab].enabled}
-                                    <div class="m-2 has-validation">
-                                        <label for="templatetooltip" class="form-label">
-                                            Tooltip template
-                                            <span
-                                                class="help-tooltip"
-                                                data-bs-toggle="tooltip"
-                                                data-bs-title="The template must be valid HTML (<br/> can be used to break lines). Brackets  &#123; &#125; can be used to reference columns from the data above.  "
-                                                >?</span
-                                            >
-                                        </label>
-                                        <textarea
-                                            class="form-control"
-                                            class:is-invalid={templateErrorMessages[currentMacroLayerTab]}
-                                            id="templatetooltip"
-                                            rows="7"
-                                            bind:value={tooltipDefs[currentMacroLayerTab].template}
-                                            on:change={onTemplateChange}
-                                        ></textarea>
-                                        {#if templateErrorMessages[currentMacroLayerTab]}
-                                            <div class="invalid-feedback">
-                                                <span> Malformed HTML. Please fix the template </span> <br />
-                                            </div>
-                                        {/if}
-                                    </div>
-                                    <div class="mx-2 d-flex align-items-center">
-                                        <label for="tooltip-preview-{currentMacroLayerTab}">
-                                            Example tooltip:
-                                            <span
-                                                class="help-tooltip"
-                                                data-bs-toggle="tooltip"
-                                                data-bs-title="Click on the example to update style. Pro tip: changes made in the developer panel are also reported."
-                                                >?</span
-                                            >
-                                        </label>
-                                        <div class="tooltip-preview">
-                                            <div
-                                                id="tooltip-preview-{currentMacroLayerTab}"
-                                                bind:this={htmlTooltipElem}
-                                                on:click={editTooltip}
-                                                style="${defaultTooltipStyle}"
-                                            >
-                                                {@html formatUnicorn(
-                                                    tooltipDefs[currentMacroLayerTab].template,
-                                                    getFirstDataRow(zonesData[currentMacroLayerTab]) as Record<
-                                                        string,
-                                                        string
-                                                    >,
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                {/if}
-                                <div class="mx-2 form-check form-switch">
-                                    <input
-                                        type="checkbox"
-                                        role="switch"
-                                        class="form-check-input"
-                                        id="colorData"
-                                        bind:checked={curDataDefs.enabled}
-                                        on:change={colorizeAndLegend}
-                                    />
-                                    <label for="colorData" class="form-check-label"> Color using data </label>
-                                </div>
-                                {#if curDataDefs.enabled}
-                                    <div class="d-flex m-1 align-items-center">
-                                        <div class="form-floating flex-grow-1">
-                                            <select
-                                                class="form-select form-select-sm"
-                                                id="choseColorType"
-                                                bind:value={curDataDefs.colorScale}
-                                            >
-                                                {#each availableColorTypes as colorType}
-                                                    <option value={colorType}>
-                                                        {colorType}
-                                                    </option>
-                                                {/each}
-                                            </select>
-                                            <label for="choseColorType">Color type</label>
-                                        </div>
-                                        <span class="help-tooltip" data-bs-toggle="tooltip" data-bs-title={scalesHelp}
-                                            >?</span
-                                        >
-                                    </div>
-
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <div class="flex-grow-1 m-1 form-floating">
-                                            <select
-                                                class="form-select form-select-sm"
-                                                id="choseColorColumn"
-                                                bind:value={curDataDefs.colorColumn}
-                                                on:change={(e) =>
-                                                    (legendDefs[currentMacroLayerTab].title = (
-                                                        e.target as HTMLSelectElement
-                                                    ).value)}
-                                            >
-                                                {#each availableColumns as colorColumn}
-                                                    <option value={colorColumn}>
-                                                        {colorColumn}
-                                                    </option>
-                                                {/each}
-                                            </select>
-                                            <label for="choseColorColumn"> Color on:</label>
-                                        </div>
-                                        <div class="flex-grow-1 m-1 form-floating">
-                                            <select
-                                                class="form-select form-select-sm"
-                                                id="choseColorPalette"
-                                                bind:value={curDataDefs.colorPalette}
-                                            >
-                                                {#each availablePalettes as palette}
-                                                    <option value={palette}>
-                                                        {palette}
-                                                    </option>
-                                                {/each}
-                                            </select>
-                                            <label for="choseColorPalette"> Palette </label>
-                                        </div>
-                                        {#if curDataDefs.colorPalette === "Custom"}
-                                            <span
-                                                class="btn btn-outline-primary"
-                                                on:click={() => (showCustomPalette = true)}
-                                            >
-                                                Edit palette</span
-                                            >
-                                        {/if}
-                                    </div>
-                                    {#if curDataDefs.colorScale !== "category"}
-                                        <div>
-                                            <RangeInput
-                                                id="nbBreaks"
-                                                title="Number of breaks"
-                                                bind:value={curDataDefs.nbBreaks}
-                                                min="3"
-                                                max="9"
-                                            ></RangeInput>
-                                        </div>
-                                    {/if}
-                                    <div class="mx-2 form-check form-switch">
-                                        <input
-                                            type="checkbox"
-                                            class="form-check-input"
-                                            id="showLegend"
-                                            role="switch"
-                                            bind:checked={colorDataDefs[currentMacroLayerTab].legendEnabled}
-                                            on:change={colorizeAndLegend}
-                                        />
-                                        <label for="showLegend" class="form-check-label">
-                                            Show legend
-                                            <span
-                                                class="help-tooltip"
-                                                data-bs-toggle="tooltip"
-                                                data-bs-title="Drag the title of the legend to move it, as well as the entries."
-                                                >?</span
-                                            >
-                                        </label>
-                                    </div>
-                                {/if}
-                                {#if curDataDefs.legendEnabled}
-                                    <Legend
-                                        definition={legendDefs[currentMacroLayerTab]}
-                                        on:change={colorizeAndLegend}
-                                        categorical={colorDataDefs[currentMacroLayerTab].colorScale === "category"}
-                                    />
-                                    <svg width="75%" height={legendDefs[currentMacroLayerTab].rectHeight + 20}>
-                                        <g bind:this={legendSample}>
-                                            <rect
-                                                x="10"
-                                                y="10"
-                                                width={legendDefs[currentMacroLayerTab].rectWidth}
-                                                height={legendDefs[currentMacroLayerTab].rectHeight}
-                                                fill={sampleLegend.color}
-                                                stroke="black"
-                                                on:click={openEditor}
-                                            ></rect>
-                                            <text
-                                                x={legendDefs[currentMacroLayerTab].rectWidth + 15}
-                                                y={legendDefs[currentMacroLayerTab].rectHeight / 2 + 10}
-                                                text-anchor="start"
-                                                dominant-baseline="middle"
-                                                on:click={openEditor}
-                                                style="font-size: 12px;"
-                                            >
-                                                {sampleLegend.text}
-                                            </text>
-                                        </g>
-                                    </svg>
-                                    <span
-                                        class="help-tooltip"
-                                        data-bs-toggle="tooltip"
-                                        data-bs-title="Click to update style (the legend is SVG).">?</span
-                                    >
-                                {/if}
-                            {/if}
-                            {#if currentIsColorByNumeric || currentTemplateHasNumeric}
-                                <div class="mt-1 form-floating">
-                                    <select
-                                        class="form-select form-select-sm"
-                                        id="choseFormatLocale"
-                                        bind:value={tooltipDefs[currentMacroLayerTab].locale}
-                                        on:change={changeNumericFormatter}
-                                    >
-                                        {#each Object.keys(resolvedLocales) as locale}
-                                            <option value={locale}>
-                                                {locale}
-                                            </option>
-                                        {/each}
-                                    </select>
-                                    <label for="choseFormatLocale">Number formatting language</label>
-                                </div>
-                            {/if}
-                        </div>
-                    </div> -->
-                <!-- {#if mainMenuSelection === "layers" && commonState.currentMode === "micro"}
-                    <MicroLayerParams
-                        layerDefinitions={microLayerDefinitions}
-                        onUpdate={handleMicroParamChange}
-                        availablePalettes={microPalettes}
-                        onPaletteChange={handleMicroPaletteChange}
-                    ></MicroLayerParams>
-                {/if} -->
             </div>
         </div>
     </aside>
@@ -2196,7 +1526,13 @@
                     <label for="fontinput" class="m-2 d-flex align-items-center btn btn-outline-primary">
                         <Icon svg={icons["font"]} /> Add font</label
                     >
-                    <input type="file" id="fontinput" accept=".ttf,.woff,.woff2,.otf" onchange={handleInputFont} />
+                    <input
+                        type="file"
+                        class="d-none"
+                        id="fontinput"
+                        accept=".ttf,.woff,.woff2,.otf"
+                        onchange={handleInputFont}
+                    />
                 </div>
                 <div class="dropdown mx-2">
                     <button
@@ -2224,7 +1560,13 @@
                                 <label role="button" for="project-import">
                                     <Icon svg={icons["restore"]} /> Load project</label
                                 >
-                                <input id="project-import" type="file" accept=".cartosvg" onchange={loadProject} />
+                                <input
+                                    id="project-import"
+                                    class="d-none"
+                                    type="file"
+                                    accept=".cartosvg"
+                                    onchange={loadProject}
+                                />
                             </a>
                         </li>
                     </ul>
@@ -2373,13 +1715,6 @@
         <Instructions></Instructions>
     </div>
 </Modal>
-
-<!-- <Modal open={showCustomPalette} onClosed={() => (showCustomPalette = false)}>
-    <div slot="content">
-        <PaletteEditor {customCategoricalPalette} mapping={ordinalMapping[currentMacroLayerTab]} onChange={draw}
-        ></PaletteEditor>
-    </div>
-</Modal> -->
 
 <style lang="scss" scoped>
     #params {

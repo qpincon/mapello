@@ -10,14 +10,13 @@ import { getNumericCols, sortBy } from "src/util/common";
 import { applyStyles } from "src/util/dom";
 import { saveState } from "src/util/save";
 import { duplicateContourCleanFirst } from "src/svg/svg";
-import { tick } from "svelte";
 import { addTooltipListener } from "src/tooltip";
 import { getProjection } from "src/util/projections";
-import { throttle } from "lodash-es";
 import { macroPositionVars } from "src/stateDefaults";
 import { changeAltitudeScale } from "./interactions";
 
 export async function drawMacroTotal(svg: SvgSelection, simplified = false) {
+    console.log("drawMacroTotal", simplified);
     if (!svg) return;
     const computedOrderedTabs = macroState.orderedTabs.filter((x) => {
         if (x === "countries") return macroState.inlinePropsMacro.showCountries;
@@ -50,13 +49,13 @@ export async function drawMacroTotal(svg: SvgSelection, simplified = false) {
         context.fillStyle = "#cdb396";
         appState.path = geoPath(appState.projection, context);
         context.beginPath();
-        appState.path(simplified ? geometriesState.simpleLand : geometriesState.land);
-        context.fill();
-        context.beginPath();
         appState.path(graticule);
         context.strokeStyle = "#ddf";
         context.globalAlpha = 0.8;
         context.stroke();
+        context.beginPath();
+        appState.path(simplified ? geometriesState.simpleLand : geometriesState.land);
+        context.fill();
         return;
     }
 
@@ -137,7 +136,6 @@ export async function drawMacroTotal(svg: SvgSelection, simplified = false) {
     // const map = document.getElementById("static-svg-map") as unknown as SVGSVGElement;
     // if (!map) return;
     // await tick();
-    console.log(svg.node())
     addTooltipListener(svg.node() as SVGSVGElement, commonState.tooltipDefs, macroState.zonesData);
     duplicateContourCleanFirst(svg.node() as SVGSVGElement);
     if (!animated) {
@@ -237,7 +235,6 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     // .attr('clip-path', 'url(#clipMapBorder)')
 
     function drawPaths(this: SVGGElement, data: MacroGroupData) {
-        console.log('drawPaths', data);
         if (data.type === "landImg")
             return appendLandImageNew.call(
                 this,
@@ -310,7 +307,7 @@ export function applyInlineStyles(styleAll = false): void {
 }
 
 
-async function changeProjection(): Promise<void> {
+export async function changeProjection(): Promise<void> {
     const projName = macroState.macroParams.General.projection;
     const alt = macroState.inlinePropsMacro.altitude || macroState.macroParams.General.altitude;
     const projectionParams = {
@@ -338,6 +335,7 @@ export function projectAndDraw(svg: SvgSelection, simplified = false): void {
 }
 
 export function handleChangeProp(event: CustomEvent<{ prop: string; value: unknown }> | string): void {
+    console.log('handleChangeProp', event)
     let prop: string;
     let value: unknown;
     if (typeof event === "string") {
