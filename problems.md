@@ -1,4 +1,4 @@
-- When changing coutour width / contour color, the changes are not applied, and I have DOMException: Node.insertBefore: The new child is an ancestor of the parent in the console
+- When changing coutour width / contour color on the land layer, the changes are not applied, and I have "DOMException: Node.insertBefore: The new child is an ancestor of the parent" in the console
 - The accordions are not collapsing when clicking on the header
 - The accordions header arrow is black instead of white
 - Clicking on "instructions" in the app header does not show the instructions modal

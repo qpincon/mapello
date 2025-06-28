@@ -165,6 +165,14 @@ export const defaultState: GlobalState = {
         contourParams: defaultContourParams,
         colorDataDefs: { countries: defaultColorDef },
         legendDefs: { "countries": defaultLegendDef },
+        tooltipDefs: {
+            countries: {
+                template: defaultTooltipContent(true),
+                content: defaultTooltipFull(defaultTooltipContent(true)),
+                enabled: false,
+                locale: "en-US",
+            },
+        },
         customCategoricalPalette: defaultCustomCategoricalPalette,
         orderedTabs: ["countries", "land"],
         visibleArea: 0.02
@@ -182,14 +190,7 @@ export const defaultState: GlobalState = {
         providedPaths: [],
         inlineStyles: defaultInlineStyles,
         shapeCount: 0,
-        tooltipDefs: {
-            countries: {
-                template: defaultTooltipContent(true),
-                content: defaultTooltipFull(defaultTooltipContent(true)),
-                enabled: false,
-                locale: "en-US",
-            },
-        },
+
         currentMode: "macro",
     },
 };

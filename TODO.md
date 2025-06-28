@@ -149,6 +149,8 @@
   - pass mode as input of Map
 - [ ] Macro: Render simplified while changing altitude / fov
 - [ ] Macro: Use same border method as micro (clip-path + remove geo entirely outside) 
+- [ ] Macro: be able to change graticule color
+- [ ] Macro: find a way to match ADM2 boundary data with land data (see UK adm2 for instance)
 
 - [ ] Allow external link on click of entity
 - [ ] Text / icons / images / freehand : use https://github.com/daybrush/moveable

@@ -106,9 +106,9 @@ export async function initializeAdms(): Promise<void> {
             resolvedAdmTopo[countryAdm] = presimplify(resolved);
             updateLayerSimplification();
         }
-        if (!(countryAdm in commonState.tooltipDefs)) {
+        if (!(countryAdm in macroState.tooltipDefs)) {
             const contentTemplate = defaultTooltipContent(false);
-            commonState.tooltipDefs[countryAdm] = {
+            macroState.tooltipDefs[countryAdm] = {
                 template: contentTemplate,
                 content: defaultTooltipFull(contentTemplate),
                 enabled: false,

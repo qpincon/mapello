@@ -136,7 +136,7 @@ export async function drawMacroTotal(svg: SvgSelection, simplified = false) {
     // const map = document.getElementById("static-svg-map") as unknown as SVGSVGElement;
     // if (!map) return;
     // await tick();
-    addTooltipListener(svg.node() as SVGSVGElement, commonState.tooltipDefs, macroState.zonesData);
+    addTooltipListener(svg.node() as SVGSVGElement, macroState.tooltipDefs, macroState.zonesData);
     duplicateContourCleanFirst(svg.node() as SVGSVGElement);
     if (!animated) {
         svg.selectAll("path[pathLength]").attr("pathLength", null);

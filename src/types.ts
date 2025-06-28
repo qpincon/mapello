@@ -269,6 +269,7 @@ export interface StateMacro {
     // TODO: check what this is actually
     colorDataDefs: Record<string, ColorDef>;
     legendDefs: Record<string, LegendDef>;
+    tooltipDefs: TooltipDefs;
     customCategoricalPalette: Color[];
     visibleArea: number;
 }
@@ -287,7 +288,6 @@ export interface StateCommon {
     inlineStyles: InlineStyles;
     // TODO: remove and compute from shape + label size
     shapeCount: number;
-    tooltipDefs: TooltipDefs;
     currentMode: Mode;
     // TODO: remove and compute from last shape
     lastUsedLabelProps: CssDict;

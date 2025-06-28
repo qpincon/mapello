@@ -10,7 +10,10 @@ jq '
       contourParams: .contourParams,
       colorDataDefs: .colorDataDefs,
       legendDefs: .legendDefs,
+      tooltipDefs: .tooltipDefs,
       customCategoricalPalette: .customCategoricalPalette
+      orderedTabs: .orderedTabs,
+      visibleArea: 0.01,
     },
     stateMicro: {
       microParams: .microParams,
@@ -22,10 +25,8 @@ jq '
       providedFonts: .providedFonts,
       providedShapes: .providedShapes,
       providedPaths: .providedPaths,
-      orderedTabs: .orderedTabs,
       inlineStyles: .inlineStyles,
       shapeCount: .shapeCount,
-      tooltipDefs: .tooltipDefs,
       currentMode: .currentMode
     }
   }

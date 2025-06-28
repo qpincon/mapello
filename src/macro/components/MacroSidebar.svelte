@@ -185,7 +185,7 @@
             macroState.legendDefs[currentMacroLayerTab].sampleHtml = legendSample.outerHTML;
             colorizeAndLegend(svg);
         } else if (htmlTooltipElem && htmlTooltipElem.contains(target)) {
-            commonState.tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem.outerHTML;
+            macroState.tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem.outerHTML;
         } else if (eventType === "inline") {
             if (target.hasAttribute("id")) {
                 handleInlineStyleChange(elemId, target, cssProp, value);
@@ -254,8 +254,8 @@
     }
 
     function applyStylesToTemplate(): void {
-        if (htmlTooltipElem && commonState.tooltipDefs[currentMacroLayerTab]?.enabled) {
-            const tmpElem = htmlToElement(commonState.tooltipDefs[currentMacroLayerTab].content!)!;
+        if (htmlTooltipElem && macroState.tooltipDefs[currentMacroLayerTab]?.enabled) {
+            const tmpElem = htmlToElement(macroState.tooltipDefs[currentMacroLayerTab].content!)!;
             reportStyle(tmpElem, htmlTooltipElem);
         }
         if (legendSample && macroState.colorDataDefs[currentMacroLayerTab]?.legendEnabled) {
@@ -274,7 +274,7 @@
 
     function templateHasNumeric(layerName: string): boolean {
         const toFind = macroState.zonesData[layerName]?.numericCols.map((colDef) => `{${colDef.column}}`);
-        const template = commonState.tooltipDefs[layerName]?.template;
+        const template = macroState.tooltipDefs[layerName]?.template;
         return toFind?.some((str) => template.includes(str));
     }
 
@@ -307,7 +307,7 @@
         macroState.chosenCountriesAdm = macroState.chosenCountriesAdm.filter((x) => x !== country);
         macroState.orderedTabs = macroState.orderedTabs.filter((x) => x !== country);
         currentMacroLayerTab = macroState.orderedTabs[0];
-        delete commonState.tooltipDefs[country];
+        delete macroState.tooltipDefs[country];
         delete macroState.legendDefs[country];
         delete macroState.colorDataDefs[country];
         delete macroState.zonesData[country];
@@ -335,7 +335,7 @@
 
     function getZonesDataFormatters(): void {
         Object.entries(macroState.zonesData).forEach(([name, def]) => {
-            const locale = commonState.tooltipDefs[name].locale;
+            const locale = macroState.tooltipDefs[name].locale;
             const formatters: FormatterObject = {};
             if (def.numericCols.length) {
                 def.numericCols.forEach((colDef) => {
@@ -414,14 +414,14 @@
 
     function onTemplateChange(): void {
         const parsed = DOM_PARSER.parseFromString(
-            commonState.tooltipDefs[currentMacroLayerTab].template,
+            macroState.tooltipDefs[currentMacroLayerTab].template,
             "application/xml",
         );
         const errorNode = parsed.querySelector("parsererror");
         if (errorNode) {
             templateErrorMessages[currentMacroLayerTab] = true;
         } else {
-            commonState.tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem!.outerHTML;
+            macroState.tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem!.outerHTML;
             currentTemplateHasNumeric = templateHasNumeric(currentMacroLayerTab);
             delete templateErrorMessages[currentMacroLayerTab];
         }
@@ -617,7 +617,7 @@
         } else {
             // @ts-expect-error
             formatter = d3
-                .formatLocale(resolvedLocales[commonState.tooltipDefs[tab].locale])
+                .formatLocale(resolvedLocales[macroState.tooltipDefs[tab].locale])
                 .format(`,.${macroState.legendDefs[tab].significantDigits}r`);
             const minValue = Math.min(...(data as number[]));
             const scaleQuantile = scale as d3.ScaleQuantile<string, number>;
@@ -852,7 +852,7 @@
                             role="switch"
                             class="form-check-input"
                             id="showTooltip"
-                            bind:checked={commonState.tooltipDefs[currentMacroLayerTab].enabled}
+                            bind:checked={macroState.tooltipDefs[currentMacroLayerTab].enabled}
                             onclick={() =>
                                 setTimeout(() => {
                                     initTooltips();
@@ -862,7 +862,7 @@
                         />
                         <label for="showTooltip" class="form-check-label"> Show tooltip on hover </label>
                     </div>
-                    {#if commonState.tooltipDefs[currentMacroLayerTab].enabled}
+                    {#if macroState.tooltipDefs[currentMacroLayerTab].enabled}
                         <div class="m-2 has-validation">
                             <label for="templatetooltip" class="form-label">
                                 Tooltip template
@@ -878,7 +878,7 @@
                                 class:is-invalid={templateErrorMessages[currentMacroLayerTab]}
                                 id="templatetooltip"
                                 rows="7"
-                                bind:value={commonState.tooltipDefs[currentMacroLayerTab].template}
+                                bind:value={macroState.tooltipDefs[currentMacroLayerTab].template}
                                 onchange={onTemplateChange}
                             ></textarea>
                             {#if templateErrorMessages[currentMacroLayerTab]}
@@ -906,7 +906,7 @@
                                     style="${defaultTooltipStyle}"
                                 >
                                     {@html formatUnicorn(
-                                        commonState.tooltipDefs[currentMacroLayerTab].template,
+                                        macroState.tooltipDefs[currentMacroLayerTab].template,
                                         getFirstDataRow(macroState.zonesData[currentMacroLayerTab])!,
                                     )}
                                 </div>
@@ -1056,7 +1056,7 @@
                         <select
                             class="form-select form-select-sm"
                             id="choseFormatLocale"
-                            bind:value={commonState.tooltipDefs[currentMacroLayerTab].locale}
+                            bind:value={macroState.tooltipDefs[currentMacroLayerTab].locale}
                             onchange={changeNumericFormatter}
                         >
                             {#each Object.keys(resolvedLocales) as locale}
