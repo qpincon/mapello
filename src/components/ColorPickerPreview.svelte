@@ -21,17 +21,6 @@
         onChange(color);
         changedManually = true;
     }
-
-    // $effect(() => {
-    //     if (value) {
-    //         if (!changedManually && colorPicker) {
-    //             setTimeout(() => {
-    //                 if (colorPicker) colorPicker.init();
-    //             }, 0);
-    //         }
-    //         changedManually = false;
-    //     }
-    // });
 </script>
 
 <div class="{labelAbove ? 'd-flex flex-column justify-content-center' : 'row'} input-type {additionalClasses}">

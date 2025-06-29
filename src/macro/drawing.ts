@@ -14,6 +14,7 @@ import { addTooltipListener } from "src/tooltip";
 import { getProjection } from "src/util/projections";
 import { macroPositionVars } from "src/stateDefaults";
 import { changeAltitudeScale } from "./interactions";
+import { throttle } from "lodash-es";
 
 export async function drawMacroTotal(svg: SvgSelection, simplified = false) {
     console.log("drawMacroTotal", simplified);
@@ -70,8 +71,6 @@ export async function drawMacroTotal(svg: SvgSelection, simplified = false) {
     // mapLibreContainer.style("width", `${width}px`).style("height", `${height}px`);
     appState.path = geoPath(appState.projection);
     appState.pathLarger = geoPath(appState.projectionLarger);
-    // svg.html("");
-    // svg.append("defs");
 
     const groupData: MacroGroupData[] = [];
     Object.values(macroState.zonesFilter).forEach((filterName) => {
@@ -152,6 +151,7 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     const borderWidth = macroState.macroParams.Border.borderWidth;
     const animated = macroState.macroParams.General.animate;
     const outline = { type: "Sphere" };
+    svg.selectAll('.macro-layer').remove();
     groupData.push({
         name: "outline",
         data: [outline],
@@ -213,24 +213,25 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
             });
         }
     });
-    groupData.push({
-        name: "paths",
-        data: [],
-        props: [],
-        filter: null,
-    });
-    groupData.push({
-        name: "points-labels",
-        data: [],
-        props: [],
-        filter: null,
-    });
+    // groupData.push({
+    //     name: "paths",
+    //     data: [],
+    //     props: [],
+    //     filter: null,
+    // });
+    // groupData.push({
+    //     name: "points-labels",
+    //     data: [],
+    //     props: [],
+    //     filter: null,
+    // });
     // const groups = svg.selectAll('svg').data(groupData).join('svg').attr('id', d => d.name);
     const groups = svg
         // .append("svg")
         .selectAll("g")
         .data(groupData)
         .join("g")
+        .classed("macro-layer", true)
         .attr("id", (d) => d.name!);
     // .attr('clip-path', 'url(#clipMapBorder)')
 
@@ -334,7 +335,8 @@ export function projectAndDraw(svg: SvgSelection, simplified = false): void {
     drawMacroTotal(svg, simplified);
 }
 
-export function handleChangeProp(event: CustomEvent<{ prop: string; value: unknown }> | string): void {
+const drawThrottle = throttle(drawMacroTotal, 50);
+export function handleChangeProp(event: CustomEvent<{ prop: string; value: unknown }> | string, svg?: SvgSelection): void {
     console.log('handleChangeProp', event)
     let prop: string;
     let value: unknown;
@@ -364,4 +366,5 @@ export function handleChangeProp(event: CustomEvent<{ prop: string; value: unkno
     }
     changeProjection();
     updateLayerSimplification();
+    if (svg?.node()) drawThrottle(svg);
 }

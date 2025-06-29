@@ -94,6 +94,10 @@
     let showCustomPalette = $state<boolean>(false);
     let htmlTooltipElem = $state<HTMLElement | null>(null);
     let legendSample: SVGGElement | null = $state(null);
+    $effect(() => {
+        const _ = mainMenuSelection;
+        initTooltips();
+    });
     // This contains the common CSS that can ben editor with inline-css-editor
     // we also have a special svelte:head element containing all CSS that is not in baseCss (border style, legend colors, etc.)
     let commonStyleSheetElemMacro: HTMLStyleElement;
@@ -123,22 +127,23 @@
         // paramDefs: ParamDefinitions;
         // inlinePropsMacro: Record<string, any>;
         // onChange: (changedProp: string) => void;
-        styleEditor: InlineStyleEditor;
+        styleEditor: InlineStyleEditor | null;
         svg: SvgSelection;
         draw: (simplified?: boolean) => void;
     }
 
     let { styleEditor, svg, draw }: Props = $props();
 
-    onMount(async () => {
+    onMount(() => {
         console.log("onmount");
-        await initWorldData();
         commonStyleSheetElemMacro = document.createElement("style");
         commonStyleSheetElemMacro.setAttribute("id", "common-style-sheet-elem-macro");
         document.head.appendChild(commonStyleSheetElemMacro);
         commonStyleSheetElemMacro.innerHTML = defaultState.stateCommon.baseCss;
+        initWorldData().then(() => {
+            draw();
+        });
         // await tick();
-        draw();
     });
 
     export function applyStateAndDraw(simplified = false) {
@@ -246,11 +251,11 @@
     const saveDebounced = debounce(saveState, 200);
     function editTooltip(e: MouseEvent): void {
         const rect = (e.target as HTMLElement).getBoundingClientRect();
-        styleEditor.open(e.target as HTMLElement, rect.right, rect.bottom);
+        styleEditor!.open(e.target as HTMLElement, rect.right, rect.bottom);
     }
 
     function openEditor(e: MouseEvent): void {
-        styleEditor.open(e.target as HTMLElement, e.pageX, e.pageY);
+        styleEditor!.open(e.target as HTMLElement, e.pageX, e.pageY);
     }
 
     function applyStylesToTemplate(): void {
@@ -667,7 +672,7 @@
             {paramDefs}
             {helpParams}
             otherParams={accordionVisiblityParams}
-            on:change={(e) => handleChangeProp(e)}
+            on:change={(e) => handleChangeProp(e, svg)}
         ></Accordions>
     {:else if mainMenuSelection === "layers"}
         <div class="border border-primary rounded layers">

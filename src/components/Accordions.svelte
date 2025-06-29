@@ -1,12 +1,12 @@
 <script lang="ts">
-  import "bootstrap/js/dist/collapse";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
 
   import ColorPickerPreview from "./ColorPickerPreview.svelte";
   import RangeInput from "./RangeInput.svelte";
   import { camelCaseToSentence } from "../util/common";
   import type { OtherParams, ParamDefinitions, ParamKey } from "src/params";
   import type { Color } from "src/types";
+  import { Collapse } from "bootstrap";
 
   const dispatch = createEventDispatcher();
 
@@ -18,6 +18,14 @@
   }
 
   let { sections = $bindable(), paramDefs, helpParams = {}, otherParams = {} }: Props = $props();
+
+  onMount(() => {
+    const collapses = document.querySelectorAll(".collapse");
+    console.log(collapses);
+    collapses.forEach((collapseElement) => {
+      new Collapse(collapseElement);
+    });
+  });
 
   function propChanged(prop: string, value: string | number | boolean) {
     console.log("propChanged", prop, value);
@@ -52,8 +60,7 @@
           {/if}
         </button>
       </h3>
-      {@html "<!-- Buggy - collaspe on any click inside... class:show={level === 0 && i < 4}-->"}
-      <div id={`panel-${title}-collapse`} class="accordion-collapse collapse show">
+      <div id={`panel-${title}-collapse`} class="accordion-collapse collapse">
         <div class="accordion-body">
           {#each Object.keys(sections[title]) as key, i (key)}
             {#if otherParams[key]?.disabled !== true}

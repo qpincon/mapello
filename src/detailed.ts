@@ -134,7 +134,6 @@ export async function drawPrettyMap(
         // .attr("computed-id", d => d.properties.computedId)
         .attr("id", d => d.properties.uuid!);
 
-    svg.append('g').attr('id', 'points-labels');
     svg.style("pointer-events", isLocked ? "auto" : "none");
     mapLibreContainer.style('opacity', 0);
 

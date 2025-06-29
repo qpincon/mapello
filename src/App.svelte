@@ -88,7 +88,7 @@
 
     // ==== End state =====
 
-    let commonCss: string | undefined;
+    let commonCss: string | undefined = $state(undefined);
     const menuStates: MenuState = {
         chosingPoint: false,
         pointSelected: false,
@@ -97,25 +97,23 @@
         addingImageToPath: false,
         chosingMarker: false,
     };
-    let editedLabelId: string | null;
-    let textInput: HTMLInputElement;
-    let typedText = "";
-    let styleEditor: InlineStyleEditor;
-    let contextualMenu: HTMLDivElement & {
-        opened?: boolean;
-    };
-    let showExportConfirm = false;
-    let showInstructions = false;
-    let exportForm: HTMLFormElement;
+    let editedLabelId: string | null = $state(null);
+    let textInput: HTMLInputElement | null = $state(null);
+    let typedText = $state("");
+    let styleEditor: InlineStyleEditor | null = $state(null);
+    let contextualMenu: (HTMLDivElement & { opened?: boolean }) | null = $state(null);
+    let showExportConfirm = $state(false);
+    let showInstructions = $state(false);
+    let exportForm: HTMLFormElement | null = $state(null);
 
     // TODO: move in menuStates
-    let editingPath = false;
-    let isDrawingFreeHand = false;
-    let isDrawingPath = false;
+    let editingPath = $state(false);
+    let isDrawingFreeHand = $state(false);
+    let isDrawingPath = $state(false);
     let iseOnClickEnabled = $derived(!editingPath && !isDrawingFreeHand && !isDrawingPath);
 
-    let zoomFunc: d3.ZoomBehavior<any, any>;
-    let dragFunc: d3.DragBehavior<any, any, any>;
+    let zoomFunc: d3.ZoomBehavior<any, any> | null = $state(null);
+    let dragFunc: d3.DragBehavior<any, any, any> | null = $state(null);
     /**
      * Map used for drawing zoomed-in cities as SVG using custom palette
      * It is hidden when in "macro" mode.
@@ -123,9 +121,9 @@
      *  - visible if the map is not zoomed enough
      *  - hidden if it is zoomed enough. Instead, we have the custom SVG displaying
      */
-    let maplibreMap: Map;
-    let mapLoadedPromise: Promise<unknown>;
-    let microLocked = false;
+    let maplibreMap: Map | null = $state(null);
+    let mapLoadedPromise: Promise<unknown> | null = $state(null);
+    let microLocked = $state(false);
     onMount(async () => {
         console.log("App onmount");
         /** Init bootstrap dropdowns */
@@ -224,10 +222,10 @@
                 },
             },
         });
-        document.body.append(contextualMenu);
-        contextualMenu.style.display = "none";
-        contextualMenu.style.position = "absolute";
-        contextualMenu.opened = false;
+        document.body.append(contextualMenu!);
+        contextualMenu!.style.display = "none";
+        contextualMenu!.style.position = "absolute";
+        contextualMenu!.opened = false;
         restoreStateFromSave();
         attachListeners();
         // maplibreMap.showTileBoundaries = true;
@@ -251,7 +249,7 @@
             })
             .on("start", () => {
                 if (menuStates.addingLabel) validateLabel();
-                styleEditor.close();
+                styleEditor!.close();
                 closeMenu();
             });
 
@@ -294,13 +292,13 @@
 
         maplibreMap.on("moveend", (event) => {
             if (commonState.currentMode !== "micro") return;
-            const center = maplibreMap.getCenter().toArray();
+            const center = maplibreMap!.getCenter().toArray();
             if (center[0] !== 0 && center[1] !== 0) {
                 inlinePropsMicro = {
                     center,
-                    zoom: maplibreMap.getZoom(),
-                    pitch: maplibreMap.getPitch(),
-                    bearing: maplibreMap.getBearing(),
+                    zoom: maplibreMap!.getZoom(),
+                    pitch: maplibreMap!.getPitch(),
+                    bearing: maplibreMap!.getBearing(),
                 };
             }
             // drawDebounced();
@@ -316,8 +314,8 @@
 
         maplibreMap.on("click", (event) => {
             console.log(event);
-            console.log(maplibreMap.queryRenderedFeatures(event.point));
-            console.log(maplibreMap.getStyle());
+            console.log(maplibreMap!.queryRenderedFeatures(event.point));
+            console.log(maplibreMap!.getStyle());
         });
         maplibreMap.on("contextmenu", (e) => {
             if (!microLocked) {
@@ -359,9 +357,10 @@
     //     save();
     // }
 
-    function switchMode(newMode: Mode): void {
+    async function switchMode(newMode: Mode): Promise<void> {
         if (commonState.currentMode === newMode) return;
         commonState.currentMode = newMode;
+        await tick();
         const mapLibreContainer = select("#maplibre-map");
         if (commonState.currentMode === "micro") {
             mapLibreContainer.style("display", "block");
@@ -423,14 +422,16 @@
         );
 
         svg.on("click", function (e) {
-            if (contextualMenu.opened) closeMenu();
-            else if (styleEditor.isOpened()) styleEditor.close();
+            if (contextualMenu!.opened) closeMenu();
+            else if (styleEditor!.isOpened()) styleEditor!.close();
             else if (iseOnClickEnabled) openEditor(e);
         });
 
         if (commonState.currentMode === "macro") {
-            drawMacroTotal(svg, simplified);
+            await drawMacroTotal(svg, simplified);
         }
+        svg.append("g").attr("id", "points-labels");
+        svg.append("g").attr("id", "paths");
         drawAndSetupShapes();
         drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
         if (!simplified) saveState();
@@ -557,9 +558,9 @@
     // }
 
     function openEditor(e: MouseEvent): void {
-        styleEditor.open(e.target as HTMLElement, e.pageX, e.pageY);
+        styleEditor!.open(e.target as HTMLElement, e.pageX, e.pageY);
     }
-    let selectedPathIndex: number;
+    let selectedPathIndex = $state<number>(0);
 
     function editPath(): void {
         closeMenu();
@@ -756,8 +757,8 @@
     // }
 
     function closeMenu(): void {
-        contextualMenu.style.display = "none";
-        contextualMenu.opened = false;
+        contextualMenu!.style.display = "none";
+        contextualMenu!.opened = false;
         menuStates.chosingPoint = false;
         menuStates.pointSelected = false;
         menuStates.addingLabel = false;
@@ -768,7 +769,7 @@
 
     function editStyles(): void {
         closeMenu();
-        styleEditor.open(openContextMenuInfo.target, openContextMenuInfo.event.pageX, openContextMenuInfo.event.pageY);
+        styleEditor!.open(openContextMenuInfo.target, openContextMenuInfo.event.pageX, openContextMenuInfo.event.pageY);
     }
     function addPoint(): void {
         menuStates.chosingPoint = true;
@@ -777,8 +778,8 @@
     async function addLabel(): Promise<void> {
         menuStates.addingLabel = true;
         await tick();
-        textInput.focus();
-        textInput.addEventListener("keydown", ({ key }) => {
+        textInput!.focus();
+        textInput!.addEventListener("keydown", ({ key }) => {
             if (key === "Enter") {
                 validateLabel();
             }
@@ -844,10 +845,10 @@
             position: appState.projection!.invert!(pointer(e))!,
             target: (target ? target : e.target) as SVGPathElement,
         };
-        contextualMenu.opened = true;
-        contextualMenu.style.display = "block";
-        contextualMenu.style.left = e.pageX + "px";
-        contextualMenu.style.top = e.pageY + "px";
+        contextualMenu!.opened = true;
+        contextualMenu!.style.display = "block";
+        contextualMenu!.style.left = e.pageX + "px";
+        contextualMenu!.style.top = e.pageY + "px";
     }
 
     async function addShape(shapeName: ShapeName): Promise<void> {
@@ -865,7 +866,7 @@
             const lastShape = document.getElementById(
                 commonState.providedShapes[commonState.providedShapes.length - 1].id,
             )!;
-            styleEditor.open(lastShape, openContextMenuInfo.event.pageX, openContextMenuInfo.event.pageY);
+            styleEditor!.open(lastShape, openContextMenuInfo.event.pageX, openContextMenuInfo.event.pageY);
         }, 0);
     }
 
@@ -897,180 +898,8 @@
         closeMenu();
     }
 
-    // const onModalClose = () => {
-    //     showModal = false;
-    // };
-
-    // function exportJson(data: any): void {
-    //     download(JSON.stringify(data, null, "\t"), "text/json", "data.json");
-    // }
-
-    // function getZonesDataFormatters(): void {
-    //     Object.entries(zonesData).forEach(([name, def]) => {
-    //         const locale = tooltipDefs[name].locale;
-    //         const formatters: FormatterObject = {};
-    //         if (def.numericCols.length) {
-    //             def.numericCols.forEach((colDef) => {
-    //                 const col = colDef.column;
-    //                 formatters[col] = getBestFormatter(
-    //                     def.data.map((row) => row[col] as number),
-    //                     resolvedLocales[locale],
-    //                 );
-    //             });
-    //         }
-    //         zonesData[name].formatters = formatters;
-    //     });
-    // }
-
-    // function handleDataImport(e: Event): void {
-    //     const file = (e.target as HTMLInputElement).files![0];
-    //     const reader = new FileReader();
-    //     reader.addEventListener("load", () => {
-    //         try {
-    //             let parsed = JSON.parse(reader.result as string);
-    //             const currentNames = new Set<string | undefined>(
-    //                 zonesData[currentMacroLayerTab].data.map((line) => line.name),
-    //             );
-    //             currentNames.delete(undefined);
-    //             if (!Array.isArray(parsed)) {
-    //                 return window.alert("JSON should be a list of objects, each object reprensenting a line.");
-    //             }
-    //             const noNameLinesMsg = parsed.reduce((errorMsg, entry, index) => {
-    //                 if (entry.name === undefined) {
-    //                     errorMsg += `Entry ${index} is ${JSON.stringify(entry)} \n`;
-    //                 }
-    //                 return errorMsg;
-    //             }, "");
-    //             if (parsed.some((line) => line.name === undefined)) {
-    //                 return window.alert(`All lines should have a 'name' property \n${noNameLinesMsg}`);
-    //             }
-    //             const newNames = new Set(parsed.map((line) => line.name));
-    //             const difference = new Set([...currentNames].filter((x) => !newNames.has(x)));
-    //             if (difference.size) {
-    //                 return window.alert(`Missing names ${[...difference]}`);
-    //             }
-    //             zonesData[currentMacroLayerTab] = {
-    //                 data: parsed,
-    //                 provided: true,
-    //                 numericCols: getNumericCols(parsed),
-    //             };
-    //             getZonesDataFormatters();
-    //             autoSelectColors();
-    //             save();
-    //         } catch (e) {
-    //             console.log("Parse error:", e);
-    //             window.alert("Provided file should be valid JSON.");
-    //         }
-    //     });
-    //     reader.readAsText(file);
-    // }
-
-    // function editTooltip(e: MouseEvent): void {
-    //     const rect = (e.target as HTMLElement).getBoundingClientRect();
-    //     styleEditor.open(e.target as HTMLElement, rect.right, rect.bottom);
-    // }
-
-    // let templateErrorMessages: Record<string, boolean> = {};
-    // function onTemplateChange(): void {
-    //     const parsed = DOM_PARSER.parseFromString(tooltipDefs[currentMacroLayerTab].template, "application/xml");
-    //     const errorNode = parsed.querySelector("parsererror");
-    //     if (errorNode) {
-    //         templateErrorMessages[currentMacroLayerTab] = true;
-    //     } else {
-    //         tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem.outerHTML;
-    //         currentTemplateHasNumeric = templateHasNumeric(currentMacroLayerTab);
-    //         delete templateErrorMessages[currentMacroLayerTab];
-    //     }
-    //     save();
-    // }
-
-    // function changeNumericFormatter(): void {
-    //     getZonesDataFormatters();
-    //     colorizeAndLegend();
-    // }
-
-    // async function onTabChanged(newTabTitle: string): Promise<void> {
-    //     currentMacroLayerTab = newTabTitle;
-    //     currentTemplateHasNumeric = templateHasNumeric(currentMacroLayerTab) === true;
-    //     await tick();
-    //     initTooltips();
-    //     applyStylesToTemplate();
-    // }
-
-    // function applyStylesToTemplate(): void {
-    //     if (htmlTooltipElem && tooltipDefs[currentMacroLayerTab]?.enabled) {
-    //         const tmpElem = htmlToElement(tooltipDefs[currentMacroLayerTab].content!)!;
-    //         reportStyle(tmpElem, htmlTooltipElem);
-    //     }
-    //     if (legendSample && colorDataDefs[currentMacroLayerTab]?.legendEnabled) {
-    //         const tmpElem = htmlToElement(legendDefs[currentMacroLayerTab].sampleHtml!)!;
-    //         reportStyle(tmpElem, legendSample);
-    //     }
-    // }
-
-    // async function addNewCountry(e: Event): Promise<void> {
-    //     const target = e.target as HTMLSelectElement;
-    //     const newLayerName = target.value;
-    //     if (chosenCountriesAdm.includes(newLayerName)) return;
-    //     let searchedAdm;
-    //     if (newLayerName.slice(-1) === "1") searchedAdm = newLayerName.replace("ADM1", "ADM2");
-    //     else searchedAdm = newLayerName.replace("ADM2", "ADM1");
-    //     const existingIndex = chosenCountriesAdm.indexOf(searchedAdm);
-    //     if (existingIndex > -1) {
-    //         deleteCountry(searchedAdm, false);
-    //     }
-    //     chosenCountriesAdm.push(newLayerName);
-    //     orderedTabs.push(newLayerName);
-    //     chosenCountriesAdm = chosenCountriesAdm;
-    //     orderedTabs = orderedTabs;
-    //     target.selectedIndex = 0;
-    //     await draw();
-    //     onTabChanged(newLayerName);
-    // }
-
-    // function deleteCountry(country: string, drawAfter = true): void {
-    //     chosenCountriesAdm = chosenCountriesAdm.filter((x) => x !== country);
-    //     orderedTabs = orderedTabs.filter((x) => x !== country);
-    //     currentMacroLayerTab = orderedTabs[0];
-    //     delete tooltipDefs[country];
-    //     delete legendDefs[country];
-    //     delete colorDataDefs[country];
-    //     delete zonesData[country];
-    //     if (drawAfter) draw();
-    // }
-
-    // === Drag and drop behaviour ===
-
-    // let hoveringTab: number | null = null;
-    // let dragStartIndex = 0;
-
-    // function drop(event: DragEvent, target: number): void {
-    //     event.dataTransfer!.dropEffect = "move";
-    //     const newList = orderedTabs;
-
-    //     if (dragStartIndex < target) {
-    //         newList.splice(target + 1, 0, newList[dragStartIndex]);
-    //         newList.splice(dragStartIndex, 1);
-    //     } else {
-    //         newList.splice(target, 0, newList[dragStartIndex]);
-    //         newList.splice(dragStartIndex + 1, 1);
-    //     }
-    //     orderedTabs = newList;
-    //     hoveringTab = null;
-    //     draw();
-    // }
-
-    // function dragstart(event: DragEvent, i: number, prevent = false): void {
-    //     if (prevent) {
-    //         return event.preventDefault();
-    //     }
-    //     event.dataTransfer!.effectAllowed = "move";
-    //     event.dataTransfer!.dropEffect = "move";
-    //     dragStartIndex = i;
-    // }
-
     function validateExport(): void {
-        const formData = Object.fromEntries(new FormData(exportForm).entries());
+        const formData = Object.fromEntries(new FormData(exportForm!).entries());
         console.log("formData", formData);
         // if (commonState.currentMode === "macro") {
         //     exportSvg(
@@ -1107,205 +936,6 @@
         }
         showExportConfirm = true;
     }
-    // === Colorize by data behaviour ===
-
-    // --- Computed ---
-    // let availableColumns: string[] = [],
-    //     availablePalettes: string[] = [];
-    // $: availableColorTypes = zonesData?.[currentMacroLayerTab]?.numericCols?.length
-    //     ? ["category", "quantile", "quantize"]
-    //     : ["category"];
-    // $: curDataDefs = colorDataDefs?.[currentMacroLayerTab];
-    // let currentIsColorByNumeric = ["quantile", "quantize"].includes(curDataDefs?.colorScale);
-
-    // function autoSelectColors() {
-    //     if (!zonesData[currentMacroLayerTab]) return;
-    //     if (curDataDefs.colorScale === null) {
-    //         if (curDataDefs.colorColumn !== null) {
-    //             if (zonesData[currentMacroLayerTab].numericCols.find((x) => x.column === curDataDefs.colorColumn)) {
-    //                 curDataDefs.colorScale = "quantile";
-    //             } else curDataDefs.colorScale = "category";
-    //         } else curDataDefs.colorScale = "category";
-    //     }
-    //     availableColumns =
-    //         curDataDefs.colorScale === "category"
-    //             ? getColumns(zonesData[currentMacroLayerTab].data)
-    //             : zonesData?.[currentMacroLayerTab]?.numericCols.map((x) => x.column);
-    //     availablePalettes =
-    //         curDataDefs.colorScale === "category" ? Object.keys(CATEGORICAL_SCHEMES) : Object.keys(CONTINUOUS_SCHEMES);
-    //     if (!availableColumns.includes(curDataDefs.colorColumn)) {
-    //         curDataDefs.colorColumn = availableColumns[0];
-    //     }
-    //     if (!availablePalettes.includes(curDataDefs.colorPalette!))
-    //         curDataDefs.colorPalette = availablePalettes[0] as AnyScaleKey;
-    //     if (svg) colorizeAndLegend();
-    // }
-
-    // $: if (colorDataDefs?.[currentMacroLayerTab]) {
-    //     const x = { ...colorDataDefs[currentMacroLayerTab] };
-    //     console.log(x);
-    //     // TODO: test this works
-    //     autoSelectColors();
-    // }
-
-    // const colorsCssByTab: Record<string, string> = {};
-    // let legendSample: SVGGElement;
-    // let displayedLegend: Record<string, SvgGSelection> = {};
-    // let sampleLegend = {
-    //     color: "black",
-    //     text: "test",
-    // };
-    // let showCustomPalette = false;
-    // // tab => {x => color} used for custom palette
-    // const ordinalMapping: OrdinalMapping = {};
-    // async function colorizeAndLegend(e?: Event): Promise<void> {
-    //     await tick();
-    //     initTooltips();
-    //     legendDefs = legendDefs;
-    //     const legendEntries = select("#svg-map-legend");
-    //     if (!legendEntries.empty()) legendEntries.remove();
-    //     const legendSelection = svg.select("svg").append("g").attr("id", "svg-map-legend") as SvgGSelection;
-    //     Object.entries(colorDataDefs).forEach(([tab, dataColorDef], tabIndex) => {
-    //         if (!zonesData[tab]) return;
-    //         if (!legendDefs[tab].noData.manual) legendDefs[tab].noData.active = false;
-    //         // reset present classes
-    //         document.querySelectorAll(`g[id="${tab}"] [class*="ssc"]`).forEach((el) => {
-    //             [...el.classList].forEach((cls) => {
-    //                 if (cls.includes("ssc")) el.classList.remove(cls);
-    //             });
-    //         });
-    //         if (!dataColorDef.enabled) {
-    //             dataColorDef.legendEnabled = false;
-    //             colorsCssByTab[tab] = "";
-    //             if (displayedLegend[tab]) displayedLegend[tab].remove();
-    //             zonesData[tab].data.forEach((row) => {
-    //                 const d = row[dataColorDef.colorColumn];
-    //                 const key = row.name;
-    //                 const elem = document.querySelector(`g[id="${tab}"] [id="${key}"]`);
-    //                 if (!elem) return;
-    //                 [...elem.classList].forEach((cls) => {
-    //                     if (cls.includes("ssc")) elem.classList.remove(cls);
-    //                 });
-    //             });
-    //             return;
-    //         }
-    //         const paletteName = dataColorDef.colorPalette;
-    //         // filter out undef or null data
-    //         const data = zonesData[tab].data.reduce<(string | number)[]>((acc, row) => {
-    //             const d = row[dataColorDef.colorColumn];
-    //             if (d === null || d === undefined) {
-    //                 if (!legendDefs[tab].noData.manual) legendDefs[tab].noData.active = true;
-    //                 return acc;
-    //             }
-    //             acc.push(d);
-    //             return acc;
-    //         }, []);
-    //         let scale: ColorScale;
-    //         if (dataColorDef.colorScale === "category") {
-    //             if (dataColorDef.colorPalette === "Custom") {
-    //                 ordinalMapping[tab] = {};
-    //                 scale = scaleOrdinal(customCategoricalPalette);
-    //             } else scale = scaleOrdinal(CATEGORICAL_SCHEMES[paletteName as CategoricalScaleKey]);
-    //         } else if (dataColorDef.colorScale === "quantile") {
-    //             scale = scaleQuantile<string, number>()
-    //                 .domain(data as number[])
-    //                 .range(CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks]);
-    //         } else if (dataColorDef.colorScale === "quantize") {
-    //             const dataExtent = extent(data as number[]) as [number, number];
-    //             scale = scaleQuantize<string, number>()
-    //                 .domain(dataExtent)
-    //                 .range(CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks]);
-    //         }
-    //         const usedColors: Color[] = [];
-    //         zonesData[tab].data.forEach((row) => {
-    //             const d = row[dataColorDef.colorColumn];
-    //             const key = row.name;
-    //             const elem = document.querySelector(`g[id="${tab}"] [id="${key}"]`);
-    //             if (!elem) return;
-    //             let color: Color;
-    //             if (d === null || d === undefined) {
-    //                 color = legendDefs[tab].noData.color;
-    //             } else {
-    //                 // @ts-expect-error
-    //                 color = scale(d) as Color;
-    //                 if (ordinalMapping[tab]) {
-    //                     if (!ordinalMapping[tab][color]) ordinalMapping[tab][color] = new Set([d as string]);
-    //                     else ordinalMapping[tab][color].add(d as string);
-    //                 }
-    //             }
-    //             if (!usedColors.includes(color)) usedColors.push(color);
-    //             const cssClass = `ssc-${tabIndex}-${usedColors.indexOf(color)}`;
-
-    //             elem.classList.add(cssClass);
-    //         });
-    //         let newCss = "";
-    //         usedColors.forEach((color, i) => {
-    //             newCss += `path.ssc-${tabIndex}-${i}{fill:${color};}
-    //         path.ssc-${tabIndex}-${i}.hovered{fill:${d3Color(color)!.brighter(0.2).hex()};}`;
-    //         });
-    //         colorsCssByTab[tab] = newCss;
-    //         const legendColors = getLegendColors(dataColorDef, tab, scale!, data);
-    //         if (!legendColors) return;
-    //         if (tab === currentMacroLayerTab)
-    //             sampleLegend = {
-    //                 color: legendColors[0][0],
-    //                 text: legendColors[0][1],
-    //             };
-    //         const sampleElem = htmlToElement<SVGSVGElement>(legendDefs[tab].sampleHtml!)!;
-    //         displayedLegend[tab] = drawLegend(
-    //             legendSelection,
-    //             legendDefs[tab],
-    //             legendColors,
-    //             dataColorDef.colorScale === "category",
-    //             sampleElem,
-    //             tab,
-    //             saveDebounced,
-    //             applyInlineStyles,
-    //         );
-    //     });
-    //     computeCss();
-    //     applyInlineStyles();
-    //     applyStylesToTemplate();
-    // }
-
-    // ==== Legend ===
-
-    // function getLegendColors(
-    //     dataColorDef: ColorDef,
-    //     tab: string,
-    //     scale: ColorScale,
-    //     data: (string | number)[],
-    // ): LegendColor[] | undefined {
-    //     if (!dataColorDef.legendEnabled) {
-    //         if (displayedLegend[tab]) displayedLegend[tab].remove();
-    //         return;
-    //     }
-    //     if (legendSample && legendDefs[tab].sampleHtml === null) legendDefs[tab].sampleHtml = legendSample.outerHTML;
-    //     if (legendDefs[tab].title === null) legendDefs[tab].title = dataColorDef.colorColumn;
-    //     let threshValues: number[];
-    //     let formatter = (x: number | string) => x;
-    //     if (dataColorDef.colorScale === "category") {
-    //         threshValues = [...new Set(data as number[])];
-    //     } else {
-    //         // @ts-expect-error
-    //         formatter = d3
-    //             .formatLocale(resolvedLocales[tooltipDefs[tab].locale])
-    //             .format(`,.${legendDefs[tab].significantDigits}r`);
-    //         const minValue = Math.min(...(data as number[]));
-    //         const scaleQuantile = scale as d3.ScaleQuantile<string, number>;
-    //         const scaleQuantize = scale as d3.ScaleQuantize<string, number>;
-    //         if (scaleQuantile.quantiles) threshValues = scaleQuantile.quantiles();
-    //         else if (scaleQuantize.thresholds) threshValues = scaleQuantize.thresholds();
-    //         threshValues!.unshift(minValue);
-    //     }
-    //     const legendColors = threshValues!.reduce((acc, cur) => {
-    //         // @ts-expect-error
-    //         acc.push([scale(cur) as Color, formatter(cur)]);
-    //         return acc;
-    //     }, [] as LegendColor[]);
-    //     if (legendDefs[tab].direction === "v") return legendColors.reverse();
-    //     return legendColors;
-    // }
 
     // TODO: check menu opened to avoid it being display on page land
 </script>
