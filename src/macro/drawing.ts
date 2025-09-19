@@ -16,8 +16,8 @@ import { macroPositionVars } from "src/stateDefaults";
 import { changeAltitudeScale } from "./interactions";
 import { throttle } from "lodash-es";
 
-export async function drawMacroTotal(svg: SvgSelection, simplified = false) {
-    console.log("drawMacroTotal", simplified);
+export async function drawMacroBase(svg: SvgSelection, simplified = false) {
+    console.log("drawMacroBase", simplified);
     if (!svg) return;
     const computedOrderedTabs = macroState.orderedTabs.filter((x) => {
         if (x === "countries") return macroState.inlinePropsMacro.showCountries;
@@ -332,10 +332,10 @@ export async function changeProjection(): Promise<void> {
 
 export function projectAndDraw(svg: SvgSelection, simplified = false): void {
     changeProjection();
-    drawMacroTotal(svg, simplified);
+    drawMacroBase(svg, simplified);
 }
 
-const drawThrottle = throttle(drawMacroTotal, 50);
+const drawThrottle = throttle(drawMacroBase, 50);
 export function handleChangeProp(event: CustomEvent<{ prop: string; value: unknown }> | string, svg?: SvgSelection): void {
     console.log('handleChangeProp', event)
     let prop: string;

@@ -53,7 +53,7 @@
     import { extent } from "d3";
     import { transitionCssMacro } from "src/svg/transition";
     import dataExplanation from "../../assets/dataColor.svg";
-    import { applyInlineStyles, drawMacroTotal, handleChangeProp, projectAndDraw } from "../drawing";
+    import { applyInlineStyles, drawMacroBase, handleChangeProp, projectAndDraw } from "../drawing";
     import { appendCountryImageNew } from "src/svg/contourMethods";
     import { dragged, zoomed } from "../interactions";
     import Modal from "src/components/Modal.svelte";
@@ -154,6 +154,11 @@
         dragged(e);
         handleChangeProp("longitude");
         drawSimplifyThenReal();
+    }
+
+    export function drawMacroTotal(simplified = false) {
+        drawMacroBase(svg, simplified);
+        colorizeAndLegend(svg);
     }
 
     export function onStyleChanged(
@@ -294,7 +299,7 @@
         }
         macroState.orderedTabs = newList;
         hoveringTab = -1;
-        drawMacroTotal(svg);
+        drawMacroBase(svg);
     }
 
     function tabDragStart(event: DragEvent, i: number, prevent = false): void {
@@ -314,7 +319,7 @@
         delete macroState.legendDefs[country];
         delete macroState.colorDataDefs[country];
         delete macroState.zonesData[country];
-        if (drawAfter) drawMacroTotal(svg);
+        if (drawAfter) drawMacroBase(svg);
     }
 
     async function addNewCountry(e: Event): Promise<void> {
@@ -332,7 +337,7 @@
         macroState.chosenCountriesAdm.push(newLayerName);
         macroState.orderedTabs.push(newLayerName);
         target.selectedIndex = 0;
-        await drawMacroTotal(svg);
+        await drawMacroBase(svg);
         onTabChanged(newLayerName);
     }
 
@@ -688,7 +693,7 @@
                         role="switch"
                         id="showLand"
                         bind:checked={macroState.inlinePropsMacro.showLand}
-                        onchange={() => drawMacroTotal(svg)}
+                        onchange={() => drawMacroBase(svg)}
                     />
                     <label class="form-check-label" for="showLand"> Show land</label>
                 </div>
@@ -699,7 +704,7 @@
                         role="switch"
                         id="showCountries"
                         bind:checked={macroState.inlinePropsMacro.showCountries}
-                        onchange={() => drawMacroTotal(svg)}
+                        onchange={() => drawMacroBase(svg)}
                     />
                     <label class="form-check-label" for="showCountries"> Show countries</label>
                 </div>
@@ -760,7 +765,7 @@
                                 id="choseFilter"
                                 class="form-select form-select-sm"
                                 bind:value={macroState.zonesFilter[currentMacroLayerTab]}
-                                onchange={() => drawMacroTotal(svg)}
+                                onchange={() => drawMacroBase(svg)}
                             >
                                 <option value={null}> None </option>
                                 <option value="firstGlow"> First glow </option>
@@ -782,7 +787,7 @@
                             <RangeInput
                                 id="contourwidth"
                                 title="Contour width"
-                                onChange={() => drawMacroTotal(svg)}
+                                onChange={() => drawMacroBase(svg)}
                                 bind:value={macroState.contourParams.strokeWidth}
                                 min="0"
                                 max="5"
@@ -797,7 +802,7 @@
                                 value={macroState.contourParams.strokeColor}
                                 onChange={(col) => {
                                     macroState.contourParams.strokeColor = col;
-                                    drawMacroTotal(svg);
+                                    drawMacroBase(svg);
                                 }}
                             ></ColorPickerPreview>
                         </div>

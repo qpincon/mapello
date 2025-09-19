@@ -57,7 +57,7 @@
         Mode,
     } from "./types";
     import { Dropdown } from "bootstrap";
-    import { applyInlineStyles, changeProjection, drawMacroTotal } from "./macro/drawing";
+    import { applyInlineStyles, changeProjection } from "./macro/drawing";
     import MacroSidebar from "./macro/components/MacroSidebar.svelte";
     import { appState, commonState, macroState, microState } from "./state.svelte";
     import { icons } from "./shared/icons";
@@ -433,7 +433,7 @@
         });
 
         if (commonState.currentMode === "macro") {
-            await drawMacroTotal(svg, simplified);
+            await macroSidebar!.drawMacroTotal(simplified);
         }
         svg.append("g").attr("id", "points-labels");
         svg.append("g").attr("id", "paths");
