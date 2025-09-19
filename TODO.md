@@ -183,6 +183,6 @@
   - [x] require.context => import.meta.glob
   - [ ] HtmlWebpackPlugin -> new FrontPage component
   - [x] Inline imports -> ?raw (https://vite.dev/guide/assets)
-
+- [ ] Option to have fade out gradient like https://www.mapiful.com/editor/#/editor/location
 
 

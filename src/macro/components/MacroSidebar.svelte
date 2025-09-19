@@ -98,10 +98,9 @@
         const _ = mainMenuSelection;
         initTooltips();
     });
-    // This contains the common CSS that can ben editor with inline-css-editor
-    // we also have a special svelte:head element containing all CSS that is not in baseCss (border style, legend colors, etc.)
-    let commonStyleSheetElemMacro: HTMLStyleElement;
 
+    // This contains the common CSS that can be edited with inline-css-editor
+    // we also have a special svelte:head element containing all CSS that is not in baseCss (border style, legend colors, etc.)
     let totalCommonCss: string;
 
     let computedOrderedTabs = $derived(
@@ -136,14 +135,9 @@
 
     onMount(() => {
         console.log("onmount");
-        commonStyleSheetElemMacro = document.createElement("style");
-        commonStyleSheetElemMacro.setAttribute("id", "common-style-sheet-elem-macro");
-        document.head.appendChild(commonStyleSheetElemMacro);
-        commonStyleSheetElemMacro.innerHTML = defaultState.stateCommon.baseCss;
         initWorldData().then(() => {
             draw();
         });
-        // await tick();
     });
 
     export function applyStateAndDraw(simplified = false) {
@@ -220,6 +214,7 @@
                 svg.selectAll("g[image-class]").classed("hidden-after", true);
             });
         }
+        commonState.baseCss = exportStyleSheet("#outline")!;
         saveState();
     }
 
@@ -250,8 +245,10 @@
 
     const saveDebounced = debounce(saveState, 200);
     function editTooltip(e: MouseEvent): void {
-        const rect = (e.target as HTMLElement).getBoundingClientRect();
-        styleEditor!.open(e.target as HTMLElement, rect.right, rect.bottom);
+        let target: HTMLElement = e.target as HTMLElement;
+        if (target.classList.contains("tooltip-preview")) target = target.firstElementChild! as HTMLElement;
+        const rect = (target as HTMLElement).getBoundingClientRect();
+        styleEditor!.open(target as HTMLElement, rect.right, rect.bottom);
     }
 
     function openEditor(e: MouseEvent): void {
@@ -275,6 +272,7 @@
         await tick();
         initTooltips();
         applyStylesToTemplate();
+        autoSelectColors();
     }
 
     function templateHasNumeric(layerName: string): boolean {
@@ -462,10 +460,12 @@
         }`;
         commonCss = finalColorsCss + borderCss;
         if (macroState.macroParams.General.animate) commonCss += transitionCssMacro;
-        totalCommonCss = exportStyleSheet("#outline") + commonCss;
+        // const style = exportStyleSheet("#outline");
+        totalCommonCss = commonState.baseCss + commonCss;
     }
 
     function autoSelectColors() {
+        console.log("autoSelectColors");
         if (!macroState.zonesData[currentMacroLayerTab]) return;
         if (curDataDefs.colorScale === null) {
             if (curDataDefs.colorColumn !== null) {
@@ -492,7 +492,7 @@
         if (svg) colorizeAndLegend(svg);
     }
 
-    async function colorizeAndLegend(svg: SvgSelection, e?: Event): Promise<void> {
+    async function colorizeAndLegend(svg: SvgSelection): Promise<void> {
         console.log("colorizeAndLegend");
         await tick();
         initTooltips();
@@ -640,6 +640,10 @@
         return legendColors;
     }
 </script>
+
+<svelte:head>
+    {@html `<${""}style> ${commonCss} </${""}style>`}
+</svelte:head>
 
 <div class="w-100">
     <ul class="nav nav-tabs align-items-center justify-content-center m-1">
@@ -903,11 +907,10 @@
                                     >?</span
                                 >
                             </label>
-                            <div class="tooltip-preview">
+                            <div class="tooltip-preview" onclick={(e) => editTooltip(e)}>
                                 <div
                                     id="tooltip-preview-{currentMacroLayerTab}"
                                     bind:this={htmlTooltipElem}
-                                    onclick={editTooltip}
                                     style="${defaultTooltipStyle}"
                                 >
                                     {@html formatUnicorn(
@@ -926,7 +929,7 @@
                             class="form-check-input"
                             id="colorData"
                             bind:checked={curDataDefs.enabled}
-                            onchange={(e) => colorizeAndLegend(svg, e)}
+                            onchange={(e) => colorizeAndLegend(svg)}
                         />
                         <label for="colorData" class="form-check-label"> Color using data </label>
                     </div>
@@ -937,6 +940,7 @@
                                     class="form-select form-select-sm"
                                     id="choseColorType"
                                     bind:value={curDataDefs.colorScale}
+                                    onchange={autoSelectColors}
                                 >
                                     {#each availableColorTypes as colorType}
                                         <option value={colorType}>
@@ -946,7 +950,12 @@
                                 </select>
                                 <label for="choseColorType">Color type</label>
                             </div>
-                            <span class="help-tooltip" data-bs-toggle="tooltip" data-bs-title={scalesHelp}>?</span>
+                            <span
+                                class="help-tooltip"
+                                data-bs-toggle="tooltip"
+                                allow-html="true"
+                                data-bs-title={scalesHelp}>?</span
+                            >
                         </div>
 
                         <div class="d-flex align-items-center justify-content-between">
@@ -955,10 +964,12 @@
                                     class="form-select form-select-sm"
                                     id="choseColorColumn"
                                     bind:value={curDataDefs.colorColumn}
-                                    onchange={(e) =>
-                                        (macroState.legendDefs[currentMacroLayerTab].title = (
+                                    onchange={(e) => {
+                                        macroState.legendDefs[currentMacroLayerTab].title = (
                                             e.target as HTMLSelectElement
-                                        ).value)}
+                                        ).value;
+                                        autoSelectColors();
+                                    }}
                                 >
                                     {#each availableColumns as colorColumn}
                                         <option value={colorColumn}>
@@ -973,6 +984,7 @@
                                     class="form-select form-select-sm"
                                     id="choseColorPalette"
                                     bind:value={curDataDefs.colorPalette}
+                                    onchange={autoSelectColors}
                                 >
                                     {#each availablePalettes as palette}
                                         <option value={palette}>
@@ -1007,7 +1019,7 @@
                                 id="showLegend"
                                 role="switch"
                                 bind:checked={macroState.colorDataDefs[currentMacroLayerTab].legendEnabled}
-                                onchange={(e) => colorizeAndLegend(svg, e)}
+                                onchange={(e) => colorizeAndLegend(svg)}
                             />
                             <label for="showLegend" class="form-check-label">
                                 Show legend
@@ -1023,7 +1035,7 @@
                     {#if curDataDefs.legendEnabled}
                         <Legend
                             definition={macroState.legendDefs[currentMacroLayerTab]}
-                            on:change={(e) => colorizeAndLegend(svg, e)}
+                            on:change={(e) => colorizeAndLegend(svg)}
                             categorical={macroState.colorDataDefs[currentMacroLayerTab].colorScale === "category"}
                         />
                         <svg width="75%" height={macroState.legendDefs[currentMacroLayerTab].rectHeight + 20}>
@@ -1135,5 +1147,9 @@
 
     .layers {
         background-color: white;
+    }
+
+    .tooltip-preview {
+        padding: 5px;
     }
 </style>

@@ -124,8 +124,13 @@
     let maplibreMap: Map | null = $state(null);
     let mapLoadedPromise: Promise<unknown> | null = $state(null);
     let microLocked = $state(false);
+    let commonStyleSheetElem: HTMLStyleElement;
     onMount(async () => {
         console.log("App onmount");
+        commonStyleSheetElem = document.createElement("style");
+        commonStyleSheetElem.setAttribute("id", "common-style-sheet-elem-macro");
+        document.head.appendChild(commonStyleSheetElem);
+        commonStyleSheetElem.innerHTML = defaultState.stateCommon.baseCss;
         /** Init bootstrap dropdowns */
         Array.from(document.querySelectorAll(".dropdown-toggle")).forEach((dropdownToggleEl) => {
             new Dropdown(dropdownToggleEl);
@@ -509,6 +514,7 @@
         // merge(commonState, state.stateCommon);
         // merge(macroState, state.stateMacro);
         // merge(microState, state.stateMicro);
+        commonStyleSheetElem.innerHTML = commonState.baseCss;
         changeProjection();
         draw();
         saveState();
@@ -517,6 +523,7 @@
     function restoreStateFromSave() {
         const savedState = getState();
         console.log("savedState=", savedState);
+        console.log("baseCss", savedState?.stateCommon.baseCss);
         applyState(savedState ?? defaultState);
     }
 
@@ -1074,31 +1081,6 @@
                     <img src={microImg} width="50" height="50" />
                 </label>
             </div>
-            <!-- 
-            <div class="w-100">
-                <ul class="nav nav-tabs align-items-center justify-content-center m-1">
-                    <li class="nav-item d-flex align-items-center mx-1">
-                        <a
-                            href="javascript:;"
-                            class="nav-link d-flex align-items-center position-relative fs-5"
-                            on:click={() => (mainMenuSelection = "general")}
-                            class:active={mainMenuSelection === "general"}
-                        >
-                            General
-                        </a>
-                    </li>
-                    <li class="nav-item d-flex align-items-center mx-1">
-                        <a
-                            href="javascript:;"
-                            class="nav-link d-flex align-items-center position-relative fs-5"
-                            on:click={() => (mainMenuSelection = "layers")}
-                            class:active={mainMenuSelection === "layers"}
-                        >
-                            Layers
-                        </a>
-                    </li>
-                </ul>
-            </div> -->
             <div id="main-menu" class="mt-4">
                 {#if commonState.currentMode === "macro"}
                     <MacroSidebar bind:this={macroSidebar} {draw} {svg} {styleEditor}></MacroSidebar>
@@ -1349,7 +1331,7 @@
 <style lang="scss" scoped>
     #params {
         flex: 1 1 400px;
-        min-width: 300px;
+        min-width: 400px;
         max-width: 550px;
         background-color: #ebf0f8;
         border-right: 1px solid #c8d4e3;
@@ -1383,9 +1365,6 @@
         }
     }
 
-    .tooltip-preview {
-        padding: 5px;
-    }
     #map-container {
         margin: 0 auto;
         flex: 0 0 auto;

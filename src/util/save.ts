@@ -4,6 +4,7 @@ import type { GlobalState } from "src/types";
 const LOCAL_STORAGE_KEY = "map-builder-state";
 export function saveState() {
     const params: GlobalState = { stateCommon: commonState, stateMacro: macroState, stateMicro: microState };
+    console.log('saveState', params)
     const serialized = JSON.stringify(params);
     localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
 }
