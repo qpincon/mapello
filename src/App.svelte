@@ -932,7 +932,7 @@
         // showExportConfirm = false;
     }
 
-    let inlineFontUsed = false;
+    let inlineFontUsed = $state(false);
     function onExportSvgClicked() {
         const usedFonts = getUsedInlineFonts(svg.node()!);
         const usedProvidedFonts = providedFonts.filter((font) => usedFonts.has(font.name));

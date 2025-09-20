@@ -7,7 +7,7 @@
 
     interface Props {
         customCategoricalPalette: string[];
-        onChange?: (force?: boolean) => void;
+        onChange?: () => void;
         mapping?: Record<string, Set<string>>;
     }
 
@@ -23,8 +23,8 @@
         }
     });
 
-    function _onChange(force?: boolean): void {
-        if (onChange) onChange(force);
+    function _onChange(): void {
+        if (onChange) onChange();
     }
 
     let _onChangeDebounced = $derived(debounce(_onChange, 300));
@@ -44,7 +44,7 @@
             }
             customCategoricalPalette = newList;
             hoveringColor = null;
-            _onChange(true);
+            _onChange();
         }
     }
 
@@ -73,16 +73,18 @@
             draggable="true"
             ondragstart={(event) => dragStartColor(event, i)}
             ondrop={(event) => dropColor(event, i)}
-            ondragover={() => false}
-            class:is-hovered-color={hoveringColor === i}
+            ondragover={(ev) => {
+                ev.preventDefault();
+            }}
             ondragenter={() => (hoveringColor = i)}
+            class:is-hovered-color={hoveringColor === i}
         >
             <span
                 class="close-btn"
                 onclick={() => {
                     customCategoricalPalette.splice(i, 1);
                     customCategoricalPalette = customCategoricalPalette;
-                    _onChangeDebounced(true);
+                    _onChangeDebounced();
                 }}>✕</span
             >
             <div
@@ -111,7 +113,7 @@
         onclick={() => {
             customCategoricalPalette.push("#aaaaaa");
             customCategoricalPalette = customCategoricalPalette;
-            _onChangeDebounced(true);
+            _onChangeDebounced();
         }}
     >
         <Icon width="3rem" height="3rem" fillColor="none" svg={addIcon} />

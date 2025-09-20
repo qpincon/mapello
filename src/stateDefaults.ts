@@ -132,9 +132,13 @@ export function defaultTooltipFull(template: string): string {
 }
 
 export const defaultTooltipStyle: Record<string, string> = {
-    "background-color": "#000000ff",
+    "color": "black",
+    "will-change": "opacity",
+    "background-color": "#FFFFFF",
+    "border": "1px solid black",
+    "max-width": "15rem",
+    "width": "max-content",
     "border-radius": "4px",
-    "color": "#ffffff",
     "font-size": "12px",
     "padding": "4px",
     "pointer-events": "none",

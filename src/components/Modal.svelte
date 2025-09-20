@@ -69,6 +69,9 @@
     }
 
     function handleBackdrop(event: MouseEvent): void {
+        if (event.target !== event.currentTarget) {
+            return;
+        }
         if (backdrop && !ignoreBackdrop) {
             event.stopPropagation();
             open = false;

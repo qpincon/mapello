@@ -489,6 +489,8 @@
                 : macroState.zonesData?.[currentMacroLayerTab]?.numericCols.map((x) => x.column);
         availablePalettes =
             curDataDefs.colorScale === "category" ? Object.keys(CATEGORICAL_SCHEMES) : Object.keys(CONTINUOUS_SCHEMES);
+        /** Add custom palette choice */
+        if (curDataDefs.colorScale) availablePalettes.push("Custom");
         if (!availableColumns.includes(curDataDefs.colorColumn)) {
             curDataDefs.colorColumn = availableColumns[0];
         }
@@ -721,7 +723,9 @@
                             event.preventDefault;
                             drop(event, index);
                         }}
-                        ondragover={() => false}
+                        ondragover={(ev) => {
+                            ev.preventDefault();
+                        }}
                         ondragenter={() => (hoveringTab = index)}
                         class:is-dnd-hovering-right={hoveringTab === index && index > dragStartIndex}
                         class:is-dnd-hovering-left={hoveringTab === index && index < dragStartIndex}
@@ -787,7 +791,7 @@
                             <RangeInput
                                 id="contourwidth"
                                 title="Contour width"
-                                onChange={() => drawMacroBase(svg)}
+                                onChange={() => draw()}
                                 bind:value={macroState.contourParams.strokeWidth}
                                 min="0"
                                 max="5"
@@ -802,7 +806,7 @@
                                 value={macroState.contourParams.strokeColor}
                                 onChange={(col) => {
                                     macroState.contourParams.strokeColor = col;
-                                    drawMacroBase(svg);
+                                    draw();
                                 }}
                             ></ColorPickerPreview>
                         </div>
