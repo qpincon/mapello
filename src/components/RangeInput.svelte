@@ -32,7 +32,7 @@
         if (value === null) value = _step;
         else if (value === _max) return;
         else value += _step;
-        onChange!(value);
+        if (onChange) onChange!(value);
     };
 
     const decrement = (e?: MouseEvent): void => {
@@ -40,7 +40,7 @@
         if (value === null) value = _min;
         else if (value === _min) return;
         else value -= _step;
-        onChange!(value);
+        if (onChange) onChange!(value);
     };
 </script>
 
@@ -63,7 +63,7 @@
             step={_step}
             onchange={(e) => {
                 if (e.target && e.target instanceof HTMLInputElement) {
-                    onChange!(parseFloat(e.target.value));
+                    if (onChange) onChange!(parseFloat(e.target.value));
                 }
             }}
         />

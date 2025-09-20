@@ -69,6 +69,7 @@
 
     let macroSidebar: MacroSidebar | null = $state(null);
     let svg: SvgSelection = $state(select("#map-container") as unknown as SvgSelection);
+    let isDrawing = $state(false);
 
     // ====== State micro ====
     let microLayerDefinitions: MicroPalette = initLayersState(microPalettes["peach"]);
@@ -89,14 +90,14 @@
     // ==== End state =====
 
     let commonCss: string | undefined = $state(undefined);
-    const menuStates: MenuState = {
+    const menuStates: MenuState = $state({
         chosingPoint: false,
         pointSelected: false,
         addingLabel: false,
         pathSelected: false,
         addingImageToPath: false,
         chosingMarker: false,
-    };
+    });
     let editedLabelId: string | null = $state(null);
     let textInput: HTMLInputElement | null = $state(null);
     let typedText = $state("");
@@ -383,8 +384,9 @@
     }
 
     const freeHandDrawer = new FreehandDrawer();
-    // without 'countries' if unchecked
     async function draw(simplified = false) {
+        if (isDrawing) return;
+        isDrawing = true;
         console.log("draw", simplified);
         const container = select("#map-container");
         container.html("");
@@ -410,11 +412,13 @@
                 const pathsElement = document.getElementById("paths");
                 if (!pathsElement) return;
                 const paths = Array.from(pathsElement.children) as SVGPathElement[];
+                console.log(paths);
                 const closestPoint = paths.reduce((prev: DistanceQueryResult, curElem) => {
                     const curDist = closestDistance(point, curElem);
                     curDist.elem = curElem;
                     return prev.distance! < curDist.distance! ? prev : curDist;
                 }, {} as DistanceQueryResult);
+                console.log(closestPoint);
                 if (closestPoint.distance && closestPoint.distance < 6) {
                     menuStates.pathSelected = true;
                     target = closestPoint.elem;
@@ -440,6 +444,7 @@
         drawAndSetupShapes();
         drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
         if (!simplified) saveState();
+        isDrawing = false;
     }
 
     // function projectAndDraw(simplified = false): void {

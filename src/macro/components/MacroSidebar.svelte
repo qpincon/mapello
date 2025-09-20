@@ -94,6 +94,7 @@
     let showCustomPalette = $state<boolean>(false);
     let htmlTooltipElem = $state<HTMLElement | null>(null);
     let legendSample: SVGGElement | null = $state(null);
+
     $effect(() => {
         const _ = mainMenuSelection;
         initTooltips();
@@ -133,6 +134,7 @@
 
     let { styleEditor, svg, draw }: Props = $props();
 
+    let drawDebounced = debounce(draw, 100);
     onMount(() => {
         console.log("onmount");
         initWorldData().then(() => {
@@ -185,7 +187,9 @@
             }
         }
 
-        if (legendSample && legendSample.contains(target) && cssProp !== "fill") {
+        if (legendSample && legendSample.contains(target)) {
+            /** Do nothing on legend fill rectangle as it would make the legend useless */
+            if (cssProp === "fill" && target.tagName === "rect") return;
             macroState.legendDefs[currentMacroLayerTab].sampleHtml = legendSample.outerHTML;
             colorizeAndLegend(svg);
         } else if (htmlTooltipElem && htmlTooltipElem.contains(target)) {
@@ -311,7 +315,8 @@
         dragStartIndex = i;
     }
 
-    function deleteCountry(country: string, drawAfter = true): void {
+    function deleteCountry(country: string, drawAfter = true, event?: MouseEvent): void {
+        if (event) event.stopPropagation();
         macroState.chosenCountriesAdm = macroState.chosenCountriesAdm.filter((x) => x !== country);
         macroState.orderedTabs = macroState.orderedTabs.filter((x) => x !== country);
         currentMacroLayerTab = macroState.orderedTabs[0];
@@ -500,6 +505,7 @@
     }
 
     async function colorizeAndLegend(svg: SvgSelection): Promise<void> {
+        console.log("colorizeAndLegend");
         await tick();
         initTooltips();
         const legendEntries = select("#svg-map-legend");
@@ -616,8 +622,9 @@
             if (displayedLegend[tab]) displayedLegend[tab].remove();
             return;
         }
-        if (legendSample && macroState.legendDefs[tab].sampleHtml === null)
+        if (legendSample && macroState.legendDefs[tab].sampleHtml == null) {
             macroState.legendDefs[tab].sampleHtml = legendSample.outerHTML;
+        }
         if (macroState.legendDefs[tab].title === null) macroState.legendDefs[tab].title = dataColorDef.colorColumn;
         let threshValues: number[];
         let formatter = (x: number | string) => x;
@@ -739,7 +746,11 @@
                             {/if}
                             {tabTitle}
                             {#if tabTitle !== "countries" && !isLand}
-                                <span role="button" class="delete-tab" onclick={() => deleteCountry(tabTitle)}>
+                                <span
+                                    role="button"
+                                    class="delete-tab"
+                                    onclick={(e) => deleteCountry(tabTitle, true, e)}
+                                >
                                     ✕
                                 </span>
                             {/if}
@@ -788,7 +799,7 @@
                             <RangeInput
                                 id="contourwidth"
                                 title="Contour width"
-                                onChange={() => draw()}
+                                onChange={() => drawDebounced()}
                                 bind:value={macroState.contourParams.strokeWidth}
                                 min="0"
                                 max="5"
@@ -803,7 +814,7 @@
                                 value={macroState.contourParams.strokeColor}
                                 onChange={(col) => {
                                     macroState.contourParams.strokeColor = col;
-                                    draw();
+                                    drawDebounced();
                                 }}
                             ></ColorPickerPreview>
                         </div>
@@ -811,7 +822,7 @@
                             <RangeInput
                                 id="contour dash"
                                 title="Contour dash"
-                                onChange={() => draw()}
+                                onChange={() => drawDebounced()}
                                 bind:value={macroState.contourParams.strokeDash}
                                 min="0"
                                 max="20"
@@ -826,7 +837,7 @@
                                 value={macroState.contourParams.fillColor}
                                 onChange={(col) => {
                                     macroState.contourParams.fillColor = col;
-                                    draw();
+                                    drawDebounced();
                                 }}
                             ></ColorPickerPreview>
                         {/if}
