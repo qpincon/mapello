@@ -505,7 +505,8 @@
         initTooltips();
         const legendEntries = select("#svg-map-legend");
         if (!legendEntries.empty()) legendEntries.remove();
-        const legendSelection = svg.select("svg").append("g").attr("id", "svg-map-legend") as SvgGSelection;
+        const legendSelection = svg.append("g").attr("id", "svg-map-legend") as SvgGSelection;
+        console.log(svg.node(), legendSelection, legendSelection.node());
         Object.entries(macroState.colorDataDefs).forEach(([tab, dataColorDef], tabIndex) => {
             if (!macroState.zonesData[tab]) return;
             if (!macroState.legendDefs[tab].noData.manual) macroState.legendDefs[tab].noData.active = false;
@@ -769,7 +770,7 @@
                                 id="choseFilter"
                                 class="form-select form-select-sm"
                                 bind:value={macroState.zonesFilter[currentMacroLayerTab]}
-                                onchange={() => drawMacroBase(svg)}
+                                onchange={() => draw()}
                             >
                                 <option value={null}> None </option>
                                 <option value="firstGlow"> First glow </option>

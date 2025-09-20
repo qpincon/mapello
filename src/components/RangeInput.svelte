@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { offset } from "@popperjs/core";
     import { tapHold } from "../util/common";
 
     interface Props {
@@ -26,14 +27,16 @@
 
     let nbDecimals: number = $derived(countDecimals(_step));
 
-    const increment = (): void => {
+    const increment = (e?: MouseEvent): void => {
+        if (e) e.stopPropagation();
         if (value === null) value = _step;
         else if (value === _max) return;
         else value += _step;
         onChange!(value);
     };
 
-    const decrement = (): void => {
+    const decrement = (e?: MouseEvent): void => {
+        if (e) e.stopPropagation();
         if (value === null) value = _min;
         else if (value === _min) return;
         else value -= _step;
@@ -85,7 +88,7 @@
                         height="10"
                         fill="currentColor"
                         viewBox="3 3 18 18"
-                        use:tapHold={increment}
+                        use:tapHold={decrement}
                         onclick={decrement}><path d="M7,10L12,15L17,10H7Z" /></svg
                     >
                 </div>

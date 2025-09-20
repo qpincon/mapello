@@ -29,34 +29,9 @@
 
     let _onChangeDebounced = $derived(debounce(_onChange, 300));
 
-    function dropColor(event: DragEvent, target: number): void {
-        event.preventDefault();
-        event.dataTransfer!.dropEffect = "move";
-        const newList = [...customCategoricalPalette];
-
-        if (dragStartIndex !== null) {
-            if (dragStartIndex < target) {
-                newList.splice(target + 1, 0, newList[dragStartIndex]);
-                newList.splice(dragStartIndex, 1);
-            } else {
-                newList.splice(target, 0, newList[dragStartIndex]);
-                newList.splice(dragStartIndex + 1, 1);
-            }
-            customCategoricalPalette = newList;
-            hoveringColor = null;
-            _onChange();
-        }
-    }
-
-    function dragStartColor(event: DragEvent, i: number): void {
-        event.dataTransfer!.effectAllowed = "move";
-        event.dataTransfer!.dropEffect = "move";
-        dragStartIndex = i;
-    }
-
     function findMatchedValues(color: string): string | null {
         if (!mapping || !(color in mapping)) return null;
-        return [...mapping[color]].join(", ");
+        return [...mapping[color]].map((name) => `"${name}"`).join(", ");
     }
 
     function getColors(x: Record<string, Set<string>>, y: string[]): string[] {
@@ -70,14 +45,6 @@
         <div
             class="position-relative d-flex flex-column justify-content-center p-4 m-2 color-container border rounded-3"
             role="button"
-            draggable="true"
-            ondragstart={(event) => dragStartColor(event, i)}
-            ondrop={(event) => dropColor(event, i)}
-            ondragover={(ev) => {
-                ev.preventDefault();
-            }}
-            ondragenter={() => (hoveringColor = i)}
-            class:is-hovered-color={hoveringColor === i}
         >
             <span
                 class="close-btn"
@@ -134,9 +101,6 @@
     }
     .color-container {
         height: max-content;
-    }
-    .is-hovered-color {
-        background-color: #d8d8d8;
     }
     .close-btn {
         position: absolute;
