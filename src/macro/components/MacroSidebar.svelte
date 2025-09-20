@@ -156,8 +156,8 @@
         drawSimplifyThenReal();
     }
 
-    export function drawMacroTotal(simplified = false) {
-        drawMacroBase(svg, simplified);
+    export async function drawMacroTotal(simplified = false) {
+        await drawMacroBase(svg, simplified);
         colorizeAndLegend(svg);
     }
 
@@ -319,7 +319,7 @@
         delete macroState.legendDefs[country];
         delete macroState.colorDataDefs[country];
         delete macroState.zonesData[country];
-        if (drawAfter) drawMacroBase(svg);
+        if (drawAfter) draw();
     }
 
     async function addNewCountry(e: Event): Promise<void> {
@@ -337,8 +337,8 @@
         macroState.chosenCountriesAdm.push(newLayerName);
         macroState.orderedTabs.push(newLayerName);
         target.selectedIndex = 0;
-        await drawMacroBase(svg);
-        onTabChanged(newLayerName);
+        await onTabChanged(newLayerName);
+        draw();
     }
 
     function getZonesDataFormatters(): void {
@@ -500,13 +500,11 @@
     }
 
     async function colorizeAndLegend(svg: SvgSelection): Promise<void> {
-        console.log("colorizeAndLegend");
         await tick();
         initTooltips();
         const legendEntries = select("#svg-map-legend");
         if (!legendEntries.empty()) legendEntries.remove();
         const legendSelection = svg.append("g").attr("id", "svg-map-legend") as SvgGSelection;
-        console.log(svg.node(), legendSelection, legendSelection.node());
         Object.entries(macroState.colorDataDefs).forEach(([tab, dataColorDef], tabIndex) => {
             if (!macroState.zonesData[tab]) return;
             if (!macroState.legendDefs[tab].noData.manual) macroState.legendDefs[tab].noData.active = false;
@@ -521,7 +519,6 @@
                 colorsCssByTab[tab] = "";
                 if (displayedLegend[tab]) displayedLegend[tab].remove();
                 macroState.zonesData[tab].data.forEach((row) => {
-                    const d = row[dataColorDef.colorColumn];
                     const key = row.name;
                     const elem = document.querySelector(`g[id="${tab}"] [id="${key}"]`);
                     if (!elem) return;
@@ -577,7 +574,6 @@
                 }
                 if (!usedColors.includes(color)) usedColors.push(color);
                 const cssClass = `ssc-${tabIndex}-${usedColors.indexOf(color)}`;
-
                 elem.classList.add(cssClass);
             });
             let newCss = "";

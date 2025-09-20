@@ -16,7 +16,7 @@ import { macroPositionVars } from "src/stateDefaults";
 import { changeAltitudeScale } from "./interactions";
 import { throttle } from "lodash-es";
 
-export async function drawMacroBase(svg: SvgSelection, simplified = false) {
+export async function drawMacroBase(svg: SvgSelection, simplified = false): Promise<void> {
     console.log("drawMacroBase", simplified);
     if (!svg) return;
     const computedOrderedTabs = macroState.orderedTabs.filter((x) => {
@@ -83,8 +83,6 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false) {
     appendBgPattern(svg, "noise", macroState.macroParams.Background.seaColor, macroState.macroParams.Background.backgroundNoise);
 
     select("#outline").style("fill", "url(#noise)");
-    // colorizeAndLegend();
-    // computeCss();
 
     let frame: FrameSelection;
     frame = drawMacroFrame(svg);
@@ -213,6 +211,7 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
             });
         }
     });
+    console.log('groupData=', groupData);
     // groupData.push({
     //     name: "paths",
     //     data: [],
@@ -236,6 +235,7 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     // .attr('clip-path', 'url(#clipMapBorder)')
 
     function drawPaths(this: SVGGElement, data: MacroGroupData) {
+        console.log(data);
         if (data.type === "landImg")
             return appendLandImageNew.call(
                 this,

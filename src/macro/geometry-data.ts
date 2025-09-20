@@ -26,7 +26,7 @@ export const geometriesState: GeometryState = {
     countries: featureCollection([polygon([])]),
 }
 
-export const availableCountriesAdm1 = import.meta.glob("./assets/layers/adm1/*.json", { import: "default" });
+export const availableCountriesAdm1 = import.meta.glob("../assets/layers/adm1/*.json", { import: "default" });
 Object.keys(availableCountriesAdm1).forEach((adm1FileName) => {
     const name = extractFileName(adm1FileName);
     const resolvedName = iso3DataById[name]?.name;
@@ -35,7 +35,7 @@ Object.keys(availableCountriesAdm1).forEach((adm1FileName) => {
     delete availableCountriesAdm1[adm1FileName];
 });
 
-export const availableCountriesAdm2 = import.meta.glob("./assets/layers/adm2/*.json", { import: "default" });
+export const availableCountriesAdm2 = import.meta.glob("../assets/layers/adm2/*.json", { import: "default" });
 Object.keys(availableCountriesAdm2).forEach((adm2FileName) => {
     const name = extractFileName(adm2FileName);
     const resolvedName = iso3DataById[name]?.name;
@@ -55,7 +55,8 @@ function resolveAdm(name: string): Promise<any> {
     return availableCountriesAdm2[name]();
 }
 
-export function updateLayerSimplification(): void {
+export async function updateLayerSimplification(): Promise<void> {
+    if (!adm0Topo) await initWorldData();
     updateAdm0LandAndCountriesSimplification();
     Object.keys(resolvedAdmTopo).forEach((countryAdm) => {
         const simplified = simplify(resolvedAdmTopo[countryAdm], macroState.visibleArea);
@@ -100,6 +101,7 @@ export async function initWorldData() {
 }
 
 export async function initializeAdms(): Promise<void> {
+    if (!adm0Topo) await initWorldData();
     for (const countryAdm of macroState.chosenCountriesAdm) {
         if (!(countryAdm in resolvedAdmGeometry)) {
             const resolved = await resolveAdm(countryAdm);
