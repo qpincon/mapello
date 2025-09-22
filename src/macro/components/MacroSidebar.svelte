@@ -687,7 +687,7 @@
             {paramDefs}
             {helpParams}
             otherParams={accordionVisiblityParams}
-            on:change={(e) => handleChangeProp(e, svg)}
+            on:change={(e) => {handleChangeProp(e, svg); drawDebounced()}}
         ></Accordions>
     {:else if mainMenuSelection === "layers"}
         <div class="border border-primary rounded layers">

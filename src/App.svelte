@@ -439,6 +439,7 @@
         if (commonState.currentMode === "macro") {
             await macroSidebar!.drawMacroTotal(simplified);
         }
+
         svg.append("g").attr("id", "points-labels");
         svg.append("g").attr("id", "paths");
         drawAndSetupShapes();

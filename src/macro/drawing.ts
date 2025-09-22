@@ -133,12 +133,17 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     // const map = document.getElementById("static-svg-map") as unknown as SVGSVGElement;
     // if (!map) return;
     // await tick();
-    addTooltipListener(svg.node() as SVGSVGElement, macroState.tooltipDefs, macroState.zonesData);
+
     duplicateContourCleanFirst(svg.node() as SVGSVGElement);
     if (!animated) {
         svg.selectAll("path[pathLength]").attr("pathLength", null);
         svg.selectAll("g[image-class]").classed("hidden-after", true);
     }
+
+    /** Wait a bit before attaching the tooltip in order to make it the last element and to appear above everything else */
+    setTimeout(() => {
+        addTooltipListener(svg.node() as SVGSVGElement, macroState.tooltipDefs, macroState.zonesData);
+    }, 500);
 }
 
 
@@ -287,6 +292,7 @@ function drawMacroFrame(svg: SvgSelection): FrameSelection {
     const width = macroState.macroParams.General.width;
     const height = macroState.macroParams.General.height;
     const rx = Math.max(width, height) * (borderRadius / 100);
+    svg.select("#frame").remove();
     const frame = svg
         .append("rect")
         .attr("x", borderWidth / 2)
@@ -366,5 +372,4 @@ export function handleChangeProp(event: CustomEvent<{ prop: string; value: unkno
     }
     changeProjection();
     updateLayerSimplification();
-    if (svg?.node()) drawThrottle(svg);
 }

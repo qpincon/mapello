@@ -2,7 +2,7 @@ import parsePath from 'parse-svg-path';
 import * as markers from './markerDefs';
 import { RGBAToHexA } from '../util/common';
 import { pathStringFromParsed } from './svg';
-import type { Coords, D3Selection, InlineStyles, MarkerName, ParsedPath, PathDef, SvgSelection } from 'src/types';
+import type { D3Selection, InlineStyles, MarkerName, ParsedPath, PathDef, SvgSelection } from 'src/types';
 import type { GeoProjection } from 'd3-geo';
 
 
