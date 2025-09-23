@@ -146,8 +146,6 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     }, 500);
 }
 
-
-
 function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: MacroGroupData[], computedOrderedTabs: string[]): void {
     const width = macroState.macroParams.General.width;
     const height = macroState.macroParams.General.height;
@@ -240,7 +238,6 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     // .attr('clip-path', 'url(#clipMapBorder)')
 
     function drawPaths(this: SVGGElement, data: MacroGroupData) {
-        console.log(data);
         if (data.type === "landImg")
             return appendLandImageNew.call(
                 this,

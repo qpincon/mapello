@@ -4,6 +4,7 @@ import { RGBAToHexA } from '../util/common';
 import { pathStringFromParsed } from './svg';
 import type { D3Selection, InlineStyles, MarkerName, ParsedPath, PathDef, SvgSelection } from 'src/types';
 import type { GeoProjection } from 'd3-geo';
+import { commonState, macroState, microState } from 'src/state.svelte';
 
 
 export function drawCustomPaths(
@@ -27,6 +28,8 @@ export function drawCustomPaths(
         exists = true;
     }
 
+    const animated = commonState.currentMode === "macro" && macroState.macroParams.General.animate
+        || commonState.currentMode === "micro" && microState.microParams.General.animate;
     pathDefs.forEach((pathDef, index) => {
         if (pathDef.image) {
             if (!(pathDef.image.name in images)) {
@@ -35,7 +38,7 @@ export function drawCustomPaths(
         }
 
         const id = `path-${index}`;
-        const pathElem = elem.append('path').attr('id', id).attr('pathLength', exists ? null : 1);
+        const pathElem = elem.append('path').attr('id', id).attr('pathLength', animated ? 1 : null);
 
         if (pathDef.marker) {
             let color = inlineStyles[id]?.stroke;
