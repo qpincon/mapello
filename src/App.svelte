@@ -62,6 +62,7 @@
     import { appState, commonState, macroState, microState } from "./state.svelte";
     import { icons } from "./shared/icons";
     import { defaultState } from "./stateDefaults";
+    import { exportMacro } from "./macro/export";
 
     const microPalettes = _microPalettes as Record<string, MicroPaletteWithBorder>;
 
@@ -914,22 +915,11 @@
     function validateExport(): void {
         const formData = Object.fromEntries(new FormData(exportForm!).entries());
         console.log("formData", formData);
-        // if (commonState.currentMode === "macro") {
-        //     exportSvg(
-        //         svg,
-        //         p("width"),
-        //         p("height"),
-        //         tooltipDefs,
-        //         chosenCountriesAdm,
-        //         zonesData,
-        //         providedFonts,
-        //         true,
-        //         totalCommonCss,
-        //         p("animate"),
-        //         formData,
-        //     );
-        //     fetch("/exportSvgMacro");
-        // } else {
+        if (commonState.currentMode === "macro") {
+            const totalCss = macroSidebar!.computeCss();
+            exportMacro(svg, macroState, providedFonts, true, totalCss, formData);
+        }
+        // else {
         //     const attributionColor = microLayerDefinitions["road-network"]["stroke"] ?? "#aaa";
         //     console.log("attributionColor=", attributionColor);
         //     exportMicro(svg, microParams, providedFonts, totalCommonCss, p("animate"), attributionColor, formData);
@@ -1319,9 +1309,7 @@
         {/if}
     </form>
     <div slot="footer" class="d-flex justify-content-end">
-        <button type="button" class="btn btn-success" data-goatcounter-click="export-svg" onclick={validateExport}>
-            Export
-        </button>
+        <button type="button" class="btn btn-success" onclick={validateExport}> Export </button>
     </div>
 </Modal>
 

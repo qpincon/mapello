@@ -100,10 +100,6 @@
         initTooltips();
     });
 
-    // This contains the common CSS that can be edited with inline-css-editor
-    // we also have a special svelte:head element containing all CSS that is not in baseCss (border style, legend colors, etc.)
-    let totalCommonCss: string;
-
     let computedOrderedTabs = $derived(
         macroState.orderedTabs.filter((x) => {
             if (x === "countries") return macroState.inlinePropsMacro.showCountries;
@@ -449,7 +445,7 @@
         text: "test",
     });
 
-    function computeCss(): void {
+    export function computeCss(): string {
         const width = macroState.macroParams.General.width;
         const height = macroState.macroParams.General.height;
         const borderRadius = macroState.macroParams.Border.borderRadius;
@@ -471,7 +467,7 @@
         commonCss = finalColorsCss + borderCss;
         if (macroState.macroParams.General.animate) commonCss += transitionCssMacro;
         // const style = exportStyleSheet("#outline");
-        totalCommonCss = commonState.baseCss + commonCss;
+        return commonState.baseCss + commonCss;
     }
 
     function autoSelectColors() {
@@ -584,8 +580,7 @@
             });
             let newCss = "";
             usedColors.forEach((color, i) => {
-                newCss += `path.ssc-${tabIndex}-${i}{fill:${color};}
-            path.ssc-${tabIndex}-${i}.hovered{fill:${d3Color(color)!.brighter(0.2).hex()};}`;
+                newCss += `path.ssc-${tabIndex}-${i}{fill:${color};}path.ssc-${tabIndex}-${i}.hovered{fill:${d3Color(color)!.brighter(0.2).hex()};}`;
             });
             colorsCssByTab[tab] = newCss;
             const legendColors = getLegendColors(dataColorDef, tab, scale!, data);
@@ -687,7 +682,10 @@
             {paramDefs}
             {helpParams}
             otherParams={accordionVisiblityParams}
-            on:change={(e) => {handleChangeProp(e, svg); drawDebounced()}}
+            on:change={(e) => {
+                handleChangeProp(e, svg);
+                drawDebounced();
+            }}
         ></Accordions>
     {:else if mainMenuSelection === "layers"}
         <div class="border border-primary rounded layers">

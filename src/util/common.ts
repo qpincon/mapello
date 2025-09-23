@@ -54,11 +54,12 @@ export function indexBy<T>(data: T[], col: keyof T): Record<string, T> {
     }, {} as Record<string, T>);
 }
 
-export function pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
+export function pick(obj: object, keys: string[]): Record<string, unknown> {
     return keys.reduce((picked, curKey) => {
+        // @ts-ignore
         picked[curKey] = obj[curKey];
         return picked;
-    }, {} as Pick<T, K>);
+    }, {});
 }
 
 export function sortBy<T>(data: T[], key: keyof T): T[] {
@@ -179,7 +180,7 @@ const cssSelectorRegex = /([^\r\n,{}]+)(,(?=[^}]*{)|\s*{)/gm;
 // - Replace #static-svg-map with this ID
 // - Prefix all selectors from provided CSS with generated ID
 export function discriminateCssForExport(cssToTransform: string): { mapId: string; finalCss: string } {
-    const id = randomString(10);
+    const id = randomString(5);
     cssToTransform = cssToTransform.replaceAll('#static-svg-map', `#${id}`);
     const replacer = (group: string): string => {
         if (group.includes('animate')) return group;
@@ -191,6 +192,8 @@ export function discriminateCssForExport(cssToTransform: string): { mapId: strin
     transformed = transformed.replaceAll(/url\("?#(.*?)"?\)/g, (g, capture1) => {
         return `url(#${id}-${capture1})`;
     });
+    console.log('1', cssToTransform);
+    console.log('2', transformed);
     return { mapId: id, finalCss: transformed };
 }
 
