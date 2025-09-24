@@ -1021,7 +1021,7 @@
                     {/if}
                     {#if curDataDefs.legendEnabled}
                         <Legend
-                            definition={macroState.legendDefs[currentMacroLayerTab]}
+                            bind:definition={macroState.legendDefs[currentMacroLayerTab]}
                             on:change={(e) => colorizeAndLegend(svg)}
                             categorical={macroState.colorDataDefs[currentMacroLayerTab].colorScale === "category"}
                         />

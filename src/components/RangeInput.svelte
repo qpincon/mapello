@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { offset } from "@popperjs/core";
     import { tapHold } from "../util/common";
 
     interface Props {
@@ -14,11 +13,20 @@
         labelAbove?: boolean;
     }
 
-    let { value = $bindable(), title, min, max, step, onChange, id, helpText, labelAbove }: Props = $props();
+    let { value = $bindable(), title, min, max, step = 1, onChange, id, helpText, labelAbove }: Props = $props();
 
     let _step: number = $derived(parseFloat(step as string));
     let _min: number = $derived(parseFloat(min as string));
     let _max: number = $derived(parseFloat(max as string));
+
+    let slider: HTMLElement | undefined = $state();
+    /** This is to enable onchange event propagation when the increment / decrement counters are clicked
+     * (for when RangeInput is used in a <form> that globally listens for "onchange" )*/
+    const changeEvent = new Event("change", {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+    });
 
     function countDecimals(val: number): number {
         if (Math.floor(val.valueOf()) === val.valueOf()) return 0;
@@ -33,6 +41,8 @@
         else if (value === _max) return;
         else value += _step;
         if (onChange) onChange!(value);
+        slider?.dispatchEvent(changeEvent);
+        console.log(value);
     };
 
     const decrement = (e?: MouseEvent): void => {
@@ -41,10 +51,14 @@
         else if (value === _min) return;
         else value -= _step;
         if (onChange) onChange!(value);
+        slider?.dispatchEvent(changeEvent);
     };
 </script>
 
-<div class="{labelAbove ? 'd-flex flex-column justify-content-center' : 'row align-items-center'}  w-100">
+<div
+    bind:this={slider}
+    class="{labelAbove ? 'd-flex flex-column justify-content-center' : 'row align-items-center'}  w-100"
+>
     <label for={id} class="d-flex col-4 col-form-label align-items-center {labelAbove ? 'p-0' : ''}">
         {title}
         {#if helpText}
@@ -62,6 +76,7 @@
             max={_max}
             step={_step}
             onchange={(e) => {
+                console.log("slider change", e);
                 if (e.target && e.target instanceof HTMLInputElement) {
                     if (onChange) onChange!(parseFloat(e.target.value));
                 }

@@ -11,7 +11,7 @@
         categorical?: boolean;
     }
 
-    let { definition, categorical = false }: Props = $props();
+    let { definition = $bindable(), categorical = false }: Props = $props();
 
     // dispatch event on each change
     function sendChange(e: Event) {
