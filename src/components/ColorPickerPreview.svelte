@@ -39,8 +39,9 @@
                 bind:this={colorPicker}
                 {value}
                 onChange={(color: Color) => {
+                    const reallyChanged = value !== color && color !== value + "ff";
                     value = color;
-                    _onChange(color);
+                    if (reallyChanged) _onChange(color);
                 }}
                 options={{ popup }}
             />

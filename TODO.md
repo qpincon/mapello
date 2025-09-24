@@ -142,12 +142,12 @@
 - [ ] Data export: remove empty objects
 - [ ] Data import / export: Move into modal
 - [ ] Data edition: allow inline edition with a lightweight grid edition sofware (lazy-loaded)
-- [ ] Top space above "Max legend width"
+- [x] Top space above "Max legend width"
 - [ ] Bootstrap: allow main colors customization
   - upgrade to 5.3
   - use color modes
   - pass mode as input of Map
-- [ ] Macro: Render simplified while changing altitude / fov
+- [ ] Macro: Render simplified while changing altitude / fov (on slider change -> need to dispatch any change on slider)
 - [ ] Macro: Use same border method as micro (clip-path + remove geo entirely outside) 
 - [ ] Macro: be able to change graticule color
 - [ ] Macro: find a way to match ADM2 boundary data with land data (see UK adm2 for instance)

@@ -63,42 +63,44 @@
             </div>
         {/if}
     </div>
-    {#if definition.direction === "h" && categorical}
+    <div class="mt-2">
+        {#if definition.direction === "h" && categorical}
+            <RangeInput
+                id="maxWidth"
+                title="Max legend width"
+                bind:value={definition.maxWidth}
+                min="50"
+                max="800"
+                step="10"
+            />
+        {/if}
+        {#if !categorical}
+            <RangeInput
+                id="significantDigits"
+                title="Significant digits"
+                bind:value={definition.significantDigits!}
+                min="0"
+                max="10"
+                step="1"
+            />
+        {/if}
         <RangeInput
-            id="maxWidth"
-            title="Max legend width"
-            bind:value={definition.maxWidth}
-            min="50"
-            max="800"
-            step="10"
-        />
-    {/if}
-    {#if !categorical}
-        <RangeInput
-            id="significantDigits"
-            title="Significant digits"
-            bind:value={definition.significantDigits!}
-            min="0"
-            max="10"
+            id="rectWidth"
+            title="Legend color width"
+            bind:value={definition.rectWidth}
+            min="10"
+            max="100"
             step="1"
         />
-    {/if}
-    <RangeInput
-        id="rectWidth"
-        title="Legend color width"
-        bind:value={definition.rectWidth}
-        min="10"
-        max="100"
-        step="1"
-    />
-    <RangeInput
-        id="rectHeight"
-        title="Legend color height"
-        bind:value={definition.rectHeight}
-        min="10"
-        max="100"
-        step="1"
-    />
+        <RangeInput
+            id="rectHeight"
+            title="Legend color height"
+            bind:value={definition.rectHeight}
+            min="10"
+            max="100"
+            step="1"
+        />
+    </div>
     <div class="form-check form-switch">
         <input
             type="checkbox"

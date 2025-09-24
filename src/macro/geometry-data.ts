@@ -9,7 +9,6 @@ import { defaultColorDef, defaultLegendDef, defaultTooltipContent, defaultToolti
 import type { ZoneDataRow } from "src/types";
 import { featureCollection, polygon } from "@turf/helpers";
 
-console.log('admData imported');
 const iso3DataById = indexBy(iso3Data, "alpha-3");
 export const resolvedAdmGeometry: Record<string, any> = {};
 const resolvedAdmTopo: Record<string, any> = {};
@@ -57,6 +56,7 @@ function resolveAdm(name: string): Promise<any> {
 
 export async function updateLayerSimplification(): Promise<void> {
     if (!adm0Topo) await initWorldData();
+    console.log('macroState.visibleArea=', macroState.visibleArea);
     updateAdm0LandAndCountriesSimplification();
     Object.keys(resolvedAdmTopo).forEach((countryAdm) => {
         const simplified = simplify(resolvedAdmTopo[countryAdm], macroState.visibleArea);

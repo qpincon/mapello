@@ -14,7 +14,7 @@ import { addTooltipListener } from "src/tooltip";
 import { getProjection } from "src/util/projections";
 import { macroPositionVars } from "src/stateDefaults";
 import { changeAltitudeScale } from "./interactions";
-import { throttle } from "lodash-es";
+import { updateZonesDataFormatters } from "./formatting";
 
 export async function drawMacroBase(svg: SvgSelection, simplified = false): Promise<void> {
     console.log("drawMacroBase", simplified);
@@ -86,6 +86,7 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
 
     let frame: FrameSelection;
     frame = drawMacroFrame(svg);
+    updateZonesDataFormatters();
 
     if (animated) {
         frame!.on("animationend", (e) => {
@@ -338,8 +339,7 @@ export function projectAndDraw(svg: SvgSelection, simplified = false): void {
     drawMacroBase(svg, simplified);
 }
 
-const drawThrottle = throttle(drawMacroBase, 50);
-export function handleChangeProp(event: CustomEvent<{ prop: string; value: unknown }> | string, svg?: SvgSelection): void {
+export function handleChangeProp(event: CustomEvent<{ prop: string; value: unknown }> | string, drawSimplifyThenReal: () => void): void {
     console.log('handleChangeProp', event)
     let prop: string;
     let value: unknown;
@@ -369,4 +369,5 @@ export function handleChangeProp(event: CustomEvent<{ prop: string; value: unkno
     }
     changeProjection();
     updateLayerSimplification();
+    drawSimplifyThenReal();
 }

@@ -122,14 +122,6 @@ export function initTooltips(): void {
     });
 }
 
-export function getBestFormatter(values: number[], locale: any): (n: number) => string {
-    const loc = formatLocale(locale);
-    const max = Math.max(...values);
-    if (max < 10) return loc.format(',.1~f');
-    if (max < 1) return loc.format(',.2~f');
-    return loc.format(',~d');
-}
-
 export function tapHold(node: Element, callback: () => void, threshold = 300): ActionReturn {
     const handleMouseDown = () => {
         let intervalTimeout: number | undefined;
@@ -192,8 +184,6 @@ export function discriminateCssForExport(cssToTransform: string): { mapId: strin
     transformed = transformed.replaceAll(/url\("?#(.*?)"?\)/g, (g, capture1) => {
         return `url(#${id}-${capture1})`;
     });
-    console.log('1', cssToTransform);
-    console.log('2', transformed);
     return { mapId: id, finalCss: transformed };
 }
 

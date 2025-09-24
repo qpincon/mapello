@@ -11,7 +11,7 @@ jq '
       colorDataDefs: .colorDataDefs,
       legendDefs: .legendDefs,
       tooltipDefs: .tooltipDefs,
-      customCategoricalPalette: .customCategoricalPalette
+      customCategoricalPalette: .customCategoricalPalette,
       orderedTabs: .orderedTabs,
       visibleArea: 0.01,
     },
@@ -27,7 +27,7 @@ jq '
       providedPaths: .providedPaths,
       inlineStyles: .inlineStyles,
       shapeCount: .shapeCount,
-      currentMode: .currentMode
+      currentMode: "macro"
     }
   }
 ' state.json > new_state.json

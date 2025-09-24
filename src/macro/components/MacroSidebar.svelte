@@ -4,7 +4,6 @@
     import {
         download,
         formatUnicorn,
-        getBestFormatter,
         getColumns,
         getNumericCols,
         htmlToElement,
@@ -22,7 +21,6 @@
         Color,
         ColorDef,
         ColorScale,
-        FormatterObject,
         LegendColor,
         OrdinalMapping,
         SvgGSelection,
@@ -31,6 +29,7 @@
         ZoneDataRow,
     } from "src/types";
     import { color as d3Color } from "d3-color";
+    import { formatLocale } from "d3-format";
     import { paramDefs } from "../../params";
 
     import { saveState } from "src/util/save";
@@ -58,6 +57,7 @@
     import { dragged, zoomed } from "../interactions";
     import Modal from "src/components/Modal.svelte";
     import PaletteEditor from "src/components/PaletteEditor.svelte";
+    import { resolvedLocales, updateZonesDataFormatters } from "../formatting";
 
     const scalesHelp: string = `
 <div class="inline-tooltip">  
@@ -70,16 +70,6 @@
     Those scales are only available when numeric data is associated with the layer. 
 </div>
 `;
-
-    const resolvedLocales = import.meta.glob<d3.FormatLocaleDefinition>("../node_modules/d3-format/locale/*.json", {
-        eager: true,
-        import: "default",
-    });
-    Object.keys(resolvedLocales).forEach((localeFileName) => {
-        const name = localeFileName.match(/\w+/)![0]; // remove extension
-        icons[name] = icons[localeFileName];
-        delete icons[localeFileName];
-    });
 
     let mainMenuSelection = $state<string>("general");
     let hoveringTab = $state<number>(-1);
@@ -143,15 +133,14 @@
     }
 
     export function onZoom(e: d3.D3ZoomEvent<SVGSVGElement, unknown>) {
+        if (e.sourceEvent.type === "dblclick") return;
         zoomed(e);
-        handleChangeProp("altitude");
-        drawSimplifyThenReal();
+        handleChangeProp("altitude", drawSimplifyThenReal);
     }
 
     export function onDrag(e: d3.D3DragEvent<SVGSVGElement, unknown, unknown>) {
         dragged(e);
-        handleChangeProp("longitude");
-        drawSimplifyThenReal();
+        handleChangeProp("longitude", drawSimplifyThenReal);
     }
 
     export async function drawMacroTotal(simplified = false) {
@@ -342,23 +331,6 @@
         draw();
     }
 
-    function getZonesDataFormatters(): void {
-        Object.entries(macroState.zonesData).forEach(([name, def]) => {
-            const locale = macroState.tooltipDefs[name].locale;
-            const formatters: FormatterObject = {};
-            if (def.numericCols.length) {
-                def.numericCols.forEach((colDef) => {
-                    const col = colDef.column;
-                    formatters[col] = getBestFormatter(
-                        def.data.map((row) => row[col] as number),
-                        resolvedLocales[locale],
-                    );
-                });
-            }
-            macroState.zonesData[name].formatters = formatters;
-        });
-    }
-
     function handleDataImport(e: Event): void {
         const file = (e.target as HTMLInputElement).files![0];
         const reader = new FileReader();
@@ -391,7 +363,7 @@
                     provided: true,
                     numericCols: getNumericCols(parsed),
                 };
-                getZonesDataFormatters();
+                updateZonesDataFormatters();
                 autoSelectColors();
                 saveState();
             } catch (e) {
@@ -407,7 +379,7 @@
     }
 
     function changeNumericFormatter(): void {
-        getZonesDataFormatters();
+        updateZonesDataFormatters();
         colorizeAndLegend(svg);
     }
 
@@ -491,7 +463,7 @@
         availablePalettes =
             curDataDefs.colorScale === "category" ? Object.keys(CATEGORICAL_SCHEMES) : Object.keys(CONTINUOUS_SCHEMES);
         /** Add custom palette choice */
-        if (curDataDefs.colorScale) availablePalettes.push("Custom");
+        if (curDataDefs.colorScale === "category") availablePalettes.push("Custom");
         if (!availableColumns.includes(curDataDefs.colorColumn)) {
             curDataDefs.colorColumn = availableColumns[0];
         }
@@ -627,9 +599,9 @@
             threshValues = [...new Set(data as number[])];
         } else {
             // @ts-expect-error
-            formatter = d3
-                .formatLocale(resolvedLocales[macroState.tooltipDefs[tab].locale])
-                .format(`,.${macroState.legendDefs[tab].significantDigits}r`);
+            formatter = formatLocale(resolvedLocales[macroState.tooltipDefs[tab].locale]).format(
+                `,.${macroState.legendDefs[tab].significantDigits}r`,
+            );
             const minValue = Math.min(...(data as number[]));
             const scaleQuantile = scale as d3.ScaleQuantile<string, number>;
             const scaleQuantize = scale as d3.ScaleQuantize<string, number>;
@@ -683,8 +655,7 @@
             {helpParams}
             otherParams={accordionVisiblityParams}
             on:change={(e) => {
-                handleChangeProp(e, svg);
-                drawDebounced();
+                handleChangeProp(e, drawSimplifyThenReal);
             }}
         ></Accordions>
     {:else if mainMenuSelection === "layers"}
@@ -1021,6 +992,7 @@
                                     id="nbBreaks"
                                     title="Number of breaks"
                                     bind:value={curDataDefs.nbBreaks}
+                                    onChange={autoSelectColors}
                                     min="3"
                                     max="9"
                                 ></RangeInput>

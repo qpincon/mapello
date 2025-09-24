@@ -34,18 +34,11 @@
     import { cancelStitch } from "./util/geometryStitch";
     import type {
         SvgSelection,
-        InlineStyles,
-        ZonesData,
-        TooltipDefs,
-        LegendDef,
         PathDef,
         ShapeDefinition,
         MicroPalette,
         MicroPaletteWithBorder,
-        ContourParams,
         ProvidedFont,
-        CssDict,
-        Color,
         InlinePropsMicro,
         ParsedPath,
         ContextMenuInfo,
@@ -53,7 +46,6 @@
         PathDefImage,
         MarkerName,
         ShapeName,
-        ColorDef,
         Mode,
     } from "./types";
     import { Dropdown } from "bootstrap";
@@ -552,7 +544,7 @@
         reader.readAsText(file);
     }
 
-    function loadExample(e: CustomEvent): void {
+    async function loadExample(e: CustomEvent): Promise<void> {
         if (
             !window.confirm(
                 "Caution: Loading the example will discard your current project. Please save it first if you want to keep it.",
@@ -560,7 +552,9 @@
         )
             return;
 
+        console.log(e.detail.projectParams);
         applyState(e.detail.projectParams);
+        await tick();
         if (commonState.currentMode === "macro") {
             macroSidebar!.applyStateAndDraw();
         }
