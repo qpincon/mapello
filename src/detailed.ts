@@ -20,29 +20,40 @@ import type { Map } from 'maplibre-gl';
 
 type D3PathFunction = (geometry: Geometry) => string | null;
 
-export const interestingBasicV2Layers: string[] = [
-    "Residential",
-    "Forest",
-    "Sand",
-    "Grass",
-    "Wood",
-    "Water",
-    // "River",
-    // "Bridge",
-    "Pier",
-    "Road network",
-    "Railway",
-    // "Path minor",
-    "Path",
-    "Building",
+export const interestingLayers: string[] = [
+    "landuse_park",
+    "landuse_beach",
+    "water",
+    "roads_major",
+    "roads_minor",
+    "roads_rail",
+    // paths + pier
+    "roads_other",
+    "buildings",
 ];
+// export const interestingBasicV2Layers: string[] = [
+//     "Residential",
+//     "Forest",
+//     "Sand",
+//     "Grass",
+//     "Wood",
+//     "Water",
+//     // "River",
+//     // "Bridge",
+//     "Pier",
+//     "Road network",
+//     "Railway",
+//     // "Path minor",
+//     "Path",
+//     "Building",
+// ];
 
 const patternGenerator = new HatchPatternGenerator();
 
 export function orderFeaturesByLayer(features: RenderedFeature[]): void {
     features.sort((a, b) => {
-        const layerIdA = interestingBasicV2Layers.indexOf(a.properties.mapLayerId!);
-        const layerIdB = interestingBasicV2Layers.indexOf(b.properties.mapLayerId!);
+        const layerIdA = interestingLayers.indexOf(a.properties.mapLayerId!);
+        const layerIdB = interestingLayers.indexOf(b.properties.mapLayerId!);
         const renderHeightA = a.properties['render_height'];
         const renderHeightB = b.properties['render_height'];
         if (renderHeightA != null && renderHeightB != null) return renderHeightA < renderHeightB ? -1 : 1;
@@ -78,22 +89,23 @@ export async function drawPrettyMap(
     generalParams: MicroParams,
     isLocked: boolean
 ): Promise<void> {
-    // console.log('layerDefinitions=', layerDefinitions);
+    console.log('layerDefinitions=', layerDefinitions);
     const mapLibreContainer = select('#maplibre-map');
-    const layersToQuery = interestingBasicV2Layers.filter(layer => {
+    const layersToQuery = interestingLayers.filter(layer => {
         return layerDefinitions[kebabCase(layer) as MicroLayerId]?.active !== false;
     });
     updateSvgPatterns(svg.node() as SVGElement, layerDefinitions);
     const geometries = await getRenderedFeatures(maplibreMap, { layers: layersToQuery });
+    console.log('geometries=', geometries)
     // Process got interrupted, a new call to this function is coming soon
     if (geometries === null) return;
     orderFeaturesByLayer(geometries);
     // console.log('geometries', geometries);
 
-    const width = findProp<number>('width', generalParams);
-    const height = findProp<number>('height', generalParams);
-    const borderPadding = findProp('borderPadding', generalParams) as number;
-    const borderRadius = findProp('borderRadius', generalParams) as number;
+    const width = generalParams.General.width;
+    const height = generalParams.General.height;
+    const borderPadding = generalParams.Border.borderPadding;
+    const borderRadius = generalParams.Border.borderRadius;
 
     const outerFrameWidth = width - borderPadding;
     const outerFrameHeight = height - borderPadding;
@@ -274,8 +286,6 @@ function darken(c: string, quantity: number = 0.4): Color {
     return hsl(color(c)!)!.darker(quantity).formatHex() as Color;
 }
 
-const CSS_PROPS = ['stroke', 'stroke-width', 'fill', 'stroke-dasharray', 'stroke-linejoin', 'stroke-linecap'];
-
 export function generateCssFromState(state: MicroPalette): string | null {
     const [sheet, _] = findStyleSheet("#micro .line");
     // "other" default color definitions will be overridden by mode specific '>' selector
@@ -377,39 +387,6 @@ export function onMicroParamChange(
     return false;
 }
 
-// Called when CSS is updated with inline style editor. Returns true if we actually updated layer definition
-export function syncLayerStateWithCss(
-    eventType: any,
-    cssProp: string,
-    value: string | null,
-    layerState: MicroPalette
-): boolean {
-    console.log(eventType, cssProp, value, layerState);
-    // Prevent removing value
-    if (value === null) return false;
-    if (eventType === "inline") return false;
-
-    const cssSelector = eventType.selectorText;
-    if (!cssSelector.includes('#micro')) return false;
-    if (cssProp === "fill") {
-        updateSvgPatterns(document.getElementById('static-svg-map') as unknown as SVGSVGElement, layerState);
-    }
-
-    const layer = cssSelector.match(/#micro \.(.*)/)?.[1] ?? 'background';
-    let path: (string | number)[] = [layer, cssProp];
-    let isFills = false;
-
-    if (layer.includes('-') && cssProp === "fill") {
-        isFills = true;
-        const parts = layer.split('-');
-        path = [parts[0], 'fills', parseInt(parts[1])];
-    }
-
-    if (!isFills && !CSS_PROPS.includes(last(path) as string)) return false;
-    set(layerState, path, value);
-    replaceCssSheetContent(layerState);
-    return true;
-}
 
 export const replaceCssSheetContent = debounce((layerState: MicroPalette) => {
     const styleSheet = document.getElementById('common-style-sheet-elem-micro') as HTMLStyleElement;

@@ -104,6 +104,7 @@ export function getColumns(data: Record<string, any>[]): string[] {
     return [...cols];
 }
 
+// TODO: remove
 export function findProp<T>(propName: string, obj: Object): T {
     if (propName in obj) return (obj as any)[propName];
     for (const v of Object.values(obj)) {
@@ -117,7 +118,7 @@ export function findProp<T>(propName: string, obj: Object): T {
 export function initTooltips(): void {
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     [...tooltipTriggerList].map(tooltipTriggerEl => {
-        const isHtml = tooltipTriggerEl.hasAttribute('allow-html');
+        const isHtml = tooltipTriggerEl.hasAttribute('data-bs-html');
         new Tooltip(tooltipTriggerEl as HTMLElement, { placement: 'top', html: isHtml, customClass: isHtml ? 'big-tooltip' : '' });
     });
 }

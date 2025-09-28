@@ -12,7 +12,7 @@
     import { download, initTooltips, pascalCaseToSentence } from "./util/common";
     import * as shapes from "./svg/shapeDefs";
     import * as markers from "./svg/markerDefs";
-    import { setTransformScale, closestDistance, type DistanceQueryResult } from "./svg/svg";
+    import { setTransformScale, closestDistance, type DistanceQueryResult, pathStringFromParsed } from "./svg/svg";
     import { drawShapes } from "./svg/shape";
     import iso3Data from "./assets/data/iso3_filtered.json";
     import Examples from "./components/Examples.svelte";
@@ -29,7 +29,7 @@
     import { initLayersState } from "./detailed";
     import { Map } from "maplibre-gl";
     import MicroLayerParams from "./components/MicroLayerParams.svelte";
-    import * as _microPalettes from "./microPalettes";
+    import * as _microPalettes from "./micro/microPalettes";
     import { FreehandDrawer } from "./svg/freeHandDraw";
     import { cancelStitch } from "./util/geometryStitch";
     import type {
@@ -55,12 +55,14 @@
     import { icons } from "./shared/icons";
     import { defaultState } from "./stateDefaults";
     import { exportMacro } from "./macro/export";
+    import MicroSidebar from "./micro/components/MicroSidebar.svelte";
 
     const microPalettes = _microPalettes as Record<string, MicroPaletteWithBorder>;
 
     let openContextMenuInfo: ContextMenuInfo;
 
     let macroSidebar: MacroSidebar | null = $state(null);
+    let microSidebar: MicroSidebar | null = $state(null);
     let svg: SvgSelection = $state(select("#map-container") as unknown as SvgSelection);
     let isDrawing = $state(false);
 
@@ -122,9 +124,9 @@
     onMount(async () => {
         console.log("App onmount");
         commonStyleSheetElem = document.createElement("style");
-        commonStyleSheetElem.setAttribute("id", "common-style-sheet-elem-macro");
+        commonStyleSheetElem.setAttribute("id", "style-sheet-macro");
         document.head.appendChild(commonStyleSheetElem);
-        commonStyleSheetElem.innerHTML = defaultState.stateCommon.baseCss;
+        commonStyleSheetElem.innerHTML = macroState.baseCss;
         /** Init bootstrap dropdowns */
         Array.from(document.querySelectorAll(".dropdown-toggle")).forEach((dropdownToggleEl) => {
             new Dropdown(dropdownToggleEl);
@@ -278,84 +280,6 @@
         }
     }
 
-    function createMaplibreMap() {
-        maplibreMap = new Map({
-            container: "maplibre-map",
-            style: "https://api.maptiler.com/maps/basic-v2/style.json?key=FDR0xJ9eyXD87yIqUjOi",
-            center: inlinePropsMicro.center,
-            zoom: inlinePropsMicro.zoom,
-            pitch: inlinePropsMicro.pitch,
-            bearing: inlinePropsMicro.bearing,
-            attributionControl: false,
-        });
-
-        maplibreMap.on("moveend", (event) => {
-            if (commonState.currentMode !== "micro") return;
-            const center = maplibreMap!.getCenter().toArray();
-            if (center[0] !== 0 && center[1] !== 0) {
-                inlinePropsMicro = {
-                    center,
-                    zoom: maplibreMap!.getZoom(),
-                    pitch: maplibreMap!.getPitch(),
-                    bearing: maplibreMap!.getBearing(),
-                };
-            }
-            // drawDebounced();
-            draw();
-        });
-
-        maplibreMap.on("movestart", (event) => {
-            // console.log('movestart');
-            if (commonState.currentMode !== "micro") return;
-            cancelStitch();
-            select("#maplibre-map").style("opacity", 1);
-        });
-
-        maplibreMap.on("click", (event) => {
-            console.log(event);
-            console.log(maplibreMap!.queryRenderedFeatures(event.point));
-            console.log(maplibreMap!.getStyle());
-        });
-        maplibreMap.on("contextmenu", (e) => {
-            if (!microLocked) {
-                lockUnlock(true);
-                const clickedElem = document.elementFromPoint(e.originalEvent.clientX, e.originalEvent.clientY);
-                Object.defineProperty(e.originalEvent, "target", {
-                    writable: false,
-                    value: clickedElem,
-                });
-                (svg.node() as SVGSVGElement).dispatchEvent(e.originalEvent);
-            }
-        });
-        mapLoadedPromise = maplibreMap.once("load") as Promise<unknown>;
-    }
-
-    // function handleMicroParamChange(
-    //     layer: MicroLayerId,
-    //     prop: string | string[],
-    //     value: number | Color | string | boolean,
-    // ): void {
-    //     const shouldRedraw = onMicroParamChange(layer, prop, value, microLayerDefinitions);
-    //     if (shouldRedraw) draw();
-    //     save();
-    // }
-
-    // function handleMicroPaletteChange(paletteId: string): void {
-    //     const palette = microPalettes[paletteId];
-    //     if (palette.borderParams) {
-    //         microParams["Border"] = {
-    //             ...microParams["Border"],
-    //             ...palette.borderParams,
-    //         };
-    //     }
-    //     microLayerDefinitions = initLayersState(palette);
-    //     updateSvgPatterns(document.getElementById("static-svg-map") as unknown as SVGSVGElement, microLayerDefinitions);
-    //     replaceCssSheetContent(microLayerDefinitions);
-    //     // handleMicroParamChange('other', ['pattern'])
-    //     draw();
-    //     save();
-    // }
-
     async function switchMode(newMode: Mode): Promise<void> {
         if (commonState.currentMode === newMode) return;
         commonState.currentMode = newMode;
@@ -431,73 +355,29 @@
 
         if (commonState.currentMode === "macro") {
             await macroSidebar!.drawMacroTotal(simplified);
+        } else if (commonState.currentMode === "micro") {
+            await microSidebar?.drawMicroTotal();
         }
 
         svg.append("g").attr("id", "points-labels");
         svg.append("g").attr("id", "paths");
         drawAndSetupShapes();
         drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
+        freeHandDrawings.forEach((drawingGroup) => {
+            const gDrawing = svg.append("g");
+            for (const drawing of drawingGroup) {
+                const pathElem = gDrawing.append("path").attr("pathLength", 1).classed("freehand", true);
+                pathElem.attr("d", pathStringFromParsed(drawing, appState.projection!));
+            }
+        });
         if (!simplified) saveState();
         isDrawing = false;
     }
 
-    // function projectAndDraw(simplified = false): void {
-    //     changeProjection();
-    //     draw(simplified);
-    // }
-
-    let totalCommonCss: string;
-    // function computeCss(): void {
-    //     if (commonState.currentMode === "micro") {
-    //         let css = `
-    //     #paths > path {
-    //         stroke: #7c490ea0;
-    //         stroke-dasharray: 5px;
-    //         stroke-width: 2;
-    //         fill: none;
-    //     }
-    //     #static-svg-map {
-    //         ${p("frameShadow") ? "filter: drop-shadow(2px 2px 8px rgba(0,0,0,.2));" : ""}
-    //     }`;
-    //         if (p("animate")) css += transitionCssMicro;
-    //         commonCss = css;
-    //         totalCommonCss = exportStyleSheet("#micro .poly") + commonCss;
-    //         return;
-    //     }
-    //     const width = p("width");
-    //     const height = p("height");
-    //     const borderRadius = p("borderRadius");
-    //     const finalColorsCss = Object.values(colorsCssByTab).reduce((acc, cur) => {
-    //         acc += cur;
-    //         return acc;
-    //     }, "");
-    //     const wantedRadiusInPx = Math.max(width, height) * (borderRadius / 100);
-    //     const radiusX = Math.round(Math.min((wantedRadiusInPx * 100) / width, 50));
-    //     const radiusY = Math.round(Math.min((wantedRadiusInPx * 100) / height, 50));
-    //     let borderCss = `
-    // #static-svg-map {
-    //     ${p("frameShadow") ? "filter: drop-shadow(2px 2px 8px rgba(0,0,0,.2));" : ""}
-    // }`;
-
-    //     if (commonState.currentMode === "macro") {
-    //         borderCss += `#static-svg-map, #static-svg-map > svg {
-    //         border-radius: ${radiusX}%/${radiusY}%;
-    //     }`;
-    //     }
-    //     commonCss = finalColorsCss + borderCss;
-    //     if (p("animate")) commonCss += transitionCssMacro;
-    //     totalCommonCss = exportStyleSheet("#outline") + commonCss;
-    // }
-
-    // function save(): void {
-    //     baseCss = exportStyleSheet("#outline")!;
-    //     saveState(toGlobalState());
-    // }
-
     function saveProject(): void {
         const baseCss = exportStyleSheet("#outline")!;
         // TODO: is is this useful?
-        commonState.baseCss = baseCss;
+        macroState.baseCss = baseCss;
         const state: GlobalState = {
             stateCommon: commonState,
             stateMacro: macroState,
@@ -513,7 +393,7 @@
         // merge(commonState, state.stateCommon);
         // merge(macroState, state.stateMacro);
         // merge(microState, state.stateMicro);
-        commonStyleSheetElem.innerHTML = commonState.baseCss;
+        commonStyleSheetElem.innerHTML = macroState.baseCss;
         changeProjection();
         draw();
         saveState();
@@ -522,7 +402,7 @@
     function restoreStateFromSave() {
         const savedState = getState();
         console.log("savedState=", savedState);
-        console.log("baseCss", savedState?.stateCommon.baseCss);
+        console.log("baseCss", savedState?.stateMacro.baseCss);
         applyState(savedState ?? defaultState);
     }
 
@@ -1075,7 +955,7 @@
                 {#if commonState.currentMode === "macro"}
                     <MacroSidebar bind:this={macroSidebar} {draw} {svg} {styleEditor}></MacroSidebar>
                 {:else}
-                    <div>Nothing for now</div>
+                    <MicroSidebar bind:this={microSidebar} {draw} {svg} {styleEditor}></MicroSidebar>
                 {/if}
             </div>
         </div>

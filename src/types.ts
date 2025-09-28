@@ -258,6 +258,7 @@ export type InlinePropsMicro = {
 
 
 export interface StateMacro {
+    baseCss: string;
     macroParams: MacroParams;
     inlinePropsMacro: InlinePropsMacro;
     orderedTabs: string[];
@@ -281,7 +282,6 @@ export interface StateMicro {
 }
 
 export interface StateCommon {
-    baseCss: string;
     providedFonts: ProvidedFont[];
     providedShapes: ShapeDefinition[];
     providedPaths: PathDef[];

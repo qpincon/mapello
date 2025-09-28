@@ -325,7 +325,7 @@ let mapLoadedPromise;
 let microLocked = false;
 onMount(async() => {
     commonStyleSheetElemMacro = document.createElement('style');
-    commonStyleSheetElemMacro.setAttribute('id', 'common-style-sheet-elem-macro');
+    commonStyleSheetElemMacro.setAttribute('id', 'common-style-sheet');
     document.head.appendChild(commonStyleSheetElemMacro);
     commonStyleSheetElemMacro.innerHTML = baseCss;
 

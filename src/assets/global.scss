@@ -196,3 +196,10 @@ aside .nav-link.active {
 .hidden-after {
     display: none;
 }
+
+#maplibre-map {
+    position: absolute;
+    top: 0px;
+    left: 1.5rem;
+    background-color: white;
+}

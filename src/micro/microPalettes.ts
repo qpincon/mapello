@@ -1,4 +1,4 @@
-import type { MicroPaletteWithBorder } from "./types";
+import type { MicroPaletteWithBorder } from "../types";
 
 export const playful: Partial<MicroPaletteWithBorder> = {
     borderParams: {

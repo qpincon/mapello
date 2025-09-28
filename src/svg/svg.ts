@@ -1,6 +1,8 @@
 import type { GeoProjection } from "d3-geo";
 import type { Coords, ParsedPath, Point } from "../types";
 import { DOM_PARSER } from "../util/dom";
+import { commonState } from "src/state.svelte";
+import { select } from "d3-selection";
 
 // remove buggy paths, covering the whole svg element
 export function removeCoveringAll(groupElement: SVGGElement | null): void {
@@ -130,4 +132,20 @@ export function pathStringFromParsed(parsedD: ParsedPath, projection: GeoProject
         d += `${instruction}${newData}`;
         return d;
     }, '');
+}
+
+export function handleInlineStyleChange(elemId: string, target: HTMLElement, cssProp: string, value: string): void {
+    if (elemId.includes("label")) {
+        commonState.lastUsedLabelProps[cssProp] = value;
+    }
+    if (elemId in commonState.inlineStyles) commonState.inlineStyles[elemId][cssProp] = value;
+    else commonState.inlineStyles[elemId] = { [cssProp]: value };
+    // update path markers
+    if (cssProp === "stroke" && target.hasAttribute("marker-end")) {
+        const markerId = target.getAttribute("marker-end")?.match(/url\(#(.*)\)/)?.[1];
+        if (!markerId) return;
+        const newMarkerId = `${markerId.split("-")[0]}-${value.substring(1)}`;
+        select(`#${markerId}`).attr("fill", value).attr("id", newMarkerId);
+        select(target).attr("marker-end", `url(#${newMarkerId})`);
+    }
 }

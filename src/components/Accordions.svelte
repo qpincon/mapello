@@ -14,7 +14,7 @@
     sections: Record<string, Record<string, number | Color>>;
     paramDefs: ParamDefinitions;
     helpParams: Record<string, string>;
-    otherParams: OtherParams;
+    otherParams?: OtherParams;
   }
 
   let { sections = $bindable(), paramDefs, helpParams = {}, otherParams = {} }: Props = $props();
@@ -39,6 +39,7 @@
   }
 
   function sectionTitles(): ParamKey[] {
+    console.log(sections);
     return Object.keys(sections) as ParamKey[];
   }
 </script>

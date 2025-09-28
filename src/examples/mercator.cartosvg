@@ -1469,7 +1469,8 @@
       "countries",
       "land"
     ],
-    "visibleArea": 0.01
+    "visibleArea": 0.01,
+    "baseCss": "#static-svg-map, #canvas { display: block; height: auto;contain:content; }text { font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, \"Open Sans\", \"Helvetica Neue\", sans-serif; }#paths > path { stroke: rgba(124, 73, 14, 0.627); stroke-dasharray: 5px; stroke-width: 2; fill: none; }#outline { pointer-events: none; }#graticule { pointer-events: none; fill: none; stroke: rgb(119, 119, 119); stroke-width: 0.5px; stroke-opacity: 0.5; }#points-labels { stroke-width: 0px; }.country { stroke: rgb(191, 191, 191); stroke-width: 1px; fill: rgb(243, 239, 236); stroke-linejoin: round; }.country:hover { fill: rgb(249, 242, 235); }.country.hovered { fill: rgb(249, 242, 235); }.adm { stroke: rgb(196, 184, 163); stroke-width: 1px; fill: rgba(255, 255, 255, 0.816); stroke-linejoin: round; }.adm:hover { stroke: rgb(210, 157, 82); fill: rgb(236, 214, 182); stroke-width: 2px; }#tooltip { position: absolute; }"
   },
   "stateMicro": {
     "microParams": null,
@@ -1477,7 +1478,6 @@
     "microLayerDefinitions": null
   },
   "stateCommon": {
-    "baseCss": "#static-svg-map, #canvas { display: block; height: auto;contain:content; }text { font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, \"Open Sans\", \"Helvetica Neue\", sans-serif; }#paths > path { stroke: rgba(124, 73, 14, 0.627); stroke-dasharray: 5px; stroke-width: 2; fill: none; }#outline { pointer-events: none; }#graticule { pointer-events: none; fill: none; stroke: rgb(119, 119, 119); stroke-width: 0.5px; stroke-opacity: 0.5; }#points-labels { stroke-width: 0px; }.country { stroke: rgb(191, 191, 191); stroke-width: 1px; fill: rgb(243, 239, 236); stroke-linejoin: round; }.country:hover { fill: rgb(249, 242, 235); }.country.hovered { fill: rgb(249, 242, 235); }.adm { stroke: rgb(196, 184, 163); stroke-width: 1px; fill: rgba(255, 255, 255, 0.816); stroke-linejoin: round; }.adm:hover { stroke: rgb(210, 157, 82); fill: rgb(236, 214, 182); stroke-width: 2px; }#tooltip { position: absolute; }",
     "providedFonts": [],
     "providedShapes": [],
     "providedPaths": [],

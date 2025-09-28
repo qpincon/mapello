@@ -58,6 +58,7 @@
     import Modal from "src/components/Modal.svelte";
     import PaletteEditor from "src/components/PaletteEditor.svelte";
     import { resolvedLocales, updateZonesDataFormatters } from "../formatting";
+    import { handleInlineStyleChange } from "src/svg/svg";
 
     const scalesHelp: string = `
 <div class="inline-tooltip">  
@@ -122,7 +123,7 @@
 
     let drawDebounced = debounce(draw, 100);
     onMount(() => {
-        console.log("onmount");
+        console.log("macro onmount");
         initWorldData().then(() => {
             draw();
         });
@@ -208,7 +209,7 @@
                 svg.selectAll("g[image-class]").classed("hidden-after", true);
             });
         }
-        commonState.baseCss = exportStyleSheet("#outline")!;
+        macroState.baseCss = exportStyleSheet("#outline")!;
         saveState();
     }
 
@@ -219,22 +220,6 @@
         drawTimeoutId = setTimeout(() => {
             draw(false);
         }, 500);
-    }
-
-    function handleInlineStyleChange(elemId: string, target: HTMLElement, cssProp: string, value: string): void {
-        if (elemId.includes("label")) {
-            commonState.lastUsedLabelProps[cssProp] = value;
-        }
-        if (elemId in commonState.inlineStyles) commonState.inlineStyles[elemId][cssProp] = value;
-        else commonState.inlineStyles[elemId] = { [cssProp]: value };
-        // update path markers
-        if (cssProp === "stroke" && target.hasAttribute("marker-end")) {
-            const markerId = target.getAttribute("marker-end")?.match(/url\(#(.*)\)/)?.[1];
-            if (!markerId) return;
-            const newMarkerId = `${markerId.split("-")[0]}-${value.substring(1)}`;
-            select(`#${markerId}`).attr("fill", value).attr("id", newMarkerId);
-            select(target).attr("marker-end", `url(#${newMarkerId})`);
-        }
     }
 
     const saveDebounced = debounce(saveState, 200);
@@ -439,7 +424,7 @@
         commonCss = finalColorsCss + borderCss;
         if (macroState.macroParams.General.animate) commonCss += transitionCssMacro;
         // const style = exportStyleSheet("#outline");
-        return commonState.baseCss + commonCss;
+        return macroState.baseCss + commonCss;
     }
 
     function autoSelectColors() {
@@ -939,7 +924,7 @@
                             <span
                                 class="help-tooltip"
                                 data-bs-toggle="tooltip"
-                                allow-html="true"
+                                data-bs-html="true"
                                 data-bs-title={scalesHelp}>?</span
                             >
                         </div>

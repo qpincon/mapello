@@ -2,7 +2,7 @@ import { initLayersState } from "./detailed";
 import type { MacroParams, MicroParams } from "./params";
 import type { InlinePropsMacro, InlinePropsMicro, LegendDef, ColorDef, ContourParams, GlobalState, Color } from "./types";
 import { styleDictToCssRulesStr } from "./util/dom";
-import { peach } from './microPalettes'
+import { peach } from './micro/microPalettes'
 import defaultBaseCssMacro from "./assets/pagestyleMacro.css?raw";
 const defaultMacroParams: MacroParams = {
     General: {
@@ -161,6 +161,7 @@ export const macroPositionVars: string[] = [
 
 export const defaultState: GlobalState = {
     stateMacro: {
+        baseCss: defaultBaseCssMacro,
         macroParams: defaultMacroParams,
         inlinePropsMacro: defaultInlinePropsMacro,
         chosenCountriesAdm: [],
@@ -188,13 +189,11 @@ export const defaultState: GlobalState = {
     },
     stateCommon: {
         lastUsedLabelProps: defaultLastUsedLabelProps,
-        baseCss: defaultBaseCssMacro,
         providedFonts: [],
         providedShapes: [],
         providedPaths: [],
         inlineStyles: defaultInlineStyles,
         shapeCount: 0,
-
         currentMode: "macro",
     },
 };

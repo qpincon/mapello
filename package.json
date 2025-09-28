@@ -35,6 +35,7 @@
   "dependencies": {
     "@mapbox/tile-cover": "^3.0.2",
     "@popperjs/core": "^2.11.8",
+    "@protomaps/basemaps": "^5.5.1",
     "@turf/bbox": "^7.2.0",
     "@turf/bbox-clip": "^7.2.0",
     "@turf/bbox-polygon": "^7.2.0",
@@ -56,6 +57,7 @@
     "maplibre-gl": "^5.3.0",
     "parse-svg-path": "^0.1.2",
     "perfect-freehand": "^1.2.2",
+    "pmtiles": "^4.3.0",
     "svgo": "v4.0.0-rc.1",
     "terser": "^5.16.2",
     "text-to-svg": "^3.1.5",

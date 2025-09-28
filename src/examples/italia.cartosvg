@@ -1651,7 +1651,8 @@
       "Italy ADM1",
       "land"
     ],
-    "visibleArea": 0
+    "visibleArea": 0,
+    "baseCss": "#static-svg-map, #canvas { display: block; height: auto;contain:content; }#paths > path { stroke: rgba(76, 55, 0, 0.486); stroke-dasharray: 4px; stroke-width: 1.5px; fill: none; }#outline { pointer-events: none; }#graticule { pointer-events: none; fill: none; stroke: rgb(119, 119, 119); stroke-width: 0.5px; stroke-opacity: 0.5; }#land { pointer-events: none; stroke: rgba(0, 0, 0, 0); stroke-width: 1px; fill: rgb(255, 255, 255); }.country { stroke: rgb(209, 190, 176); stroke-width: 0.5px; fill: rgb(243, 239, 236); }.country:hover { fill: rgb(243, 239, 236); stroke: rgb(209, 190, 176); } .country.hovered { fill: rgb(243, 239, 236); stroke: rgb(209, 190, 176); } .adm { stroke: rgb(192, 176, 176); stroke-width: 1px; fill: rgba(255, 255, 255, 0.816); stroke-dasharray: 3px; }.adm:hover { fill: rgba(238, 221, 170, 0.21); } .adm.hovered { fill: rgba(238, 221, 170, 0.21); } #tooltip { position: absolute; }"
   },
   "stateMicro": {
     "microParams": null,
@@ -1659,7 +1660,6 @@
     "microLayerDefinitions": null
   },
   "stateCommon": {
-    "baseCss": "#static-svg-map, #canvas { display: block; height: auto;contain:content; }#paths > path { stroke: rgba(76, 55, 0, 0.486); stroke-dasharray: 4px; stroke-width: 1.5px; fill: none; }#outline { pointer-events: none; }#graticule { pointer-events: none; fill: none; stroke: rgb(119, 119, 119); stroke-width: 0.5px; stroke-opacity: 0.5; }#land { pointer-events: none; stroke: rgba(0, 0, 0, 0); stroke-width: 1px; fill: rgb(255, 255, 255); }.country { stroke: rgb(209, 190, 176); stroke-width: 0.5px; fill: rgb(243, 239, 236); }.country:hover { fill: rgb(243, 239, 236); stroke: rgb(209, 190, 176); } .country.hovered { fill: rgb(243, 239, 236); stroke: rgb(209, 190, 176); } .adm { stroke: rgb(192, 176, 176); stroke-width: 1px; fill: rgba(255, 255, 255, 0.816); stroke-dasharray: 3px; }.adm:hover { fill: rgba(238, 221, 170, 0.21); } .adm.hovered { fill: rgba(238, 221, 170, 0.21); } #tooltip { position: absolute; }",
     "providedFonts": [
       {
         "name": "Aquiline",
