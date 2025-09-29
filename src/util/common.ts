@@ -104,17 +104,6 @@ export function getColumns(data: Record<string, any>[]): string[] {
     return [...cols];
 }
 
-// TODO: remove
-export function findProp<T>(propName: string, obj: Object): T {
-    if (propName in obj) return (obj as any)[propName];
-    for (const v of Object.values(obj)) {
-        if (typeof v === 'object' && v !== null) {
-            const found = findProp(propName, v);
-            if (found !== undefined) return found as T;
-        }
-    }
-}
-
 export function initTooltips(): void {
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     [...tooltipTriggerList].map(tooltipTriggerEl => {

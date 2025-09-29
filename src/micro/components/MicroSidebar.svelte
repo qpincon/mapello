@@ -116,10 +116,8 @@
             bearing: microState.inlinePropsMicro.bearing,
             attributionControl: false,
         });
-
+        maplibreMap.showTileBoundaries = true;
         maplibreMap.on("moveend", (event) => {
-            console.log("movend");
-            // if (currentMode !== "micro") return;
             const center = maplibreMap!.getCenter().toArray();
             if (center[0] !== 0 && center[1] !== 0) {
                 microState.inlinePropsMicro = {
@@ -133,7 +131,6 @@
         });
 
         maplibreMap.on("movestart", (event) => {
-            // console.log('movestart');
             cancelStitch();
             select("#maplibre-map").style("opacity", 1);
         });

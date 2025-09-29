@@ -6,7 +6,7 @@ import { color, hsl } from "d3-color";
 import { DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "./util/dom";
 import { HatchPatternGenerator } from "./svg/patternGenerator";
 import { appendClip } from "./svg/svgDefs";
-import { discriminateCssForExport, download, findProp } from "./util/common";
+import { discriminateCssForExport, download } from "./util/common";
 import { additionnalCssExport, changeIdAndReferences, exportFontChoices, getIntersectionObservingPart, inlineFontVsPath, rgb2hex, type ExportOptions } from "./svg/export";
 import { createRoundedRectangleGeoJSON } from './util/geometry';
 import bboxPolygon from '@turf/bbox-polygon';
@@ -106,7 +106,12 @@ export async function drawPrettyMap(
     const height = generalParams.General.height;
     const borderPadding = generalParams.Border.borderPadding;
     const borderRadius = generalParams.Border.borderRadius;
-
+    mapLibreContainer.style('width', `${width}px`).style('height', `${height}px`);
+    if (generalParams.General.useViewBox) {
+        svg.attr("viewBox", `0 0 ${width} ${height}`);
+    } else {
+        svg.attr("width", `${width}`).attr("height", `${height}`);
+    }
     const outerFrameWidth = width - borderPadding;
     const outerFrameHeight = height - borderPadding;
     const outerFrameRx = (borderRadius / 100) * Math.min(outerFrameWidth, outerFrameHeight);
@@ -172,10 +177,10 @@ export async function drawPrettyMap(
 }
 
 function roundedRectFromParams(microParams: MicroParams): Feature<Polygon> {
-    const width = findProp('width', microParams) as number;
-    const height = findProp('height', microParams) as number;
-    const borderPadding = findProp('borderPadding', microParams) as number;
-    const borderRadius = findProp('borderRadius', microParams) as number;
+    const width = microParams.General.width;
+    const height = microParams.General.height;
+    const borderPadding = microParams.Border.borderPadding;
+    const borderRadius = microParams.Border.borderRadius;
     const outerFrameWidth = width - borderPadding;
     const outerFrameHeight = height - borderPadding;
     const innerFrameWidth = outerFrameWidth - borderPadding;
@@ -243,7 +248,7 @@ export function drawMicroFrame(
 }
 
 export function initLayersState(providedPalette: Partial<MicroPalette>): MicroPalette {
-    const palette = cloneDeep(providedPalette);
+    const palette = cloneDeep(providedPalette) as Partial<MicroPalette>;
     if (!palette['forest']) palette['forest'] = { ...palette['wood'], active: false };
     if (!palette['path']) palette['path'] = { ...palette['road-network'], active: false };
     if (!palette['railway']) palette['railway'] = { ...palette['road-network'], active: false };
@@ -427,9 +432,9 @@ export async function exportMicro(
     attributionColor: string,
     { exportFonts = exportFontChoices.convertToPath }: ExportOptions = {}
 ): Promise<void> {
-    const width = findProp('width', generalParams) as number;
-    const height = findProp('height', generalParams) as number;
-    const borderPadding = findProp('borderPadding', generalParams) as number;
+    const width = generalParams.General.width;
+    const height = generalParams.General.height;
+    const borderPadding = generalParams.Border.borderPadding;
     const svgNode = svg.node()! as SVGSVGElement;
     svgNode.removeAttribute('style');
     const usedFonts = getUsedInlineFonts(svgNode);
