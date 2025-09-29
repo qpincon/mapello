@@ -12,7 +12,7 @@
     import { addProtocol, Map, type StyleSpecification } from "maplibre-gl";
     import { cancelStitch } from "src/util/geometryStitch";
     import { select } from "d3-selection";
-    import { onMount } from "svelte";
+    import { onDestroy, onMount } from "svelte";
     import { Protocol } from "pmtiles";
     import { layers, namedFlavor } from "@protomaps/basemaps";
 
@@ -97,7 +97,7 @@
         styleSheetElem.setAttribute("id", "style-sheet-micro");
         document.head.appendChild(styleSheetElem);
         if (microCss != null) styleSheetElem.innerHTML = microCss;
-        else console.error("Problem: the generated style sheet is null");
+        // else console.error("Problem: the generated style sheet is null");
 
         createMaplibreMap();
     });
@@ -105,12 +105,11 @@
     const drawDebounced = debounce(draw, 100);
 
     function createMaplibreMap() {
-        console.log("createMaplibreMap!!!");
+        console.log("createMaplibreMap!!!", maplibreMap);
         if (!select(".maplibregl-canvas-container").empty()) return;
         maplibreMap = new Map({
             container: "maplibre-map",
             style: mapStyle,
-            // style: "https://api.maptiler.com/maps/bright-v2/style.json?key=FDR0xJ9eyXD87yIqUjOi",
             center: microState.inlinePropsMicro.center,
             zoom: microState.inlinePropsMicro.zoom,
             pitch: microState.inlinePropsMicro.pitch,
@@ -119,6 +118,7 @@
         });
 
         maplibreMap.on("moveend", (event) => {
+            console.log("movend");
             // if (currentMode !== "micro") return;
             const center = maplibreMap!.getCenter().toArray();
             if (center[0] !== 0 && center[1] !== 0) {
@@ -156,6 +156,10 @@
             maplibreMap!.once("load", resolve);
         });
     }
+
+    onDestroy(() => {
+        maplibreMap?.remove();
+    });
 
     function lockUnlock(isLocked: boolean) {
         microLocked = isLocked;
