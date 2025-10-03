@@ -195,3 +195,10 @@ export function extractFileName(filePath: string): string {
 
     return nameWithoutExtension;
 }
+
+
+export function sleep(ms: number): Promise<void> {
+    return new Promise((res) => {
+        setTimeout(() => res(), ms);
+    })
+}

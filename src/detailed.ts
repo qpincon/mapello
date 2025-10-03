@@ -13,7 +13,7 @@ import bboxPolygon from '@turf/bbox-polygon';
 import booleanDisjoint from '@turf/boolean-disjoint';
 import type { Feature, Geometry, Polygon } from 'geojson';
 import type { MicroParams } from './params';
-import { type Color, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type SvgSelection } from './types';
+import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type SvgSelection } from './types';
 import type { Config } from 'svgo/browser';
 import type { Map } from 'maplibre-gl';
 
@@ -31,7 +31,9 @@ export const interestingLayers: string[] = [
     "roads_other",
     "buildings",
 ];
-// export const interestingBasicV2Layers: string[] = [
+
+
+// BEFORE:
 //     "Residential",
 //     "Forest",
 //     "Sand",
@@ -46,14 +48,16 @@ export const interestingLayers: string[] = [
 //     // "Path minor",
 //     "Path",
 //     "Building",
-// ];
+
 
 const patternGenerator = new HatchPatternGenerator();
 
 export function orderFeaturesByLayer(features: RenderedFeature[]): void {
     features.sort((a, b) => {
-        const layerIdA = interestingLayers.indexOf(a.properties.mapLayerId!);
-        const layerIdB = interestingLayers.indexOf(b.properties.mapLayerId!);
+        // @ts-expect-error
+        const layerIdA = MICRO_LAYERS.indexOf(a.properties.mapLayerId!);
+        // @ts-expect-error
+        const layerIdB = MICRO_LAYERS.indexOf(b.properties.mapLayerId!);
         const renderHeightA = a.properties['render_height'];
         const renderHeightB = b.properties['render_height'];
         if (renderHeightA != null && renderHeightB != null) return renderHeightA < renderHeightB ? -1 : 1;
@@ -95,6 +99,14 @@ export async function drawPrettyMap(
         return layerDefinitions[kebabCase(layer) as MicroLayerId]?.active !== false;
     });
     updateSvgPatterns(svg.node() as SVGElement, layerDefinitions);
+    const width = generalParams.General.width;
+    const height = generalParams.General.height;
+
+    if (generalParams.General.useViewBox) {
+        svg.attr("viewBox", `0 0 ${width} ${height}`);
+    } else {
+        svg.attr("width", `${width}`).attr("height", `${height}`);
+    }
     const geometries = await getRenderedFeatures(maplibreMap, { layers: layersToQuery });
     console.log('geometries=', geometries)
     // Process got interrupted, a new call to this function is coming soon
@@ -102,20 +114,15 @@ export async function drawPrettyMap(
     orderFeaturesByLayer(geometries);
     // console.log('geometries', geometries);
 
-    const width = generalParams.General.width;
-    const height = generalParams.General.height;
+    const borderWidth = generalParams.Border.borderWidth;
     const borderPadding = generalParams.Border.borderPadding;
     const borderRadius = generalParams.Border.borderRadius;
+    const borderColor = generalParams.Border.borderColor;
     mapLibreContainer.style('width', `${width}px`).style('height', `${height}px`);
-    if (generalParams.General.useViewBox) {
-        svg.attr("viewBox", `0 0 ${width} ${height}`);
-    } else {
-        svg.attr("width", `${width}`).attr("height", `${height}`);
-    }
+
     const outerFrameWidth = width - borderPadding;
     const outerFrameHeight = height - borderPadding;
     const outerFrameRx = (borderRadius / 100) * Math.min(outerFrameWidth, outerFrameHeight);
-
     // Background layer
     svg.append('rect')
         .attr('id', 'micro-background')
@@ -125,6 +132,7 @@ export async function drawPrettyMap(
         .attr('width', width)
         .attr('height', height)
         .attr('rx', outerFrameRx);
+    drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, generalParams.General.animate);
 
     svg.append('g')
         .attr('id', 'micro')
@@ -153,7 +161,6 @@ export async function drawPrettyMap(
 
     svg.style("pointer-events", isLocked ? "auto" : "none");
     mapLibreContainer.style('opacity', 0);
-
     // Post-clipping - can't get it to work with d3 postclip and custom stream
     setTimeout(() => {
         const roundedRect = roundedRectFromParams(generalParams);
@@ -249,9 +256,9 @@ export function drawMicroFrame(
 
 export function initLayersState(providedPalette: Partial<MicroPalette>): MicroPalette {
     const palette = cloneDeep(providedPalette) as Partial<MicroPalette>;
-    if (!palette['forest']) palette['forest'] = { ...palette['wood'], active: false };
-    if (!palette['path']) palette['path'] = { ...palette['road-network'], active: false };
-    if (!palette['railway']) palette['railway'] = { ...palette['road-network'], active: false };
+    // if (!palette['forest']) palette['forest'] = { ...palette['wood'], active: false };
+    if (!palette['roads_other']) palette['roads_other'] = { ...palette['roads_minor'], active: false };
+    if (!palette['roads_rail']) palette['roads_rail'] = { ...palette['roads_minor'], active: false };
     // if (!palette['path-minor']) palette['path-minor'] = { ...palette['road-network'], active: false };
 
     Object.entries(palette).forEach(([layer, state]) => {

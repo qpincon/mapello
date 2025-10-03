@@ -223,20 +223,15 @@ interface MicroLayerDefinition {
 }
 
 export const MICRO_LAYERS = [
-    "residential",
-    "forest",
-    "sand",
-    "grass",
-    "wood",
+    "landuse_park",
+    "landuse_beach",
     "water",
-    // "River",
-    // "Bridge",
-    "pier",
-    "road-network",
-    "railway",
-    // "Path minor",
-    "path",
-    "building",
+    "roads_major",
+    "roads_minor",
+    "roads_rail",
+    // paths + pier
+    "roads_other",
+    "buildings",
 ] as const;
 
 type LayerId = typeof MICRO_LAYERS[number];

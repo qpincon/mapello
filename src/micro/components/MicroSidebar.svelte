@@ -99,7 +99,10 @@
         if (microCss != null) styleSheetElem.innerHTML = microCss;
         // else console.error("Problem: the generated style sheet is null");
 
-        createMaplibreMap();
+        createMaplibreMap()?.then(() => {
+            appState.projection = createD3ProjectionFromMapLibre(maplibreMap!);
+            appState.path = geoPath(appState.projection);
+        });
     });
 
     const drawDebounced = debounce(draw, 100);
@@ -152,6 +155,7 @@
         mapLoadedPromise = new Promise((resolve) => {
             maplibreMap!.once("load", resolve);
         });
+        return mapLoadedPromise;
     }
 
     onDestroy(() => {
