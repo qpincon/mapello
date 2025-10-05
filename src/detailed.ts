@@ -20,17 +20,17 @@ import type { Map } from 'maplibre-gl';
 
 type D3PathFunction = (geometry: Geometry) => string | null;
 
-export const interestingLayers: string[] = [
-    "landuse_park",
-    "landuse_beach",
-    "water",
-    "roads_major",
-    "roads_minor",
-    "roads_rail",
-    // paths + pier
-    "roads_other",
-    "buildings",
-];
+// export const interestingLayers: MicroLayerId[] = [
+//     "landuse_park",
+//     "landuse_beach",
+//     "water",
+//     "roads_major",
+//     "roads_minor",
+//     "roads_rail",
+//     // paths + pier
+//     "roads_other",
+//     "buildings",
+// ];
 
 
 // BEFORE:
@@ -95,7 +95,7 @@ export async function drawPrettyMap(
 ): Promise<void> {
     console.log('layerDefinitions=', layerDefinitions);
     const mapLibreContainer = select('#maplibre-map');
-    const layersToQuery = interestingLayers.filter(layer => {
+    const layersToQuery = MICRO_LAYERS.filter(layer => {
         return layerDefinitions[kebabCase(layer) as MicroLayerId]?.active !== false;
     });
     updateSvgPatterns(svg.node() as SVGElement, layerDefinitions);
@@ -257,9 +257,9 @@ export function drawMicroFrame(
 export function initLayersState(providedPalette: Partial<MicroPalette>): MicroPalette {
     const palette = cloneDeep(providedPalette) as Partial<MicroPalette>;
     // if (!palette['forest']) palette['forest'] = { ...palette['wood'], active: false };
-    if (!palette['roads_other']) palette['roads_other'] = { ...palette['roads_minor'], active: false };
-    if (!palette['roads_rail']) palette['roads_rail'] = { ...palette['roads_minor'], active: false };
-    // if (!palette['path-minor']) palette['path-minor'] = { ...palette['road-network'], active: false };
+    // if (!palette['roads_other']) palette['roads_other'] = { ...palette['roads_minor'], active: false };
+    if (!palette['railways']) palette['railways'] = { ...palette['roads'], active: false };
+    if (!palette['paths']) palette['paths'] = { ...palette['roads'], active: false };
 
     Object.entries(palette).forEach(([layer, state]) => {
         if (layer === "borderParams") return;
@@ -359,6 +359,7 @@ export function generateCssFromState(state: MicroPalette): string | null {
     }
 
     if (sheet) return null;
+    console.log(css);
     return css;
 }
 

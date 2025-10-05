@@ -206,13 +206,13 @@
                 getCssRuleName: (ruleName: string, el: HTMLElement) => {
                     let isHover = ruleName.includes(":hover") || ruleName.includes(".hovered");
                     let finalStr = "";
-                    if (ruleName.includes("#micro .building-1")) finalStr = "Building type 1";
-                    else if (ruleName.includes("#micro .building-2")) finalStr = "Building type 2";
-                    else if (ruleName.includes("#micro .building-3")) finalStr = "Building type 3";
+                    if (ruleName.includes("#micro .buildings-1")) finalStr = "Building type 1";
+                    else if (ruleName.includes("#micro .buildings-2")) finalStr = "Building type 2";
+                    else if (ruleName.includes("#micro .buildings-3")) finalStr = "Building type 3";
                     else if (ruleName.includes("#micro")) {
                         const layerId = ruleName.match(/#micro \.(.*?)(\:|$)/)![1];
                         finalStr = pascalCaseToSentence(layerId);
-                    } else if (ruleName.includes("#micro .building")) finalStr = "Buildings";
+                    } else if (ruleName.includes("#micro .buildings")) finalStr = "Buildings";
                     else if (ruleName.includes(".adm")) finalStr = "Region";
                     if (finalStr.length) {
                         if (isHover) return `${finalStr} hover`;
@@ -401,8 +401,8 @@
 
     function restoreStateFromSave() {
         const savedState = getState();
-        console.log("savedState=", savedState);
-        console.log("baseCss", savedState?.stateMacro.baseCss);
+        // console.log("savedState=", savedState);
+        // console.log("baseCss", savedState?.stateMacro.baseCss);
         applyState(savedState ?? defaultState);
     }
 

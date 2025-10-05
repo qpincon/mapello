@@ -14,27 +14,28 @@
     import { select } from "d3-selection";
     import { onDestroy, onMount } from "svelte";
     import { Protocol } from "pmtiles";
-    import { layers, namedFlavor } from "@protomaps/basemaps";
+    // import { layers, namedFlavor } from "@protomaps/basemaps";
 
     import { createD3ProjectionFromMapLibre } from "src/util/projections";
     import { geoPath } from "d3-geo";
     import { handleInlineStyleChange } from "src/svg/svg";
     import { debounce } from "lodash-es";
-
-    const mapStyle: StyleSpecification = {
-        version: 8,
-        glyphs: "https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf",
-        sprite: "https://protomaps.github.io/basemaps-assets/sprites/v4/light",
-        sources: {
-            protomaps: {
-                type: "vector",
-                url: "pmtiles://https://cartosvg.b-cdn.net/world.pmtiles",
-                attribution:
-                    '<a href="https://protomaps.com">Protomaps</a> © <a href="https://openstreetmap.org">OpenStreetMap</a>',
-            },
-        },
-        layers: layers("protomaps", namedFlavor("light"), { lang: "en" }),
-    };
+    import mapStyle from "./mapstyle.json";
+    // const mapStyle: StyleSpecification = {
+    //     version: 8,
+    //     glyphs: "https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf",
+    //     sprite: "https://protomaps.github.io/basemaps-assets/sprites/v4/light",
+    //     sources: {
+    //         protomaps: {
+    //             type: "vector",
+    //             url: "pmtiles://https://cartosvg.b-cdn.net/world.pmtiles",
+    //             attribution:
+    //                 '<a href="https://protomaps.com">Protomaps</a> © <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    //         },
+    //     },
+    //     layers: layers("protomaps", namedFlavor("light"), { lang: "en" }),
+    // };
+    console.log(mapStyle);
     let protocol = new Protocol();
     addProtocol("pmtiles", protocol.tile);
 
@@ -112,7 +113,7 @@
         if (!select(".maplibregl-canvas-container").empty()) return;
         maplibreMap = new Map({
             container: "maplibre-map",
-            style: mapStyle,
+            style: mapStyle as StyleSpecification,
             center: microState.inlinePropsMicro.center,
             zoom: microState.inlinePropsMicro.zoom,
             pitch: microState.inlinePropsMicro.pitch,
