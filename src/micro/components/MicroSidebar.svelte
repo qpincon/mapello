@@ -14,28 +14,14 @@
     import { select } from "d3-selection";
     import { onDestroy, onMount } from "svelte";
     import { Protocol } from "pmtiles";
-    // import { layers, namedFlavor } from "@protomaps/basemaps";
 
     import { createD3ProjectionFromMapLibre } from "src/util/projections";
     import { geoPath } from "d3-geo";
     import { handleInlineStyleChange } from "src/svg/svg";
     import { debounce } from "lodash-es";
     import mapStyle from "./mapstyle.json";
-    // const mapStyle: StyleSpecification = {
-    //     version: 8,
-    //     glyphs: "https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf",
-    //     sprite: "https://protomaps.github.io/basemaps-assets/sprites/v4/light",
-    //     sources: {
-    //         protomaps: {
-    //             type: "vector",
-    //             url: "pmtiles://https://cartosvg.b-cdn.net/world.pmtiles",
-    //             attribution:
-    //                 '<a href="https://protomaps.com">Protomaps</a> © <a href="https://openstreetmap.org">OpenStreetMap</a>',
-    //         },
-    //     },
-    //     layers: layers("protomaps", namedFlavor("light"), { lang: "en" }),
-    // };
-    console.log(mapStyle);
+    import { initTooltips } from "src/util/common";
+    import type { SearchResult } from "src/components/Geocoding.svelte";
     let protocol = new Protocol();
     addProtocol("pmtiles", protocol.tile);
 
@@ -44,11 +30,16 @@
         styleEditor: InlineStyleEditor | null;
         svg: SvgSelection;
         draw: (simplified?: boolean) => void;
+        /** Not passed, we just need to access it from the parent*/
+        maplibreMap?: Map | null;
     }
 
-    let { styleEditor, svg, draw }: Props = $props();
+    let { styleEditor, svg, draw, maplibreMap }: Props = $props();
 
     let mainMenuSelection = $state<string>("general");
+    $effect(() => {
+        if (mainMenuSelection) setTimeout(() => initTooltips(), 10);
+    });
     let microLocked = $state(false);
 
     /**
@@ -58,7 +49,7 @@
      *  - visible if the map is not zoomed enough
      *  - hidden if it is zoomed enough. Instead, we have the custom SVG displaying
      */
-    let maplibreMap: Map | null = $state(null);
+    // let maplibreMap: Map | null = $props(null);
     let mapLoadedPromise: Promise<unknown> | null = $state(null);
     let styleSheetElem: HTMLStyleElement;
     export async function drawMicroTotal() {
@@ -66,7 +57,7 @@
         await mapLoadedPromise;
         appState.projection = createD3ProjectionFromMapLibre(maplibreMap);
         appState.path = geoPath(appState.projection);
-        drawPrettyMap(
+        return drawPrettyMap(
             maplibreMap,
             svg,
             appState.path,
@@ -89,7 +80,15 @@
         const layerDefChanged = syncLayerStateWithCss(eventType, cssProp, value, microState.microLayerDefinitions);
         if (layerDefChanged) microState.microLayerDefinitions = microState.microLayerDefinitions;
         saveState();
-        return;
+    }
+
+    export function onPlaceSelected(result: SearchResult): void {
+        maplibreMap!.jumpTo({
+            center: [parseFloat(result.lon), parseFloat(result.lat)],
+            zoom: 14,
+            bearing: 0,
+            pitch: 0,
+        });
     }
 
     onMount(() => {
@@ -103,6 +102,7 @@
         createMaplibreMap()?.then(() => {
             appState.projection = createD3ProjectionFromMapLibre(maplibreMap!);
             appState.path = geoPath(appState.projection);
+            maplibreMap!.resize();
         });
     });
 
@@ -121,7 +121,7 @@
             attributionControl: false,
         });
         maplibreMap.showTileBoundaries = true;
-        maplibreMap.on("moveend", (event) => {
+        maplibreMap.on("moveend", async (event) => {
             const center = maplibreMap!.getCenter().toArray();
             if (center[0] !== 0 && center[1] !== 0) {
                 microState.inlinePropsMicro = {
@@ -131,6 +131,7 @@
                     bearing: maplibreMap!.getBearing(),
                 };
             }
+            await maplibreMap!.once("idle");
             drawDebounced();
         });
 
@@ -153,6 +154,10 @@
                 svg.node()!.dispatchEvent(e.originalEvent);
             }
         });
+        console.log(select("#maplibre-map").node());
+        select("#maplibre-map")
+            .style("width", `${microState.microParams.General.width}px`)
+            .style("height", `${microState.microParams.General.height}px`);
         mapLoadedPromise = new Promise((resolve) => {
             maplibreMap!.once("load", resolve);
         });

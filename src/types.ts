@@ -223,13 +223,11 @@ interface MicroLayerDefinition {
 }
 
 export const MICRO_LAYERS = [
-    // "landuse_park",
     "grass",
     "forest",
     "sand",
     "water",
     "roads",
-    // "roads_minor",
     "railways",
     "paths",
     "buildings",

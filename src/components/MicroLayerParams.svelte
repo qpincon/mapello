@@ -1,7 +1,7 @@
 <script lang="ts">
     import ColorPickerPreview from "./ColorPickerPreview.svelte";
     import RangeInput from "./RangeInput.svelte";
-    import { initTooltips, pascalCaseToSentence } from "../util/common";
+    import { camelCaseToSentence, initTooltips, pascalCaseToSentence } from "../util/common";
     import type { Color, MicroLayerId, MicroPalette, MicroPaletteWithBorder } from "src/types";
 
     interface Props {
@@ -57,7 +57,7 @@
         >
             <option hidden selected>Chose a preset palette</option>
             {#each Object.keys(availablePalettes) as paletteId}
-                <option value={paletteId}> {pascalCaseToSentence(paletteId)} </option>
+                <option value={paletteId}> {camelCaseToSentence(paletteId)} </option>
             {/each}
         </select>
     </div>

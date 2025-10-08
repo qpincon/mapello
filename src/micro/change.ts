@@ -59,9 +59,6 @@ export function syncLayerStateWithCss(
 
     const cssSelector = eventType.selectorText;
     if (!cssSelector.includes('#micro')) return false;
-    if (cssProp === "fill") {
-        updateSvgPatterns(document.getElementById('static-svg-map') as unknown as SVGSVGElement, layerState);
-    }
 
     const layer = cssSelector.match(/#micro \.(.*)/)?.[1] ?? 'background';
     let path: (string | number)[] = [layer, cssProp];
@@ -75,6 +72,9 @@ export function syncLayerStateWithCss(
 
     if (!isFills && !CSS_PROPS.includes(last(path) as string)) return false;
     set(layerState, path, value);
+    if (cssProp === "fill") {
+        updateSvgPatterns(document.getElementById('static-svg-map') as unknown as SVGSVGElement, layerState);
+    }
     replaceCssSheetContent(layerState);
     return true;
 }

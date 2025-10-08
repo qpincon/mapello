@@ -174,7 +174,7 @@
 - [ ] Bugfix: handle input wrong color in color picker text
 
 - [ ] Separate (lazy-load) micro and macro
-- [ ] Migrate to svelte 5
+- [x] Migrate to svelte 5
 - [x] Use typescript
 - [ ] Use svelte/kit
     - [x] Disable cloudflare deployment
@@ -185,5 +185,6 @@
   - [x] Inline imports -> ?raw (https://vite.dev/guide/assets)
 - [ ] Option to have fade out gradient like https://www.mapiful.com/editor/#/editor/location
 - [ ] Move "use view box" in export options
-
+- [ ] Micro: always stitch water when zoom level low enough to avoid cut oceans
+- [ ] Micro: make clip-path smaller when border width is big (avoid overlap with geometries)
 

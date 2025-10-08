@@ -1,27 +1,25 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { debounce } from "lodash-es";
-    import type { Map as MapLibreMap } from "maplibre-gl";
 
-    // Types
-    interface SearchResult {
+    export interface SearchResult {
         display_name: string;
         lat: string;
         lon: string;
     }
 
     interface Props {
-        maplibreMap: MapLibreMap | null;
         placeholder?: string;
         debounceTime?: number;
         apiUrl?: string;
+        onPlaceSelected: (res: SearchResult) => void;
     }
 
     let {
-        maplibreMap,
         placeholder = "Search for a location...",
         debounceTime = 300,
         apiUrl = "https://nominatim.openstreetmap.org/search",
+        onPlaceSelected = () => {},
     }: Props = $props();
 
     // State
@@ -76,15 +74,7 @@
         searchQuery = result.display_name;
         isResultsVisible = false;
         selectedIndex = -1;
-
-        if (maplibreMap) {
-            maplibreMap.jumpTo({
-                center: [parseFloat(result.lon), parseFloat(result.lat)],
-                zoom: 14,
-                bearing: 0,
-                pitch: 0,
-            });
-        }
+        onPlaceSelected(result);
     }
 
     // Handle click outside to close results

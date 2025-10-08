@@ -57,24 +57,12 @@
     import { exportMacro } from "./macro/export";
     import MicroSidebar from "./micro/components/MicroSidebar.svelte";
 
-    const microPalettes = _microPalettes as Record<string, MicroPaletteWithBorder>;
-
     let openContextMenuInfo: ContextMenuInfo;
 
     let macroSidebar: MacroSidebar | null = $state(null);
     let microSidebar: MicroSidebar | null = $state(null);
     let svg: SvgSelection = $state(select("#map-container") as unknown as SvgSelection);
     let isDrawing = $state(false);
-
-    // ====== State micro ====
-    let microLayerDefinitions: MicroPalette = initLayersState(microPalettes["peach"]);
-
-    // ====== State macro =======
-    let providedPaths: PathDef[];
-    // let providedShapes: ShapeDefinition[];
-    // let chosenCountriesAdm: string[];
-    // let inlinePropsMacro: InlinePropsMacro;
-    let inlinePropsMicro: InlinePropsMicro;
 
     let providedFonts: ProvidedFont[] = [];
     // TODO: remove and compute from shape + label size
@@ -110,15 +98,6 @@
 
     let zoomFunc: d3.ZoomBehavior<any, any> | null = $state(null);
     let dragFunc: d3.DragBehavior<any, any, any> | null = $state(null);
-    /**
-     * Map used for drawing zoomed-in cities as SVG using custom palette
-     * It is hidden when in "macro" mode.
-     * In "micro" mode, it is either:
-     *  - visible if the map is not zoomed enough
-     *  - hidden if it is zoomed enough. Instead, we have the custom SVG displaying
-     */
-    let maplibreMap: Map | null = $state(null);
-    let mapLoadedPromise: Promise<unknown> | null = $state(null);
     let microLocked = $state(false);
     let commonStyleSheetElem: HTMLStyleElement;
     onMount(async () => {
@@ -144,6 +123,8 @@
                 ) => {
                     if (commonState.currentMode === "macro") {
                         macroSidebar!.onStyleChanged(target, eventType, cssProp, value);
+                    } else if (commonState.currentMode === "micro") {
+                        microSidebar!.onStyleChanged(target, eventType, cssProp, value);
                     }
                 },
                 getElems: (el: HTMLElement) => {
@@ -973,7 +954,7 @@
         <div class="d-flex flex-column justify-content-center align-items-center h-100">
             {#if commonState.currentMode === "micro"}
                 <div class="micro-top mb-4 mx-auto d-flex align-items-center justify-content-between">
-                    <Geocoding {maplibreMap}></Geocoding>
+                    <Geocoding onPlaceSelected={(res) => microSidebar!.onPlaceSelected(res)}></Geocoding>
                     <div class="d-flex mx-2 align-items-center justify-content-center">
                         <input
                             type="checkbox"
@@ -997,7 +978,7 @@
             {#if commonState.currentMode === "micro"}
                 <div class="ms-auto me-4 mt-2">
                     Map data:
-                    <a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a>
+                    <a href="https://protomaps.com/" target="_blank">Protomaps</a>
                     <a href="https://www.openstreetmap.org/copyright" target="_blank"
                         >&copy; OpenStreetMap contributors</a
                     >

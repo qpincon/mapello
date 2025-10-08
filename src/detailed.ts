@@ -94,6 +94,7 @@ export async function drawPrettyMap(
     isLocked: boolean
 ): Promise<void> {
     console.log('layerDefinitions=', layerDefinitions);
+    select("#map-container").style("width", null).style('height', null);
     const mapLibreContainer = select('#maplibre-map');
     const layersToQuery = MICRO_LAYERS.filter(layer => {
         return layerDefinitions[kebabCase(layer) as MicroLayerId]?.active !== false;
@@ -156,7 +157,6 @@ export async function drawPrettyMap(
             return classes.join(' ');
         })
         .attr("stroke-width", d => d.properties.paint!['line-width'] ?? null)
-        // .attr("computed-id", d => d.properties.computedId)
         .attr("id", d => d.properties.uuid!);
 
     svg.style("pointer-events", isLocked ? "auto" : "none");
