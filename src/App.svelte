@@ -26,20 +26,12 @@
     import { exportStyleSheet, getUsedInlineFonts, fontsToCss } from "./util/dom";
     import { getState, saveState } from "./util/save";
     import { exportFontChoices } from "./svg/export";
-    import { initLayersState } from "./detailed";
-    import { Map } from "maplibre-gl";
-    import MicroLayerParams from "./components/MicroLayerParams.svelte";
     import * as _microPalettes from "./micro/microPalettes";
     import { FreehandDrawer } from "./svg/freeHandDraw";
-    import { cancelStitch } from "./util/geometryStitch";
     import type {
         SvgSelection,
-        PathDef,
         ShapeDefinition,
-        MicroPalette,
-        MicroPaletteWithBorder,
         ProvidedFont,
-        InlinePropsMicro,
         ParsedPath,
         ContextMenuInfo,
         MenuState,
@@ -936,7 +928,8 @@
                 {#if commonState.currentMode === "macro"}
                     <MacroSidebar bind:this={macroSidebar} {draw} {svg} {styleEditor}></MacroSidebar>
                 {:else}
-                    <MicroSidebar bind:this={microSidebar} {draw} {svg} {styleEditor}></MicroSidebar>
+                    <MicroSidebar bind:this={microSidebar} {draw} {svg} {styleEditor} bind:viewLocked={microLocked}
+                    ></MicroSidebar>
                 {/if}
             </div>
         </div>

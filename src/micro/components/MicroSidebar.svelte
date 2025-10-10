@@ -2,7 +2,7 @@
     import type InlineStyleEditor from "inline-style-editor";
     import Accordions from "src/components/Accordions.svelte";
     import MicroLayerParams from "src/components/MicroLayerParams.svelte";
-    import { drawPrettyMap, generateCssFromState, initLayersState } from "src/detailed";
+    import { drawPrettyMap, generateCssFromState, initLayersState } from "src/micro/components/drawing";
     import { helpParams, paramDefs } from "src/params";
     import { appState, microState } from "src/state.svelte";
     import type { Color, MicroLayerId, MicroPaletteWithBorder, SvgSelection } from "src/types";
@@ -32,15 +32,15 @@
         draw: (simplified?: boolean) => void;
         /** Not passed, we just need to access it from the parent*/
         maplibreMap?: Map | null;
+        viewLocked: boolean;
     }
 
-    let { styleEditor, svg, draw, maplibreMap }: Props = $props();
+    let { styleEditor, svg, draw, maplibreMap, viewLocked = $bindable() }: Props = $props();
 
     let mainMenuSelection = $state<string>("general");
     $effect(() => {
         if (mainMenuSelection) setTimeout(() => initTooltips(), 10);
     });
-    let microLocked = $state(false);
 
     /**
      * Map used for drawing zoomed-in cities as SVG using custom palette
@@ -63,7 +63,7 @@
             appState.path,
             microState.microLayerDefinitions,
             microState.microParams,
-            microLocked,
+            viewLocked,
         );
     }
 
@@ -147,7 +147,7 @@
         });
 
         maplibreMap.on("contextmenu", (e) => {
-            if (!microLocked) {
+            if (!viewLocked) {
                 lockUnlock(true);
                 const clickedElem = document.elementFromPoint(e.originalEvent.clientX, e.originalEvent.clientY);
                 Object.defineProperty(e.originalEvent, "target", { writable: false, value: clickedElem });
@@ -169,10 +169,10 @@
     });
 
     function lockUnlock(isLocked: boolean) {
-        microLocked = isLocked;
+        viewLocked = isLocked;
 
         const mapLibreContainer = select("#maplibre-map");
-        if (microLocked) {
+        if (viewLocked) {
             svg.style("pointer-events", "auto");
             mapLibreContainer.style("pointer-events", "none");
         } else {

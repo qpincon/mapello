@@ -46,7 +46,7 @@ import { reportStyle, fontsToCss, exportStyleSheet, getUsedInlineFonts, applySty
 import { saveState, getState } from './util/save';
 import { exportSvg, exportFontChoices } from './svg/export';
 import { addTooltipListener} from './tooltip';
-import {drawMicroFrame, drawPrettyMap, exportMicro, generateCssFromState, initLayersState, onMicroParamChange, replaceCssSheetContent, syncLayerStateWithCss, updateSvgPatterns} from './detailed'
+import {drawMicroFrame, drawPrettyMap, exportMicro, generateCssFromState, initLayersState, onMicroParamChange, replaceCssSheetContent, syncLayerStateWithCss, updateSvgPatterns} from './micro/components/drawing'
 import { Map } from 'maplibre-gl';
 import MicroLayerParams from './components/MicroLayerParams.svelte';
 import * as microPalettes from "./microPalettes";

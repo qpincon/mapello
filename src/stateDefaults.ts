@@ -1,4 +1,4 @@
-import { initLayersState } from "./detailed";
+import { initLayersState } from "./micro/components/drawing";
 import type { MacroParams, MicroParams } from "./params";
 import type { InlinePropsMacro, InlinePropsMicro, LegendDef, ColorDef, ContourParams, GlobalState, Color } from "./types";
 import { styleDictToCssRulesStr } from "./util/dom";

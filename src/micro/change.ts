@@ -1,6 +1,6 @@
 import { color, hsl } from "d3";
 import { debounce, last, set } from "lodash-es";
-import { generateCssFromState } from "src/detailed";
+import { generateCssFromState } from "src/micro/components/drawing";
 import { HatchPatternGenerator } from "src/svg/patternGenerator";
 import type { Color, MicroLayerId, MicroPalette, PatternDefinition } from "src/types";
 import { findStyleSheet } from "src/util/dom";
