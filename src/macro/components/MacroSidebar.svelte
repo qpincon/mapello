@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, tick } from "svelte";
+    import { onDestroy, onMount, tick } from "svelte";
     import Accordions from "../../components/Accordions.svelte";
     import {
         download,
@@ -85,6 +85,7 @@
     let showCustomPalette = $state<boolean>(false);
     let htmlTooltipElem = $state<HTMLElement | null>(null);
     let legendSample: SVGGElement | null = $state(null);
+    let commonStyleSheetElem: HTMLStyleElement;
 
     $effect(() => {
         const _ = mainMenuSelection;
@@ -110,10 +111,6 @@
     );
 
     interface Props {
-        // handleChangeProp: (event: CustomEvent<{ prop: string; value: unknown }>) => void;
-        // paramDefs: ParamDefinitions;
-        // inlinePropsMacro: Record<string, any>;
-        // onChange: (changedProp: string) => void;
         styleEditor: InlineStyleEditor | null;
         svg: SvgSelection;
         draw: (simplified?: boolean) => void;
@@ -124,9 +121,17 @@
     let drawDebounced = debounce(draw, 100);
     onMount(() => {
         console.log("macro onmount");
+        commonStyleSheetElem = document.createElement("style");
+        commonStyleSheetElem.setAttribute("id", "style-sheet-macro");
+        document.head.appendChild(commonStyleSheetElem);
+        commonStyleSheetElem.innerHTML = macroState.baseCss;
         initWorldData().then(() => {
             draw();
         });
+    });
+
+    onDestroy(() => {
+        commonStyleSheetElem.remove();
     });
 
     export function applyStateAndDraw(simplified = false) {
@@ -145,6 +150,7 @@
     }
 
     export async function drawMacroTotal(simplified = false) {
+        commonStyleSheetElem.innerHTML = macroState.baseCss;
         await drawMacroBase(svg, simplified);
         colorizeAndLegend(svg);
     }

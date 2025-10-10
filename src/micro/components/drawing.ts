@@ -13,41 +13,12 @@ import bboxPolygon from '@turf/bbox-polygon';
 import booleanDisjoint from '@turf/boolean-disjoint';
 import type { Feature, Geometry, Polygon } from 'geojson';
 import type { MicroParams } from '../../params';
-import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type SvgSelection } from '../../types';
+import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type StateMicro, type SvgSelection } from '../../types';
 import type { Config } from 'svgo/browser';
 import type { Map } from 'maplibre-gl';
 
 
 type D3PathFunction = (geometry: Geometry) => string | null;
-
-// export const interestingLayers: MicroLayerId[] = [
-//     "landuse_park",
-//     "landuse_beach",
-//     "water",
-//     "roads_major",
-//     "roads_minor",
-//     "roads_rail",
-//     // paths + pier
-//     "roads_other",
-//     "buildings",
-// ];
-
-
-// BEFORE:
-//     "Residential",
-//     "Forest",
-//     "Sand",
-//     "Grass",
-//     "Wood",
-//     "Water",
-//     // "River",
-//     // "Bridge",
-//     "Pier",
-//     "Road network",
-//     "Railway",
-//     // "Path minor",
-//     "Path",
-//     "Building",
 
 
 const patternGenerator = new HatchPatternGenerator();
@@ -310,6 +281,11 @@ export function generateCssFromState(state: MicroPalette): string | null {
     #micro .poly { 
         stroke-linejoin: round;
     }
+    #paths > path {
+        stroke: ${state['roads'] ? state['roads'].stroke : '#6D4C41'};
+        fill: none;
+        stroke-width: 2px;
+    }
     `;
 
     for (const [layer, layerDef] of Object.entries(state)) {
@@ -359,7 +335,6 @@ export function generateCssFromState(state: MicroPalette): string | null {
     }
 
     if (sheet) return null;
-    console.log(css);
     return css;
 }
 
@@ -367,7 +342,7 @@ export function generateCssFromState(state: MicroPalette): string | null {
 export function onMicroParamChange(
     layer: MicroLayerId,
     prop: string | string[],
-    value: any,
+    value: unknown,
     layerState: MicroPalette
 ): boolean {
     if (prop.includes("pattern")) {
@@ -388,12 +363,12 @@ export function onMicroParamChange(
     if (!rule) return false;
 
     if (Array.isArray(prop) && prop[0] === "fills") {
-        rule.style.setProperty("fill", value);
+        rule.style.setProperty("fill", value as string);
     } else {
         if (layerState[layer].pattern?.active) {
             updateSvgPatterns(document.getElementById('static-svg-map') as unknown as SVGSVGElement, layerState);
         } else {
-            rule.style.setProperty(prop as string, value);
+            rule.style.setProperty(prop as string, value as string);
         }
     }
     replaceCssSheetContent(layerState);
@@ -433,16 +408,14 @@ export function updateSvgPatterns(svgNode: SVGElement | null, layerState: MicroP
 
 export async function exportMicro(
     svg: SvgSelection,
-    generalParams: MicroParams,
+    stateMicro: StateMicro,
     providedFonts: ProvidedFont[],
     commonCss: string,
-    animated: boolean,
-    attributionColor: string,
     { exportFonts = exportFontChoices.convertToPath }: ExportOptions = {}
 ): Promise<void> {
-    const width = generalParams.General.width;
-    const height = generalParams.General.height;
-    const borderPadding = generalParams.Border.borderPadding;
+    const width = stateMicro.microParams.General.width;
+    const height = stateMicro.microParams.General.height;
+    const borderPadding = stateMicro.microParams.Border.borderPadding;
     const svgNode = svg.node()! as SVGSVGElement;
     svgNode.removeAttribute('style');
     const usedFonts = getUsedInlineFonts(svgNode);
@@ -464,7 +437,7 @@ export async function exportMicro(
         pathIsBetter = true;
     }
 
-    const js = animated ? getIntersectionObservingPart(false) : null;
+    const js = stateMicro.microParams.General.animate ? getIntersectionObservingPart(false) : null;
 
     // Styling
     const styleElem = document.createElementNS("http://www.w3.org/2000/svg", 'style');
@@ -492,7 +465,7 @@ export async function exportMicro(
     /** Add attribution */
     // const roundedRectPoints = explode(roundedRectFromParams(generalParams));
     svgElement.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-
+    const attributionColor = stateMicro.microLayerDefinitions["roads"]["stroke"] ?? "#aaa";
     const createAnchor = (text: string, href: string, x: number, y: number) => {
         // const nearest = nearestPoint([x, height - y], roundedRectPoints);
         // const attrPos = nearest.geometry.coordinates;

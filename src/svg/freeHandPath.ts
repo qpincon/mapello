@@ -63,7 +63,7 @@ function fittedCurveDataToPathString(fittedLineData: [number, number][][]): stri
 
 function updateLine(): void {
     if (rawLineData.length > 1 && fittedCurve) {
-        fittedCurveData = fitCurve(rawLineData, 400);
+        fittedCurveData = fitCurve(rawLineData, 300);
         fittedCurve.setAttribute("d", fittedCurveDataToPathString(fittedCurveData));
     }
 }

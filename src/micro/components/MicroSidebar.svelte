@@ -132,7 +132,7 @@
                 };
             }
             await maplibreMap!.once("idle");
-            drawDebounced();
+            draw();
         });
 
         maplibreMap.on("movestart", (event) => {

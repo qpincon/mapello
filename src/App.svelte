@@ -48,6 +48,7 @@
     import { defaultState } from "./stateDefaults";
     import { exportMacro } from "./macro/export";
     import MicroSidebar from "./micro/components/MicroSidebar.svelte";
+    import { exportMicro } from "./micro/components/drawing";
 
     let openContextMenuInfo: ContextMenuInfo;
 
@@ -91,13 +92,13 @@
     let zoomFunc: d3.ZoomBehavior<any, any> | null = $state(null);
     let dragFunc: d3.DragBehavior<any, any, any> | null = $state(null);
     let microLocked = $state(false);
-    let commonStyleSheetElem: HTMLStyleElement;
+    // let commonStyleSheetElem: HTMLStyleElement;
     onMount(async () => {
         console.log("App onmount");
-        commonStyleSheetElem = document.createElement("style");
-        commonStyleSheetElem.setAttribute("id", "style-sheet-macro");
-        document.head.appendChild(commonStyleSheetElem);
-        commonStyleSheetElem.innerHTML = macroState.baseCss;
+        // commonStyleSheetElem = document.createElement("style");
+        // commonStyleSheetElem.setAttribute("id", "style-sheet-macro");
+        // document.head.appendChild(commonStyleSheetElem);
+        // commonStyleSheetElem.innerHTML = macroState.baseCss;
         /** Init bootstrap dropdowns */
         Array.from(document.querySelectorAll(".dropdown-toggle")).forEach((dropdownToggleEl) => {
             new Dropdown(dropdownToggleEl);
@@ -366,7 +367,7 @@
         // merge(commonState, state.stateCommon);
         // merge(macroState, state.stateMacro);
         // merge(microState, state.stateMicro);
-        commonStyleSheetElem.innerHTML = macroState.baseCss;
+        // commonStyleSheetElem.innerHTML = macroState.baseCss;
         changeProjection();
         draw();
         saveState();
@@ -760,19 +761,16 @@
     }
 
     function validateExport(): void {
-        const formData = Object.fromEntries(new FormData(exportForm!).entries());
+        const formData = exportForm ? Object.fromEntries(new FormData(exportForm!).entries()) : {};
         console.log("formData", formData);
         if (commonState.currentMode === "macro") {
             const totalCss = macroSidebar!.computeCss();
             exportMacro(svg, macroState, providedFonts, true, totalCss, formData);
+        } else {
+            const microCss = exportStyleSheet("#micro .line")!;
+            exportMicro(svg, microState, providedFonts, microCss, formData);
         }
-        // else {
-        //     const attributionColor = microLayerDefinitions["road-network"]["stroke"] ?? "#aaa";
-        //     console.log("attributionColor=", attributionColor);
-        //     exportMicro(svg, microParams, providedFonts, totalCommonCss, p("animate"), attributionColor, formData);
-        //     fetch("/exportSvgMicro");
-        // }
-        // showExportConfirm = false;
+        showExportConfirm = false;
     }
 
     let inlineFontUsed = $state(false);
