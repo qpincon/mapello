@@ -83,7 +83,7 @@ export type RenderedFeature<T extends Geometry | null = Polygon | LineString | M
   bboxPoly?: Feature<Polygon>;
 }
 
-type RenderedFeaturePoly = RenderedFeature<Polygon>;
+export type RenderedFeaturePoly = RenderedFeature<Polygon>;
 type RenderedFeaturePolyOrMutli = RenderedFeature<Polygon | MultiPolygon>;
 
 type Cuts = {
@@ -151,7 +151,7 @@ function bboxContains(containing: BBox, contained: BBox): boolean {
   return containing[0] <= contained[0] && containing[1] <= contained[1] && containing[2] >= contained[2] && containing[3] >= contained[3];
 }
 
-function bboxIntersects(
+export function bboxIntersects(
   [axmin, aymin, axmax, aymax]: BBox,
   [bxmin, bymin, bxmax, bymax]: BBox
 ): boolean {
@@ -400,6 +400,9 @@ async function stitchLines(allLines: RenderedFeature[], cuts: Cuts, deadZones: D
   return finalFeatures;
 }
 
+/** For some reason water is cut differently: we bypass a lot of checks to merge more aggressively */
+let currentIsWater = false;
+
 type SegmentToProcess = [number, number, number, 'h' | 'v'];
 async function stitchPolygons(allPolygons: RenderedFeaturePoly[], cuts: Cuts, deadZones: DeadZones, tiles: Tiles, currentProcessId: number) {
 
@@ -409,9 +412,10 @@ async function stitchPolygons(allPolygons: RenderedFeaturePoly[], cuts: Cuts, de
   cuts.tolerance = getTolerance(cuts.zoom!);
   // console.log("tolerance", cuts.tolerance, cuts.zoom);
 
-  const mergedFeatures = [];
-  for (const layerPolygons of Object.values(featuresByClass)) {
-
+  const mergedFeatures: RenderedFeature[] = [];
+  for (const [computedId, layerPolygons] of Object.entries(featuresByClass)) {
+    currentIsWater = computedId === "water";
+    // console.log("computedId=", computedId);
     // console.log("layerPolygons=", layerPolygons);
 
     // Identify cut polygon
@@ -440,6 +444,7 @@ async function stitchPolygons(allPolygons: RenderedFeaturePoly[], cuts: Cuts, de
 
     // Filter cut polygons entirely in dead zones
     const polygonCutIndexExclude = new Set([...polygonIndexesCut].map(polygonIndex => {
+      if (currentIsWater) return;
       const polygon = layerPolygons[polygonIndex];
       if (deadZones.some(deadZone => bboxContains(deadZone.bbox, polygon.boundingBox!))) return polygonIndex;
     }).filter(i => i !== undefined));
@@ -489,11 +494,11 @@ async function stitchPolygons(allPolygons: RenderedFeaturePoly[], cuts: Cuts, de
         }
       }
     }
-    // console.log('stitchGroups=', stitchGroups);
+    console.log('stitchGroups=', stitchGroups);
 
     // merge groups that have intersection
     const finalStichGroups = mergeSets(stitchGroups);
-    // console.log('finalStichGroups=', finalStichGroups);
+    console.log('finalStichGroups=', finalStichGroups);
     const stitchedPolygonsIndexes = new Set(finalStichGroups.flatMap(g => [...g]));
     const unmatchedCutPolygon = polygonIndexesCut.difference(stitchedPolygonsIndexes).difference(polygonCutIndexExclude);
     // console.log('unmatchedCutPolygon', unmatchedCutPolygon);
@@ -547,6 +552,7 @@ function polygonsAreCutByTile(segmentInfo1: SegmentToProcess, segmentInfo2: Segm
     const pos2 = checkRingPosition(ring2, coordIndex2, cutDirection2);
     // console.log(polygons[polygonIndex2], pos2);
     if (pos1 !== pos2) {
+      if (currentIsWater) return true;
       const distance = Math.abs(ring1[coordIndex1][0] - ring2[coordIndex2][0]);
       const distanceIsDeadZoneExtent = Math.abs(distance - deadZones.extentLng!) < 0.00001;
       // console.log("distanceLng", distance, distanceIsDeadZoneExtent);
@@ -564,6 +570,7 @@ function polygonsAreCutByTile(segmentInfo1: SegmentToProcess, segmentInfo2: Segm
     const pos2 = checkRingPosition(ring2, coordIndex2, cutDirection2);
     // console.log(polygons[polygonIndex2], pos2);
     if (pos1 !== pos2) {
+      if (currentIsWater) return true;
       const distance = Math.abs(ring1[coordIndex1][1] - ring2[coordIndex2][1]);
       const distanceIsDeadZoneExtent = Math.abs(distance - deadZones.extentLat!) < 0.00001;
       // console.log("distanceLat", distance, distanceIsDeadZoneExtent);
@@ -669,10 +676,12 @@ function mergeSets(setList: Set<number>[]) {
 
 function checkSegmentHorizontalCut(p1: Position, p2: Position, cuts: Cuts) {
   if (Math.abs(p1[1] - p2[1]) > 0.0000001) return false;
+  if (currentIsWater) return true;
   return cuts['h'].some(p => Math.abs(p - p1[1]) < cuts.tolerance!);
 }
 
 function checkSegmentVerticalCut(p1: Position, p2: Position, cuts: Cuts) {
   if (Math.abs(p1[0] - p2[0]) > 0.0000001) return false;
+  if (currentIsWater) return true;
   return cuts['v'].some(p => Math.abs(p - p1[0]) < cuts.tolerance!);
 }

@@ -185,7 +185,7 @@
   - [x] Inline imports -> ?raw (https://vite.dev/guide/assets)
 - [ ] Option to have fade out gradient like https://www.mapiful.com/editor/#/editor/location
 - [ ] Move "use view box" in export options
-- [ ] Micro: always stitch water when zoom level low enough to avoid cut oceans
+- [x] Micro: always stitch water when zoom level low enough to avoid cut oceans
 - [x] Micro: make clip-path smaller when border width is big (avoid overlap with geometries)
 - [x] Bug wen reset project on micro
 - [ ] fix animate on micro

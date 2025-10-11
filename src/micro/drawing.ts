@@ -64,7 +64,7 @@ export async function drawPrettyMap(
     generalParams: MicroParams,
     isLocked: boolean
 ): Promise<void> {
-    console.trace('layerDefinitions=', layerDefinitions);
+    console.log('layerDefinitions=', layerDefinitions);
     select("#map-container").style("width", null).style('height', null);
     const mapLibreContainer = select('#maplibre-map');
     const layersToQuery = MICRO_LAYERS.filter(layer => {
