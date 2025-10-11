@@ -57,7 +57,6 @@
     let svg: SvgSelection = $state(select("#map-container") as unknown as SvgSelection);
     let isDrawing = $state(false);
 
-    let providedFonts: ProvidedFont[] = [];
     // TODO: remove and compute from shape + label size
     let shapeCount = 0;
 
@@ -517,16 +516,6 @@
         saveState();
     }
 
-    // function getFirstDataRow(zonesDataDef: ZoneData): ZoneDataRow | null {
-    //     if (!zonesData) return null;
-    //     const row = { ...zonesDataDef.data[0] };
-    //     zonesDataDef.numericCols.forEach((colDef) => {
-    //         const col = colDef.column;
-    //         row[col] = zonesDataDef.formatters![col](row[col] as number);
-    //     });
-    //     return row;
-    // }
-
     function handleInputFont(e: Event): void {
         // @ts-expect-error
         const file = e.target.files[0];
@@ -534,8 +523,7 @@
         const reader = new FileReader();
         reader.addEventListener("load", () => {
             const newFont: ProvidedFont = { name: fileName, content: reader.result as string };
-            providedFonts.push(newFont);
-            providedFonts = providedFonts;
+            commonState.providedFonts.push(newFont);
             saveState();
         });
         reader.readAsDataURL(file);
@@ -766,10 +754,10 @@
         console.log("formData", formData);
         if (commonState.currentMode === "macro") {
             const totalCss = macroSidebar!.computeCss();
-            exportMacro(svg, macroState, providedFonts, true, totalCss, formData);
+            exportMacro(svg, macroState, commonState.providedFonts, true, totalCss, formData);
         } else {
             const microCss = exportStyleSheet("#micro .line")!;
-            exportMicro(svg, microState, providedFonts, microCss, formData);
+            exportMicro(svg, microState, commonState.providedFonts, microCss, formData);
         }
         showExportConfirm = false;
     }
@@ -777,7 +765,7 @@
     let inlineFontUsed = $state(false);
     function onExportSvgClicked() {
         const usedFonts = getUsedInlineFonts(svg.node()!);
-        const usedProvidedFonts = providedFonts.filter((font) => usedFonts.has(font.name));
+        const usedProvidedFonts = commonState.providedFonts.filter((font) => usedFonts.has(font.name));
         inlineFontUsed = usedProvidedFonts.length > 0;
         if (commonState.currentMode === "micro" && !inlineFontUsed) {
             validateExport();
@@ -791,7 +779,7 @@
 
 <svelte:head>
     {@html `<${""}style> ${commonCss} </${""}style>`}
-    {@html `<${""}style> ${cssFonts} </${""}style>`}
+    {@html `<${""}style> ${cssFonts} .test {} </${""}style>`}
 </svelte:head>
 
 <div id="contextmenu" class="border rounded" bind:this={contextualMenu} class:hidden={!contextualMenu?.opened}>

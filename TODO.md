@@ -190,4 +190,5 @@
 - [x] Bug wen reset project on micro
 - [ ] fix animate on micro
 - [ ] fix background shadow on micro
+- [ ] Micro: minify class names on export ?
 
