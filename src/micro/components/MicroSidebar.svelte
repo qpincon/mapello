@@ -2,7 +2,7 @@
     import type InlineStyleEditor from "inline-style-editor";
     import Accordions from "src/components/Accordions.svelte";
     import MicroLayerParams from "src/components/MicroLayerParams.svelte";
-    import { drawPrettyMap, generateCssFromState, initLayersState } from "src/micro/components/drawing";
+    import { drawPrettyMap, generateCssFromState, initLayersState } from "src/micro/drawing";
     import { helpParams, paramDefs } from "src/params";
     import { appState, microState } from "src/state.svelte";
     import type { Color, MicroLayerId, MicroPaletteWithBorder, SvgSelection } from "src/types";
@@ -20,7 +20,7 @@
     import { handleInlineStyleChange } from "src/svg/svg";
     import { debounce } from "lodash-es";
     import mapStyle from "./mapstyle.json";
-    import { initTooltips } from "src/util/common";
+    import { initTooltips, sleep } from "src/util/common";
     import type { SearchResult } from "src/components/Geocoding.svelte";
     let protocol = new Protocol();
     addProtocol("pmtiles", protocol.tile);
@@ -99,14 +99,12 @@
         if (microCss != null) styleSheetElem.innerHTML = microCss;
         // else console.error("Problem: the generated style sheet is null");
 
-        createMaplibreMap()?.then(() => {
+        createMaplibreMap()?.then(async () => {
             appState.projection = createD3ProjectionFromMapLibre(maplibreMap!);
             appState.path = geoPath(appState.projection);
             maplibreMap!.resize();
         });
     });
-
-    const drawDebounced = debounce(draw, 100);
 
     function createMaplibreMap() {
         console.log("createMaplibreMap!!!", maplibreMap);

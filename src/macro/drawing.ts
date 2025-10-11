@@ -68,9 +68,6 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
         svg.attr("width", `${width}`).attr("height", `${height}`);
     }
     container.style("width", `${width}px`).style("height", `${height}px`);
-    // mapLibreContainer.style("width", `${width}px`).style("height", `${height}px`);
-    appState.path = geoPath(appState.projection);
-    appState.pathLarger = geoPath(appState.projectionLarger);
 
     const groupData: MacroGroupData[] = [];
     Object.values(macroState.zonesFilter).forEach((filterName) => {
@@ -266,6 +263,7 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
         if (!data.data) return;
         const parentPathElem = select(this).style("will-change", "opacity");
         if (data.containerClass) parentPathElem.classed(data.containerClass, true);
+        console.log(data, appState.path);
         const pathElem = parentPathElem
             .selectAll("path")
             // @ts-expect-error

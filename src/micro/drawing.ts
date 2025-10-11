@@ -1,19 +1,19 @@
-import svgoConfig from '../../svgoExport.config';
+import svgoConfig from '../svgoExport.config';
 import { select, type Selection } from "d3-selection";
-import { getRenderedFeatures, type RenderedFeature } from "../../util/geometryStitch";
+import { getRenderedFeatures, type RenderedFeature } from "../util/geometryStitch";
 import { cloneDeep, debounce, kebabCase, last, random, set, size } from "lodash-es";
 import { color, hsl } from "d3-color";
-import { DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../../util/dom";
-import { HatchPatternGenerator } from "../../svg/patternGenerator";
-import { appendClip } from "../../svg/svgDefs";
-import { discriminateCssForExport, download } from "../../util/common";
-import { additionnalCssExport, changeIdAndReferences, exportFontChoices, getIntersectionObservingPart, inlineFontVsPath, rgb2hex, type ExportOptions } from "../../svg/export";
-import { createRoundedRectangleGeoJSON } from '../../util/geometry';
+import { DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
+import { HatchPatternGenerator } from "../svg/patternGenerator";
+import { appendClip } from "../svg/svgDefs";
+import { discriminateCssForExport, download } from "../util/common";
+import { additionnalCssExport, changeIdAndReferences, exportFontChoices, getIntersectionObservingPart, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
+import { createRoundedRectangleGeoJSON } from '../util/geometry';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanDisjoint from '@turf/boolean-disjoint';
 import type { Feature, Geometry, Polygon } from 'geojson';
-import type { MicroParams } from '../../params';
-import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type StateMicro, type SvgSelection } from '../../types';
+import type { MicroParams } from '../params';
+import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type StateMicro, type SvgSelection } from '../types';
 import type { Config } from 'svgo/browser';
 import type { Map } from 'maplibre-gl';
 
@@ -64,7 +64,7 @@ export async function drawPrettyMap(
     generalParams: MicroParams,
     isLocked: boolean
 ): Promise<void> {
-    console.log('layerDefinitions=', layerDefinitions);
+    console.trace('layerDefinitions=', layerDefinitions);
     select("#map-container").style("width", null).style('height', null);
     const mapLibreContainer = select('#maplibre-map');
     const layersToQuery = MICRO_LAYERS.filter(layer => {
@@ -104,7 +104,6 @@ export async function drawPrettyMap(
         .attr('width', width)
         .attr('height', height)
         .attr('rx', outerFrameRx);
-    drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, generalParams.General.animate);
 
     svg.append('g')
         .attr('id', 'micro')
@@ -130,6 +129,7 @@ export async function drawPrettyMap(
         .attr("stroke-width", d => d.properties.paint!['line-width'] ?? null)
         .attr("id", d => d.properties.uuid!);
 
+    drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, generalParams.General.animate);
     svg.style("pointer-events", isLocked ? "auto" : "none");
     mapLibreContainer.style('opacity', 0);
     // Post-clipping - can't get it to work with d3 postclip and custom stream
@@ -221,7 +221,7 @@ export function drawMicroFrame(
         .attr('stroke', borderColor)
         .attr('stroke-width', borderWidth);
 
-    appendClip(svg, innerFrameWidth, innerFrameHeight, innerFrameRx, innerFrameX, innerFrameY);
+    appendClip(svg, innerFrameWidth, innerFrameHeight, borderRadius, innerFrameX, innerFrameY, borderWidth);
     return frame;
 }
 

@@ -9,7 +9,7 @@
     import { drawCustomPaths, parseAndUnprojectPath } from "./svg/paths";
     import PathEditor from "./svg/pathEditor";
     import Geocoding from "./components/Geocoding.svelte";
-    import { download, initTooltips, pascalCaseToSentence } from "./util/common";
+    import { download, initTooltips, pascalCaseToSentence, sleep } from "./util/common";
     import * as shapes from "./svg/shapeDefs";
     import * as markers from "./svg/markerDefs";
     import { setTransformScale, closestDistance, type DistanceQueryResult, pathStringFromParsed } from "./svg/svg";
@@ -48,7 +48,7 @@
     import { defaultState } from "./stateDefaults";
     import { exportMacro } from "./macro/export";
     import MicroSidebar from "./micro/components/MicroSidebar.svelte";
-    import { exportMicro } from "./micro/components/drawing";
+    import { exportMicro } from "./micro/drawing";
 
     let openContextMenuInfo: ContextMenuInfo;
 
@@ -360,7 +360,7 @@
         download(JSON.stringify(state), "text/json", "project.cartosvg");
     }
 
-    function applyState(state: GlobalState): void {
+    async function applyState(state: GlobalState): Promise<void> {
         Object.assign(commonState, state.stateCommon);
         Object.assign(macroState, state.stateMacro);
         Object.assign(microState, state.stateMicro);
@@ -368,6 +368,7 @@
         // merge(macroState, state.stateMacro);
         // merge(microState, state.stateMicro);
         // commonStyleSheetElem.innerHTML = macroState.baseCss;
+        await tick();
         changeProjection();
         draw();
         saveState();
