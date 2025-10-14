@@ -179,9 +179,9 @@
 - [ ] Use svelte/kit
     - [x] Disable cloudflare deployment
     - [ ] Deploy on VPS
-- [ ] Use vite
+    - [ ] HtmlWebpackPlugin -> new FrontPage component
+- [x] Use vite
   - [x] require.context => import.meta.glob
-  - [ ] HtmlWebpackPlugin -> new FrontPage component
   - [x] Inline imports -> ?raw (https://vite.dev/guide/assets)
 - [ ] Option to have fade out gradient like https://www.mapiful.com/editor/#/editor/location
 - [ ] Move "use view box" in export options
@@ -191,4 +191,5 @@
 - [ ] fix animate on micro
 - [ ] fix background shadow on micro
 - [ ] Micro: minify class names on export ?
+- [ ] text-to-svg: don't accept woff2 fonts
 

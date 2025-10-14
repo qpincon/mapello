@@ -133,6 +133,7 @@ export async function drawPrettyMap(
 
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, generalParams.General.animate, outerFrameRx);
     svg.style("pointer-events", isLocked ? "auto" : "none");
+    svg.classed("animate-transition", true).classed("animate", generalParams.General.animate);
     mapLibreContainer.style('opacity', 0);
     // Post-clipping - can't get it to work with d3 postclip and custom stream
     setTimeout(() => postClip(generalParams), 100);
@@ -256,6 +257,19 @@ export function drawMicroFrame(
         .attr('stroke-width', borderWidth);
 
     appendClip(svg, innerFrameWidth, innerFrameHeight, innerFrameRx, -borderWidth / 2, -borderWidth / 2);
+
+    if (animated) {
+        frame.on("animationend", (e) => {
+            setTimeout(() => {
+                svg.classed('animate', false);
+                svg.selectAll('path[pathLength]').attr('pathLength', null);
+                setTimeout(() => {
+                    svg.selectAll('g[image-class]').classed('hidden-after', true);
+                    svg.classed('animate-transition', false);
+                }, 1500);
+            }, 200);
+        });
+    }
     return frame;
 }
 

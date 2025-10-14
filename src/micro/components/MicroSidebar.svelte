@@ -11,17 +11,18 @@
     import { saveState } from "src/util/save";
     import { addProtocol, Map, type StyleSpecification } from "maplibre-gl";
     import { cancelStitch } from "src/util/geometryStitch";
-    import { select } from "d3-selection";
+    import { select, selectAll } from "d3-selection";
     import { onDestroy, onMount } from "svelte";
     import { Protocol } from "pmtiles";
 
     import { createD3ProjectionFromMapLibre } from "src/util/projections";
     import { geoPath } from "d3-geo";
     import { handleInlineStyleChange } from "src/svg/svg";
-    import { debounce } from "lodash-es";
     import mapStyle from "./mapstyle.json";
-    import { initTooltips, sleep } from "src/util/common";
+    import { initTooltips } from "src/util/common";
     import type { SearchResult } from "src/components/Geocoding.svelte";
+    import { transitionCssMicro } from "src/svg/transition";
+
     let protocol = new Protocol();
     addProtocol("pmtiles", protocol.tile);
 
@@ -136,6 +137,7 @@
         maplibreMap.on("movestart", (event) => {
             cancelStitch();
             select("#maplibre-map").style("opacity", 1);
+            selectAll("#static-svg-map g, #static-svg-map rect").remove();
         });
 
         maplibreMap.on("click", (event) => {
@@ -213,6 +215,10 @@
         saveState();
     }
 </script>
+
+<svelte:head>
+    {@html `<${""}style> ${microState.microParams.General.animate ? transitionCssMicro : ""} </${""}style>`}
+</svelte:head>
 
 <div class="w-100">
     <ul class="nav nav-tabs align-items-center justify-content-center m-1">
