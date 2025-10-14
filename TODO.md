@@ -133,8 +133,8 @@
 - [ ] Freehand: Allow drag drawing
 - [ ] Freehand: Allow deletion
 - [ ] Double click text edit prevent ISE
-- [ ] Micro: 3d elements (see maplibre 3D model demo)
-- [ ] Micro: Use protomaps (upload tiles and configure nginx to serve it, using the pm plugin in the front)
+- [ ] Micro: 3d elements (see maplibre 3D model demo) (three.js SVG renderer / zdog?)
+- [x] Micro: Use protomaps (upload tiles and configure nginx to serve it, using the pm plugin in the front)
 - [ ] Show tooltip conditionnaly
 - [ ] Tooltip creation: Use WYSIWYG editor
 - [ ] Allow tooltip creation on single element
@@ -154,7 +154,7 @@
 
 - [ ] Allow external link on click of entity
 - [ ] Text / icons / images / freehand : use https://github.com/daybrush/moveable
-- [ ] Text: just use Maj+Enter for new line instead of ++
+- [x] Text: just use Maj+Enter for new line instead of ++
 
 - [ ] Geoboundaries: give name to disputed territories
 - [ ] Geoboundaries: attribution to exported file

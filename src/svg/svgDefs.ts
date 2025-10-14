@@ -115,7 +115,7 @@ export function appendBgPattern(selection: SvgSelection, id: string, seaColor: C
 }
 
 
-export function appendClip(selection: SvgSelection, width: number, height: number, borderRadius: number, x: number, y: number, borderWidth: number) {
+export function appendClip(selection: SvgSelection, width: number, height: number, rx: number, x: number, y: number) {
     let defs:DefsSelection = selection.select('defs');
     if (defs.empty()) defs = selection.append('defs') ;
     const existing = select('#clipMapBorder');
@@ -124,17 +124,12 @@ export function appendClip(selection: SvgSelection, width: number, height: numbe
         .attr('id', "clipMapBorder")
         .attr('clipPathUnits', 'userSpaceOnUse');
 
-    const radius  = (borderRadius / 100) * ((Math.min(width, height)) - (borderRadius / 2 ));
-    const newX = Math.floor(x + borderWidth / 2) - 1;
-    const newY = Math.floor(x + borderWidth / 2) - 1;
-    const newWidth = width - borderWidth + 1;
-    const newheight = height - borderWidth  + 1;
     clip.append('rect')
-        .attr('width', newWidth)
-        .attr('height', newheight)
-        .attr('rx', radius)
-        .attr('x', newX)
-        .attr('y', newY);
+        .attr('width', width)
+        .attr('height', height)
+        .attr('rx', rx)
+        .attr('x', x)
+        .attr('y', y);
 }
 
 // function frontFilter(selection) {

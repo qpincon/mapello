@@ -1,16 +1,18 @@
 import bbox from "@turf/bbox";
 import bboxPolygon from "@turf/bbox-polygon";
 import booleanDisjoint from "@turf/boolean-disjoint";
-import { featureCollection, polygon } from "@turf/helpers";
+import { featureCollection, point, polygon } from "@turf/helpers";
 import intersect from "@turf/intersect";
 import union from "@turf/union";
 import center from "@turf/center";
 import { groupBy } from 'lodash-es';
 import { tiles as getTiles } from '@mapbox/tile-cover';
 import bboxClip from "@turf/bbox-clip";
+import type { Map as MaplibreMap } from 'maplibre-gl';
 import { mergeLineStrings } from "./linestitch";
 import { yieldToMain } from "./polyfills";
 import type { BBox, Feature, Geometry, LineString, MultiLineString, MultiPolygon, Polygon, Position } from "geojson";
+import booleanOverlap from "@turf/boolean-overlap";
 
 /**
  * This file contains an attempt at stitching tiles together.
@@ -180,12 +182,15 @@ export function getMapRealBounds(map: any): Feature<Polygon> {
   const cLL = map.unproject([0, h]).toArray();
   // [minX, minY, maxX, maxY]
   const coordinates = [cUL, cUR, cLR, cLL, cUL];
-  return polygon([coordinates]);
+  const poly = polygon([coordinates]);
+  poly.bbox = bbox(poly);
+  return poly;
 }
 
 let processCounter = 0;
-
-export async function getRenderedFeatures(map: any, options: any): Promise<RenderedFeature[] | null> {
+let maplibreMap: MaplibreMap;
+export async function getRenderedFeatures(map: MaplibreMap, options: any): Promise<RenderedFeature[] | null> {
+  maplibreMap = map;
   processCounter += 1;
   const currentProcessId = processCounter;
 
@@ -307,9 +312,32 @@ export async function stitch(renderedFeatures: RenderedFeature[], tiles: Tiles, 
   if (stichedLines === null) return null;
   const stichedPolygons = await stitchPolygons(allPolygons, cuts, deadZones, tiles, currentProcessId);
   if (stichedPolygons === null) return null;
+
+  let finalPolygons = explodeGeometry(stichedPolygons, "Polygon") as RenderedFeature<Polygon>[];
+
+  // const currentZoom = tiles.zoom!;
+  // console.log("currentZoom", currentZoom);
+  // const p1 = maplibreMap.unproject([10, 10]);
+  // const p2 = maplibreMap.unproject([11, 11]);
+
+  // const dist = distance([p1.lng, p1.lat], [p2.lng, p2.lat]);
+  // console.log('distance for 1px is', dist, 'km')
+  // const mapBoundsExtended = buffer(mapBounds, dist) as Feature<Polygon>;
+  // mapBoundsExtended!.bbox = bbox(mapBoundsExtended!);
+
+  let nbClipped = 0;
+  finalPolygons = finalPolygons.map(polygon => {
+    if (!polygon.boundingBox) polygon.boundingBox = bbox(polygon);
+    if (bboxContains(mapBounds!.bbox!, polygon.boundingBox!) && !booleanOverlap(mapBounds!, polygon)) return polygon;
+    // if (!bboxIntersects(polygon.boundingBox!, mapBoundsExtended!.bbox!)) return polygon;
+    // console.log(polygon, mapBounds);
+    nbClipped += 1;
+    return intersect(featureCollection<Polygon>([mapBounds!, polygon as Feature<Polygon>]), { properties: polygon.properties }) as RenderedFeature<Polygon>
+  }).filter(p => p);
+  console.log(nbClipped, 'geometries clipped');
   // @ts-expect-error
   return [
-    ...explodeGeometry(stichedPolygons, "Polygon"),
+    ...finalPolygons,
     ...stichedLines
   ];
 }
@@ -494,11 +522,11 @@ async function stitchPolygons(allPolygons: RenderedFeaturePoly[], cuts: Cuts, de
         }
       }
     }
-    console.log('stitchGroups=', stitchGroups);
+    // console.log('stitchGroups=', stitchGroups);
 
     // merge groups that have intersection
     const finalStichGroups = mergeSets(stitchGroups);
-    console.log('finalStichGroups=', finalStichGroups);
+    // console.log('finalStichGroups=', finalStichGroups);
     const stitchedPolygonsIndexes = new Set(finalStichGroups.flatMap(g => [...g]));
     const unmatchedCutPolygon = polygonIndexesCut.difference(stitchedPolygonsIndexes).difference(polygonCutIndexExclude);
     // console.log('unmatchedCutPolygon', unmatchedCutPolygon);

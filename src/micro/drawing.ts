@@ -12,7 +12,7 @@ import { createRoundedRectangleGeoJSON } from '../util/geometry';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanDisjoint from '@turf/boolean-disjoint';
 import type { Feature, Geometry, Polygon } from 'geojson';
-import type { MicroParams } from '../params';
+import type { MicroGeneralParams, MicroParams } from '../params';
 import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type StateMicro, type SvgSelection } from '../types';
 import type { Config } from 'svgo/browser';
 import type { Map } from 'maplibre-gl';
@@ -90,7 +90,8 @@ export async function drawPrettyMap(
     const borderPadding = generalParams.Border.borderPadding;
     const borderRadius = generalParams.Border.borderRadius;
     const borderColor = generalParams.Border.borderColor;
-    mapLibreContainer.style('width', `${width}px`).style('height', `${height}px`);
+    resizeMaplibreMap(generalParams, maplibreMap);
+    const translateAmount = borderPadding + (borderWidth / 2);
 
     const outerFrameWidth = width - borderPadding;
     const outerFrameHeight = height - borderPadding;
@@ -107,6 +108,7 @@ export async function drawPrettyMap(
 
     svg.append('g')
         .attr('id', 'micro')
+        .attr('transform', `translate(${translateAmount}, ${translateAmount})`)
         .attr("clip-path", "url(#clipMapBorder)")
         .selectAll('path')
         .data(geometries)
@@ -129,29 +131,56 @@ export async function drawPrettyMap(
         .attr("stroke-width", d => d.properties.paint!['line-width'] ?? null)
         .attr("id", d => d.properties.uuid!);
 
-    drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, generalParams.General.animate);
+    drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, generalParams.General.animate, outerFrameRx);
     svg.style("pointer-events", isLocked ? "auto" : "none");
     mapLibreContainer.style('opacity', 0);
     // Post-clipping - can't get it to work with d3 postclip and custom stream
-    setTimeout(() => {
-        const roundedRect = roundedRectFromParams(generalParams);
-        const toRemove: Element[] = [];
-        document.querySelectorAll('#static-svg-map g path').forEach(el => {
-            const bbox = (el as SVGGraphicsElement).getBBox();
-            const bboxRect: [number, number, number, number] = [
-                bbox.x,
-                height - bbox.y,
-                bbox.x + bbox.width,
-                height - bbox.y - bbox.height
-            ];
-            const bboxPoly = bboxPolygon(bboxRect);
-            if (booleanDisjoint(roundedRect, bboxPoly)) {
-                toRemove.push(el);
-            }
-        });
-        // console.log('toRemove', toRemove);
-        toRemove.forEach(el => el.remove());
-    }, 100);
+    setTimeout(() => postClip(generalParams), 100);
+}
+
+export function resizeMaplibreMap(generalParams: MicroParams, mapLibreMap: Map): void {
+    const mapLibreContainer = select(mapLibreMap.getContainer());
+    const width = generalParams.General.width;
+    const height = generalParams.General.height;
+    const borderWidth = generalParams.Border.borderWidth;
+    const borderPadding = generalParams.Border.borderPadding;
+
+    const finalWidth = Math.ceil(width - ((borderPadding + (borderWidth / 2)) * 2));
+    const finalHeight = Math.ceil(height - ((borderPadding + (borderWidth / 2)) * 2));
+    const finalPadding = borderPadding + (borderWidth / 2);
+
+    const currentStyle = mapLibreContainer.node()?.style;
+    let styleChanged = currentStyle?.width !== `${finalWidth}px`
+        || currentStyle?.height !== `${finalHeight}px`
+        || currentStyle?.padding !== `${finalPadding}px`
+    mapLibreContainer
+        .style('width', `${finalWidth}px`)
+        .style('height', `${finalHeight}px`)
+        .style('padding', `${finalPadding}px`);
+    if (styleChanged) mapLibreMap.resize();
+}
+
+function postClip(generalParams: MicroParams): void {
+    const roundedRect = roundedRectFromParams(generalParams);
+
+    const height = generalParams.General.height;
+    // select('#micro').append("path").attr('d', polyToPath(roundedRect.geometry.coordinates[0], height));
+    const toRemove: Element[] = [];
+    document.querySelectorAll('#static-svg-map g path').forEach(el => {
+        const bbox = (el as SVGGraphicsElement).getBBox();
+        const bboxRect: [number, number, number, number] = [
+            bbox.x,
+            height - bbox.y,
+            bbox.x + bbox.width,
+            height - bbox.y - bbox.height
+        ];
+        const bboxPoly = bboxPolygon(bboxRect);
+        if (booleanDisjoint(roundedRect, bboxPoly)) {
+            toRemove.push(el);
+        }
+    });
+    // console.log('toRemove', toRemove);
+    toRemove.forEach(el => el.remove());
 }
 
 function roundedRectFromParams(microParams: MicroParams): Feature<Polygon> {
@@ -161,15 +190,19 @@ function roundedRectFromParams(microParams: MicroParams): Feature<Polygon> {
     const borderRadius = microParams.Border.borderRadius;
     const outerFrameWidth = width - borderPadding;
     const outerFrameHeight = height - borderPadding;
+    const outerFrameRx = (borderRadius / 100) * Math.min(outerFrameWidth, outerFrameHeight);
     const innerFrameWidth = outerFrameWidth - borderPadding;
     const innerFrameHeight = outerFrameHeight - borderPadding;
-    const innerFrameRadius = (borderRadius / 100) * (Math.min(innerFrameWidth, innerFrameHeight) - (borderPadding));
+    const innerFrameRadius = outerFrameRx - borderPadding;
+
+    // innerFrameWidth, innerFrameHeight, innerFrameRx, -borderWidth / 2, -borderWidth / 2
+    // const innerFrameRadius = (borderRadius / 100) * (Math.min(innerFrameWidth, innerFrameHeight) - (borderPadding));
     return createRoundedRectangleGeoJSON(
         innerFrameWidth,
         innerFrameHeight,
         innerFrameRadius,
-        innerFrameWidth / 2 + borderPadding,
-        innerFrameHeight / 2 + borderPadding
+        (innerFrameWidth / 2),
+        (innerFrameHeight / 2) + borderPadding * 2
     );
 }
 
@@ -191,7 +224,8 @@ export function drawMicroFrame(
     borderRadius: number,
     borderPadding: number,
     borderColor: string,
-    animated: boolean
+    animated: boolean,
+    outerFrameRx: number
 ): Selection<SVGRectElement, any, SVGSVGElement, any> {
     // Calculate positions and dimensions
     // For the outer frame (border padding)
@@ -206,14 +240,14 @@ export function drawMicroFrame(
     const innerFrameY = outerFrameY + outerFrameHalfWidth;
     const innerFrameWidth = outerFrameWidth - borderPadding;
     const innerFrameHeight = outerFrameHeight - borderPadding;
-    const innerFrameRx = (borderRadius / 100) * (Math.min(innerFrameWidth, innerFrameHeight) - (borderPadding));
+    const innerFrameRx = outerFrameRx - borderPadding;
 
     // Draw the inner frame (border width)
     const frame = svg.append('rect')
         .attr('x', innerFrameX)
         .attr('y', innerFrameY)
-        .attr('id', 'frame')
         .attr('pathLength', 1)
+        .attr('id', 'frame')
         .attr('width', innerFrameWidth)
         .attr('height', innerFrameHeight)
         .attr('rx', innerFrameRx)
@@ -221,7 +255,7 @@ export function drawMicroFrame(
         .attr('stroke', borderColor)
         .attr('stroke-width', borderWidth);
 
-    appendClip(svg, innerFrameWidth, innerFrameHeight, borderRadius, innerFrameX, innerFrameY, borderWidth);
+    appendClip(svg, innerFrameWidth, innerFrameHeight, innerFrameRx, -borderWidth / 2, -borderWidth / 2);
     return frame;
 }
 

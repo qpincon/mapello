@@ -74,7 +74,7 @@
         chosingMarker: false,
     });
     let editedLabelId: string | null = $state(null);
-    let textInput: HTMLInputElement | null = $state(null);
+    let textInput: HTMLTextAreaElement | null = $state(null);
     let typedText = $state("");
     let styleEditor: InlineStyleEditor | null = $state(null);
     let contextualMenu: (HTMLDivElement & { opened?: boolean }) | null = $state(null);
@@ -183,7 +183,8 @@
                     else if (ruleName.includes("#micro .buildings-2")) finalStr = "Building type 2";
                     else if (ruleName.includes("#micro .buildings-3")) finalStr = "Building type 3";
                     else if (ruleName.includes("#micro")) {
-                        const layerId = ruleName.match(/#micro \.(.*?)(\:|$)/)![1];
+                        const layerId = ruleName.match(/#micro \.(.*?)(\:|$)/)?.[1];
+                        if (!layerId) return ruleName;
                         finalStr = pascalCaseToSentence(layerId);
                     } else if (ruleName.includes("#micro .buildings")) finalStr = "Buildings";
                     else if (ruleName.includes(".adm")) finalStr = "Region";
@@ -630,8 +631,8 @@
         menuStates.addingLabel = true;
         await tick();
         textInput!.focus();
-        textInput!.addEventListener("keydown", ({ key }) => {
-            if (key === "Enter") {
+        textInput!.addEventListener("keydown", (event: KeyboardEvent) => {
+            if (event.key === "Enter" && !event.shiftKey) {
                 validateLabel();
             }
         });
@@ -662,6 +663,7 @@
         const container = document.getElementById("points-labels");
         if (!container) return;
         drawShapes(commonState.providedShapes, container, appState.projection!, saveState);
+        select(container).on("click", (e) => e.stopPropagation());
         select(container).on("dblclick", (e) => {
             const target = e.target;
             let targetId = target.getAttribute("id");
@@ -773,8 +775,6 @@
         }
         showExportConfirm = true;
     }
-
-    // TODO: check menu opened to avoid it being display on page land
 </script>
 
 <svelte:head>
@@ -790,7 +790,7 @@
             </div>
         {/each}
     {:else if menuStates.addingLabel}
-        <input type="text" bind:this={textInput} bind:value={typedText} />
+        <textarea bind:this={textInput} bind:value={typedText}> </textarea>
     {:else if menuStates.pointSelected}
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>
         <div role="button" class="px-2 py-1" onclick={copySelection}>Copy</div>

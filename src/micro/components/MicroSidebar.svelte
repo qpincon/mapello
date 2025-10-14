@@ -2,7 +2,7 @@
     import type InlineStyleEditor from "inline-style-editor";
     import Accordions from "src/components/Accordions.svelte";
     import MicroLayerParams from "src/components/MicroLayerParams.svelte";
-    import { drawPrettyMap, generateCssFromState, initLayersState } from "src/micro/drawing";
+    import { drawPrettyMap, generateCssFromState, initLayersState, resizeMaplibreMap } from "src/micro/drawing";
     import { helpParams, paramDefs } from "src/params";
     import { appState, microState } from "src/state.svelte";
     import type { Color, MicroLayerId, MicroPaletteWithBorder, SvgSelection } from "src/types";
@@ -152,10 +152,6 @@
                 svg.node()!.dispatchEvent(e.originalEvent);
             }
         });
-        console.log(select("#maplibre-map").node());
-        select("#maplibre-map")
-            .style("width", `${microState.microParams.General.width}px`)
-            .style("height", `${microState.microParams.General.height}px`);
         mapLoadedPromise = new Promise((resolve) => {
             maplibreMap!.once("load", resolve);
         });
@@ -176,6 +172,15 @@
         } else {
             svg.style("pointer-events", "none");
             mapLibreContainer.style("pointer-events", "auto");
+        }
+    }
+
+    function handleGeneralParamChange(change: { prop: string; value: string | number }) {
+        console.log("handleGeneralParamChange", change);
+        if (change.prop === "borderPadding") {
+            resizeMaplibreMap(microState.microParams, maplibreMap!);
+            // select("#maplibre-map").style("padding", `${change.value}px`);
+            // setTimeout(() => maplibreMap!.resize(), 3000);
         }
     }
 
@@ -240,6 +245,7 @@
         {paramDefs}
         {helpParams}
         on:change={(e) => {
+            // handleGeneralParamChange(e.detail);
             draw();
         }}
     ></Accordions>

@@ -1439,6 +1439,7 @@ function drawAndSetupShapes() {
     const container = document.getElementById('points-labels');
     if (!container) return;
     drawShapes(providedShapes, container, projection, save);
+    d3.select(container).on('click', e => e.stopPropagation());
     d3.select(container).on('dblclick', e => {
         const target = e.target;
         let targetId = target.getAttribute('id');

@@ -87,10 +87,9 @@ export function drawShapes(
     );
 }
 
-const separator: string = '++';
 
 export function addSvgText(text: string, id: string) {
-    const parts: string[] = text.split(separator);
+    const parts: string[] = text.split('\n');
     const textElem = create('svg:text')
         .style('stroke-width', 0)
         .attr('id', id);
