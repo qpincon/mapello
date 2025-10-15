@@ -1,7 +1,7 @@
 import svgoConfig from '../svgoExport.config';
 import { select, type Selection } from "d3-selection";
 import { getRenderedFeatures, type RenderedFeature } from "../util/geometryStitch";
-import { cloneDeep, debounce, kebabCase, last, random, set, size } from "lodash-es";
+import { cloneDeep, debounce, kebabCase, last, random, size } from "lodash-es";
 import { color, hsl } from "d3-color";
 import { DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
 import { HatchPatternGenerator } from "../svg/patternGenerator";
@@ -12,14 +12,13 @@ import { createRoundedRectangleGeoJSON } from '../util/geometry';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanDisjoint from '@turf/boolean-disjoint';
 import type { Feature, Geometry, Polygon } from 'geojson';
-import type { MicroGeneralParams, MicroParams } from '../params';
+import type { MicroParams } from '../params';
 import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type StateMicro, type SvgSelection } from '../types';
 import type { Config } from 'svgo/browser';
 import type { Map } from 'maplibre-gl';
 
 
 type D3PathFunction = (geometry: Geometry) => string | null;
-
 
 const patternGenerator = new HatchPatternGenerator();
 
@@ -336,7 +335,6 @@ export function generateCssFromState(state: MicroPalette): string | null {
         paint-order: stroke;
         fill: ${state['roads']?.stroke ?? '#6D4C41'};
     }
-        .
     `;
 
     for (const [layer, layerDef] of Object.entries(state)) {
@@ -471,13 +469,13 @@ export async function exportMicro(
     svgNode.removeAttribute('style');
     const usedFonts = getUsedInlineFonts(svgNode);
     const usedProvidedFonts = providedFonts.filter(font => usedFonts.has(font.name));
-    const SVGO = await import('svgo/browser');
+    const { optimize } = await import('svgo/browser');
 
     const defs = svgNode.querySelector('defs')!.cloneNode(true);
     svgNode.querySelectorAll('#micro path').forEach(el => el.removeAttribute('id'));
 
     // Optimize whole SVG
-    const finalSvg = SVGO.optimize(svgNode.outerHTML, svgoConfig as Config).data;
+    const finalSvg = optimize(svgNode.outerHTML, svgoConfig as Config).data;
     const optimizedSVG = DOM_PARSER.parseFromString(finalSvg, 'image/svg+xml');
     let pathIsBetter = false;
 

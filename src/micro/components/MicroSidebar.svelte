@@ -3,9 +3,9 @@
     import Accordions from "src/components/Accordions.svelte";
     import MicroLayerParams from "src/components/MicroLayerParams.svelte";
     import { drawPrettyMap, generateCssFromState, initLayersState, resizeMaplibreMap } from "src/micro/drawing";
-    import { helpParams, paramDefs } from "src/params";
+    import { helpParams, paramDefs, type MicroParams } from "src/params";
     import { appState, microState } from "src/state.svelte";
-    import type { Color, MicroLayerId, MicroPaletteWithBorder, SvgSelection } from "src/types";
+    import type { Color, MicroLayerId, MicroPaletteWithBorder, StateMicro, SvgSelection } from "src/types";
     import * as _microPalettes from "../microPalettes";
     import { onMicroParamChange, replaceCssSheetContent, syncLayerStateWithCss, updateSvgPatterns } from "../change";
     import { saveState } from "src/util/save";
@@ -39,6 +39,8 @@
     let { styleEditor, svg, draw, maplibreMap, viewLocked = $bindable() }: Props = $props();
 
     let mainMenuSelection = $state<string>("general");
+    let additionalCss = $derived(computeCss(microState.microParams));
+
     $effect(() => {
         if (mainMenuSelection) setTimeout(() => initTooltips(), 10);
     });
@@ -100,11 +102,7 @@
         if (microCss != null) styleSheetElem.innerHTML = microCss;
         // else console.error("Problem: the generated style sheet is null");
 
-        createMaplibreMap()?.then(async () => {
-            appState.projection = createD3ProjectionFromMapLibre(maplibreMap!);
-            appState.path = geoPath(appState.projection);
-            maplibreMap!.resize();
-        });
+        createMaplibreMap();
     });
 
     function createMaplibreMap() {
@@ -119,6 +117,8 @@
             bearing: microState.inlinePropsMicro.bearing,
             attributionControl: false,
         });
+        appState.projection = createD3ProjectionFromMapLibre(maplibreMap!);
+        appState.path = geoPath(appState.projection);
         maplibreMap.showTileBoundaries = true;
         maplibreMap.on("moveend", async (event) => {
             const center = maplibreMap!.getCenter().toArray();
@@ -164,6 +164,13 @@
         maplibreMap?.remove();
     });
 
+    function computeCss(microParams: MicroParams): string {
+        let css = "";
+        if (microParams.General.animate) css += transitionCssMicro;
+        if (microParams.Border.frameShadow) css += "#static-svg-map { filter: drop-shadow(2px 2px 8px rgba(0,0,0,.2));";
+        return css;
+    }
+
     function lockUnlock(isLocked: boolean) {
         viewLocked = isLocked;
 
@@ -174,15 +181,6 @@
         } else {
             svg.style("pointer-events", "none");
             mapLibreContainer.style("pointer-events", "auto");
-        }
-    }
-
-    function handleGeneralParamChange(change: { prop: string; value: string | number }) {
-        console.log("handleGeneralParamChange", change);
-        if (change.prop === "borderPadding") {
-            resizeMaplibreMap(microState.microParams, maplibreMap!);
-            // select("#maplibre-map").style("padding", `${change.value}px`);
-            // setTimeout(() => maplibreMap!.resize(), 3000);
         }
     }
 
@@ -217,7 +215,7 @@
 </script>
 
 <svelte:head>
-    {@html `<${""}style> ${microState.microParams.General.animate ? transitionCssMicro : ""} </${""}style>`}
+    {@html `<${""}style> ${additionalCss} </${""}style>`}
 </svelte:head>
 
 <div class="w-100">
@@ -251,7 +249,6 @@
         {paramDefs}
         {helpParams}
         on:change={(e) => {
-            // handleGeneralParamChange(e.detail);
             draw();
         }}
     ></Accordions>

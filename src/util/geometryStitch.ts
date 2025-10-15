@@ -12,7 +12,10 @@ import type { Map as MaplibreMap } from 'maplibre-gl';
 import { mergeLineStrings } from "./linestitch";
 import { yieldToMain } from "./polyfills";
 import type { BBox, Feature, Geometry, LineString, MultiLineString, MultiPolygon, Polygon, Position } from "geojson";
-import booleanOverlap from "@turf/boolean-overlap";
+import { booleanOverlap } from "@turf/boolean-overlap";
+import { booleanWithin } from "@turf/boolean-within";
+import { buffer } from "@turf/buffer";
+import { distance } from "@turf/distance";
 
 /**
  * This file contains an attempt at stitching tiles together.
@@ -315,24 +318,22 @@ export async function stitch(renderedFeatures: RenderedFeature[], tiles: Tiles, 
 
   let finalPolygons = explodeGeometry(stichedPolygons, "Polygon") as RenderedFeature<Polygon>[];
 
-  // const currentZoom = tiles.zoom!;
-  // console.log("currentZoom", currentZoom);
-  // const p1 = maplibreMap.unproject([10, 10]);
-  // const p2 = maplibreMap.unproject([11, 11]);
+  const canvas = maplibreMap.getCanvas();
+  const p1 = maplibreMap.unproject([canvas.width - 1, canvas.height - 1]);
+  const p2 = maplibreMap.unproject([canvas.width - 2, canvas.height - 2]);
 
-  // const dist = distance([p1.lng, p1.lat], [p2.lng, p2.lat]);
+  const dist = distance([p1.lng, p1.lat], [p2.lng, p2.lat]);
   // console.log('distance for 1px is', dist, 'km')
-  // const mapBoundsExtended = buffer(mapBounds, dist) as Feature<Polygon>;
-  // mapBoundsExtended!.bbox = bbox(mapBoundsExtended!);
+  const mapBoundsExtended = buffer(mapBounds, dist) as Feature<Polygon>;
+  mapBoundsExtended!.bbox = bbox(mapBoundsExtended!);
 
   let nbClipped = 0;
   finalPolygons = finalPolygons.map(polygon => {
     if (!polygon.boundingBox) polygon.boundingBox = bbox(polygon);
-    if (bboxContains(mapBounds!.bbox!, polygon.boundingBox!) && !booleanOverlap(mapBounds!, polygon)) return polygon;
-    // if (!bboxIntersects(polygon.boundingBox!, mapBoundsExtended!.bbox!)) return polygon;
-    // console.log(polygon, mapBounds);
+    if (bboxContains(mapBoundsExtended!.bbox!, polygon.boundingBox!) || booleanWithin(polygon, mapBoundsExtended!)) return polygon;
+    // if (bboxContains(mapBoundsExtended!.bbox!, polygon.boundingBox!) && !booleanOverlap(mapBoundsExtended!, polygon)) return polygon;
     nbClipped += 1;
-    return intersect(featureCollection<Polygon>([mapBounds!, polygon as Feature<Polygon>]), { properties: polygon.properties }) as RenderedFeature<Polygon>
+    return intersect(featureCollection<Polygon>([mapBoundsExtended!, polygon as Feature<Polygon>]), { properties: polygon.properties }) as RenderedFeature<Polygon>
   }).filter(p => p);
   console.log(nbClipped, 'geometries clipped');
   // @ts-expect-error

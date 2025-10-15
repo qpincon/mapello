@@ -30,7 +30,7 @@
     "svelte-check": "^4.1.6",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
-    "vite-plugin-node-polyfills": "^0.23.0"
+    "vite-plugin-node-polyfills": "^0.22.0"
   },
   "dependencies": {
     "@mapbox/tile-cover": "^3.0.2",
@@ -41,7 +41,10 @@
     "@turf/bbox-polygon": "^7.2.0",
     "@turf/boolean-disjoint": "^7.2.0",
     "@turf/boolean-overlap": "^7.2.0",
+    "@turf/boolean-within": "^7.2.0",
+    "@turf/buffer": "^7.2.0",
     "@turf/center": "^7.2.0",
+    "@turf/distance": "^7.2.0",
     "@turf/explode": "^7.2.0",
     "@turf/helpers": "^7.2.0",
     "@turf/intersect": "^7.2.0",
@@ -58,7 +61,7 @@
     "parse-svg-path": "^0.1.2",
     "perfect-freehand": "^1.2.2",
     "pmtiles": "^4.3.0",
-    "svgo": "4.0.0",
+    "svgo": "^4.0.0",
     "terser": "^5.16.2",
     "text-to-svg": "^3.1.5",
     "topojson-client": "^3.1.0",

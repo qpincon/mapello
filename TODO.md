@@ -127,7 +127,7 @@
 - [x] Micro: Debug right click
 - [x] Micro: Fill pattern hover
 - [x] Micro: Stop computations when moving
-- [ ] Bug: Click on increment range on significant digits legend does nothing
+- [x] Bug: Click on increment range on significant digits legend does nothing
 - [ ] Remove labels off canvas
 - [ ] Freehand: style group with ISE (add custom CSS rule on the fly on <g> parent)
 - [ ] Freehand: Allow drag drawing
@@ -137,7 +137,7 @@
 - [x] Micro: Use protomaps (upload tiles and configure nginx to serve it, using the pm plugin in the front)
 - [ ] Show tooltip conditionnaly
 - [ ] Tooltip creation: Use WYSIWYG editor
-- [ ] Allow tooltip creation on single element
+- [ ] Allow tooltip creation on single element - will take precedence over general one
 - [ ] Draw pin on map / any imported image (URL or uploaded as b64, must be < some size in kb)
 - [ ] Data export: remove empty objects
 - [ ] Data import / export: Move into modal
@@ -188,8 +188,10 @@
 - [x] Micro: always stitch water when zoom level low enough to avoid cut oceans
 - [x] Micro: make clip-path smaller when border width is big (avoid overlap with geometries)
 - [x] Bug wen reset project on micro
-- [ ] fix animate on micro
-- [ ] fix background shadow on micro
+- [x] fix animate on micro
+- [x] fix background shadow on micro
 - [ ] Micro: minify class names on export ?
 - [ ] text-to-svg: don't accept woff2 fonts
+- [ ] Macro: have same tilt / rotation behavior as maplibre
+- [x] micro landing: fix weird map expanding size
 
