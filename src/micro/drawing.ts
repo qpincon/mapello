@@ -96,12 +96,13 @@ export async function drawPrettyMap(
     const outerFrameWidth = width - borderPadding;
     const outerFrameHeight = height - borderPadding;
     const outerFrameRx = (borderRadius / 100) * Math.min(outerFrameWidth, outerFrameHeight);
+    const animated = generalParams.General.animate;
     // Background layer
     svg.append('rect')
         .attr('id', 'micro-background')
         .attr('x', 0)
         .attr('y', 0)
-        .attr('pathLength', 1)
+        .attr('pathLength', animated ? 1 : null)
         .attr('width', width)
         .attr('height', height)
         .attr('rx', outerFrameRx);
@@ -114,7 +115,7 @@ export async function drawPrettyMap(
         .data(geometries)
         .enter()
         .append("path")
-        .attr('pathLength', 1)
+        .attr('pathLength', animated ? 1 : null)
         .attr("d", (d) => d3PathFunction(d.geometry))
         .attr("class", d => {
             const layerIdKebab = kebabCase(d.properties.mapLayerId) as MicroLayerId;
@@ -131,7 +132,7 @@ export async function drawPrettyMap(
         .attr("stroke-width", d => d.properties.paint!['line-width'] ?? null)
         .attr("id", d => d.properties.uuid!);
 
-    drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, generalParams.General.animate, outerFrameRx);
+    drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, animated, outerFrameRx);
     svg.style("pointer-events", isLocked ? "auto" : "none");
     svg.classed("animate-transition", true).classed("animate", generalParams.General.animate);
     mapLibreContainer.style('opacity', 0);
@@ -245,7 +246,6 @@ export function drawMicroFrame(
     const frame = svg.append('rect')
         .attr('x', innerFrameX)
         .attr('y', innerFrameY)
-        .attr('pathLength', 1)
         .attr('id', 'frame')
         .attr('width', innerFrameWidth)
         .attr('height', innerFrameHeight)
@@ -254,6 +254,7 @@ export function drawMicroFrame(
         .attr('stroke', borderColor)
         .attr('stroke-width', borderWidth);
 
+    if (animated) frame.attr('pathLength', 1)
     appendClip(svg, innerFrameWidth, innerFrameHeight, innerFrameRx, -borderWidth / 2, -borderWidth / 2);
 
     if (animated) {

@@ -152,7 +152,7 @@
 - [ ] Macro: be able to change graticule color
 - [ ] Macro: find a way to match ADM2 boundary data with land data (see UK adm2 for instance)
 
-- [ ] Allow external link on click of entity
+- [ ] Allow external link on click of entity (a xmlns="http://www.w3.org/2000/svg" xlink:href="url.html" xmlns:xlink="http://www.w3.org/1999/xlink" )
 - [ ] Text / icons / images / freehand : use https://github.com/daybrush/moveable
 - [x] Text: just use Maj+Enter for new line instead of ++
 
@@ -194,4 +194,4 @@
 - [ ] text-to-svg: don't accept woff2 fonts
 - [ ] Macro: have same tilt / rotation behavior as maplibre
 - [x] micro landing: fix weird map expanding size
-
+- [x] micro: remove pathlength when no animation
