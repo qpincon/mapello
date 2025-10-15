@@ -1806,7 +1806,7 @@
         "significantDigits": 3,
         "maxWidth": 370,
         "direction": "v",
-        "title": "Political++    party",
+        "title": "Political\nparty",
         "sampleHtml": "<g><rect x=\"10\" y=\"10\" width=\"20\" height=\"15\" fill=\"#c55d5dff\" stroke=\"black\"></rect><text x=\"35\" y=\"17.5\" text-anchor=\"start\" dominant-baseline=\"middle\" style=\"font-size: 12px; stroke: rgba(255, 255, 255, 0.506); stroke-width: 0px;\">Light Republican</text></g>",
         "noData": {
           "active": false,

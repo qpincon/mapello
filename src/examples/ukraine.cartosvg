@@ -1709,7 +1709,7 @@
         ],
         "scale": 1,
         "id": "label-2",
-        "text": "Black++ sea"
+        "text": "Black\nsea"
       },
       {
         "pos": [
@@ -1763,7 +1763,7 @@
         ],
         "scale": 1,
         "id": "label-8",
-        "text": "Sea++ of ++azov"
+        "text": "Sea\nof\nazov"
       },
       {
         "name": "rectangle",

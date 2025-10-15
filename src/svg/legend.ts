@@ -73,6 +73,7 @@ export function drawLegend(
         .attr('transform', `translate(${legendDef.changes[titleId].dx} ${legendDef.changes[titleId].dy - 20})`)
         .attr('id', titleId)
         .style('font-size', '20px')
+        .on("click", (e) => e.stopPropagation())
         .on('dblclick', e => {
             const inputVal = legendDef.title;
             const closeInput = () => {
@@ -83,18 +84,19 @@ export function drawLegend(
                 applyStyles();
                 saveFunc();
             };
-            const input = select(document.body).append('input')
-                .attr('value', inputVal)
+            const input = select(document.body)
+                .append('textarea')
+                .html(inputVal)
                 .style('position', 'absolute')
                 .style('left', `${e.clientX}px`)
                 .style('top', `${e.clientY}px`)
                 .on('blur', closeInput)
-                .on('keydown', ({ key }) => {
-                    if (key === "Enter") {
+                .on('keydown', ({ key, shiftKey }) => {
+                    if (key === "Enter" && !shiftKey) {
                         closeInput();
                     }
                 })
-                .node() as HTMLInputElement;
+                .node() as HTMLTextAreaElement;
 
             input.focus();
             e.preventDefault();

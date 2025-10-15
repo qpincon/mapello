@@ -132,7 +132,7 @@
 - [ ] Freehand: style group with ISE (add custom CSS rule on the fly on <g> parent)
 - [ ] Freehand: Allow drag drawing
 - [ ] Freehand: Allow deletion
-- [ ] Double click text edit prevent ISE
+- [x] Double click text edit prevent ISE
 - [ ] Micro: 3d elements (see maplibre 3D model demo) (three.js SVG renderer / zdog?)
 - [x] Micro: Use protomaps (upload tiles and configure nginx to serve it, using the pm plugin in the front)
 - [ ] Show tooltip conditionnaly

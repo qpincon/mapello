@@ -5,7 +5,7 @@
     import { drag } from "d3-drag";
     import { zoom } from "d3-zoom";
     import InlineStyleEditor from "inline-style-editor";
-    import { debounce } from "lodash-es";
+    import { cloneDeep, debounce } from "lodash-es";
     import { drawCustomPaths, parseAndUnprojectPath } from "./svg/paths";
     import PathEditor from "./svg/pathEditor";
     import Geocoding from "./components/Geocoding.svelte";
@@ -258,6 +258,7 @@
     async function switchMode(newMode: Mode): Promise<void> {
         if (commonState.currentMode === newMode) return;
         commonState.currentMode = newMode;
+        console.log(cloneDeep(microState));
         await tick();
         const mapLibreContainer = select("#maplibre-map");
         if (commonState.currentMode === "micro") {
@@ -356,13 +357,13 @@
     }
 
     async function applyState(state: GlobalState): Promise<void> {
+        console.trace("applyState", state);
         Object.assign(commonState, state.stateCommon);
-        Object.assign(macroState, state.stateMacro);
-        Object.assign(microState, state.stateMicro);
+        Object.assign(macroState, state.stateMacro.macroParams ? state.stateMacro : defaultState.stateMacro);
+        Object.assign(microState, state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro);
         // merge(commonState, state.stateCommon);
         // merge(macroState, state.stateMacro);
         // merge(microState, state.stateMicro);
-        // commonStyleSheetElem.innerHTML = macroState.baseCss;
         await tick();
         changeProjection();
         draw();
@@ -371,7 +372,6 @@
 
     function restoreStateFromSave() {
         const savedState = getState();
-        // console.log("savedState=", savedState);
         // console.log("baseCss", savedState?.stateMacro.baseCss);
         applyState(savedState ?? defaultState);
     }
