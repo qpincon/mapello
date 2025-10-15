@@ -25,6 +25,22 @@ export function removeCoveringAll(groupElement: SVGGElement | null): void {
     }
 }
 
+
+export function postClipSimple(): void {
+    const container = document.getElementById('static-svg-map')?.getBoundingClientRect()!;
+    const elementsToCheck = ['path', 'rect', 'text', 'circle'];
+    const selector = elementsToCheck.map(el => `#static-svg-map > g:not(.macro-layer) ${el}`).join(',');
+    const toRemove: Element[] = [];
+    document.querySelectorAll(selector).forEach(el => {
+        const bbox = el.getBoundingClientRect();
+        if (bbox.right < container.left || bbox.left > container.right || bbox.bottom < container.top || bbox.top > container.bottom) {
+            toRemove.push(el);
+        }
+    });
+    console.log("simple post clip:", toRemove);
+    toRemove.forEach(el => el.remove());
+}
+
 export function distance(p1: Point, p2: Point): number {
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;

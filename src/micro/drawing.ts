@@ -16,6 +16,7 @@ import type { MicroParams } from '../params';
 import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type StateMicro, type SvgSelection } from '../types';
 import type { Config } from 'svgo/browser';
 import type { Map } from 'maplibre-gl';
+import { postClipSimple } from 'src/svg/svg';
 
 
 type D3PathFunction = (geometry: Geometry) => string | null;
@@ -134,7 +135,6 @@ export async function drawPrettyMap(
     svg.style("pointer-events", isLocked ? "auto" : "none");
     svg.classed("animate-transition", true).classed("animate", generalParams.General.animate);
     mapLibreContainer.style('opacity', 0);
-    // Post-clipping - can't get it to work with d3 postclip and custom stream
     setTimeout(() => postClip(generalParams), 100);
 }
 
@@ -165,8 +165,9 @@ function postClip(generalParams: MicroParams): void {
 
     const height = generalParams.General.height;
     // select('#micro').append("path").attr('d', polyToPath(roundedRect.geometry.coordinates[0], height));
+    postClipSimple();
     const toRemove: Element[] = [];
-    document.querySelectorAll('#static-svg-map g path').forEach(el => {
+    document.querySelectorAll('#static-svg-map g path, #static-svg-map g text, #static-svg-map g circle, #static-svg-map g rectangle').forEach(el => {
         const bbox = (el as SVGGraphicsElement).getBBox();
         const bboxRect: [number, number, number, number] = [
             bbox.x,
@@ -179,7 +180,7 @@ function postClip(generalParams: MicroParams): void {
             toRemove.push(el);
         }
     });
-    // console.log('toRemove', toRemove);
+    console.log('toRemove', toRemove);
     toRemove.forEach(el => el.remove());
 }
 

@@ -9,7 +9,7 @@ import { appendCountryImageNew, appendLandImageNew } from "src/svg/contourMethod
 import { getNumericCols, sortBy } from "src/util/common";
 import { applyStyles } from "src/util/dom";
 import { saveState } from "src/util/save";
-import { duplicateContourCleanFirst } from "src/svg/svg";
+import { duplicateContourCleanFirst, postClipSimple } from "src/svg/svg";
 import { addTooltipListener } from "src/tooltip";
 import { getProjection } from "src/util/projections";
 import { macroPositionVars } from "src/stateDefaults";
@@ -138,6 +138,7 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
         svg.selectAll("g[image-class]").classed("hidden-after", true);
     }
 
+    setTimeout(() => postClipSimple(), 100);
     /** Wait a bit before attaching the tooltip in order to make it the last element and to appear above everything else */
     setTimeout(() => {
         addTooltipListener(svg.node() as SVGSVGElement, macroState.tooltipDefs, macroState.zonesData);
