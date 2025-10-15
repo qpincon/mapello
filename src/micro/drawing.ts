@@ -194,10 +194,8 @@ function roundedRectFromParams(microParams: MicroParams): Feature<Polygon> {
     const outerFrameRx = (borderRadius / 100) * Math.min(outerFrameWidth, outerFrameHeight);
     const innerFrameWidth = outerFrameWidth - borderPadding;
     const innerFrameHeight = outerFrameHeight - borderPadding;
-    const innerFrameRadius = outerFrameRx - borderPadding;
+    const innerFrameRadius = Math.max(0, outerFrameRx - borderPadding);
 
-    // innerFrameWidth, innerFrameHeight, innerFrameRx, -borderWidth / 2, -borderWidth / 2
-    // const innerFrameRadius = (borderRadius / 100) * (Math.min(innerFrameWidth, innerFrameHeight) - (borderPadding));
     return createRoundedRectangleGeoJSON(
         innerFrameWidth,
         innerFrameHeight,
@@ -330,10 +328,15 @@ export function generateCssFromState(state: MicroPalette): string | null {
         stroke-linejoin: round;
     }
     #paths > path {
-        stroke: ${state['roads'] ? state['roads'].stroke : '#6D4C41'};
+        stroke: ${state['roads']?.stroke ?? '#6D4C41'};
         fill: none;
         stroke-width: 2px;
     }
+    #freehand-drawings {
+        paint-order: stroke;
+        fill: ${state['roads']?.stroke ?? '#6D4C41'};
+    }
+        .
     `;
 
     for (const [layer, layerDef] of Object.entries(state)) {

@@ -279,6 +279,7 @@ export interface StateCommon {
     providedFonts: ProvidedFont[];
     providedShapes: ShapeDefinition[];
     providedPaths: PathDef[];
+    providedFreeHand: ParsedPath[][];
     inlineStyles: InlineStyles;
     // TODO: remove and compute from shape + label size
     shapeCount: number;

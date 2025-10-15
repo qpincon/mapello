@@ -1,5 +1,7 @@
 import { getStroke, type StrokeOptions } from "perfect-freehand";
-import type { Color } from "src/types";
+import { appState, commonState } from "src/state.svelte";
+import type { Color, ParsedPath, SvgSelection } from "src/types";
+import { pathStringFromParsed } from "./svg";
 const average = (a: number, b: number) => (a + b) / 2
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
@@ -171,4 +173,16 @@ export class FreehandDrawer {
         return this;
     }
 
+}
+
+
+export function drawFreeHandShapes(svg: SvgSelection, providedFreeHand: ParsedPath[][]) {
+    const container = svg.append("g").attr('id', 'freehand-drawings');
+    providedFreeHand.forEach((drawingGroup) => {
+        const gDrawing = container.append("g");
+        for (const drawing of drawingGroup) {
+            const pathElem = gDrawing.append("path").attr("pathLength", 1).classed("freehand", true);
+            pathElem.attr("d", pathStringFromParsed(drawing, appState.projection!));
+        }
+    });
 }

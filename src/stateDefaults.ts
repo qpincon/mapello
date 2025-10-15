@@ -192,6 +192,7 @@ export const defaultState: GlobalState = {
         providedFonts: [],
         providedShapes: [],
         providedPaths: [],
+        providedFreeHand: [],
         inlineStyles: defaultInlineStyles,
         shapeCount: 0,
         currentMode: "macro",

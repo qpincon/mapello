@@ -5,7 +5,7 @@
     import { drag } from "d3-drag";
     import { zoom } from "d3-zoom";
     import InlineStyleEditor from "inline-style-editor";
-    import { debounce, merge } from "lodash-es";
+    import { debounce } from "lodash-es";
     import { drawCustomPaths, parseAndUnprojectPath } from "./svg/paths";
     import PathEditor from "./svg/pathEditor";
     import Geocoding from "./components/Geocoding.svelte";
@@ -27,7 +27,7 @@
     import { getState, saveState } from "./util/save";
     import { exportFontChoices } from "./svg/export";
     import * as _microPalettes from "./micro/microPalettes";
-    import { FreehandDrawer } from "./svg/freeHandDraw";
+    import { drawFreeHandShapes, FreehandDrawer } from "./svg/freeHandDraw";
     import type {
         SvgSelection,
         ShapeDefinition,
@@ -120,6 +120,7 @@
                     }
                 },
                 getElems: (el: HTMLElement) => {
+                    console.log(el);
                     if (el.classList.contains("freehand")) {
                         return [[el.parentElement, "Clicked"]];
                     }
@@ -337,13 +338,7 @@
         svg.append("g").attr("id", "paths");
         drawAndSetupShapes();
         drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
-        freeHandDrawings.forEach((drawingGroup) => {
-            const gDrawing = svg.append("g");
-            for (const drawing of drawingGroup) {
-                const pathElem = gDrawing.append("path").attr("pathLength", 1).classed("freehand", true);
-                pathElem.attr("d", pathStringFromParsed(drawing, appState.projection!));
-            }
-        });
+        drawFreeHandShapes(svg, commonState.providedFreeHand);
         if (!simplified) saveState();
         isDrawing = false;
     }
@@ -414,11 +409,6 @@
             macroSidebar!.applyStateAndDraw();
         }
     }
-
-    // function applyInlineStyles(styleAll = false): void {
-    //     applyStyles(inlineStyles, styleAll ? countryFilteredImages : null);
-    //     save();
-    // }
 
     function openEditor(e: MouseEvent): void {
         styleEditor!.open(e.target as HTMLElement, e.pageX, e.pageY);
@@ -557,7 +547,6 @@
         freeHandDrawer.start(svg.node() as SVGSVGElement);
     }
 
-    let freeHandDrawings: ParsedPath[][] = [];
     function stopDrawFreeHand(): void {
         if (!isDrawingFreeHand) return;
         attachListeners();
@@ -565,15 +554,6 @@
         const newGroup = freeHandDrawer.stop();
         const paths = newGroup.querySelectorAll("path");
         if (!paths.length) return;
-
-        // Get first point and store drawing as-is
-        // let position = null;
-        // for (const pathElem of paths) {
-        //     const d = pathElem.getAttribute('d');
-        //     if (!d) continue;
-        //     position = parseAndUnprojectPath(d, projection)[0];
-        //     break;
-        // }
 
         const unprojected: ParsedPath[] = [];
         paths.forEach((pathElem) => {
@@ -583,30 +563,9 @@
             unprojected.push(parsed);
             console.log(parsed);
         });
-        if (unprojected.length) freeHandDrawings.push(unprojected);
+        if (unprojected.length) commonState.providedFreeHand.push(unprojected);
+        console.log(commonState.providedFreeHand);
     }
-
-    // function handleChangeProp(event: CustomEvent<{ prop: string; value: unknown }>): void {
-    //     if (firstDraw) return;
-    //     const { prop, value } = event.detail;
-    //     if (positionVars.includes(prop)) {
-    //         // @ts-expect-error
-    //         inlinePropsMacro[prop] = value;
-    //     }
-    //     if (prop === "projection" || prop === "fieldOfView") {
-    //         changeAltitudeScale();
-    //     }
-    //     if (prop === "projection") {
-    //         inlinePropsMacro.translateX = 0;
-    //         inlinePropsMacro.translateY = 0;
-    //     }
-    //     if (prop === "height") {
-    //         Object.keys(legendDefs).forEach((tab) => {
-    //             legendDefs[tab].y = (value as number) - 100;
-    //         });
-    //     }
-    //     redrawThrottle(prop);
-    // }
 
     function closeMenu(): void {
         contextualMenu!.style.display = "none";
@@ -973,7 +932,7 @@
                         type="file"
                         class="d-none"
                         id="fontinput"
-                        accept=".ttf,.woff,.woff2,.otf"
+                        accept=".ttf,.woff,.otf"
                         onchange={handleInputFont}
                     />
                 </div>
