@@ -338,7 +338,7 @@ export async function stitch(renderedFeatures: RenderedFeature[], tiles: Tiles, 
   console.log(nbClipped, 'geometries clipped');
   // @ts-expect-error
   return [
-    ...finalPolygons,
+    ...explodeGeometry(finalPolygons, "Polygon") as RenderedFeature<Polygon>[],
     ...stichedLines
   ];
 }

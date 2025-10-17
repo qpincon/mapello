@@ -1,6 +1,6 @@
 import svgoConfig from '../svgoExport.config';
 import { select, type Selection } from "d3-selection";
-import { getRenderedFeatures, type RenderedFeature } from "../util/geometryStitch";
+import { getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
 import { cloneDeep, debounce, kebabCase, last, random, size } from "lodash-es";
 import { color, hsl } from "d3-color";
 import { DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
@@ -17,6 +17,8 @@ import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type Pa
 import type { Config } from 'svgo/browser';
 import type { Map } from 'maplibre-gl';
 import { postClipSimple } from 'src/svg/svg';
+import { renderBuildings } from './3d';
+import { addExtrudedBuildings } from './3dthree';
 
 
 type D3PathFunction = (geometry: Geometry) => string | null;
@@ -132,6 +134,10 @@ export async function drawPrettyMap(
         .attr("stroke-width", d => d.properties.paint!['line-width'] ?? null)
         .attr("id", d => d.properties.uuid!);
 
+    const buildings = geometries.filter(geom => geom.properties.mapLayerId === "buildings") as RenderedFeaturePoly[];
+    console.log('buildings=', buildings);
+    // renderBuildings(maplibreMap, buildings, svg, translateAmount);
+    addExtrudedBuildings(maplibreMap, buildings, svg, translateAmount);
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, animated, outerFrameRx);
     svg.style("pointer-events", isLocked ? "auto" : "none");
     svg.classed("animate-transition", true).classed("animate", generalParams.General.animate);
