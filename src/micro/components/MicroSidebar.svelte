@@ -254,7 +254,7 @@
     ></Accordions>
 {:else if mainMenuSelection === "layers"}
     <MicroLayerParams
-        layerDefinitions={microState.microLayerDefinitions}
+        bind:layerDefinitions={microState.microLayerDefinitions}
         onUpdate={handleMicroParamChange}
         availablePalettes={microPalettes}
         onPaletteChange={handleMicroPaletteChange}

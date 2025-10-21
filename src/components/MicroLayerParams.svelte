@@ -11,7 +11,12 @@
         availablePalettes?: Record<string, MicroPaletteWithBorder>;
     }
 
-    let { layerDefinitions, onUpdate = () => {}, onPaletteChange = () => {}, availablePalettes = {} }: Props = $props();
+    let {
+        layerDefinitions = $bindable(),
+        onUpdate = () => {},
+        onPaletteChange = () => {},
+        availablePalettes = {},
+    }: Props = $props();
 
     let layers: [string, any][] = $derived(
         Object.entries(layerDefinitions).filter(([layerId, _]) => layerId !== "borderParams"),
@@ -35,7 +40,6 @@
 
     function collapseLayer(layer: MicroLayerId) {
         layerDefinitions[layer].menuOpened = !layerDefinitions[layer].menuOpened;
-        layerDefinitions = layerDefinitions;
         setTimeout(() => initTooltips(), 0);
     }
 

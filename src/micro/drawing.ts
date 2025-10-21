@@ -17,11 +17,7 @@ import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type Pa
 import type { Config } from 'svgo/browser';
 import type { Map } from 'maplibre-gl';
 import { postClipSimple } from 'src/svg/svg';
-// import { renderBuildings } from './3d';
-// import { addExtrudedBuildings } from './3dthree';
-// import { addExtrudedBuildings } from './3dthreeNoTessel';
-// import { renderBuildingsToSvg } from './3dCustom';
-import { renderBuildingsToSvg } from './3dCustomV2';
+import { renderBuildingsToSvg } from './3d';
 
 
 type D3PathFunction = (geometry: Geometry) => string | null;
@@ -140,10 +136,8 @@ export async function drawPrettyMap(
 
     const buildings = geometries.filter(geom => geom.properties.mapLayerId === "buildings") as RenderedFeaturePoly[];
     console.log('buildings=', buildings);
-    // renderBuildings(maplibreMap, buildings, svg, translateAmount);
     if (layerDefinitions.buildings['3dBuildings']) {
-        renderBuildingsToSvg(buildings, maplibreMap, svg);
-        // addExtrudedBuildings(maplibreMap, buildings, svg, translateAmount);
+        renderBuildingsToSvg(buildings, maplibreMap, svg, translateAmount);
     }
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, animated, outerFrameRx);
     svg.style("pointer-events", isLocked ? "auto" : "none");
