@@ -105,6 +105,17 @@
                         />
                     {/if}
                     {#if def.fills != null}
+                        <div class="mx-2 form-check form-switch">
+                            <input
+                                type="checkbox"
+                                role="switch"
+                                class="form-check-input"
+                                id="3d-buidlings"
+                                bind:checked={def["3dBuildings"]}
+                                onchange={() => updated(title as MicroLayerId, ["active"], def.active!)}
+                            />
+                            <label for="3d-buidlings" class="form-check-label"> 3D building </label>
+                        </div>
                         {#each def.fills as fill, fillIndex}
                             <ColorPickerPreview
                                 labelAbove={true}

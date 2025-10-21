@@ -17,8 +17,11 @@ import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type Pa
 import type { Config } from 'svgo/browser';
 import type { Map } from 'maplibre-gl';
 import { postClipSimple } from 'src/svg/svg';
-import { renderBuildings } from './3d';
-import { addExtrudedBuildings } from './3dthree';
+// import { renderBuildings } from './3d';
+// import { addExtrudedBuildings } from './3dthree';
+// import { addExtrudedBuildings } from './3dthreeNoTessel';
+// import { renderBuildingsToSvg } from './3dCustom';
+import { renderBuildingsToSvg } from './3dCustomV2';
 
 
 type D3PathFunction = (geometry: Geometry) => string | null;
@@ -129,6 +132,7 @@ export async function drawPrettyMap(
             if (state?.fills) {
                 classes.push(`${layerIdKebab}-${random(0, state.fills.length - 1)}`);
             }
+            d.properties.class = classes.join(' ');
             return classes.join(' ');
         })
         .attr("stroke-width", d => d.properties.paint!['line-width'] ?? null)
@@ -137,7 +141,10 @@ export async function drawPrettyMap(
     const buildings = geometries.filter(geom => geom.properties.mapLayerId === "buildings") as RenderedFeaturePoly[];
     console.log('buildings=', buildings);
     // renderBuildings(maplibreMap, buildings, svg, translateAmount);
-    addExtrudedBuildings(maplibreMap, buildings, svg, translateAmount);
+    if (layerDefinitions.buildings['3dBuildings']) {
+        renderBuildingsToSvg(buildings, maplibreMap, svg);
+        // addExtrudedBuildings(maplibreMap, buildings, svg, translateAmount);
+    }
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, animated, outerFrameRx);
     svg.style("pointer-events", isLocked ? "auto" : "none");
     svg.classed("animate-transition", true).classed("animate", generalParams.General.animate);
@@ -323,6 +330,7 @@ function darken(c: string, quantity: number = 0.4): Color {
 }
 
 export function generateCssFromState(state: MicroPalette): string | null {
+    console.log('generateCssFromState');
     const [sheet, _] = findStyleSheet("#micro .line");
     // "other" default color definitions will be overridden by mode specific '>' selector
     let css = `
@@ -388,6 +396,15 @@ export function generateCssFromState(state: MicroPalette): string | null {
                 css += updateStyleSheetOrGenerateCss(sheet, `#micro .${layer}-${i}`, { 'fill': fill });
                 css += updateStyleSheetOrGenerateCss(sheet, `#micro .${layer}-${i}:hover`, { 'fill': lighten(fill) });
             });
+            if (layerDef['3dBuildings']) {
+                css += updateStyleSheetOrGenerateCss(sheet, `#buildings`, { 'stroke': layerDef.stroke! });
+                layerDef.fills.forEach((fill, i) => {
+                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}`, { 'fill': fill });
+                    const fillLighter = lighten(fill, 0.4);
+                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i} .wall`, { 'fill': fillLighter });
+                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}:hover, #buildings .${layer}-${i}:hover .wall`, { 'fill': lighten(fillLighter) });
+                });
+            }
         }
     }
 

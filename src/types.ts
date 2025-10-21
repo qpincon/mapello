@@ -220,6 +220,7 @@ interface MicroLayerDefinition {
     pattern?: PatternDefinition;
     fill?: Color;
     fills?: Color[];
+    "3dBuildings"?: boolean;
 }
 
 export const MICRO_LAYERS = [

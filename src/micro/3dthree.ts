@@ -36,21 +36,8 @@ export async function addExtrudedBuildings(
     const svgNode = container.node();
     if (!svgNode) throw new Error("Provided svgSelection has no DOM node.");
 
-
-    // --- Calculate single scene origin (center of all features) ---
-    let totalLng = 0, totalLat = 0, totalPoints = 0;
-    for (const feat of features) {
-        const coords = feat.geometry.coordinates[0];
-        for (const [lng, lat] of coords) {
-            totalLng += lng;
-            totalLat += lat;
-            totalPoints++;
-        }
-    }
-
-    if (totalPoints === 0) return;
-
-    const sceneOrigin: [number, number] = [totalLng / totalPoints, totalLat / totalPoints];
+    const origin = map.unproject([width / 2, height / 2]);
+    const sceneOrigin: [number, number] = [origin.lng, origin.lat];
     const sceneAltitude = 0;
 
     // Calculate scale: meters to Mercator at scene origin
@@ -102,6 +89,8 @@ export async function addExtrudedBuildings(
         const extrudeGeom = new THREE.ExtrudeGeometry(shape, {
             depth: heightMeters,
             bevelEnabled: false,
+            // bevelSize: 1,
+            // bevelThickness: 3
         });
 
         // Rotate geometry so extrusion goes along Y axis (up) instead of Z
@@ -120,7 +109,6 @@ export async function addExtrudedBuildings(
 
     // Copy rendered SVG into provided D3-managed SVG element
     const producedSvg = renderer.domElement as SVGSVGElement;
-    console.log(producedSvg);
     producedSvg.setAttribute("width", String(width));
     producedSvg.setAttribute("height", String(height));
     producedSvg.setAttribute("viewBox", `0 0 ${width} ${height}`);
