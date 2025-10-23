@@ -20,6 +20,7 @@ import { postClipSimple } from 'src/svg/svg';
 import { renderBuildingsToSvg } from './3d';
 import booleanWithin from '@turf/boolean-within';
 import bbox from '@turf/bbox';
+import { featureCollection } from '@turf/helpers';
 
 
 type D3PathFunction = (geometry: Geometry) => string | null;
@@ -32,9 +33,6 @@ export function orderFeaturesByLayer(features: RenderedFeature[]): void {
         const layerIdA = MICRO_LAYERS.indexOf(a.properties.mapLayerId!);
         // @ts-expect-error
         const layerIdB = MICRO_LAYERS.indexOf(b.properties.mapLayerId!);
-        const renderHeightA = a.properties['render_height'];
-        const renderHeightB = b.properties['render_height'];
-        if (renderHeightA != null && renderHeightB != null) return renderHeightA < renderHeightB ? -1 : 1;
         if (layerIdA < layerIdB) return -1;
         return 1;
     });
@@ -82,10 +80,11 @@ export async function drawPrettyMap(
     } else {
         svg.attr("width", `${width}`).attr("height", `${height}`);
     }
-    const geometries = await getRenderedFeatures(maplibreMap, { layers: layersToQuery });
+    const geometries = (await getRenderedFeatures(maplibreMap, { layers: layersToQuery }))
+        ?.filter(geom => geom.properties['kind_detail'] !== 'corridor') as RenderedFeature[];
     console.log('geometries=', geometries)
     // Process got interrupted, a new call to this function is coming soon
-    if (geometries === null) return;
+    if (geometries == null) return;
     orderFeaturesByLayer(geometries);
     // console.log('geometries', geometries);
 
@@ -138,13 +137,15 @@ export async function drawPrettyMap(
 
     const buildings = geometries.filter(geom => geom.properties.mapLayerId === "buildings") as RenderedFeaturePoly[];
     console.log('buildings=', buildings);
+    console.log('buildings features=', featureCollection(buildings));
     if (layerDefinitions.buildings['3dBuildings']) {
         console.time('grouping buildings');
         const grouped = hierarchicalGrouping(buildings);
         console.timeEnd('grouping buildings');
         console.log('grouped=', grouped);
+        const chosen = grouped[41];
+        console.log(buildings.find(b => b.id === 52776558670230));
         renderBuildingsToSvg(grouped, maplibreMap, svg, translateAmount);
-        // renderBuildingsToSvg(buildings, maplibreMap, svg, translateAmount);
     }
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, animated, outerFrameRx);
     svg.style("pointer-events", isLocked ? "auto" : "none");
@@ -303,6 +304,7 @@ function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeatureP
     const topLevelFeatures: RenderedFeaturePoly[] = [];
 
     for (const currentFeature of featuresCopy) {
+        if (!currentFeature.boundingBox) currentFeature.boundingBox = bbox(currentFeature);
         let highestContainingFeature: RenderedFeaturePoly | null = null;
         let highestHeight = -Infinity;
 
@@ -321,10 +323,6 @@ function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeatureP
             }
         }
 
-        if (currentFeature.properties.uuid === "2.3499557-48.8529921") {
-            console.log(highestContainingFeature);
-            console.log(currentFeature);
-        }
         // Set base_height and assign to parent or top-level
         if (highestContainingFeature) {
             currentFeature.properties.base_height = highestContainingFeature.properties.height ?? 0;

@@ -151,6 +151,8 @@ function isWallVisible({
     ndcP1: { x: number; y: number; z: number };
     ndcP2: { x: number; y: number; z: number };
 }) {
+    // Fallback: use NDC-space points to derive a normal and test its Z sign.
+    // Build two vectors in NDC space (they are approximately proportional to view-space vectors).
     const v1 = sub3(ndcP1, ndcP0);
     const v2 = sub3(ndcP2, ndcP0);
     const n = cross3(v1, v2);
@@ -158,11 +160,132 @@ function isWallVisible({
     // invert this sign check.
     return n.z < 0;
 }
-function renderExtrudedBuildingGrouped(feature: RenderedFeaturePoly, map: Map): SVGGElement | null {
+
+/**
+ * Render a single BuildingFeature into an SVG <g> element.
+ * Each wall quad becomes its own <path class="wall"> and invisible walls are skipped.
+ */
+function renderExtrudedBuilding(feature: RenderedFeaturePoly, map: Map): SVGGElement | null {
     if (!feature || feature.geometry.type !== 'Polygon') {
         throw new Error('Only Polygon features are supported.');
     }
 
+    const outerRing = feature.geometry.coordinates[0];
+    if (!outerRing || outerRing.length < 3) {
+        throw new Error('Polygon outer ring must contain at least 3 coordinates.');
+    }
+
+    const heightMeters = feature.properties.height ?? feature.properties.min_height ?? MIN_BUILDING_HEIGHT;
+    if (!heightMeters) return null;
+    const className = (feature.properties?.class as string) || 'building';
+
+    // get projection data & matrix
+    const { mainMatrix } = getProjectionData(map);
+
+    // pre-create list of projected points for bottom and top
+    const projectedBottom = outerRing.map(([lng, lat]) => {
+        return projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, 0)
+    }
+    );
+    const projectedTop = outerRing.map(([lng, lat]) =>
+        projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, heightMeters)
+    );
+
+    // Prepare SVG elements
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('class', className);
+
+    // Helper: create wall path element for one quad (b0->b1->t1->t0)
+    type WallItem = { el: SVGPathElement; depth: number };
+
+    const walls: WallItem[] = [];
+
+    // iterate edges (assume ring is closed: last === first — but input may include the repeated last point)
+    const n = projectedBottom.length;
+    for (let i = 0; i < n; i++) {
+        const ni = (i + 1) % n;
+
+        const b0p = projectedBottom[i];
+        const b1p = projectedBottom[ni];
+        const t0p = projectedTop[i];
+        const t1p = projectedTop[ni];
+
+        // Clip/NDC points for visibility test (pick three non-collinear points)
+        const ndc0 = b0p.ndc;
+        const ndc1 = b1p.ndc;
+        const ndc2 = t0p.ndc; // triangle (b0,b1,t0)
+
+        // World points (mercator) for accurate normal if camera direction is available
+        const w0 = b0p.world;
+        const w1 = b1p.world;
+        const w2 = t0p.world;
+
+        // decide visibility
+        const visible = isWallVisible({
+            ndcP0: { x: ndc0.x, y: ndc0.y, z: ndc0.z },
+            ndcP1: { x: ndc1.x, y: ndc1.y, z: ndc1.z },
+            ndcP2: { x: ndc2.x, y: ndc2.y, z: ndc2.z },
+        });
+
+        if (!visible) {
+            // skip backfacing wall
+            continue;
+        }
+
+        // Build path string for this quad
+        // Use screen coordinates (pixels)
+        const b0s = b0p.screen;
+        const b1s = b1p.screen;
+        const t1s = t1p.screen;
+        const t0s = t0p.screen;
+
+        // create path
+        const pathD = `M ${b0s.x.toFixed(2)},${b0s.y.toFixed(2)} L ${b1s.x.toFixed(2)},${b1s.y.toFixed(2)} L ${t1s.x.toFixed(2)},${t1s.y.toFixed(2)} L ${t0s.x.toFixed(2)},${t0s.y.toFixed(2)} Z`;
+
+        const pathEl = document.createElementNS(SVG_NS, 'path');
+        pathEl.setAttribute('class', 'wall');
+        pathEl.setAttribute('d', pathD);
+
+        // compute depth for ordering: average ndc.z of the quad (lower = farther)
+        const depthValues = [b0p.depth, b1p.depth, t0p.depth, t1p.depth].filter((d) => Number.isFinite(d));
+        const depth = depthValues.length ? depthValues.reduce((s, v) => s + v, 0) / depthValues.length : 0;
+        pathEl.setAttribute('data-depth', String(depth));
+
+        walls.push({ el: pathEl, depth });
+    }
+
+    // Sort walls by depth ascending (farthest first) so painter's algorithm within the building is correct
+    walls.sort((a, b) => a.depth - b.depth);
+    for (const w of walls) g.appendChild(w.el);
+
+    // Build roof as single path on top
+    const roofPathD = (() => {
+        const coords: string[] = [];
+        // project top ring to screen
+        for (let i = 0; i < projectedTop.length; i++) {
+            const s = projectedTop[i].screen;
+            coords.push(`${s.x.toFixed(2)},${s.y.toFixed(2)}`);
+        }
+        // If ring is not explicitly closed (first != last), svg path with Z closes it.
+        return coords.length ? `M ${coords.join(' L ')} Z` : '';
+    })();
+
+    const roofEl = document.createElementNS(SVG_NS, 'path');
+    roofEl.setAttribute('class', 'roof');
+    roofEl.setAttribute('d', roofPathD);
+
+    // Roof should be appended last so it visually sits on top of walls.
+    g.appendChild(roofEl);
+
+    // store average depth of top ring for building-level sorting
+    const avgDepth =
+        projectedTop.reduce((s, p) => s + (p.depth || 0), 0) / Math.max(1, projectedTop.length);
+    g.setAttribute('data-depth', String(avgDepth));
+
+    return g;
+}
+function renderExtrudedBuildingGrouped(feature: RenderedFeaturePoly, map: Map): SVGGElement | null {
     const SVG_NS = 'http://www.w3.org/2000/svg';
     const g = document.createElementNS(SVG_NS, 'g');
 
@@ -244,6 +367,7 @@ function renderExtrudedBuildingGrouped(feature: RenderedFeaturePoly, map: Map): 
             const pathEl = document.createElementNS(SVG_NS, 'path');
             pathEl.setAttribute('class', 'wall');
             pathEl.setAttribute('d', pathD);
+            pathEl.setAttribute('oid', String(feat.id));
 
             // Compute depth for ordering
             // const depthValues = [b0p.depth, b1p.depth].filter((d) => Number.isFinite(d));
@@ -268,10 +392,10 @@ function renderExtrudedBuildingGrouped(feature: RenderedFeaturePoly, map: Map): 
             roofEl = document.createElementNS(SVG_NS, 'path');
             roofEl.setAttribute('class', 'roof');
             roofEl.setAttribute('d', roofPathD);
-
+            roofEl.setAttribute('oid', String(feat.id));
             // Calculate roof depth
-            roofDepth = projectedBottom.reduce((s, p) => s + (p.depth || 0), 0) / Math.max(1, projectedBottom.length);
-            // roofDepth = projectedTop.reduce((s, p) => s + (p.depth || 0), 0) / Math.max(1, projectedTop.length);
+            // roofDepth = projectedBottom.reduce((s, p) => s + (p.depth || 0), 0) / Math.max(1, projectedBottom.length);
+            roofDepth = projectedTop.reduce((s, p) => s + (p.depth || 0), 0) / Math.max(1, projectedTop.length);
             roofEl.setAttribute('data-depth', String(roofDepth));
         }
 
