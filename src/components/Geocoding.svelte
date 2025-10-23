@@ -30,7 +30,7 @@
     let isResultsVisible: boolean = $state(false);
     let error: string | null = $state(null);
     let selectedIndex: number = $state(-1);
-    let resultsContainer: HTMLDivElement;
+    let resultsContainer: HTMLDivElement | null = $state(null);
 
     // Create debounced search function
     const debouncedSearch = debounce(async (query: string): Promise<void> => {

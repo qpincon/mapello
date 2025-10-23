@@ -143,202 +143,191 @@ function sub3(a: { x: number; y: number; z: number }, b: { x: number; y: number;
  * culling, invert the comparisons (dot > 0 -> visible, or normal.z > 0 -> visible).
  */
 function isWallVisible({
-    // world coords of points (mercator.x,y,z)
-    worldP0,
-    worldP1,
-    worldP2,
-    // clip/NDC coords of same points
     ndcP0,
     ndcP1,
     ndcP2,
-    // optional camera direction in world-space
-    cameraDirectionWorld,
 }: {
-    worldP0: { x: number; y: number; z: number };
-    worldP1: { x: number; y: number; z: number };
-    worldP2: { x: number; y: number; z: number };
     ndcP0: { x: number; y: number; z: number };
     ndcP1: { x: number; y: number; z: number };
     ndcP2: { x: number; y: number; z: number };
-    cameraDirectionWorld?: { x: number; y: number; z: number } | null;
 }) {
-    // if (cameraDirectionWorld) {
-    //     // Compute face normal in world space using p0,p1,p2 (triangle)
-    //     const v1 = sub3(worldP1, worldP0);
-    //     const v2 = sub3(worldP2, worldP0);
-    //     const normal = cross3(v1, v2);
-    //     // dot(normal, cameraDirection) < 0 means normal points towards camera (convention)
-    //     const dot = normal.x * cameraDirectionWorld.x + normal.y * cameraDirectionWorld.y + normal.z * cameraDirectionWorld.z;
-    //     console.log
-    //     return dot < 0;
-    // } else {
-    // console.log('fallback')
-    // Fallback: use NDC-space points to derive a normal and test its Z sign.
-    // Build two vectors in NDC space (they are approximately proportional to view-space vectors).
     const v1 = sub3(ndcP1, ndcP0);
     const v2 = sub3(ndcP2, ndcP0);
     const n = cross3(v1, v2);
     // If n.z < 0 => facing camera (this is the convention we use). If you get reversed culling,
     // invert this sign check.
     return n.z < 0;
-    // }
 }
-
-/**
- * Render a single BuildingFeature into an SVG <g> element.
- * Each wall quad becomes its own <path class="wall"> and invisible walls are skipped.
- */
-export function renderExtrudedBuildingV2(feature: RenderedFeaturePoly, map: Map): SVGGElement | null {
+function renderExtrudedBuildingGrouped(feature: RenderedFeaturePoly, map: Map): SVGGElement | null {
     if (!feature || feature.geometry.type !== 'Polygon') {
         throw new Error('Only Polygon features are supported.');
     }
 
-    const outerRing = feature.geometry.coordinates[0];
-    if (!outerRing || outerRing.length < 3) {
-        throw new Error('Polygon outer ring must contain at least 3 coordinates.');
-    }
-
-    const heightMeters = feature.properties.height ?? feature.properties.min_height ?? MIN_BUILDING_HEIGHT;
-    if (!heightMeters) return null;
-    const className = (feature.properties?.class as string) || 'building';
-
-    // get projection data & matrix
-    const { projData, mainMatrix, cameraDirection: cameraDirFromProj } = getProjectionData(map);
-    if (!mainMatrix) {
-        throw new Error('Projection main matrix unavailable on this MapLibre version.');
-    }
-
-    // If projData exposes cameraDirection in world coordinates, normalize it.
-    let cameraDirWorld: { x: number; y: number; z: number } = cameraDirFromProj;
-    // console.log('cameraDirFromProj=', cameraDirFromProj)
-    // if (cameraDirFromProj) {
-    // const [cx, cy, cz] = [cameraDirFromProj.x, cameraDirFromProj.y, cameraDirFromProj.z];
-    // normalize
-    // const len = Math.hypot(cx, cy, cz) || 1;
-    // cameraDirWorld = { x: cx / len, y: cy / len, z: cz / len };
-    // }
-    // else if (projData && projData.viewMatrix && projData.cameraPosition) {
-    //     // Optional: if projection data exposes viewMatrix & cameraPosition we could derive forward vector,
-    //     // but that depends on the data shape. We'll skip additional heuristics here.
-    // }
-
-    // pre-create list of projected points for bottom and top
-    const projectedBottom = outerRing.map(([lng, lat]) => {
-        // let height = 0;
-        // if (feature.properties.uuid === "2.3499557-48.8529921") height = 43;
-        return projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, 0)
-    }
-    );
-    // const projectedBottom = outerRing.map(([lng, lat]) =>
-    //     projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, 0)
-    // );
-    const projectedTop = outerRing.map(([lng, lat]) =>
-        projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, heightMeters)
-    );
-
-    // Prepare SVG elements
     const SVG_NS = 'http://www.w3.org/2000/svg';
     const g = document.createElementNS(SVG_NS, 'g');
+
+    const className = (feature.properties?.class as string) || 'building';
     g.setAttribute('class', className);
 
-    // Helper: create wall path element for one quad (b0->b1->t1->t0)
-    type WallItem = { el: SVGPathElement; depth: number };
+    // Get projection data & matrix
+    const { mainMatrix } = getProjectionData(map);
 
-    const walls: WallItem[] = [];
+    // Structure to hold a part with all its elements
+    type PartGroup = {
+        baseHeight: number;
+        walls: { el: SVGPathElement; depth: number }[];
+        roof: SVGPathElement | null;
+        roofDepth: number;
+    };
 
-    // iterate edges (assume ring is closed: last === first — but input may include the repeated last point)
-    const n = projectedBottom.length;
-    for (let i = 0; i < n; i++) {
-        const ni = (i + 1) % n;
+    const partGroups: PartGroup[] = [];
 
-        const b0p = projectedBottom[i];
-        const b1p = projectedBottom[ni];
-        const t0p = projectedTop[i];
-        const t1p = projectedTop[ni];
+    // Helper function to process a single feature (main or part)
+    function processFeature(feat: RenderedFeaturePoly): PartGroup | null {
+        const outerRing = feat.geometry.coordinates[0];
+        if (!outerRing || outerRing.length < 3) {
+            return null; // Skip invalid polygons
+        }
 
-        // Clip/NDC points for visibility test (pick three non-collinear points)
-        const ndc0 = b0p.ndc;
-        const ndc1 = b1p.ndc;
-        const ndc2 = t0p.ndc; // triangle (b0,b1,t0)
+        const heightMeters = feat.properties.height ?? feat.properties.min_height ?? MIN_BUILDING_HEIGHT;
+        if (!heightMeters) return null;
 
-        // World points (mercator) for accurate normal if camera direction is available
-        const w0 = b0p.world;
-        const w1 = b1p.world;
-        const w2 = t0p.world;
+        const baseHeight = feat.properties.base_height ?? 0;
 
-        // decide visibility
-        const visible = isWallVisible({
-            worldP0: { x: w0.x, y: w0.y, z: w0.z },
-            worldP1: { x: w1.x, y: w1.y, z: w1.z },
-            worldP2: { x: w2.x, y: w2.y, z: w2.z },
-            ndcP0: { x: ndc0.x, y: ndc0.y, z: ndc0.z },
-            ndcP1: { x: ndc1.x, y: ndc1.y, z: ndc1.z },
-            ndcP2: { x: ndc2.x, y: ndc2.y, z: ndc2.z },
-            cameraDirectionWorld: cameraDirWorld ?? undefined,
+        const walls: { el: SVGPathElement; depth: number }[] = [];
+        let roofEl: SVGPathElement | null = null;
+        let roofDepth = 0;
+
+        // Pre-create list of projected points for bottom and top
+        const projectedBottom = outerRing.map(([lng, lat]) => {
+            return projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, baseHeight);
         });
 
-        if (!visible) {
-            // skip backfacing wall
-            continue;
+        const projectedTop = outerRing.map(([lng, lat]) =>
+            projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, heightMeters)
+        );
+
+        // Create walls
+        const n = projectedBottom.length;
+        for (let i = 0; i < n; i++) {
+            const ni = (i + 1) % n;
+
+            const b0p = projectedBottom[i];
+            const b1p = projectedBottom[ni];
+            const t0p = projectedTop[i];
+            const t1p = projectedTop[ni];
+
+            // Clip/NDC points for visibility test
+            const ndc0 = b0p.ndc;
+            const ndc1 = b1p.ndc;
+            const ndc2 = t0p.ndc;
+
+            // Decide visibility
+            const visible = isWallVisible({
+                ndcP0: { x: ndc0.x, y: ndc0.y, z: ndc0.z },
+                ndcP1: { x: ndc1.x, y: ndc1.y, z: ndc1.z },
+                ndcP2: { x: ndc2.x, y: ndc2.y, z: ndc2.z },
+            });
+
+            if (!visible) {
+                continue; // Skip backfacing wall
+            }
+
+            // Build path string for this quad
+            const b0s = b0p.screen;
+            const b1s = b1p.screen;
+            const t1s = t1p.screen;
+            const t0s = t0p.screen;
+
+            const pathD = `M ${b0s.x.toFixed(2)},${b0s.y.toFixed(2)} L ${b1s.x.toFixed(2)},${b1s.y.toFixed(2)} L ${t1s.x.toFixed(2)},${t1s.y.toFixed(2)} L ${t0s.x.toFixed(2)},${t0s.y.toFixed(2)} Z`;
+
+            const pathEl = document.createElementNS(SVG_NS, 'path');
+            pathEl.setAttribute('class', 'wall');
+            pathEl.setAttribute('d', pathD);
+
+            // Compute depth for ordering
+            // const depthValues = [b0p.depth, b1p.depth].filter((d) => Number.isFinite(d));
+            const depthValues = [b0p.depth, b1p.depth, t0p.depth, t1p.depth].filter((d) => Number.isFinite(d));
+            const depth = depthValues.length ? depthValues.reduce((s, v) => s + v, 0) / depthValues.length : 0;
+            pathEl.setAttribute('data-depth', String(depth));
+
+            walls.push({ el: pathEl, depth });
         }
 
-        // Build path string for this quad
-        // Use screen coordinates (pixels)
-        const b0s = b0p.screen;
-        const b1s = b1p.screen;
-        const t1s = t1p.screen;
-        const t0s = t0p.screen;
+        // Build roof
+        const roofPathD = (() => {
+            const coords: string[] = [];
+            for (let i = 0; i < projectedTop.length; i++) {
+                const s = projectedTop[i].screen;
+                coords.push(`${s.x.toFixed(2)},${s.y.toFixed(2)}`);
+            }
+            return coords.length ? `M ${coords.join(' L ')} Z` : '';
+        })();
 
-        // create path
-        const pathD = `M ${b0s.x.toFixed(2)},${b0s.y.toFixed(2)} L ${b1s.x.toFixed(2)},${b1s.y.toFixed(2)} L ${t1s.x.toFixed(2)},${t1s.y.toFixed(2)} L ${t0s.x.toFixed(2)},${t0s.y.toFixed(2)} Z`;
+        if (roofPathD) {
+            roofEl = document.createElementNS(SVG_NS, 'path');
+            roofEl.setAttribute('class', 'roof');
+            roofEl.setAttribute('d', roofPathD);
 
-        const pathEl = document.createElementNS(SVG_NS, 'path');
-        pathEl.setAttribute('class', 'wall');
-        pathEl.setAttribute('d', pathD);
+            // Calculate roof depth
+            roofDepth = projectedBottom.reduce((s, p) => s + (p.depth || 0), 0) / Math.max(1, projectedBottom.length);
+            // roofDepth = projectedTop.reduce((s, p) => s + (p.depth || 0), 0) / Math.max(1, projectedTop.length);
+            roofEl.setAttribute('data-depth', String(roofDepth));
+        }
 
-        // compute depth for ordering: average ndc.z of the quad (lower = farther)
-        const depthValues = [b0p.depth, b1p.depth, t0p.depth, t1p.depth].filter((d) => Number.isFinite(d));
-        const depth = depthValues.length ? depthValues.reduce((s, v) => s + v, 0) / depthValues.length : 0;
-        pathEl.setAttribute('data-depth', String(depth));
-
-        walls.push({ el: pathEl, depth });
+        return {
+            baseHeight,
+            walls,
+            roof: roofEl,
+            roofDepth
+        };
     }
 
-    // Sort walls by depth ascending (farthest first) so painter's algorithm within the building is correct
-    walls.sort((a, b) => a.depth - b.depth);
-    for (const w of walls) g.appendChild(w.el);
+    // Process main feature
+    const mainGroup = processFeature(feature);
+    if (mainGroup) {
+        partGroups.push(mainGroup);
+    }
 
-    // Build roof as single path on top
-    const roofPathD = (() => {
-        const coords: string[] = [];
-        // project top ring to screen
-        for (let i = 0; i < projectedTop.length; i++) {
-            const s = projectedTop[i].screen;
-            coords.push(`${s.x.toFixed(2)},${s.y.toFixed(2)}`);
+    // Process all parts
+    if (feature.properties.parts && Array.isArray(feature.properties.parts)) {
+        for (const part of feature.properties.parts) {
+            const partGroup = processFeature(part as RenderedFeaturePoly);
+            if (partGroup) {
+                partGroups.push(partGroup);
+            }
         }
-        // If ring is not explicitly closed (first != last), svg path with Z closes it.
-        return coords.length ? `M ${coords.join(' L ')} Z` : '';
-    })();
+    }
 
-    const roofEl = document.createElementNS(SVG_NS, 'path');
-    roofEl.setAttribute('class', 'roof');
-    roofEl.setAttribute('d', roofPathD);
+    // Sort part groups by base height (lower first)
+    partGroups.sort((a, b) => a.baseHeight - b.baseHeight);
 
-    // Roof should be appended last so it visually sits on top of walls.
-    g.appendChild(roofEl);
+    // Render each part group in order
+    const allDepths: number[] = [];
 
-    // store average depth of top ring for building-level sorting
-    const minDepth = Math.min(...projectedTop.map(p => p.depth))
+    for (const partGroup of partGroups) {
+        // Sort and append walls for this part (by depth)
+        partGroup.walls.sort((a, b) => a.depth - b.depth);
+        for (const wall of partGroup.walls) {
+            g.appendChild(wall.el);
+            allDepths.push(wall.depth);
+        }
 
-    // const avgDepth =
-    //     projectedTop.reduce((s, p) => s + (p.depth || 0), 0) / Math.max(1, projectedTop.length);
-    g.setAttribute('data-depth', String(minDepth));
+        // Append roof for this part
+        if (partGroup.roof) {
+            g.appendChild(partGroup.roof);
+            allDepths.push(partGroup.roofDepth);
+        }
+    }
+
+    // Store average depth of all elements for building-level sorting
+    const avgDepth = allDepths.length ? allDepths.reduce((s, d) => s + d, 0) / allDepths.length : 0;
+    // const minDepth = Math.min(...allDepths);
+    g.setAttribute('data-depth', String(avgDepth));
+    // g.setAttribute('data-depth', String(minDepth));
 
     return g;
 }
-
-
-
 export function renderBuildingsToSvg(
     features: RenderedFeaturePoly[],
     map: Map,
@@ -356,7 +345,7 @@ export function renderBuildingsToSvg(
 
     for (const f of features) {
         try {
-            const g = renderExtrudedBuildingV2(f, map);
+            const g = renderExtrudedBuildingGrouped(f, map);
             if (!g) continue;
             const depthStr = g.getAttribute('data-depth');
             const depth = depthStr ? parseFloat(depthStr) : 0;

@@ -79,6 +79,8 @@ export type RenderedFeature<T extends Geometry | null = Polygon | LineString | M
     mapLayerId?: string;
     paint?: Record<string, any>;
     brunnel?: string;
+    height?: number;
+    base_height?: number;
   };
   layer?: {
     id: string;
@@ -152,7 +154,7 @@ function getTileBounds(x: number, y: number, zoom: number): Tile {
 
 
 // bbox is [minX, minY, maxX, maxY]
-function bboxContains(containing: BBox, contained: BBox): boolean {
+export function bboxContains(containing: BBox, contained: BBox): boolean {
   return containing[0] <= contained[0] && containing[1] <= contained[1] && containing[2] >= contained[2] && containing[3] >= contained[3];
 }
 

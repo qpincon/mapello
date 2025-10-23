@@ -92,7 +92,7 @@
 - [x] Micro: Layers in "layers" tab
 - [-] Micro: Building with same id = same color 
 - [x] Micro: Check building order with height
-- [ ] Micro: Check building to merge if below other buidling
+- [-] Micro: Check building to merge if below other buidling
 - [x] Micro: Railway layer 
 - [x] Micro: MapTiler + OSM attribution 
 - [x] Micro: OSM attribution on exported file 
@@ -190,8 +190,17 @@
 - [x] Bug wen reset project on micro
 - [x] fix animate on micro
 - [x] fix background shadow on micro
-- [ ] Micro: minify class names on export ?
+- [ ] Micro: minify class names + CSS on export ?
 - [ ] text-to-svg: don't accept woff2 fonts
 - [ ] Macro: have same tilt / rotation behavior as maplibre
 - [x] micro landing: fix weird map expanding size
 - [x] micro: remove pathlength when no animation
+- [ ] micro: when 3d, remove ground buildings
+- [x] micro 3D: proper plotting of building parts
+- [ ] micro 3D: elevation to plot elevated sides of water ?
+- [ ] micro 3D animation: only animate roof
+- [ ] micro: fix use viewbox
+- [ ] micro 3D: scale building height slider
+- [ ] micro 3D: scale roads width slider
+
+

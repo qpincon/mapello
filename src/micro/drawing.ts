@@ -1,6 +1,6 @@
 import svgoConfig from '../svgoExport.config';
 import { select, type Selection } from "d3-selection";
-import { getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
+import { bboxContains, bboxIntersects, getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
 import { cloneDeep, debounce, kebabCase, last, random, size } from "lodash-es";
 import { color, hsl } from "d3-color";
 import { DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
@@ -18,6 +18,8 @@ import type { Config } from 'svgo/browser';
 import type { Map } from 'maplibre-gl';
 import { postClipSimple } from 'src/svg/svg';
 import { renderBuildingsToSvg } from './3d';
+import booleanWithin from '@turf/boolean-within';
+import bbox from '@turf/bbox';
 
 
 type D3PathFunction = (geometry: Geometry) => string | null;
@@ -137,7 +139,12 @@ export async function drawPrettyMap(
     const buildings = geometries.filter(geom => geom.properties.mapLayerId === "buildings") as RenderedFeaturePoly[];
     console.log('buildings=', buildings);
     if (layerDefinitions.buildings['3dBuildings']) {
-        renderBuildingsToSvg(buildings, maplibreMap, svg, translateAmount);
+        console.time('grouping buildings');
+        const grouped = hierarchicalGrouping(buildings);
+        console.timeEnd('grouping buildings');
+        console.log('grouped=', grouped);
+        renderBuildingsToSvg(grouped, maplibreMap, svg, translateAmount);
+        // renderBuildingsToSvg(buildings, maplibreMap, svg, translateAmount);
     }
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, animated, outerFrameRx);
     svg.style("pointer-events", isLocked ? "auto" : "none");
@@ -279,6 +286,82 @@ export function drawMicroFrame(
     return frame;
 }
 
+interface BuildingFeature extends Feature {
+    properties: RenderedFeature['properties'] & {
+        parts?: RenderedFeaturePoly[];
+    };
+}
+
+function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeaturePoly[] {
+    // Create a copy of features to avoid mutating the original
+    const featuresCopy = features.map(f => ({
+        ...f,
+        properties: { ...f.properties, parts: [] }
+    }));
+
+    // Step 1: Build the tree structure
+    const topLevelFeatures: RenderedFeaturePoly[] = [];
+
+    for (const currentFeature of featuresCopy) {
+        let highestContainingFeature: RenderedFeaturePoly | null = null;
+        let highestHeight = -Infinity;
+
+        // Find the highest feature that contains the current feature
+        for (const otherFeature of featuresCopy) {
+            if (otherFeature === currentFeature) continue;
+            if (!otherFeature.boundingBox) otherFeature.boundingBox = bbox(otherFeature);
+            // Check if current feature is within the other feature
+            if (bboxContains(otherFeature.boundingBox!, currentFeature.boundingBox!) && booleanWithin(currentFeature, otherFeature)) {
+                const otherHeight = otherFeature.properties.height ?? 0;
+
+                if (otherHeight > highestHeight) {
+                    highestHeight = otherHeight;
+                    highestContainingFeature = otherFeature;
+                }
+            }
+        }
+
+        if (currentFeature.properties.uuid === "2.3499557-48.8529921") {
+            console.log(highestContainingFeature);
+            console.log(currentFeature);
+        }
+        // Set base_height and assign to parent or top-level
+        if (highestContainingFeature) {
+            currentFeature.properties.base_height = highestContainingFeature.properties.height ?? 0;
+            highestContainingFeature.properties.parts!.push(currentFeature);
+        } else {
+            // No containing feature found, this is a top-level feature
+            topLevelFeatures.push(currentFeature);
+        }
+    }
+
+    // Step 2: Flatten the tree structure
+    function flattenParts(feature: RenderedFeaturePoly): void {
+        const allParts: RenderedFeaturePoly[] = [];
+
+        function collectParts(f: RenderedFeaturePoly): void {
+            if (f.properties.parts && f.properties.parts.length > 0) {
+                for (const part of f.properties.parts) {
+                    allParts.push(part);
+                    collectParts(part); // Recursively collect nested parts
+                }
+            }
+        }
+
+        collectParts(feature);
+
+        // Replace the parts array with the flattened version
+        feature.properties.parts = allParts;
+    }
+
+    // Flatten each top-level feature
+    for (const feature of topLevelFeatures) {
+        flattenParts(feature);
+    }
+
+    return topLevelFeatures;
+}
+
 export function initLayersState(providedPalette: Partial<MicroPalette>): MicroPalette {
     const palette = cloneDeep(providedPalette) as Partial<MicroPalette>;
     // if (!palette['forest']) palette['forest'] = { ...palette['wood'], active: false };
@@ -394,9 +477,10 @@ export function generateCssFromState(state: MicroPalette): string | null {
                 css += updateStyleSheetOrGenerateCss(sheet, `#buildings`, { 'stroke': layerDef.stroke! });
                 layerDef.fills.forEach((fill, i) => {
                     css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}`, { 'fill': fill });
-                    const fillLighter = lighten(fill, 0.4);
-                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i} .wall`, { 'fill': fillLighter });
-                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}:hover, #buildings .${layer}-${i}:hover .wall`, { 'fill': lighten(fillLighter) });
+                    const fillLighter = lighten(fill, 0.2);
+                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i} .roof`, { 'fill': fillLighter });
+                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}:hover .roof`, { 'fill': lighten(fillLighter) });
+                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}:hover .wall`, { 'fill': fillLighter });
                 });
             }
         }
