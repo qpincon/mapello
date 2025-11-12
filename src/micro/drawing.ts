@@ -21,6 +21,9 @@ import { renderBuildingsToSvg } from './3d';
 import booleanWithin from '@turf/boolean-within';
 import bbox from '@turf/bbox';
 import { featureCollection } from '@turf/helpers';
+import { renderBuildingsToSvgImproved } from './3d-improved';
+import area from '@turf/area';
+import intersect from '@turf/intersect';
 
 
 type D3PathFunction = (geometry: Geometry) => string | null;
@@ -140,12 +143,16 @@ export async function drawPrettyMap(
     console.log('buildings features=', featureCollection(buildings));
     if (layerDefinitions.buildings['3dBuildings']) {
         console.time('grouping buildings');
+        const eiffel = buildings.find(b => b.id === 35184377102196);
+        if (eiffel) {
+            eiffel.properties.height = 30;
+        }
         const grouped = hierarchicalGrouping(buildings);
         console.timeEnd('grouping buildings');
         console.log('grouped=', grouped);
-        const chosen = grouped[41];
-        console.log(buildings.find(b => b.id === 52776558670230));
-        renderBuildingsToSvg(grouped, maplibreMap, svg, translateAmount);
+        // const chosen = grouped[41];
+        // console.log(buildings.find(b => b.id === 35184377102196));
+        renderBuildingsToSvgImproved(grouped, maplibreMap, svg, translateAmount);
     }
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, animated, outerFrameRx);
     svg.style("pointer-events", isLocked ? "auto" : "none");
@@ -287,12 +294,6 @@ export function drawMicroFrame(
     return frame;
 }
 
-interface BuildingFeature extends Feature {
-    properties: RenderedFeature['properties'] & {
-        parts?: RenderedFeaturePoly[];
-    };
-}
-
 function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeaturePoly[] {
     // Create a copy of features to avoid mutating the original
     const featuresCopy = features.map(f => ({
@@ -300,40 +301,74 @@ function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeatureP
         properties: { ...f.properties, parts: [] }
     }));
 
-    // Step 1: Build the tree structure
-    const topLevelFeatures: RenderedFeaturePoly[] = [];
+    // Pre-calculate areas and bounding boxes to avoid repeated calculations
+    const featureData = featuresCopy.map(f => ({
+        feature: f,
+        area: area(f),
+        bbox: bbox(f)
+    }));
 
-    for (const currentFeature of featuresCopy) {
-        if (!currentFeature.boundingBox) currentFeature.boundingBox = bbox(currentFeature);
-        let highestContainingFeature: RenderedFeaturePoly | null = null;
-        let highestHeight = -Infinity;
+    // Track which features are parts of others (not top-level)
+    const isPart = new Set<RenderedFeaturePoly>();
 
-        // Find the highest feature that contains the current feature
-        for (const otherFeature of featuresCopy) {
-            if (otherFeature === currentFeature) continue;
-            if (!otherFeature.boundingBox) otherFeature.boundingBox = bbox(otherFeature);
-            // Check if current feature is within the other feature
-            if (bboxContains(otherFeature.boundingBox!, currentFeature.boundingBox!) && booleanWithin(currentFeature, otherFeature)) {
-                const otherHeight = otherFeature.properties.height ?? 0;
+    // For each feature, check if it's part of a larger feature
+    for (let i = 0; i < featureData.length; i++) {
+        const currentData = featureData[i];
+        const currentFeature = currentData.feature;
+        const currentArea = currentData.area;
+        const currentBbox = currentData.bbox;
 
-                if (otherHeight > highestHeight) {
-                    highestHeight = otherHeight;
-                    highestContainingFeature = otherFeature;
+        let bestContainer: RenderedFeaturePoly | null = null;
+        let tallestContainerHeight = -Infinity;
+
+        // Check against all other features to find the best container
+        for (let j = 0; j < featureData.length; j++) {
+            if (i === j) continue;
+
+            const otherData = featureData[j];
+            const otherFeature = otherData.feature;
+            const otherArea = otherData.area;
+            const otherBbox = otherData.bbox;
+
+            // Only consider larger features as potential containers
+            if (otherArea <= currentArea) continue;
+
+            // Quick bounding box check before expensive intersection
+            if (!bboxIntersects(currentBbox, otherBbox)) continue;
+            console.log('ael')
+
+            const otherHeight = otherFeature.properties?.height ?? 0;
+
+            // Calculate the intersection between the two features
+            const intersection = intersect(featureCollection([currentFeature, otherFeature]));
+            if (!intersection) continue;
+
+            // Calculate what percentage of the current feature overlaps with the other
+            const overlapArea = area(intersection);
+            const overlapPercentage = overlapArea / currentArea;
+
+            // If >80% of current feature overlaps with the other feature
+            if (overlapPercentage > 0.8) {
+                // Pick the tallest valid container
+                if (otherHeight > tallestContainerHeight) {
+                    bestContainer = otherFeature;
+                    tallestContainerHeight = otherHeight;
                 }
             }
         }
 
-        // Set base_height and assign to parent or top-level
-        if (highestContainingFeature) {
-            currentFeature.properties.base_height = highestContainingFeature.properties.height ?? 0;
-            highestContainingFeature.properties.parts!.push(currentFeature);
-        } else {
-            // No containing feature found, this is a top-level feature
-            topLevelFeatures.push(currentFeature);
+        // If we found a container, assign the current feature as a part
+        if (bestContainer) {
+            currentFeature.properties.base_height = bestContainer.properties.height ?? 0;
+            bestContainer.properties.parts!.push(currentFeature);
+            isPart.add(currentFeature);
         }
     }
 
-    // Step 2: Flatten the tree structure
+    // Get only top-level features
+    const topLevelFeatures = featuresCopy.filter(f => !isPart.has(f));
+
+    // Flatten the tree structure - collect all nested parts into a single flat array
     function flattenParts(feature: RenderedFeaturePoly): void {
         const allParts: RenderedFeaturePoly[] = [];
 

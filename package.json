@@ -18,6 +18,7 @@
     "@types/bootstrap": "^5.2.10",
     "@types/d3": "^7.4.3",
     "@types/d3-geo": "^3.1.0",
+    "@types/geojson": "^7946.0.16",
     "@types/lodash-es": "^4.17.12",
     "@types/mapbox__tile-cover": "^3.0.4",
     "@types/text-to-svg": "^3.1.4",
@@ -31,13 +32,13 @@
     "svelte-check": "^4.1.6",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
-    "vite-plugin-node-polyfills": "^0.22.0",
-    "@types/geojson": "^7946.0.16"
+    "vite-plugin-node-polyfills": "^0.22.0"
   },
   "dependencies": {
     "@mapbox/tile-cover": "^3.0.2",
     "@popperjs/core": "^2.11.8",
     "@protomaps/basemaps": "^5.5.1",
+    "@turf/area": "^7.2.0",
     "@turf/bbox": "^7.2.0",
     "@turf/bbox-clip": "^7.2.0",
     "@turf/bbox-polygon": "^7.2.0",
