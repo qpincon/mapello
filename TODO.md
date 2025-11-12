@@ -203,5 +203,6 @@
 - [ ] micro 3D: scale building height slider
 - [ ] micro 3D: scale roads width slider
 - [ ] micro: monochrome palettes (dark water, dark land)
+- [ ] micro optim: remove features totally included in other feature and smaller
 
 

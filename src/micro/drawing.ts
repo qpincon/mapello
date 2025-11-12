@@ -15,7 +15,7 @@ import type { Feature, Geometry, Polygon } from 'geojson';
 import type { MicroParams } from '../params';
 import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type StateMicro, type SvgSelection } from '../types';
 import type { Config } from 'svgo/browser';
-import type { Map } from 'maplibre-gl';
+import type { Map as MapLibreMap } from 'maplibre-gl';
 import { postClipSimple } from 'src/svg/svg';
 import { renderBuildingsToSvg } from './3d';
 import booleanWithin from '@turf/boolean-within';
@@ -48,7 +48,7 @@ export function orderFeaturesByLayer(features: RenderedFeature[]): void {
 // const roadMinorStrokeWidth = scaleLinear([14, 18], [2, 6]).clamp(true);
 // const scaleLowZoom = scaleLinear([4, 14], [0.5, 2.5]).clamp(true);
 
-// export function getRoadStrokeWidth(roadFeature: GeometryFeature, maplibreMap: MaplibreMap): number | null {
+// export function getRoadStrokeWidth(roadFeature: GeometryFeature, maplibreMap: MapLibreMaplibreMap): number | null {
 //     if (roadFeature.properties.sourceLayer !== "transportation") return null;
 //     const zoom = maplibreMap.getZoom();
 //     if (zoom <= 14) return scaleLowZoom(zoom);
@@ -61,7 +61,7 @@ export function orderFeaturesByLayer(features: RenderedFeature[]): void {
 // }
 
 export async function drawPrettyMap(
-    maplibreMap: Map,
+    maplibreMap: MapLibreMap,
     svg: SvgSelection,
     d3PathFunction: D3PathFunction,
     layerDefinitions: MicroPalette,
@@ -161,7 +161,7 @@ export async function drawPrettyMap(
     setTimeout(() => postClip(generalParams), 100);
 }
 
-export function resizeMaplibreMap(generalParams: MicroParams, mapLibreMap: Map): void {
+export function resizeMaplibreMap(generalParams: MicroParams, mapLibreMap: MapLibreMap): void {
     const mapLibreContainer = select(mapLibreMap.getContainer());
     const width = generalParams.General.width;
     const height = generalParams.General.height;
@@ -308,39 +308,42 @@ function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeatureP
         bbox: bbox(f)
     }));
 
+    // Sort by area ascending (smallest first)
+    // This allows us to only check features that come after (all larger)
+    featureData.sort((a, b) => a.area - b.area);
+
     // Track which features are parts of others (not top-level)
     const isPart = new Set<RenderedFeaturePoly>();
-
+    let totalIters = 0;
+    let totalInterCheck = 0;
     // For each feature, check if it's part of a larger feature
     for (let i = 0; i < featureData.length; i++) {
         const currentData = featureData[i];
         const currentFeature = currentData.feature;
         const currentArea = currentData.area;
         const currentBbox = currentData.bbox;
+        const currentHeight = currentFeature.properties?.height ?? 0;
 
         let bestContainer: RenderedFeaturePoly | null = null;
         let tallestContainerHeight = -Infinity;
 
-        // Check against all other features to find the best container
-        for (let j = 0; j < featureData.length; j++) {
-            if (i === j) continue;
-
+        // Only check features that come after (all are larger due to sorting)
+        for (let j = i + 1; j < featureData.length; j++) {
+            totalIters += 1;
             const otherData = featureData[j];
             const otherFeature = otherData.feature;
-            const otherArea = otherData.area;
             const otherBbox = otherData.bbox;
+            const otherHeight = otherFeature.properties?.height ?? 0;
 
-            // Only consider larger features as potential containers
-            if (otherArea <= currentArea) continue;
+            // Skip if container is not taller than current feature
+            if (otherHeight >= currentHeight) continue;
 
             // Quick bounding box check before expensive intersection
             if (!bboxIntersects(currentBbox, otherBbox)) continue;
-            console.log('ael')
-
-            const otherHeight = otherFeature.properties?.height ?? 0;
 
             // Calculate the intersection between the two features
             const intersection = intersect(featureCollection([currentFeature, otherFeature]));
+            totalInterCheck += 1;
             if (!intersection) continue;
 
             // Calculate what percentage of the current feature overlaps with the other
@@ -364,6 +367,8 @@ function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeatureP
             isPart.add(currentFeature);
         }
     }
+    console.log('totalIters', totalIters);
+    console.log('totalInterCheck', totalInterCheck);
 
     // Get only top-level features
     const topLevelFeatures = featuresCopy.filter(f => !isPart.has(f));
