@@ -197,12 +197,13 @@
 - [x] micro: remove pathlength when no animation
 - [ ] micro: when 3d, remove ground buildings
 - [x] micro 3D: proper plotting of building parts
-- [ ] micro 3D: elevation to plot elevated sides of water ?
+- [-] micro 3D: elevation to plot elevated sides of water ?
 - [ ] micro 3D animation: only animate roof
 - [ ] micro: fix use viewbox
 - [ ] micro 3D: scale building height slider
 - [ ] micro 3D: scale roads width slider
 - [ ] micro: monochrome palettes (dark water, dark land)
 - [ ] micro optim: remove features totally included in other feature and smaller
+- [ ] micro 3D: fix cut buidlings at the bottom of the frame
 
 

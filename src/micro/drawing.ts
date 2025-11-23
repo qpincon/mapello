@@ -341,7 +341,24 @@ function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeatureP
             // Quick bounding box check before expensive intersection
             if (!bboxIntersects(currentBbox, otherBbox)) continue;
 
-            // Calculate the intersection between the two features
+            // Calculate bounding box overlap percentage (cheap operation)
+            const [cMinX, cMinY, cMaxX, cMaxY] = currentBbox;
+            const [oMinX, oMinY, oMaxX, oMaxY] = otherBbox;
+
+            const intersectMinX = Math.max(cMinX, oMinX);
+            const intersectMinY = Math.max(cMinY, oMinY);
+            const intersectMaxX = Math.min(cMaxX, oMaxX);
+            const intersectMaxY = Math.min(cMaxY, oMaxY);
+
+            const bboxIntersectArea = (intersectMaxX - intersectMinX) * (intersectMaxY - intersectMinY);
+            const currentBboxArea = (cMaxX - cMinX) * (cMaxY - cMinY);
+            const bboxOverlapPercentage = bboxIntersectArea / currentBboxArea;
+
+            // If bbox overlap is less than 70%, actual geometry overlap is very unlikely to be > 80%
+            // Skip expensive intersect call
+            if (bboxOverlapPercentage < 0.7) continue;
+
+            // Only do expensive intersection if bbox overlap is promising
             const intersection = intersect(featureCollection([currentFeature, otherFeature]));
             totalInterCheck += 1;
             if (!intersection) continue;

@@ -289,7 +289,6 @@ function renderExtrudedBuildingImproved(
         const roofEl = document.createElementNS(SVG_NS, 'path');
         roofEl.setAttribute('class', 'roof');
         roofEl.setAttribute('d', roofPathD);
-        roofEl.setAttribute('fill-rule', 'evenodd'); // Important for holes!
 
         // Calculate average roof depth
         const allTopPoints = projectedTopRings.flat();
@@ -373,28 +372,6 @@ export function renderBuildingsToSvgImproved(
                 }
             }
 
-            //  function processPart(f: RenderedFeaturePoly) {
-            //     for (const part of f.properties?.parts ?? []) {
-            //         const partResult = renderExtrudedBuildingImproved(part, map, mainMatrix);
-
-            //         if (partResult) {
-            //             for (const item of partResult.elements) {
-            //                 allElements.push({
-            //                     el: item.el,
-            //                     depth: item.depth,
-            //                     className: partResult.className,
-            //                     buildingId,
-            //                 });
-            //             }
-            //         }
-            //         processPart(part);
-            //     }
-            // }
-
-            // // Process all parts (if any)
-            // // if (feature.properties.parts && Array.isArray(feature.properties.parts)) {
-            // processPart(feature.properties.parts);
-            // // }
         } catch (err) {
             console.warn('Skipping building feature:', err);
         }
@@ -423,7 +400,6 @@ export function renderBuildingsToSvgImproved(
         if (!groupMap.has(item.buildingId)) {
             const g = document.createElementNS(SVG_NS, 'g');
             g.setAttribute('class', item.className);
-            g.setAttribute('data-building-id', String(item.buildingId));
             svgContainer.appendChild(g);
             groupMap.set(item.buildingId, g);
         }
