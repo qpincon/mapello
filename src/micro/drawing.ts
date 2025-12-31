@@ -1,9 +1,9 @@
 import svgoConfig from '../svgoExport.config';
 import { select, type Selection } from "d3-selection";
-import { bboxContains, bboxIntersects, getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
+import { bboxIntersects, getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
 import { cloneDeep, debounce, kebabCase, last, random, size } from "lodash-es";
 import { color, hsl } from "d3-color";
-import { DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
+import { applyStyles, DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
 import { HatchPatternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download } from "../util/common";
@@ -17,13 +17,12 @@ import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type Pa
 import type { Config } from 'svgo/browser';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { postClipSimple } from 'src/svg/svg';
-import { renderBuildingsToSvg } from './3d';
-import booleanWithin from '@turf/boolean-within';
 import bbox from '@turf/bbox';
 import { featureCollection } from '@turf/helpers';
 import { renderBuildingsToSvgImproved } from './3d-improved';
 import area from '@turf/area';
 import intersect from '@turf/intersect';
+import { commonState } from 'src/state.svelte';
 
 
 type D3PathFunction = (geometry: Geometry) => string | null;
@@ -88,7 +87,10 @@ export async function drawPrettyMap(
     console.log('geometries=', geometries)
     // Process got interrupted, a new call to this function is coming soon
     if (geometries == null) return;
-    orderFeaturesByLayer(geometries);
+    const geometries2d = geometries.filter(geom =>
+        geom.properties.mapLayerId !== "buildings" || !layerDefinitions.buildings['3dBuildings']
+    ) as RenderedFeaturePoly[];
+    orderFeaturesByLayer(geometries2d);
     // console.log('geometries', geometries);
 
     const borderWidth = generalParams.Border.borderWidth;
@@ -117,7 +119,7 @@ export async function drawPrettyMap(
         .attr('transform', `translate(${translateAmount}, ${translateAmount})`)
         .attr("clip-path", "url(#clipMapBorder)")
         .selectAll('path')
-        .data(geometries)
+        .data(geometries2d)
         .enter()
         .append("path")
         .attr('pathLength', animated ? 1 : null)
@@ -152,12 +154,13 @@ export async function drawPrettyMap(
         console.log('grouped=', grouped);
         // const chosen = grouped[41];
         // console.log(buildings.find(b => b.id === 35184377102196));
-        renderBuildingsToSvgImproved(grouped, maplibreMap, svg, translateAmount);
+        renderBuildingsToSvgImproved(grouped, maplibreMap, svg, translateAmount, layerDefinitions['buildings']);
     }
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, animated, outerFrameRx);
     svg.style("pointer-events", isLocked ? "auto" : "none");
     svg.classed("animate-transition", true).classed("animate", generalParams.General.animate);
     mapLibreContainer.style('opacity', 0);
+    applyStyles(commonState.inlineStyles);
     setTimeout(() => postClip(generalParams), 100);
 }
 
@@ -531,11 +534,19 @@ export function generateCssFromState(state: MicroPalette): string | null {
             if (layerDef['3dBuildings']) {
                 css += updateStyleSheetOrGenerateCss(sheet, `#buildings`, { 'stroke': layerDef.stroke! });
                 layerDef.fills.forEach((fill, i) => {
-                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}`, { 'fill': fill });
-                    const fillLighter = lighten(fill, 0.2);
-                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i} .roof`, { 'fill': fillLighter });
-                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}:hover .roof`, { 'fill': lighten(fillLighter) });
-                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}:hover .wall`, { 'fill': fillLighter });
+                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}`, {
+                        '--building-color': fill,
+                        'fill': 'var(--building-color)'
+                    });
+                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i} .roof`, {
+                        'fill': 'color-mix(in srgb, var(--building-color), white 20%);'
+                    });
+                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}:hover .roof`, {
+                        'fill': 'color-mix(in srgb, var(--building-color), white 40%);'
+                    });
+                    css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}:hover .wall`, {
+                        'fill': 'color-mix(in srgb, var(--building-color), white 20%);'
+                    });
                 });
             }
         }
@@ -552,6 +563,7 @@ export function onMicroParamChange(
     value: unknown,
     layerState: MicroPalette
 ): boolean {
+    console.log('onMicroParamChange', layer, prop, value);
     if (prop.includes("pattern")) {
         updateSvgPatterns(document.getElementById('static-svg-map') as unknown as SVGSVGElement, layerState);
         replaceCssSheetContent(layerState);

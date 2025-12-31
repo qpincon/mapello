@@ -210,7 +210,7 @@ export interface PatternDefinition {
     active?: boolean;
 }
 
-interface MicroLayerDefinition {
+export interface MicroLayerDefinition {
     "stroke-width"?: number;
     "stroke-dasharray"?: number;
     stroke?: Color;

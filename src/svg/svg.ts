@@ -154,8 +154,13 @@ export function handleInlineStyleChange(elemId: string, target: HTMLElement, css
     if (elemId.includes("label")) {
         commonState.lastUsedLabelProps[cssProp] = value;
     }
+    if (target.classList?.[0].includes("buildings") && cssProp === "fill") {
+        cssProp = "--building-color";
+        target.style.setProperty(cssProp, value);
+    }
     if (elemId in commonState.inlineStyles) commonState.inlineStyles[elemId][cssProp] = value;
     else commonState.inlineStyles[elemId] = { [cssProp]: value };
+    console.log({ ...commonState.inlineStyles });
     // update path markers
     if (cssProp === "stroke" && target.hasAttribute("marker-end")) {
         const markerId = target.getAttribute("marker-end")?.match(/url\(#(.*)\)/)?.[1];

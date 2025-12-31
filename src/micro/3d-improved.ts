@@ -1,5 +1,6 @@
+import { random } from 'lodash-es';
 import { MercatorCoordinate, type Map as MapLibreMap } from 'maplibre-gl';
-import type { SvgSelection } from 'src/types';
+import type { MicroLayerDefinition, SvgSelection } from 'src/types';
 import type { RenderedFeaturePoly } from 'src/util/geometryStitch';
 
 /** Small numeric helper */
@@ -307,7 +308,8 @@ export function renderBuildingsToSvgImproved(
     features: RenderedFeaturePoly[],
     map: MapLibreMap,
     svg: SvgSelection,
-    translateAmount: number
+    translateAmount: number,
+    layerState: MicroLayerDefinition,
 ) {
     const svgContainer = svg.append('g')
         .attr('id', 'buildings')
@@ -330,7 +332,7 @@ export function renderBuildingsToSvgImproved(
     // Process each top-level feature
     for (const feature of features) {
         try {
-            const buildingId = feature.id ?? `building-${allElements.length}`;
+            const buildingId = feature.properties.uuid ?? `building-${allElements.length}`;
 
             // Process main feature
             const mainResult = renderExtrudedBuildingImproved(
@@ -399,7 +401,8 @@ export function renderBuildingsToSvgImproved(
         // Create group if it doesn't exist
         if (!groupMap.has(item.buildingId)) {
             const g = document.createElementNS(SVG_NS, 'g');
-            g.setAttribute('class', item.className);
+            g.setAttribute('class', `buildings-${random(0, layerState.fills!.length - 1)}`);
+            g.setAttribute('id', item.buildingId as string);
             svgContainer.appendChild(g);
             groupMap.set(item.buildingId, g);
         }

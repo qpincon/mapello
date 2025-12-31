@@ -15,12 +15,17 @@ export function onMicroParamChange(
     value: any,
     layerState: MicroPalette
 ): boolean {
+    console.log('onMicroParamChange', layer, prop, value);
     if (prop.includes("pattern")) {
         updateSvgPatterns(document.getElementById('static-svg-map') as unknown as SVGSVGElement, layerState);
         replaceCssSheetContent(layerState);
         return false;
     }
     if (prop.includes("active")) {
+        return true;
+    }
+    if (prop.includes('3dBuildings')) {
+        replaceCssSheetContent(layerState);
         return true;
     }
 

@@ -116,7 +116,7 @@
                                 class="form-check-input"
                                 id="3d-buidlings"
                                 bind:checked={def["3dBuildings"]}
-                                onchange={() => updated(title as MicroLayerId, ["active"], def.active!)}
+                                onchange={() => updated(title as MicroLayerId, ["3dBuildings"], def["3dBuildings"]!)}
                             />
                             <label for="3d-buidlings" class="form-check-label"> 3D building </label>
                         </div>

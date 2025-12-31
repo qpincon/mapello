@@ -124,6 +124,9 @@
                     if (el.classList.contains("freehand")) {
                         return [[el.parentElement, "Clicked"]];
                     }
+                    if (el.parentElement?.parentElement?.id === "buildings") {
+                        return [[el.parentElement, "Selected building"]];
+                    }
                     if (el.classList.contains("adm")) {
                         const parent = el.parentNode as HTMLElement;
                         const parentCountry = parent?.getAttribute("id")?.replace(/ ADM(1|2)/, "") || "";
@@ -174,20 +177,24 @@
                     if (cssSelector.includes("#micro path")) return false;
                     if (cssSelector.includes("#micro .poly")) return false;
                     if (cssSelector.includes("#micro .line")) return false;
+                    /** Only edit buildings via menu */
+                    if (cssSelector.includes("#buildings")) return false;
                     return true;
                 },
                 inlineDeletable: () => false,
                 getCssRuleName: (ruleName: string, el: HTMLElement) => {
                     let isHover = ruleName.includes(":hover") || ruleName.includes(".hovered");
                     let finalStr = "";
-                    if (ruleName.includes("#micro .buildings-1")) finalStr = "Building type 1";
-                    else if (ruleName.includes("#micro .buildings-2")) finalStr = "Building type 2";
-                    else if (ruleName.includes("#micro .buildings-3")) finalStr = "Building type 3";
-                    else if (ruleName.includes("#micro")) {
+                    // if (ruleName.includes("#buildings .buildings-1")) finalStr = "Building type 1";
+                    // else if (ruleName.includes("#buildings .buildings-2")) finalStr = "Building type 2";
+                    // else if (ruleName.includes("#buildings .buildings-3")) finalStr = "Building type 3";
+                    // else
+                    if (ruleName.includes("#micro")) {
                         const layerId = ruleName.match(/#micro \.(.*?)(\:|$)/)?.[1];
                         if (!layerId) return ruleName;
                         finalStr = pascalCaseToSentence(layerId);
-                    } else if (ruleName.includes("#micro .buildings")) finalStr = "Buildings";
+                    }
+                    //  else if (ruleName.includes("#buildings .buildings")) finalStr = "Buildings";
                     else if (ruleName.includes(".adm")) finalStr = "Region";
                     if (finalStr.length) {
                         if (isHover) return `${finalStr} hover`;

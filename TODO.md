@@ -195,7 +195,7 @@
 - [ ] Macro: have same tilt / rotation behavior as maplibre
 - [x] micro landing: fix weird map expanding size
 - [x] micro: remove pathlength when no animation
-- [ ] micro: when 3d, remove ground buildings
+- [x] micro: when 3d, remove ground buildings
 - [x] micro 3D: proper plotting of building parts
 - [-] micro 3D: elevation to plot elevated sides of water ?
 - [ ] micro 3D animation: only animate roof
@@ -205,5 +205,7 @@
 - [ ] micro: monochrome palettes (dark water, dark land)
 - [ ] micro optim: remove features totally included in other feature and smaller
 - [ ] micro 3D: fix cut buidlings at the bottom of the frame
+- [ ] sketchmeup / transparentracks
+- [ ] micro: only enable hover effect on buildings?
 
 
