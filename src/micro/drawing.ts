@@ -22,6 +22,7 @@ import { featureCollection } from '@turf/helpers';
 import { renderBuildingsToSvgImproved } from './3d-improved';
 import area from '@turf/area';
 import intersect from '@turf/intersect';
+import center from '@turf/center';
 import { commonState } from 'src/state.svelte';
 
 
@@ -304,12 +305,17 @@ function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeatureP
         properties: { ...f.properties, parts: [] }
     }));
 
-    // Pre-calculate areas and bounding boxes to avoid repeated calculations
-    const featureData = featuresCopy.map(f => ({
-        feature: f,
-        area: area(f),
-        bbox: bbox(f)
-    }));
+    // Pre-calculate areas, bounding boxes, centers, and radius to avoid repeated calculations
+    const featureData = featuresCopy.map(f => {
+        const featureArea = area(f);
+        return {
+            feature: f,
+            area: featureArea,
+            bbox: bbox(f),
+            center: center(f).geometry.coordinates as [number, number],
+            radius: Math.sqrt(featureArea) // Approximate radius for distance checks
+        };
+    });
 
     // Sort by area ascending (smallest first)
     // This allows us to only check features that come after (all larger)
@@ -319,6 +325,11 @@ function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeatureP
     const isPart = new Set<RenderedFeaturePoly>();
     let totalIters = 0;
     let totalInterCheck = 0;
+    // Optimization statistics
+    let rejectedByAreaRatio = 0;
+    let rejectedByCentroidDist = 0;
+    let assumedByBboxContainment = 0;
+    let passedBboxCheck = 0;
     // For each feature, check if it's part of a larger feature
     for (let i = 0; i < featureData.length; i++) {
         const currentData = featureData[i];
@@ -361,7 +372,43 @@ function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeatureP
             // Skip expensive intersect call
             if (bboxOverlapPercentage < 0.7) continue;
 
-            // Only do expensive intersection if bbox overlap is promising
+            passedBboxCheck += 1;
+
+            // OPTIMIZATION LAYER 1: Area ratio extreme filtering
+            // Buildings with extreme area ratios are unlikely to have valid containment
+            const areaRatio = currentArea / otherData.area;
+            if (areaRatio < 0.03 || areaRatio > 0.85) {
+                rejectedByAreaRatio += 1;
+                continue;
+            }
+
+            // OPTIMIZATION LAYER 2: Centroid distance filtering
+            // If centroids are far apart relative to building size, 80% overlap is impossible
+            const centroidDist = Math.sqrt(
+                Math.pow(currentData.center[0] - otherData.center[0], 2) +
+                Math.pow(currentData.center[1] - otherData.center[1], 2)
+            );
+            const rejectionFactor = 0.5; // Tunable parameter (0.3-0.7)
+            if (centroidDist > currentData.radius * rejectionFactor) {
+                rejectedByCentroidDist += 1;
+                continue;
+            }
+
+            // OPTIMIZATION LAYER 3: Strict bbox containment heuristic
+            // If smaller bbox is 95%+ contained in larger bbox AND bbox overlap is 85%+,
+            // assume containment without calling expensive intersect
+            const bboxContainmentInOther = bboxIntersectArea / currentBboxArea;
+            if (bboxContainmentInOther > 0.95 && bboxOverlapPercentage > 0.85) {
+                // Assume containment - skip expensive intersect
+                assumedByBboxContainment += 1;
+                if (otherHeight > tallestContainerHeight) {
+                    bestContainer = otherFeature;
+                    tallestContainerHeight = otherHeight;
+                }
+                continue;
+            }
+
+            // Only do expensive intersection if all filters passed
             const intersection = intersect(featureCollection([currentFeature, otherFeature]));
             totalInterCheck += 1;
             if (!intersection) continue;
@@ -391,8 +438,20 @@ function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeatureP
             isPart.add(currentFeature);
         }
     }
-    console.log('totalIters', totalIters);
-    console.log('totalInterCheck', totalInterCheck);
+
+    // Log optimization statistics
+    const reductionPercentage = passedBboxCheck > 0
+        ? ((1 - totalInterCheck / passedBboxCheck) * 100).toFixed(1)
+        : '0';
+    // console.log('Hierarchical Grouping Optimization Stats:', {
+    //     totalIterations: totalIters,
+    //     passedBboxCheck: passedBboxCheck,
+    //     rejectedByAreaRatio: rejectedByAreaRatio,
+    //     rejectedByCentroidDist: rejectedByCentroidDist,
+    //     assumedByBboxContainment: assumedByBboxContainment,
+    //     actualIntersectCalls: totalInterCheck,
+    //     intersectReduction: `${reductionPercentage}%`
+    // });
 
     // Get only top-level features
     const topLevelFeatures = featuresCopy.filter(f => !isPart.has(f));
