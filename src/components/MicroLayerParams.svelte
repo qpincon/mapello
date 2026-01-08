@@ -50,7 +50,7 @@
     }
 </script>
 
-<div class="py-2 mb-4 pe-2 border border-primary rounded-1">
+<div class="py-2 mb-4 pe-2 border rounded-1 bg-light">
     <div class="row my-3 mx-1">
         <label class="col-4 col-form-label" for="palette-select"> Preset palette</label>
         <select
@@ -109,16 +109,35 @@
                         />
                     {/if}
                     {#if def.fills != null}
-                        <div class="mx-2 form-check form-switch">
-                            <input
-                                type="checkbox"
-                                role="switch"
-                                class="form-check-input"
-                                id="3d-buidlings"
-                                bind:checked={def["3dBuildings"]}
-                                onchange={() => updated(title as MicroLayerId, ["3dBuildings"], def["3dBuildings"]!)}
-                            />
-                            <label for="3d-buidlings" class="form-check-label"> 3D building </label>
+                        <div class="d-flex three-dimensions">
+                            <div class="mx-2 form-check form-switch">
+                                <input
+                                    type="checkbox"
+                                    role="switch"
+                                    class="form-check-input"
+                                    id="3d-buidlings"
+                                    bind:checked={def["3dBuildings"]}
+                                    onchange={() =>
+                                        updated(title as MicroLayerId, ["3dBuildings"], def["3dBuildings"]!)}
+                                />
+                                <label for="3d-buidlings" class="form-check-label"> 3D building </label>
+                            </div>
+                            {#if def["3dBuildings"]}
+                                <RangeInput
+                                    labelAbove={true}
+                                    title="Default height"
+                                    helpText="Height in meters for buildings without height data"
+                                    id={`${title}-default-building-height`}
+                                    bind:value={def.defaultBuildingHeight!}
+                                    min="1"
+                                    max="10"
+                                    step="0.5"
+                                    onChange={(val) => {
+                                        def.defaultBuildingHeight = val;
+                                        updated(title as MicroLayerId, ["defaultBuildingHeight"], val);
+                                    }}
+                                />
+                            {/if}
                         </div>
                         {#each def.fills as fill, fillIndex}
                             <ColorPickerPreview
@@ -260,5 +279,12 @@
 
     :global(.wrap-params > div) {
         flex: 1 0 9rem;
+    }
+
+    .three-dimensions {
+        flex: 1 0 100%;
+        & > div {
+            flex-basis: 50%;
+        }
     }
 </style>

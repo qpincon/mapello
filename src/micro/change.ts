@@ -28,6 +28,10 @@ export function onMicroParamChange(
         replaceCssSheetContent(layerState);
         return true;
     }
+    if (prop.includes('defaultBuildingHeight')) {
+        // Requires full redraw of 3D buildings
+        return true;
+    }
 
     let ruleTxt = `#micro .${layer}`;
     if (layer === "background") ruleTxt = "#micro-background";

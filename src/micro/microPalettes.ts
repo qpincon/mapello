@@ -9,7 +9,7 @@ export const playful: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: '.', strokeWidth: 3, scale: 1.3 }
     },
     other: { fill: "#F2F4CB", stroke: "#2F3737", disabled: true, active: true },
-    buildings: { fills: ["#C5283D", "#E9724C", "#FFC857"], stroke: "#2F3737", active: true },
+    buildings: { fills: ["#C5283D", "#E9724C", "#FFC857"], stroke: "#2F3737", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#a1e3ff", stroke: "#85c9e6", active: true,
         pattern: { hatch: '.', color: '#85c9e6', strokeWidth: 2.4, scale: 0.9 }
@@ -27,7 +27,7 @@ export const midnightBloom: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: '0', color: '#29366A', strokeWidth: 0.6, scale: 1.8 }
     },
     other: { fill: "#1D2B53", stroke: "#7E85AD", disabled: true, active: true },
-    buildings: { fills: ["#FF77A8", "#AB5236", "#FFA300"], stroke: "#29366A", active: true },
+    buildings: { fills: ["#FF77A8", "#AB5236", "#FFA300"], stroke: "#29366A", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#7FB5FF", stroke: "#29366A", active: true,
         pattern: { hatch: '.', color: '#587ED0', strokeWidth: 2.5, scale: 1.2 }
@@ -51,7 +51,7 @@ export const candyLand: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: 'o', color: '#FFD6E0', strokeWidth: 0.6, scale: 1.1 }
     },
     other: { fill: "#FFEEF2", stroke: "#5D4A66", disabled: true, active: true },
-    buildings: { fills: ["#FF6F9B", "#FF9E71", "#FFC75F"], stroke: "#5D4A66", active: true },
+    buildings: { fills: ["#FF6F9B", "#FF9E71", "#FFC75F"], stroke: "#5D4A66", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#9ADCFF", stroke: "#5D4A66", active: true,
         pattern: { hatch: '.', color: '#71BDFF', strokeWidth: 2.2, scale: 1.5 }
@@ -75,7 +75,7 @@ export const autumnVintage: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: '.', color: '#E8DFCC', strokeWidth: 2.8, scale: 1.8 }
     },
     other: { fill: "#F8F0E3", stroke: "#50514F", disabled: true, active: true },
-    buildings: { fills: ["#CB997E", "#A1683A", "#E07A5F"], stroke: "#50514F", active: true },
+    buildings: { fills: ["#CB997E", "#A1683A", "#E07A5F"], stroke: "#50514F", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#83B5D1", stroke: "#50514F", active: true,
         pattern: { hatch: 'o', color: '#6A92AC', strokeWidth: 0.7, scale: 1.1 }
@@ -99,7 +99,7 @@ export const cyberpunkNeon: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: '0', color: "#1A1A2E", strokeWidth: 0.7, scale: 2.0 }
     },
     other: { fill: "#0F0F19", stroke: "#9D00FF", disabled: true, active: true },
-    buildings: { fills: ["#FF2A6D", "#D100D1", "#05D9E8"], stroke: "#1A1A2E", active: true },
+    buildings: { fills: ["#FF2A6D", "#D100D1", "#05D9E8"], stroke: "#1A1A2E", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#01012B", stroke: "#05D9E8", active: true,
         pattern: { hatch: '+', color: "#05D9E8", strokeWidth: 0.5, scale: 0.9 }
@@ -123,7 +123,7 @@ export const coastalSerenity: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: '.', color: "#C7E4EB", strokeWidth: 2.6, scale: 1.7 }
     },
     other: { fill: "#E6F3F7", stroke: "#456268", disabled: true, active: true },
-    buildings: { fills: ["#F0BC68", "#D1913C", "#B0795B"], stroke: "#456268", active: true },
+    buildings: { fills: ["#F0BC68", "#D1913C", "#B0795B"], stroke: "#456268", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#4A97B9", stroke: "#456268", active: true,
         pattern: { hatch: 'o', color: "#3A7998", strokeWidth: 0.8, scale: 1.1 }
@@ -147,7 +147,7 @@ export const desertSunset: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: '0', color: "#EBC8A9", strokeWidth: 0.8, scale: 1.9 }
     },
     other: { fill: "#F9DCC4", stroke: "#632B30", disabled: true, active: true },
-    buildings: { fills: ["#E76F51", "#F4A261", "#9B4A31"], stroke: "#632B30", active: true },
+    buildings: { fills: ["#E76F51", "#F4A261", "#9B4A31"], stroke: "#632B30", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#3498DB", stroke: "#2980B9", active: true,
         pattern: { hatch: '.', color: "#2980B9", strokeWidth: 2.4, scale: 1.3 }
@@ -171,7 +171,7 @@ export const winterFrost: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: '.', color: "#D6E5F3", strokeWidth: 2.5, scale: 1.6 }
     },
     other: { fill: "#E8F0F7", stroke: "#2C3F59", disabled: true, active: true },
-    buildings: { fills: ["#8DA9C4", "#5C82A6", "#3E617D"], stroke: "#2C3F59", active: true },
+    buildings: { fills: ["#8DA9C4", "#5C82A6", "#3E617D"], stroke: "#2C3F59", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#A7CCED", stroke: "#2C3F59", active: true,
         pattern: { hatch: 'o', color: "#8ABBEC", strokeWidth: 0.6, scale: 1.0 }
@@ -196,7 +196,7 @@ export const barbapapa: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: 'o', color: "#F0D1F7", strokeWidth: 0.6, scale: 1.1 }
     },
     other: { fill: "#FDF0FF", stroke: "#9B7EDE", disabled: true, active: true },
-    buildings: { fills: ["#FFB8D9", "#C1B8FF", "#B5EAEA"], stroke: "#9B7EDE", active: true },
+    buildings: { fills: ["#FFB8D9", "#C1B8FF", "#B5EAEA"], stroke: "#9B7EDE", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#ACEEF3", stroke: "#89D8E0", active: true,
         pattern: { hatch: '.', color: "#89D8E0", strokeWidth: 2.2, scale: 1.4 }
@@ -220,7 +220,7 @@ export const iceCreamDreams: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: '.', color: "#E9E7E2", strokeWidth: 2.3, scale: 1.5 }
     },
     other: { fill: "#F7F6F3", stroke: "#A57F60", disabled: true, active: true },
-    buildings: { fills: ["#F9C0C0", "#F9DBBD", "#FCD5CE"], stroke: "#A57F60", active: true },
+    buildings: { fills: ["#F9C0C0", "#F9DBBD", "#FCD5CE"], stroke: "#A57F60", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#BDE0FE", stroke: "#A2C4E9", active: true,
         pattern: { hatch: 'o', color: "#A2C4E9", strokeWidth: 0.7, scale: 1.0 }
@@ -248,7 +248,7 @@ export const vintageCartography: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: '~', color: "#D8D0C0", strokeWidth: 0.7, scale: 1.0 }
     },
     other: { fill: "#F0EBE1", stroke: "#594A42", disabled: true, active: true },
-    buildings: { fills: ["#B4846C", "#7D5A50", "#A27B5C"], stroke: "#594A42", active: true },
+    buildings: { fills: ["#B4846C", "#7D5A50", "#A27B5C"], stroke: "#594A42", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#94B9D2", stroke: "#7A9DB6", active: true,
         pattern: { hatch: '~', color: "#7A9DB6", strokeWidth: 0.8, scale: 0.9 }
@@ -273,7 +273,7 @@ export const classicAtlas: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: '.', color: "#DCD6C8", strokeWidth: 2.5, scale: 1.6 }
     },
     other: { fill: "#EDE8D9", stroke: "#3C444D", disabled: true, active: true },
-    buildings: { fills: ["#A5484B", "#7E5851", "#985558"], stroke: "#3C444D", active: true },
+    buildings: { fills: ["#A5484B", "#7E5851", "#985558"], stroke: "#3C444D", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#8BADC9", stroke: "#3C444D", active: true,
         pattern: { hatch: '~', color: "#7998B2", strokeWidth: 0.9, scale: 1.2 }
@@ -298,7 +298,7 @@ export const peach: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: '.', color: "#FFE0D1", strokeWidth: 2.4, scale: 1.5 }
     },
     other: { fill: "#FFF1E6", stroke: "#6D4C41", disabled: true, active: true },
-    buildings: { fills: ["#FFCDB2", "#FFB4A2", "#E5989B"], stroke: "#6D4C41", active: true },
+    buildings: { fills: ["#FFCDB2", "#FFB4A2", "#E5989B"], stroke: "#6D4C41", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#B5E2FA", stroke: "#91C9E8", active: true,
         pattern: { hatch: '~', color: "#91C9E8", strokeWidth: 0.8, scale: 1.0 }
@@ -322,7 +322,7 @@ export const citrus: Partial<MicroPaletteWithBorder> = {
         pattern: { hatch: 'o', color: "#ECEAE6", strokeWidth: 0.7, scale: 1.0 }
     },
     other: { fill: "#F9F7F3", stroke: "#315E48", disabled: true, active: true },
-    buildings: { fills: ["#FFA62B", "#F16A30", "#F4E285"], stroke: "#315E48", active: true },
+    buildings: { fills: ["#FFA62B", "#F16A30", "#F4E285"], stroke: "#315E48", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#73C2FB", stroke: "#5BA3D9", active: true,
         pattern: { hatch: '~', color: "#5BA3D9", strokeWidth: 0.9, scale: 1.1 }

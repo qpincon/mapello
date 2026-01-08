@@ -5,6 +5,11 @@ import type { RenderedFeaturePoly } from 'src/util/geometryStitch';
 
 /** Small numeric helper */
 const EPS = 1e-9;
+
+/**
+ * Fallback default building height in meters.
+ * Used when palette doesn't specify defaultBuildingHeight.
+ */
 const MIN_BUILDING_HEIGHT = 5;
 
 /**
@@ -132,7 +137,8 @@ function createPolygonPathWithHoles(
 function renderExtrudedBuildingImproved(
     feature: RenderedFeaturePoly,
     map: MapLibreMap,
-    mainMatrix: number[]
+    mainMatrix: number[],
+    defaultHeight: number = MIN_BUILDING_HEIGHT
 ): { elements: Array<{ el: SVGElement; depth: number }>; className: string } | null {
     if (!feature || feature.geometry.type !== 'Polygon') {
         return null;
@@ -143,7 +149,7 @@ function renderExtrudedBuildingImproved(
         return null;
     }
 
-    const heightMeters = feature.properties.height ?? MIN_BUILDING_HEIGHT;
+    const heightMeters = feature.properties.height ?? defaultHeight;
     if (!heightMeters || heightMeters < 0.1) return null;
 
     let baseHeight = feature.properties.base_height ?? 0;
@@ -253,7 +259,8 @@ export function renderBuildingsToSvgImproved(
             const mainResult = renderExtrudedBuildingImproved(
                 feature,
                 map,
-                mainMatrix
+                mainMatrix,
+                layerState.defaultBuildingHeight ?? MIN_BUILDING_HEIGHT
             );
 
             if (mainResult) {
@@ -273,7 +280,8 @@ export function renderBuildingsToSvgImproved(
                     const partResult = renderExtrudedBuildingImproved(
                         part as RenderedFeaturePoly,
                         map,
-                        mainMatrix
+                        mainMatrix,
+                        layerState.defaultBuildingHeight ?? MIN_BUILDING_HEIGHT
                     );
 
                     if (partResult) {

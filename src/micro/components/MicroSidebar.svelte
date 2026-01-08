@@ -219,7 +219,7 @@
 </svelte:head>
 
 <div class="w-100">
-    <ul class="nav nav-tabs align-items-center justify-content-center m-1">
+    <ul class="nav nav-tabs align-items-center justify-content-center">
         <li class="nav-item d-flex align-items-center mx-1">
             <a
                 href="javascript:;"

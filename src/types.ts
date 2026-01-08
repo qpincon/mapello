@@ -221,6 +221,7 @@ export interface MicroLayerDefinition {
     fill?: Color;
     fills?: Color[];
     "3dBuildings"?: boolean;
+    defaultBuildingHeight?: number;
 }
 
 export const MICRO_LAYERS = [

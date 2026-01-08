@@ -59,8 +59,8 @@
     bind:this={slider}
     class="{labelAbove ? 'd-flex flex-column justify-content-center' : 'row align-items-center'}  w-100"
 >
-    <label for={id} class="d-flex col-4 col-form-label align-items-center {labelAbove ? 'p-0' : ''}">
-        {title}
+    <label for={id} class="text-nowrap d-flex col-4 col-form-label align-items-center {labelAbove ? 'p-0' : ''}">
+        <span> {title}</span>
         {#if helpText}
             <span class="help-tooltip fs-6" data-bs-toggle="tooltip" data-bs-title={helpText}>?</span>
         {/if}
