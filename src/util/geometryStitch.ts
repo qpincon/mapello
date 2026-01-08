@@ -81,6 +81,8 @@ export type RenderedFeature<T extends Geometry | null = Polygon | LineString | M
     brunnel?: string;
     height?: number;
     base_height?: number;
+    min_height?: number;
+    kind_detail?: 'yes' | 'no'
   };
   layer?: {
     id: string;

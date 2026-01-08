@@ -24,7 +24,7 @@
 
     // State
     let searchInput: HTMLInputElement;
-    let searchQuery: string = $state("");
+    let searchQuery: string | undefined = $state("");
     let searchResults: SearchResult[] = $state([]);
     let isLoading: boolean = $state(false);
     let isResultsVisible: boolean = $state(false);
@@ -70,8 +70,8 @@
     });
 
     // Select a location result
-    function selectLocation(result: SearchResult): void {
-        searchQuery = result.display_name;
+    function selectLocation(result: SearchResult, e: Event): void {
+        searchQuery = undefined;
         isResultsVisible = false;
         selectedIndex = -1;
         onPlaceSelected(result);
@@ -107,7 +107,7 @@
             case "Enter":
                 if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
                     event.preventDefault();
-                    selectLocation(searchResults[selectedIndex]);
+                    selectLocation(searchResults[selectedIndex], event);
                 }
                 break;
 
@@ -181,8 +181,8 @@
                 {#each searchResults as result, i}
                     <div
                         class="search-result-item {i === selectedIndex ? 'selected' : ''}"
-                        onclick={() => selectLocation(result)}
-                        onkeydown={(e) => e.key === "Enter" && selectLocation(result)}
+                        onclick={(e) => selectLocation(result, e)}
+                        onkeydown={(e) => e.key === "Enter" && selectLocation(result, e)}
                         tabindex={i === selectedIndex ? 0 : -1}
                         role="option"
                         aria-selected={i === selectedIndex}

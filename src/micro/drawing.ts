@@ -382,6 +382,10 @@ function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeatureP
 
         // If we found a container, assign the current feature as a part
         if (bestContainer) {
+            // if (currentFeature.properties.min_height && currentFeature.properties.kind_detail === "yes") {
+            //     currentFeature.properties.base_height = currentFeature.properties.min_height
+            // }
+            // else
             currentFeature.properties.base_height = bestContainer.properties.height ?? 0;
             bestContainer.properties.parts!.push(currentFeature);
             isPart.add(currentFeature);

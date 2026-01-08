@@ -46,19 +46,7 @@ function ndcToScreen(ndc: { x: number; y: number }, width: number, height: numbe
 }
 
 /**
- * Get projection data from MapLibre.
- */
-function getProjectionData(map: MapLibreMap) {
-    const projData = map.transform.getProjectionDataForCustomLayer(false);
-    return {
-        projData,
-        mainMatrix: projData.mainMatrix as number[],
-        cameraPosition: map.transform.cameraPosition,
-    };
-}
-
-/**
- * Project a lng/lat/height into screen, clip, and NDC coordinates.
+ * Project a lng/lat/height into screen and NDC coordinates.
  */
 export function projectWithHeightUsingMainMatrix(
     map: MapLibreMap,
@@ -75,10 +63,8 @@ export function projectWithHeightUsingMainMatrix(
 
     return {
         screen,
-        clip,
         ndc,
         depth: ndc.z,
-        world: merc,
     };
 }
 
@@ -101,26 +87,8 @@ function sub3(a: { x: number; y: number; z: number }, b: { x: number; y: number;
 }
 
 /**
- * Compute dot product of 3D vectors.
- */
-function dot3(a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }) {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-/**
- * Normalize a 3D vector.
- */
-function normalize3(v: { x: number; y: number; z: number }) {
-    const len = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-    if (len < EPS) return { x: 0, y: 0, z: 0 };
-    return { x: v.x / len, y: v.y / len, z: v.z / len };
-}
-
-/**
- * IMPROVED: Decide whether a wall face is visible.
- *
- * Uses NDC-space winding order for robust backface culling in SVG context.
- * In NDC space, if the cross product of two edges has negative Z component,
+ * Decide whether a wall face is visible using NDC-space winding order.
+ * Uses backface culling: if the cross product Z component is negative,
  * the face is front-facing (visible).
  */
 function isWallVisibleNDC(
@@ -128,87 +96,38 @@ function isWallVisibleNDC(
     ndc1: { x: number; y: number; z: number },
     ndc2: { x: number; y: number; z: number }
 ): boolean {
-    // Compute two edge vectors in NDC space
     const v1 = sub3(ndc1, ndc0);
     const v2 = sub3(ndc2, ndc0);
-
-    // Cross product gives normal in NDC space
     const n = cross3(v1, v2);
-
-    // In NDC/screen space, negative Z means front-facing for standard winding
-    // We may need to flip this sign depending on the winding order
     return n.z < 0;
 }
 
 /**
- * Alternative: Decide visibility using world-space backface culling.
+ * Calculate average depth from an array of depth values.
  */
-function isWallVisibleWorld(
-    w0: MercatorCoordinate,
-    w1: MercatorCoordinate,
-    w2: MercatorCoordinate,
-    cameraPos: [number, number, number]
-): boolean {
-    // Compute two edge vectors in world space
-    const v1 = sub3(
-        { x: w1.x, y: w1.y, z: w1.z },
-        { x: w0.x, y: w0.y, z: w0.z }
-    );
-    const v2 = sub3(
-        { x: w2.x, y: w2.y, z: w2.z },
-        { x: w0.x, y: w0.y, z: w0.z }
-    );
-
-    // Compute face normal (cross product gives perpendicular vector)
-    const normal = cross3(v1, v2);
-
-    // Compute face center for view vector calculation
-    const faceCenter = {
-        x: (w0.x + w1.x + w2.x) / 3,
-        y: (w0.y + w1.y + w2.y) / 3,
-        z: (w0.z + w1.z + w2.z) / 3,
-    };
-
-    // View vector points from face towards camera
-    const viewVector = sub3(
-        { x: cameraPos[0], y: cameraPos[1], z: cameraPos[2] },
-        faceCenter
-    );
-
-    // If normal and view vector point in the same general direction (dot > 0),
-    // the face is visible (facing the camera)
-    const dotProduct = dot3(normal, viewVector);
-
-    return dotProduct > 0;
+function averageDepth(depths: number[]): number {
+    const validDepths = depths.filter(d => Number.isFinite(d));
+    return validDepths.length ? validDepths.reduce((s, v) => s + v, 0) / validDepths.length : 0;
 }
 
 /**
- * IMPROVED: Create SVG path for a polygon with holes.
- *
- * The first ring is the outer boundary (counter-clockwise).
- * Subsequent rings are holes (clockwise).
- *
- * SVG fill-rule="evenodd" will properly handle holes.
+ * Create SVG path for a polygon with holes.
+ * First ring is outer boundary, subsequent rings are holes.
  */
 function createPolygonPathWithHoles(
-    coordinates: number[][][],
     projectedRings: ReturnType<typeof projectWithHeightUsingMainMatrix>[][]
 ): string {
-    const pathParts: string[] = [];
-
-    for (let ringIdx = 0; ringIdx < projectedRings.length; ringIdx++) {
-        const ring = projectedRings[ringIdx];
-        if (ring.length === 0) continue;
-
-        const coords = ring.map(p => `${p.screen.x.toFixed(2)},${p.screen.y.toFixed(2)}`);
-        pathParts.push(`M ${coords.join(' L ')} Z`);
-    }
-
-    return pathParts.join(' ');
+    return projectedRings
+        .filter(ring => ring.length > 0)
+        .map(ring => {
+            const coords = ring.map(p => `${p.screen.x.toFixed(2)},${p.screen.y.toFixed(2)}`);
+            return `M ${coords.join(' L ')} Z`;
+        })
+        .join(' ');
 }
 
 /**
- * IMPROVED: Render a single building feature with proper hole support and NDC-based culling.
+ * Render a single building feature with hole support and NDC-based culling.
  */
 function renderExtrudedBuildingImproved(
     feature: RenderedFeaturePoly,
@@ -224,10 +143,11 @@ function renderExtrudedBuildingImproved(
         return null;
     }
 
-    const heightMeters = feature.properties.height ?? feature.properties.min_height ?? MIN_BUILDING_HEIGHT;
+    const heightMeters = feature.properties.height ?? MIN_BUILDING_HEIGHT;
     if (!heightMeters || heightMeters < 0.1) return null;
 
-    const baseHeight = feature.properties.base_height ?? 0;
+    const baseHeight = feature.properties.base_height ?? feature.properties.min_height ?? 0;
+
     const className = (feature.properties?.class as string) || 'building';
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -275,26 +195,20 @@ function renderExtrudedBuildingImproved(
             pathEl.setAttribute('class', 'wall');
             pathEl.setAttribute('d', pathD);
 
-            // Compute average depth for this wall
-            const depthValues = [b0p.depth, b1p.depth, t0p.depth, t1p.depth].filter(d => Number.isFinite(d));
-            const depth = depthValues.length ? depthValues.reduce((s, v) => s + v, 0) / depthValues.length : 0;
-
+            const depth = averageDepth([b0p.depth, b1p.depth, t0p.depth, t1p.depth]);
             elements.push({ el: pathEl, depth });
         }
     }
 
     // Create roof with holes
-    const roofPathD = createPolygonPathWithHoles(allRings, projectedTopRings);
+    const roofPathD = createPolygonPathWithHoles(projectedTopRings);
 
     if (roofPathD) {
         const roofEl = document.createElementNS(SVG_NS, 'path');
         roofEl.setAttribute('class', 'roof');
         roofEl.setAttribute('d', roofPathD);
 
-        // Calculate average roof depth
-        const allTopPoints = projectedTopRings.flat();
-        const roofDepth = allTopPoints.reduce((s, p) => s + (p.depth || 0), 0) / Math.max(1, allTopPoints.length);
-
+        const roofDepth = averageDepth(projectedTopRings.flat().map(p => p.depth));
         elements.push({ el: roofEl, depth: roofDepth });
     }
 
@@ -302,7 +216,7 @@ function renderExtrudedBuildingImproved(
 }
 
 /**
- * IMPROVED: Render buildings with proper grouping, hole support, and global depth sorting.
+ * Render buildings with grouping, hole support, and depth sorting by closest element.
  */
 export function renderBuildingsToSvgImproved(
     features: RenderedFeaturePoly[],
@@ -317,7 +231,7 @@ export function renderBuildingsToSvgImproved(
         .attr('transform', `translate(${translateAmount}, ${translateAmount})`)
         .node()!;
 
-    const { mainMatrix } = getProjectionData(map);
+    const mainMatrix = map.transform.getProjectionDataForCustomLayer(false).mainMatrix as number[];
 
     // Structure to hold all elements from all buildings with their depths
     type ElementWithDepth = {
@@ -379,11 +293,7 @@ export function renderBuildingsToSvgImproved(
         }
     }
 
-    // CRITICAL FIX: Global depth sorting across ALL elements (walls and roofs from all buildings and parts)
-    // Sort by depth descending (farthest elements first for painter's algorithm)
-    allElements.sort((a, b) => b.depth - a.depth);
-
-    // // Group elements by building ID to wrap them in <g> tags
+    // Group elements by building ID
     const buildingGroups = new Map<number | string, ElementWithDepth[]>();
 
     for (const item of allElements) {
@@ -393,21 +303,39 @@ export function renderBuildingsToSvgImproved(
         buildingGroups.get(item.buildingId)!.push(item);
     }
 
-    // Create groups and append elements in sorted order
-    const SVG_NS = 'http://www.w3.org/2000/svg';
-    const groupMap = new Map<number | string, SVGGElement>();
+    // Sort each building's elements by depth (for proper rendering within the building)
+    for (const elements of buildingGroups.values()) {
+        elements.sort((a, b) => b.depth - a.depth);
+    }
 
-    for (const item of allElements) {
-        // Create group if it doesn't exist
-        if (!groupMap.has(item.buildingId)) {
-            const g = document.createElementNS(SVG_NS, 'g');
-            g.setAttribute('class', `buildings-${random(0, layerState.fills!.length - 1)}`);
-            g.setAttribute('id', item.buildingId as string);
-            svgContainer.appendChild(g);
-            groupMap.set(item.buildingId, g);
+    // Compute minimum depth (closest element) for each building
+    const buildingDepths = new Map<number | string, number>();
+    for (const [buildingId, elements] of buildingGroups.entries()) {
+        const minDepth = Math.min(...elements.map(e => e.depth));
+        buildingDepths.set(buildingId, minDepth);
+    }
+
+    // Sort building IDs by their closest element depth (descending - farthest buildings first)
+    const sortedBuildingIds = Array.from(buildingGroups.keys()).sort(
+        (a, b) => buildingDepths.get(b)! - buildingDepths.get(a)!
+    );
+
+    // Create groups and append elements in building-sorted order
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    for (const buildingId of sortedBuildingIds) {
+        const elements = buildingGroups.get(buildingId)!;
+
+        // Create group for this building
+        const g = document.createElementNS(SVG_NS, 'g');
+        g.setAttribute('class', `buildings-${random(0, layerState.fills!.length - 1)}`);
+        g.setAttribute('id', buildingId as string);
+
+        // Append all elements of this building to the group
+        for (const item of elements) {
+            g.appendChild(item.el);
         }
 
-        // Append element to its group
-        groupMap.get(item.buildingId)!.appendChild(item.el);
+        svgContainer.appendChild(g);
     }
 }
