@@ -82,7 +82,7 @@ export type RenderedFeature<T extends Geometry | null = Polygon | LineString | M
     height?: number;
     base_height?: number;
     min_height?: number;
-    kind_detail?: 'yes' | 'no'
+    kind_detail?: 'yes' | 'no' | 'corridor'
   };
   layer?: {
     id: string;
