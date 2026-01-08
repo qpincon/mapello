@@ -78,10 +78,9 @@ export async function drawPrettyMap(
     const width = generalParams.General.width;
     const height = generalParams.General.height;
 
+    svg.attr("width", `${width}`).attr("height", `${height}`);
     if (generalParams.General.useViewBox) {
         svg.attr("viewBox", `0 0 ${width} ${height}`);
-    } else {
-        svg.attr("width", `${width}`).attr("height", `${height}`);
     }
     const geometries = (await getRenderedFeatures(maplibreMap, { layers: layersToQuery }))
         ?.filter(geom => geom.properties['kind_detail'] !== 'corridor') as RenderedFeature[];
@@ -436,9 +435,9 @@ function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeatureP
     }
 
     // Log optimization statistics
-    const reductionPercentage = passedBboxCheck > 0
-        ? ((1 - totalInterCheck / passedBboxCheck) * 100).toFixed(1)
-        : '0';
+    // const reductionPercentage = passedBboxCheck > 0
+    //     ? ((1 - totalInterCheck / passedBboxCheck) * 100).toFixed(1)
+    //     : '0';
     // console.log('Hierarchical Grouping Optimization Stats:', {
     //     totalIterations: totalIters,
     //     passedBboxCheck: passedBboxCheck,
@@ -771,5 +770,9 @@ export async function exportMicro(
     createAnchor('data © OpenStreetMap', 'https://www.openstreetmap.org/copyright', width - borderPadding * 2, height - borderPadding - 16);
     createAnchor('CartoSVG', 'https://cartosvg.com', width - borderPadding * 2, height - borderPadding - 8);
 
+    if (stateMicro.microParams.General.useViewBox) {
+        svgElement.removeAttribute('height');
+        svgElement.removeAttribute('width');
+    }
     download(svgElement.outerHTML, 'text/plain', 'cartosvg-export.svg');
 }
