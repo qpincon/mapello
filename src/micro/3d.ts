@@ -2,6 +2,7 @@ import { random } from 'lodash-es';
 import { MercatorCoordinate, type Map as MapLibreMap } from 'maplibre-gl';
 import type { MicroLayerDefinition, SvgSelection } from 'src/types';
 import type { RenderedFeaturePoly } from 'src/util/geometryStitch';
+import type { GroupedFeature } from './drawing';
 
 /** Small numeric helper */
 const EPS = 1e-9;
@@ -224,9 +225,10 @@ function renderExtrudedBuildingImproved(
 
 /**
  * Render buildings with grouping, hole support, and depth sorting by closest element.
+ * Accepts both normal features (RenderedFeaturePoly) and grouped features (GroupedFeature).
  */
 export function renderBuildingsToSvgImproved(
-    features: RenderedFeaturePoly[],
+    features: (RenderedFeaturePoly | GroupedFeature)[],
     map: MapLibreMap,
     svg: SvgSelection,
     translateAmount: number,
@@ -274,11 +276,12 @@ export function renderBuildingsToSvgImproved(
                 }
             }
 
-            // Process all parts (if any)
-            if (feature.properties.parts && Array.isArray(feature.properties.parts)) {
-                for (const part of feature.properties.parts) {
+            // Process all parts (if any) - parts are directly on GroupedFeature, not in properties
+            const groupedFeature = feature as GroupedFeature;
+            if (groupedFeature.parts && Array.isArray(groupedFeature.parts)) {
+                for (const part of groupedFeature.parts) {
                     const partResult = renderExtrudedBuildingImproved(
-                        part as RenderedFeaturePoly,
+                        part,
                         map,
                         mainMatrix,
                         layerState.defaultBuildingHeight ?? MIN_BUILDING_HEIGHT

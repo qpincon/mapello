@@ -26,6 +26,21 @@ import center from '@turf/center';
 import { commonState } from 'src/state.svelte';
 
 
+// Interfaces for building grouping
+export interface GroupedFeature extends RenderedFeaturePoly {
+    parts: RenderedFeaturePoly[];
+}
+
+export interface GroupBuildingResult {
+    normalFeatures: RenderedFeaturePoly[];
+    groupedFeatures: GroupedFeature[];
+}
+
+// Helper function for centroid distance calculation
+function centroidDistance(c1: [number, number], c2: [number, number]): number {
+    return Math.sqrt(Math.pow(c1[0] - c2[0], 2) + Math.pow(c1[1] - c2[1], 2));
+}
+
 type D3PathFunction = (geometry: Geometry) => string | null;
 
 const patternGenerator = new HatchPatternGenerator();
@@ -144,17 +159,23 @@ export async function drawPrettyMap(
     console.log('buildings=', buildings);
     console.log('buildings features=', featureCollection(buildings));
     if (layerDefinitions.buildings['3dBuildings']) {
-        console.time('grouping buildings');
+
         const eiffel = buildings.find(b => b.id === 35184377102196);
         if (eiffel) {
             eiffel.properties.height = 30;
         }
-        const grouped = hierarchicalGrouping(buildings);
-        console.timeEnd('grouping buildings');
-        console.log('grouped=', grouped);
+        const { normalFeatures, groupedFeatures } = groupBuildingFeatures(buildings);
+        console.log('normalFeatures=', normalFeatures);
+        console.log('groupedFeatures=', groupedFeatures);
         // const chosen = grouped[41];
         // console.log(buildings.find(b => b.id === 35184377102196));
-        renderBuildingsToSvgImproved(grouped, maplibreMap, svg, translateAmount, layerDefinitions['buildings']);
+        renderBuildingsToSvgImproved(
+            [...normalFeatures, ...groupedFeatures],
+            maplibreMap,
+            svg,
+            translateAmount,
+            layerDefinitions['buildings']
+        );
     }
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, animated, outerFrameRx);
     svg.style("pointer-events", isLocked ? "auto" : "none");
@@ -297,185 +318,236 @@ export function drawMicroFrame(
     return frame;
 }
 
-function hierarchicalGrouping(features: RenderedFeaturePoly[]): RenderedFeaturePoly[] {
-    // Create a copy of features to avoid mutating the original
-    const featuresCopy = features.map(f => ({
-        ...f,
-        properties: { ...f.properties, parts: [] }
+/**
+ * Groups building features by separating parts (kind === "building_part") from non-parts,
+ * then assigning each part to its containing non-part building.
+ */
+export function groupBuildingFeatures(features: RenderedFeaturePoly[]): GroupBuildingResult {
+
+    console.time('grouping buildings');
+    // Step 1: Separate features into parts and non-parts
+    const parts: RenderedFeaturePoly[] = [];
+    const nonParts: GroupedFeature[] = [];
+
+    for (const feature of features) {
+        if (feature.properties.kind === "building_part") {
+            parts.push(feature);
+        } else {
+            // Initialize parts array on each non-part
+            nonParts.push({
+                ...feature,
+                parts: []
+            });
+        }
+    }
+
+    // If no parts, return all as normal features
+    if (parts.length === 0) {
+        return {
+            normalFeatures: nonParts,
+            groupedFeatures: []
+        };
+    }
+
+    // Step 2: Pre-compute geometry data for all features
+    interface FeatureData {
+        feature: RenderedFeaturePoly | GroupedFeature;
+        bbox: [number, number, number, number];
+        area: number;
+        center: [number, number];
+    }
+
+    const partData: FeatureData[] = parts.map(f => ({
+        feature: f,
+        bbox: bbox(f) as [number, number, number, number],
+        area: area(f),
+        center: center(f).geometry.coordinates as [number, number]
     }));
 
-    // Pre-calculate areas, bounding boxes, centers, and radius to avoid repeated calculations
-    const featureData = featuresCopy.map(f => {
-        const featureArea = area(f);
-        return {
-            feature: f,
-            area: featureArea,
-            bbox: bbox(f),
-            center: center(f).geometry.coordinates as [number, number],
-            radius: Math.sqrt(featureArea) // Approximate radius for distance checks
-        };
-    });
+    const nonPartData: FeatureData[] = nonParts.map(f => ({
+        feature: f,
+        bbox: bbox(f) as [number, number, number, number],
+        area: area(f),
+        center: center(f).geometry.coordinates as [number, number]
+    }));
 
-    // Sort by area ascending (smallest first)
-    // This allows us to only check features that come after (all larger)
-    featureData.sort((a, b) => a.area - b.area);
+    // Track orphan parts
+    const orphanParts: { partIdx: number; data: FeatureData }[] = [];
 
-    // Track which features are parts of others (not top-level)
-    const isPart = new Set<RenderedFeaturePoly>();
-    let totalIters = 0;
-    let totalInterCheck = 0;
-    // Optimization statistics
-    let rejectedByAreaRatio = 0;
-    let rejectedByCentroidDist = 0;
-    let assumedByBboxContainment = 0;
-    let passedBboxCheck = 0;
-    // For each feature, check if it's part of a larger feature
-    for (let i = 0; i < featureData.length; i++) {
-        const currentData = featureData[i];
-        const currentFeature = currentData.feature;
-        const currentArea = currentData.area;
-        const currentBbox = currentData.bbox;
-        const currentHeight = currentFeature.properties?.height ?? 0;
+    // Step 4: For each part, find which non-part it belongs to
+    for (let pIdx = 0; pIdx < partData.length; pIdx++) {
+        const pData = partData[pIdx];
+        const part = pData.feature as RenderedFeaturePoly;
+        const partBbox = pData.bbox;
+        const partArea = pData.area;
 
-        let bestContainer: RenderedFeaturePoly | null = null;
-        let tallestContainerHeight = -Infinity;
+        let bestMatch: GroupedFeature | null = null;
+        let bestOverlap = 0;
 
-        // Only check features that come after (all are larger due to sorting)
-        for (let j = i + 1; j < featureData.length; j++) {
-            totalIters += 1;
-            const otherData = featureData[j];
-            const otherFeature = otherData.feature;
-            const otherBbox = otherData.bbox;
-            const otherHeight = otherFeature.properties?.height ?? 0;
+        for (const npData of nonPartData) {
+            const nonPart = npData.feature as GroupedFeature;
+            const nonPartBbox = npData.bbox;
 
-            // Skip if container is not taller than current feature
-            if (otherHeight >= currentHeight) continue;
+            // Quick filter: bbox intersection check
+            if (!bboxIntersects(partBbox, nonPartBbox)) continue;
 
-            // Quick bounding box check before expensive intersection
-            if (!bboxIntersects(currentBbox, otherBbox)) continue;
+            // Calculate bbox overlap percentage (cheap operation)
+            const [pMinX, pMinY, pMaxX, pMaxY] = partBbox;
+            const [npMinX, npMinY, npMaxX, npMaxY] = nonPartBbox;
 
-            // Calculate bounding box overlap percentage (cheap operation)
-            const [cMinX, cMinY, cMaxX, cMaxY] = currentBbox;
-            const [oMinX, oMinY, oMaxX, oMaxY] = otherBbox;
-
-            const intersectMinX = Math.max(cMinX, oMinX);
-            const intersectMinY = Math.max(cMinY, oMinY);
-            const intersectMaxX = Math.min(cMaxX, oMaxX);
-            const intersectMaxY = Math.min(cMaxY, oMaxY);
+            const intersectMinX = Math.max(pMinX, npMinX);
+            const intersectMinY = Math.max(pMinY, npMinY);
+            const intersectMaxX = Math.min(pMaxX, npMaxX);
+            const intersectMaxY = Math.min(pMaxY, npMaxY);
 
             const bboxIntersectArea = (intersectMaxX - intersectMinX) * (intersectMaxY - intersectMinY);
-            const currentBboxArea = (cMaxX - cMinX) * (cMaxY - cMinY);
-            const bboxOverlapPercentage = bboxIntersectArea / currentBboxArea;
+            const partBboxArea = (pMaxX - pMinX) * (pMaxY - pMinY);
+            const bboxOverlapPercentage = bboxIntersectArea / partBboxArea;
 
-            // If bbox overlap is less than 70%, actual geometry overlap is very unlikely to be > 80%
-            // Skip expensive intersect call
+            // Skip if bbox overlap is less than 70% - actual geometry overlap unlikely to be > 80%
             if (bboxOverlapPercentage < 0.7) continue;
 
-            passedBboxCheck += 1;
-
-            // OPTIMIZATION LAYER 1: Area ratio extreme filtering
-            // Buildings with extreme area ratios are unlikely to have valid containment
-            const areaRatio = currentArea / otherData.area;
-            if (areaRatio < 0.03 || areaRatio > 0.85) {
-                rejectedByAreaRatio += 1;
-                continue;
-            }
-
-            // OPTIMIZATION LAYER 2: Centroid distance filtering
-            // If centroids are far apart relative to building size, 80% overlap is impossible
-            const centroidDist = Math.sqrt(
-                Math.pow(currentData.center[0] - otherData.center[0], 2) +
-                Math.pow(currentData.center[1] - otherData.center[1], 2)
-            );
-            const rejectionFactor = 0.5; // Tunable parameter (0.3-0.7)
-            if (centroidDist > currentData.radius * rejectionFactor) {
-                rejectedByCentroidDist += 1;
-                continue;
-            }
-
-            // OPTIMIZATION LAYER 3: Strict bbox containment heuristic
-            // If smaller bbox is 95%+ contained in larger bbox AND bbox overlap is 85%+,
-            // assume containment without calling expensive intersect
-            const bboxContainmentInOther = bboxIntersectArea / currentBboxArea;
-            if (bboxContainmentInOther > 0.95 && bboxOverlapPercentage > 0.85) {
-                // Assume containment - skip expensive intersect
-                assumedByBboxContainment += 1;
-                if (otherHeight > tallestContainerHeight) {
-                    bestContainer = otherFeature;
-                    tallestContainerHeight = otherHeight;
-                }
-                continue;
-            }
-
-            // Only do expensive intersection if all filters passed
-            const intersection = intersect(featureCollection([currentFeature, otherFeature]));
-            totalInterCheck += 1;
+            // Calculate geometry intersection
+            const intersection = intersect(featureCollection([part, nonPart]));
             if (!intersection) continue;
 
-            // Calculate what percentage of the current feature overlaps with the other
+            // Calculate overlap percentage
             const overlapArea = area(intersection);
-            const overlapPercentage = overlapArea / currentArea;
+            const overlapPercentage = overlapArea / partArea;
 
-            // If >80% of current feature overlaps with the other feature
-            if (overlapPercentage > 0.8) {
-                // Pick the tallest valid container
-                if (otherHeight > tallestContainerHeight) {
-                    bestContainer = otherFeature;
+            // If >80% overlap, consider it a match
+            if (overlapPercentage > 0.8 && overlapPercentage > bestOverlap) {
+                bestMatch = nonPart;
+                bestOverlap = overlapPercentage;
+            }
+        }
+
+        if (bestMatch) {
+            bestMatch.parts.push(part);
+        } else {
+            // Mark as orphan
+            orphanParts.push({ partIdx: pIdx, data: pData });
+        }
+    }
+
+    // Step 5: Assign orphan parts to the closest non-part by centroid distance
+    for (const orphan of orphanParts) {
+        const orphanCenter = orphan.data.center;
+        let closestNonPart: GroupedFeature | null = null;
+        let closestDistance = Infinity;
+
+        for (const npData of nonPartData) {
+            const dist = centroidDistance(orphanCenter, npData.center);
+            if (dist < closestDistance) {
+                closestDistance = dist;
+                closestNonPart = npData.feature as GroupedFeature;
+            }
+        }
+
+        if (closestNonPart) {
+            closestNonPart.parts.push(orphan.data.feature as RenderedFeaturePoly);
+        }
+    }
+
+    // Step 6: Return normal features (empty parts) and grouped features (non-empty parts)
+    const normalFeatures: RenderedFeaturePoly[] = [];
+    const groupedFeatures: GroupedFeature[] = [];
+
+    for (const nonPart of nonParts) {
+        if (nonPart.parts.length === 0) {
+            normalFeatures.push(nonPart);
+        } else {
+            groupedFeatures.push(nonPart);
+        }
+    }
+    console.timeEnd('grouping buildings');
+    console.time('determining heights');
+    computeBaseHeights(groupedFeatures);
+    console.timeEnd('determining heights');
+    return { normalFeatures, groupedFeatures };
+}
+
+/**
+ * Computes base heights for parts within grouped features.
+ * For each part, finds the tallest container (another part that fully contains it
+ * but has a lower height), and sets the part's base_height to that container's height.
+ */
+export function computeBaseHeights(groupedFeatures: GroupedFeature[]): void {
+    for (const groupedFeature of groupedFeatures) {
+        const parts = groupedFeature.parts;
+
+        const partBboxes = parts.map(p => bbox(p));
+
+        for (let i = 0; i < parts.length; i++) {
+            const currentPart = parts[i];
+
+            // Skip if the part already has min_height property defined
+            if (currentPart.properties.min_height !== undefined) continue;
+
+            const currentHeight = currentPart.properties.height ?? 0;
+            const currentBbox = partBboxes[i];
+            const currentArea = area(currentPart);
+
+            let tallestContainerHeight = -1;
+
+            // Look through ALL other parts in the same group
+            for (let j = 0; j < parts.length; j++) {
+                if (i === j) continue;
+
+                const otherPart = parts[j];
+                const otherHeight = otherPart.properties.height ?? 0;
+
+                // Container's height must be LOWER than current part's height
+                if (otherHeight >= currentHeight) continue;
+
+                // Skip if this container is not taller than our current best
+                if (otherHeight <= tallestContainerHeight) continue;
+
+                const otherBbox = partBboxes[j];
+
+                // Bbox containment check before expensive intersection
+                // Check if current bbox is potentially contained in other bbox
+                if (!bboxIntersects(currentBbox, otherBbox)) continue;
+
+                // Quick check: other bbox should be able to contain current bbox
+                const [cMinX, cMinY, cMaxX, cMaxY] = currentBbox;
+                const [oMinX, oMinY, oMaxX, oMaxY] = otherBbox;
+
+                // For containment, other should be larger or equal in all dimensions
+                // We use a tolerance here since we're checking >95% containment
+                const intersectMinX = Math.max(cMinX, oMinX);
+                const intersectMinY = Math.max(cMinY, oMinY);
+                const intersectMaxX = Math.min(cMaxX, oMaxX);
+                const intersectMaxY = Math.min(cMaxY, oMaxY);
+
+                if (intersectMaxX <= intersectMinX || intersectMaxY <= intersectMinY) continue;
+
+                const bboxIntersectArea = (intersectMaxX - intersectMinX) * (intersectMaxY - intersectMinY);
+                const currentBboxArea = (cMaxX - cMinX) * (cMaxY - cMinY);
+                const bboxContainmentPercentage = bboxIntersectArea / currentBboxArea;
+
+                // Skip if bbox containment is less than 90% (actual containment unlikely to be >95%)
+                if (bboxContainmentPercentage < 0.9) continue;
+
+                // Check full containment using intersect (>95% overlap)
+                const intersection = intersect(featureCollection([currentPart, otherPart]));
+                if (!intersection) continue;
+
+                const overlapArea = area(intersection);
+                const containmentPercentage = overlapArea / currentArea;
+
+                // Container must fully contain the current part (>95% overlap)
+                if (containmentPercentage > 0.95) {
                     tallestContainerHeight = otherHeight;
                 }
             }
-        }
 
-        // If we found a container, assign the current feature as a part
-        if (bestContainer) {
-            currentFeature.properties.base_height = bestContainer.properties.height ?? 0;
-            bestContainer.properties.parts!.push(currentFeature);
-            isPart.add(currentFeature);
-        }
-    }
-
-    // Log optimization statistics
-    // const reductionPercentage = passedBboxCheck > 0
-    //     ? ((1 - totalInterCheck / passedBboxCheck) * 100).toFixed(1)
-    //     : '0';
-    // console.log('Hierarchical Grouping Optimization Stats:', {
-    //     totalIterations: totalIters,
-    //     passedBboxCheck: passedBboxCheck,
-    //     rejectedByAreaRatio: rejectedByAreaRatio,
-    //     rejectedByCentroidDist: rejectedByCentroidDist,
-    //     assumedByBboxContainment: assumedByBboxContainment,
-    //     actualIntersectCalls: totalInterCheck,
-    //     intersectReduction: `${reductionPercentage}%`
-    // });
-
-    // Get only top-level features
-    const topLevelFeatures = featuresCopy.filter(f => !isPart.has(f));
-
-    // Flatten the tree structure - collect all nested parts into a single flat array
-    function flattenParts(feature: RenderedFeaturePoly): void {
-        const allParts: RenderedFeaturePoly[] = [];
-
-        function collectParts(f: RenderedFeaturePoly): void {
-            if (f.properties.parts && f.properties.parts.length > 0) {
-                for (const part of f.properties.parts) {
-                    allParts.push(part);
-                    collectParts(part); // Recursively collect nested parts
-                }
+            // Set base_height to the container's height (if found)
+            if (tallestContainerHeight > -1) {
+                currentPart.properties.base_height = tallestContainerHeight;
             }
         }
-
-        collectParts(feature);
-
-        // Replace the parts array with the flattened version
-        feature.properties.parts = allParts;
     }
-
-    // Flatten each top-level feature
-    for (const feature of topLevelFeatures) {
-        flattenParts(feature);
-    }
-
-    return topLevelFeatures;
 }
 
 export function initLayersState(providedPalette: Partial<MicroPalette>): MicroPalette {
