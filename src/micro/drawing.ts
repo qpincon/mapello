@@ -1,6 +1,6 @@
 import svgoConfig from '../svgoExport.config';
 import { select, type Selection } from "d3-selection";
-import { bboxIntersects, getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
+import { bboxContains, bboxIntersects, getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
 import { cloneDeep, debounce, kebabCase, last, random, size } from "lodash-es";
 import { color, hsl } from "d3-color";
 import { applyStyles, DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
@@ -160,15 +160,13 @@ export async function drawPrettyMap(
     console.log('buildings features=', featureCollection(buildings));
     if (layerDefinitions.buildings['3dBuildings']) {
 
-        const eiffel = buildings.find(b => b.id === 35184377102196);
-        if (eiffel) {
-            eiffel.properties.height = 30;
-        }
+        // const eiffel = buildings.find(b => b.id === 35184377102196);
+        // if (eiffel) {
+        //     eiffel.properties.height = 30;
+        // }
         const { normalFeatures, groupedFeatures } = groupBuildingFeatures(buildings);
         console.log('normalFeatures=', normalFeatures);
         console.log('groupedFeatures=', groupedFeatures);
-        // const chosen = grouped[41];
-        // console.log(buildings.find(b => b.id === 35184377102196));
         renderBuildingsToSvgImproved(
             [...normalFeatures, ...groupedFeatures],
             maplibreMap,
@@ -330,7 +328,7 @@ export function groupBuildingFeatures(features: RenderedFeaturePoly[]): GroupBui
     const nonParts: GroupedFeature[] = [];
 
     for (const feature of features) {
-        if (feature.properties.kind === "building_part") {
+        if (feature.properties.kind_detail === "yes" || (feature.properties.kind_detail !== "no" && feature.properties.kind === "building_part")) {
             parts.push(feature);
         } else {
             // Initialize parts array on each non-part
@@ -371,10 +369,23 @@ export function groupBuildingFeatures(features: RenderedFeaturePoly[]): GroupBui
         center: center(f).geometry.coordinates as [number, number]
     }));
 
+    // Step 3: Pre-filter candidates - for each part, find non-parts whose bbox fully contains it
+    const partCandidates: Map<number, number[]> = new Map();
+    for (let pIdx = 0; pIdx < partData.length; pIdx++) {
+        const partBbox = partData[pIdx].bbox;
+        const candidates: number[] = [];
+        for (let npIdx = 0; npIdx < nonPartData.length; npIdx++) {
+            if (bboxContains(nonPartData[npIdx].bbox, partBbox)) {
+                candidates.push(npIdx);
+            }
+        }
+        partCandidates.set(pIdx, candidates);
+    }
+
     // Track orphan parts
     const orphanParts: { partIdx: number; data: FeatureData }[] = [];
 
-    // Step 4: For each part, find which non-part it belongs to
+    // Step 4: For each part, find which non-part it belongs to (using pre-filtered candidates)
     for (let pIdx = 0; pIdx < partData.length; pIdx++) {
         const pData = partData[pIdx];
         const part = pData.feature as RenderedFeaturePoly;
@@ -384,44 +395,48 @@ export function groupBuildingFeatures(features: RenderedFeaturePoly[]): GroupBui
         let bestMatch: GroupedFeature | null = null;
         let bestOverlap = 0;
 
-        for (const npData of nonPartData) {
-            const nonPart = npData.feature as GroupedFeature;
-            const nonPartBbox = npData.bbox;
+        // Only iterate through pre-filtered candidates
+        const candidates = partCandidates.get(pIdx) || [];
+        if (candidates.length === 1) {
+            bestMatch = nonPartData[candidates[0]].feature as GroupedFeature;
+        }
+        else {
+            for (const npIdx of candidates) {
+                const npData = nonPartData[npIdx];
+                const nonPart = npData.feature as GroupedFeature;
+                const nonPartBbox = npData.bbox;
 
-            // Quick filter: bbox intersection check
-            if (!bboxIntersects(partBbox, nonPartBbox)) continue;
+                // Calculate bbox overlap percentage (cheap operation)
+                const [pMinX, pMinY, pMaxX, pMaxY] = partBbox;
+                const [npMinX, npMinY, npMaxX, npMaxY] = nonPartBbox;
 
-            // Calculate bbox overlap percentage (cheap operation)
-            const [pMinX, pMinY, pMaxX, pMaxY] = partBbox;
-            const [npMinX, npMinY, npMaxX, npMaxY] = nonPartBbox;
+                const intersectMinX = Math.max(pMinX, npMinX);
+                const intersectMinY = Math.max(pMinY, npMinY);
+                const intersectMaxX = Math.min(pMaxX, npMaxX);
+                const intersectMaxY = Math.min(pMaxY, npMaxY);
 
-            const intersectMinX = Math.max(pMinX, npMinX);
-            const intersectMinY = Math.max(pMinY, npMinY);
-            const intersectMaxX = Math.min(pMaxX, npMaxX);
-            const intersectMaxY = Math.min(pMaxY, npMaxY);
+                const bboxIntersectArea = (intersectMaxX - intersectMinX) * (intersectMaxY - intersectMinY);
+                const partBboxArea = (pMaxX - pMinX) * (pMaxY - pMinY);
+                const bboxOverlapPercentage = bboxIntersectArea / partBboxArea;
 
-            const bboxIntersectArea = (intersectMaxX - intersectMinX) * (intersectMaxY - intersectMinY);
-            const partBboxArea = (pMaxX - pMinX) * (pMaxY - pMinY);
-            const bboxOverlapPercentage = bboxIntersectArea / partBboxArea;
+                // Skip if bbox overlap is less than 70% - actual geometry overlap unlikely to be > 80%
+                if (bboxOverlapPercentage < 0.7) continue;
 
-            // Skip if bbox overlap is less than 70% - actual geometry overlap unlikely to be > 80%
-            if (bboxOverlapPercentage < 0.7) continue;
+                // Calculate geometry intersection
+                // const intersection = intersect(featureCollection([part, nonPart]));
+                // if (!intersection) continue;
 
-            // Calculate geometry intersection
-            const intersection = intersect(featureCollection([part, nonPart]));
-            if (!intersection) continue;
+                // // Calculate overlap percentage
+                // const overlapArea = area(intersection);
+                // const overlapPercentage = overlapArea / partArea;
 
-            // Calculate overlap percentage
-            const overlapArea = area(intersection);
-            const overlapPercentage = overlapArea / partArea;
-
-            // If >80% overlap, consider it a match
-            if (overlapPercentage > 0.8 && overlapPercentage > bestOverlap) {
-                bestMatch = nonPart;
-                bestOverlap = overlapPercentage;
+                // If >80% overlap, consider it a match
+                if (bboxOverlapPercentage > 0.8 && bboxOverlapPercentage > bestOverlap) {
+                    bestMatch = nonPart;
+                    bestOverlap = bboxOverlapPercentage;
+                }
             }
         }
-
         if (bestMatch) {
             bestMatch.parts.push(part);
         } else {
@@ -429,7 +444,7 @@ export function groupBuildingFeatures(features: RenderedFeaturePoly[]): GroupBui
             orphanParts.push({ partIdx: pIdx, data: pData });
         }
     }
-
+    console.log('orphans', orphanParts);
     // Step 5: Assign orphan parts to the closest non-part by centroid distance
     for (const orphan of orphanParts) {
         const orphanCenter = orphan.data.center;
@@ -486,7 +501,7 @@ export function computeBaseHeights(groupedFeatures: GroupedFeature[]): void {
 
             const currentHeight = currentPart.properties.height ?? 0;
             const currentBbox = partBboxes[i];
-            const currentArea = area(currentPart);
+            // const currentArea = area(currentPart);
 
             let tallestContainerHeight = -1;
 
@@ -530,16 +545,16 @@ export function computeBaseHeights(groupedFeatures: GroupedFeature[]): void {
                 if (bboxContainmentPercentage < 0.9) continue;
 
                 // Check full containment using intersect (>95% overlap)
-                const intersection = intersect(featureCollection([currentPart, otherPart]));
-                if (!intersection) continue;
+                // const intersection = intersect(featureCollection([currentPart, otherPart]));
+                // if (!intersection) continue;
 
-                const overlapArea = area(intersection);
-                const containmentPercentage = overlapArea / currentArea;
+                // const overlapArea = area(intersection);
+                // const containmentPercentage = overlapArea / currentArea;
 
                 // Container must fully contain the current part (>95% overlap)
-                if (containmentPercentage > 0.95) {
-                    tallestContainerHeight = otherHeight;
-                }
+                // if (bboxContainmentPercentage > 0.95) {
+                tallestContainerHeight = otherHeight;
+                // }
             }
 
             // Set base_height to the container's height (if found)

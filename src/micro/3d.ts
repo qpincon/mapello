@@ -254,30 +254,34 @@ export function renderBuildingsToSvgImproved(
 
     // Process each top-level feature
     for (const feature of features) {
+        const groupedFeature = feature as GroupedFeature;
         try {
             const buildingId = feature.properties.uuid ?? `building-${allElements.length}`;
+            /** Don't render containing feature if its a group */
+            if (!groupedFeature.parts || groupedFeature.parts.length === 0) {
 
-            // Process main feature
-            const mainResult = renderExtrudedBuildingImproved(
-                feature,
-                map,
-                mainMatrix,
-                layerState.defaultBuildingHeight ?? MIN_BUILDING_HEIGHT
-            );
+                // Process main feature
+                const mainResult = renderExtrudedBuildingImproved(
+                    feature,
+                    map,
+                    mainMatrix,
+                    layerState.defaultBuildingHeight ?? MIN_BUILDING_HEIGHT
+                );
 
-            if (mainResult) {
-                for (const item of mainResult.elements) {
-                    allElements.push({
-                        el: item.el,
-                        depth: item.depth,
-                        className: mainResult.className,
-                        buildingId,
-                    });
+                if (mainResult) {
+                    for (const item of mainResult.elements) {
+                        allElements.push({
+                            el: item.el,
+                            depth: item.depth,
+                            className: mainResult.className,
+                            buildingId,
+                        });
+                    }
                 }
             }
 
             // Process all parts (if any) - parts are directly on GroupedFeature, not in properties
-            const groupedFeature = feature as GroupedFeature;
+
             if (groupedFeature.parts && Array.isArray(groupedFeature.parts)) {
                 for (const part of groupedFeature.parts) {
                     const partResult = renderExtrudedBuildingImproved(

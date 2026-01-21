@@ -1,6 +1,6 @@
 import type { Feature, LineString, GeoJsonProperties, Position } from "geojson";
 
-const PRECISION = 7;
+const SCALE = 10000000; // 10^7 for 7 decimal places
 
 /**
  * Merges GeoJSON LineString Features that share their first or last points
@@ -25,12 +25,12 @@ export function mergeLineStrings(features: Array<Feature<LineString>>): Array<Fe
     }
 
     // Helper function to create a string key from a point
-    const pointToKey = (point: Position): string => {
-        return `${point[0].toFixed(PRECISION)},${point[1].toFixed(PRECISION)}`;
+    const pointToKey = (point: Position): number => {
+        return Math.round(point[0] * SCALE) * 1e8 + Math.round(point[1] * SCALE);
     };
 
     // Create an index of endpoints to LineString features
-    const endpointIndex = new Map<string, Array<{ index: number; isFirst: boolean }>>();
+    const endpointIndex = new Map<number, Array<{ index: number; isFirst: boolean }>>();
 
     // Initialize with all features
     const result: Array<Feature<LineString> | null> = [...validFeatures];
