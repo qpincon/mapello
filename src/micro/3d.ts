@@ -144,7 +144,7 @@ function renderExtrudedBuildingImproved(
     map: MapLibreMap,
     mainMatrix: number[],
     defaultHeight: number = MIN_BUILDING_HEIGHT
-): { elements: Array<{ el: SVGElement; depth: number }>; className: string } | null {
+): { elements: Array<{ el: SVGElement; depth: number }>; className: string; minVertexDepth: number } | null {
     if (!feature || feature.geometry.type !== 'Polygon') {
         return null;
     }
@@ -176,6 +176,9 @@ function renderExtrudedBuildingImproved(
             projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, heightMeters)
         )
     );
+
+    // Compute minimum depth across all projected vertices for building-level sorting
+    const minVertexDepth = Math.min(...projectedBottomRings.flat().map(p => p.depth));
 
     // Create walls for each ring
     for (let ringIdx = 0; ringIdx < allRings.length; ringIdx++) {
@@ -226,7 +229,7 @@ function renderExtrudedBuildingImproved(
         elements.push({ el: roofEl, depth: roofDepth });
     }
 
-    return { elements, className };
+    return { elements, className, minVertexDepth };
 }
 
 /**
@@ -258,6 +261,9 @@ export function renderBuildingsToSvgImproved(
 
     const allElements: ElementWithDepth[] = [];
 
+    // Track minimum vertex depth per building for correct sorting
+    const buildingMinVertexDepths = new Map<number | string, number>();
+
     // Process each top-level feature
     for (const feature of features) {
         const groupedFeature = feature as GroupedFeature;
@@ -275,6 +281,10 @@ export function renderBuildingsToSvgImproved(
                 );
 
                 if (mainResult) {
+                    // Track minimum vertex depth for this building
+                    const currentMin = buildingMinVertexDepths.get(buildingId) ?? Infinity;
+                    buildingMinVertexDepths.set(buildingId, Math.min(currentMin, mainResult.minVertexDepth));
+
                     for (const item of mainResult.elements) {
                         allElements.push({
                             el: item.el,
@@ -298,6 +308,10 @@ export function renderBuildingsToSvgImproved(
                     );
 
                     if (partResult) {
+                        // Track minimum vertex depth for this building
+                        const currentMin = buildingMinVertexDepths.get(buildingId) ?? Infinity;
+                        buildingMinVertexDepths.set(buildingId, Math.min(currentMin, partResult.minVertexDepth));
+
                         for (const item of partResult.elements) {
                             allElements.push({
                                 el: item.el,
@@ -330,16 +344,9 @@ export function renderBuildingsToSvgImproved(
         elements.sort((a, b) => b.depth - a.depth);
     }
 
-    // Compute minimum depth (closest element) for each building
-    const buildingDepths = new Map<number | string, number>();
-    for (const [buildingId, elements] of buildingGroups.entries()) {
-        const minDepth = Math.min(...elements.map(e => e.depth));
-        buildingDepths.set(buildingId, minDepth);
-    }
-
-    // Sort building IDs by their closest element depth (descending - farthest buildings first)
+    // Sort building IDs by their minimum vertex depth (descending - farthest buildings first)
     const sortedBuildingIds = Array.from(buildingGroups.keys()).sort(
-        (a, b) => buildingDepths.get(b)! - buildingDepths.get(a)!
+        (a, b) => buildingMinVertexDepths.get(b)! - buildingMinVertexDepths.get(a)!
     );
 
     // Create groups and append elements in building-sorted order
@@ -352,6 +359,7 @@ export function renderBuildingsToSvgImproved(
         const g = document.createElementNS(SVG_NS, 'g');
         g.setAttribute('class', `buildings-${random(0, layerState.fills!.length - 1)}`);
         g.setAttribute('id', buildingId as string);
+        g.setAttribute('mindepth', String(buildingMinVertexDepths.get(buildingId)));
 
         // Append all elements of this building to the group
         for (const item of elements) {
