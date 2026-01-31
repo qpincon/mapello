@@ -176,7 +176,7 @@ export function handleInlineStyleChange(elemId: string, target: HTMLElement, css
     if (elemId.includes("label")) {
         commonState.lastUsedLabelProps[cssProp] = value;
     }
-    if (target.classList?.[0].includes("buildings") && cssProp === "fill") {
+    if (target.classList?.[0]?.includes("buildings") && cssProp === "fill") {
         cssProp = "--building-color";
         target.style.setProperty(cssProp, value);
     }
