@@ -39,6 +39,28 @@ export function postClipSimple(): void {
     });
     console.log("simple post clip:", toRemove);
     toRemove.forEach(el => el.remove());
+    cleanupOrphanedPathImages();
+}
+
+/** Removes path-images elements whose referenced paths no longer exist */
+export function cleanupOrphanedPathImages(): void {
+    const pathImagesGroup = document.getElementById('path-images');
+    if (!pathImagesGroup) return;
+
+    const toRemove: Element[] = [];
+    pathImagesGroup.querySelectorAll('mpath').forEach(mpath => {
+        const href = mpath.getAttribute('xlink:href') || mpath.getAttribute('href');
+        if (!href) return;
+
+        const referencedPath = document.querySelector(href);
+        if (!referencedPath) {
+            const useElement = mpath.closest('use');
+            if (useElement) toRemove.push(useElement);
+        }
+    });
+
+    if (toRemove.length) console.log("orphaned path-images removed:", toRemove.length);
+    toRemove.forEach(el => el.remove());
 }
 
 export function distance(p1: Point, p2: Point): number {

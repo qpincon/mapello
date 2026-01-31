@@ -882,7 +882,7 @@
                     <MacroSidebar bind:this={macroSidebar} {draw} {svg} {styleEditor}></MacroSidebar>
                 {:else}
                     <MicroSidebar bind:this={microSidebar} {draw} {svg} {styleEditor} bind:viewLocked={microLocked}
-                    ></MicroSidebar>
+                    onMapMoveStart={closeMenu}></MicroSidebar>
                 {/if}
             </div>
         </div>

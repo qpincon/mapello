@@ -212,7 +212,7 @@
 - [x] micro 3D: Fix rendering when browser zoom different
 - [ ] ISE: default to "fill color" when already defined
 - [ ] ISE: Fix "fill color" selected by default that changes stroke after one popup was opened before
-- [ ] Remove "path-images" out of frame
+- [x] Remove "path-images" out of frame
 - [ ] Fix points / labels not displayed when moving (micro)
 - [ ] micro: clip-path freehand drawing
 - [ ] Macro export bug, stuff drawn outside of frame

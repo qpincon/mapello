@@ -34,9 +34,10 @@
         /** Not passed, we just need to access it from the parent*/
         maplibreMap?: Map | null;
         viewLocked: boolean;
+        onMapMoveStart?: () => void;
     }
 
-    let { styleEditor, svg, draw, maplibreMap, viewLocked = $bindable() }: Props = $props();
+    let { styleEditor, svg, draw, maplibreMap, viewLocked = $bindable(), onMapMoveStart }: Props = $props();
 
     let mainMenuSelection = $state<string>("general");
     let additionalCss = $derived(computeCss(microState.microParams));
@@ -135,6 +136,7 @@
         });
 
         maplibreMap.on("movestart", (event) => {
+            onMapMoveStart?.();
             cancelStitch();
             select("#maplibre-map").style("opacity", 1);
             selectAll("#static-svg-map g, #static-svg-map rect").remove();
