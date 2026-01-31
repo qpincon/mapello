@@ -668,7 +668,7 @@ export function generateCssFromState(state: MicroPalette): string | null {
                 css += updateStyleSheetOrGenerateCss(sheet, '#micro-background', ruleContent);
             } else {
                 css += updateStyleSheetOrGenerateCss(sheet, `#micro .${layer}`, ruleContent);
-                css += updateStyleSheetOrGenerateCss(sheet, `#micro .${layer}:hover`, ruleHoverContent);
+                // css += updateStyleSheetOrGenerateCss(sheet, `#micro .${layer}:hover`, ruleHoverContent);
             }
         }
 
