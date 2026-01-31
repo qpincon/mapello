@@ -1,7 +1,7 @@
 import bbox from "@turf/bbox";
 import bboxPolygon from "@turf/bbox-polygon";
 import booleanDisjoint from "@turf/boolean-disjoint";
-import { featureCollection, point, polygon } from "@turf/helpers";
+import { featureCollection, point, polygon, lineString } from "@turf/helpers";
 import intersect from "@turf/intersect";
 import union from "@turf/union";
 import center from "@turf/center";
@@ -14,6 +14,7 @@ import { yieldToMain } from "./polyfills";
 import type { BBox, Feature, Geometry, LineString, MultiLineString, MultiPolygon, Polygon, Position } from "geojson";
 import { booleanOverlap } from "@turf/boolean-overlap";
 import { booleanWithin } from "@turf/boolean-within";
+import booleanIntersects from "@turf/boolean-intersects";
 import { buffer } from "@turf/buffer";
 import { distance } from "@turf/distance";
 
@@ -195,9 +196,16 @@ export function getMapRealBounds(map: any): Feature<Polygon> {
   return poly;
 }
 
+function getViewportBottomEdge(mapBounds: Feature<Polygon>): Feature<LineString> {
+  const coords = mapBounds.geometry.coordinates[0];
+  // coords order: [cUL, cUR, cLR, cLL, cUL]
+  // Bottom edge: cLL (index 3) to cLR (index 2)
+  return lineString([coords[3], coords[2]]);
+}
+
 let processCounter = 0;
 let maplibreMap: MaplibreMap;
-export async function getRenderedFeatures(map: MaplibreMap, options: any): Promise<RenderedFeature[] | null> {
+export async function getRenderedFeatures(map: MaplibreMap, options: any, threeDimensionsBuilings: boolean): Promise<RenderedFeature[] | null> {
   maplibreMap = map;
   processCounter += 1;
   const currentProcessId = processCounter;
@@ -226,7 +234,7 @@ export async function getRenderedFeatures(map: MaplibreMap, options: any): Promi
 
   tiles.zoom = map.getZoom();
 
-  const finalGeometries = await stitch(renderedFeatures, tiles, mapBounds, currentProcessId);
+  const finalGeometries = await stitch(renderedFeatures, tiles, mapBounds, currentProcessId, threeDimensionsBuilings);
   return finalGeometries;
 }
 
@@ -235,7 +243,7 @@ export function cancelStitch(): void {
 }
 
 // Additional functions remain unchanged but now include proper type annotations.
-export async function stitch(renderedFeatures: RenderedFeature[], tiles: Tiles, mapBounds: Feature<Polygon>, currentProcessId: number): Promise<RenderedFeature[] | null> {
+export async function stitch(renderedFeatures: RenderedFeature[], tiles: Tiles, mapBounds: Feature<Polygon>, currentProcessId: number, threeDimensionsBuildings: boolean = false): Promise<RenderedFeature[] | null> {
   // console.log('mapBounds=', mapBounds);
   // console.log('tiles=', tiles);
   const cuts: Cuts = { 'h': [], 'v': [] };
@@ -327,16 +335,27 @@ export async function stitch(renderedFeatures: RenderedFeature[], tiles: Tiles, 
   const p1 = maplibreMap.unproject([canvas.width - 1, canvas.height - 1]);
   const p2 = maplibreMap.unproject([canvas.width - 2, canvas.height - 2]);
 
+  /** Get 1px distance in km */
   const dist = distance([p1.lng, p1.lat], [p2.lng, p2.lat]);
   // console.log('distance for 1px is', dist, 'km')
   const mapBoundsExtended = buffer(mapBounds, dist) as Feature<Polygon>;
+  console.log('mapBounds', mapBounds);
+  console.log('mapBoundsExtended', mapBoundsExtended);
   mapBoundsExtended!.bbox = bbox(mapBoundsExtended!);
+
+  const bottomEdge = threeDimensionsBuildings ? getViewportBottomEdge(mapBounds) : null;
 
   let nbClipped = 0;
   finalPolygons = finalPolygons.map(polygon => {
     if (!polygon.boundingBox) polygon.boundingBox = bbox(polygon);
     if (bboxContains(mapBoundsExtended!.bbox!, polygon.boundingBox!) || booleanWithin(polygon, mapBoundsExtended!)) return polygon;
-    // if (bboxContains(mapBoundsExtended!.bbox!, polygon.boundingBox!) && !booleanOverlap(mapBoundsExtended!, polygon)) return polygon;
+
+    // For 3D buildings: skip clipping if polygon intersects bottom edge
+    if (bottomEdge && polygon.properties.mapLayerId === "buildings" &&
+        booleanIntersects(polygon, bottomEdge)) {
+      return polygon;
+    }
+
     nbClipped += 1;
     return intersect(featureCollection<Polygon>([mapBoundsExtended!, polygon as Feature<Polygon>]), { properties: polygon.properties }) as RenderedFeature<Polygon>
   }).filter(p => p);

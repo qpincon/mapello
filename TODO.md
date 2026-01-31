@@ -204,7 +204,7 @@
 - [ ] micro: scale roads width slider
 - [ ] micro: monochrome palettes (dark water, dark land)
 - [ ] micro optim: remove features totally included in other feature and smaller
-- [ ] micro 3D: fix cut buidlings at the bottom of the frame
+- [x] micro 3D: fix cut buidlings at the bottom of the frame
 - [x] micro 3D: use min_height for extrusion base: https://github.com/protomaps/basemaps/issues/465
 - [ ] sketchmeup / transparentracks
 - [ ] micro: only enable hover effect on buildings?
@@ -215,3 +215,4 @@
 - [ ] Remove "path-images" out of frame
 - [ ] Fix points / labels not displayed when moving (micro)
 - [ ] micro: clip-path freehand drawing
+- [ ] Macro export bug, stuff drawn outside of frame

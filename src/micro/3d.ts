@@ -71,41 +71,45 @@ export function projectWithHeightUsingMainMatrix(
         screen,
         ndc,
         depth: ndc.z,
+        cw: clip.cw,
     };
 }
 
 /**
- * Compute 3D cross product (a × b).
+ * Compute 2D cross product (z-component of 3D cross product with z=0).
  */
-function cross3(a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }) {
-    return {
-        x: a.y * b.z - a.z * b.y,
-        y: a.z * b.x - a.x * b.z,
-        z: a.x * b.y - a.y * b.x,
-    };
+function cross2D(ax: number, ay: number, bx: number, by: number): number {
+    return ax * by - ay * bx;
 }
 
 /**
- * Subtract 3D vectors.
+ * Check if a vertex is well inside the NDC frustum.
+ * Uses conservative bounds (0.8) to avoid edge cases with projection artifacts.
  */
-function sub3(a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }) {
-    return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
+function isInsideNDC(ndc: { x: number; y: number }): boolean {
+    return Math.abs(ndc.x) <= 0.8 && Math.abs(ndc.y) <= 0.8;
 }
 
 /**
  * Decide whether a wall face is visible using NDC-space winding order.
- * Uses backface culling: if the cross product Z component is negative,
- * the face is front-facing (visible).
+ * Uses 2D cross product to determine if vertices are in clockwise order (front-facing).
  */
 function isWallVisibleNDC(
-    ndc0: { x: number; y: number; z: number },
-    ndc1: { x: number; y: number; z: number },
-    ndc2: { x: number; y: number; z: number }
+    ndc0: { x: number; y: number },
+    ndc1: { x: number; y: number },
+    ndc2: { x: number; y: number }
 ): boolean {
-    const v1 = sub3(ndc1, ndc0);
-    const v2 = sub3(ndc2, ndc0);
-    const n = cross3(v1, v2);
-    return n.z < 0;
+    // Vectors from ndc0 to ndc1 and ndc0 to ndc2
+    const v1x = ndc1.x - ndc0.x;
+    const v1y = ndc1.y - ndc0.y;
+    const v2x = ndc2.x - ndc0.x;
+    const v2y = ndc2.y - ndc0.y;
+
+    // 2D cross product determines winding order
+    // Use threshold to only cull walls that are clearly back-facing
+    const cross = cross2D(v1x, v1y, v2x, v2y);
+    const CULL_THRESHOLD = -0.0001;
+    return cross < CULL_THRESHOLD;
 }
 
 /**
@@ -133,7 +137,7 @@ function createPolygonPathWithHoles(
 }
 
 /**
- * Render a single building feature with hole support and NDC-based culling.
+ * Render a single building feature with hole support and hybrid NDC culling.
  */
 function renderExtrudedBuildingImproved(
     feature: RenderedFeaturePoly,
@@ -188,13 +192,16 @@ function renderExtrudedBuildingImproved(
             const t0p = projectedTop[i];
             const t1p = projectedTop[ni];
 
-            // Use NDC-space for robust backface culling
-            const visible = isWallVisibleNDC(
-                { x: b0p.ndc.x, y: b0p.ndc.y, z: b0p.ndc.z },
-                { x: b1p.ndc.x, y: b1p.ndc.y, z: b1p.ndc.z },
-                { x: t0p.ndc.x, y: t0p.ndc.y, z: t0p.ndc.z }
-            );
-            if (!visible) continue;
+            // Check if all vertices are inside the NDC frustum
+            const allInsideNDC = isInsideNDC(b0p.ndc) && isInsideNDC(b1p.ndc) &&
+                isInsideNDC(t0p.ndc) && isInsideNDC(t1p.ndc);
+
+            if (allInsideNDC) {
+                // Use NDC-based culling for walls fully inside viewport
+                const visible = isWallVisibleNDC(b0p.ndc, b1p.ndc, t0p.ndc);
+                if (!visible) continue;
+            }
+            // If any vertex is outside NDC bounds, skip culling and render the wall
 
             // Build quad path
             const pathD = `M ${b0p.screen.x.toFixed(2)},${b0p.screen.y.toFixed(2)} L ${b1p.screen.x.toFixed(2)},${b1p.screen.y.toFixed(2)} L ${t1p.screen.x.toFixed(2)},${t1p.screen.y.toFixed(2)} L ${t0p.screen.x.toFixed(2)},${t0p.screen.y.toFixed(2)} Z`;

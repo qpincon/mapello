@@ -97,7 +97,8 @@ export async function drawPrettyMap(
     if (generalParams.General.useViewBox) {
         svg.attr("viewBox", `0 0 ${width} ${height}`);
     }
-    const geometries = (await getRenderedFeatures(maplibreMap, { layers: layersToQuery }))
+    const use3d = layerDefinitions.buildings['3dBuildings'];
+    const geometries = (await getRenderedFeatures(maplibreMap, { layers: layersToQuery }, use3d!))
         ?.filter(geom => geom.properties['kind_detail'] !== 'corridor') as RenderedFeature[];
     console.log('geometries=', geometries)
     // Process got interrupted, a new call to this function is coming soon
@@ -812,6 +813,7 @@ export async function exportMicro(
     svgElement.setAttribute('id', mapId);
     svgElement.querySelector('defs')!.remove();
     svgElement.append(defs);
+    svgElement.querySelectorAll('#micro > path, #buildings > g').forEach(el => el.removeAttribute('id'));
     changeIdAndReferences(svgElement, mapId);
 
     styleElem.innerHTML = pathIsBetter ? finalCss : finalCss + fontsToCss(usedProvidedFonts);

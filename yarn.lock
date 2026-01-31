@@ -561,6 +561,19 @@
     "@types/geojson" "^7946.0.10"
     tslib "^2.8.1"
 
+"@turf/boolean-disjoint@7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@turf/boolean-disjoint/-/boolean-disjoint-7.3.3.tgz#593e68e319cf327c912fbf5fa1acad1209e5f1b9"
+  integrity sha512-ybt4jIcHrxES1eVGJWiX78R/NqqF1BRa8ynXqVw837oN5PfVBlhLKAgbTQneKWMjhRbczq0SJv0nZo4foynCqg==
+  dependencies:
+    "@turf/boolean-point-in-polygon" "7.3.3"
+    "@turf/helpers" "7.3.3"
+    "@turf/line-intersect" "7.3.3"
+    "@turf/meta" "7.3.3"
+    "@turf/polygon-to-line" "7.3.3"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
+
 "@turf/boolean-disjoint@^7.2.0":
   version "7.2.0"
   resolved "https://registry.yarnpkg.com/@turf/boolean-disjoint/-/boolean-disjoint-7.2.0.tgz#84b07b10b6b0fa1e3a8276dd81dd30d697059a47"
@@ -571,6 +584,17 @@
     "@turf/line-intersect" "^7.2.0"
     "@turf/meta" "^7.2.0"
     "@turf/polygon-to-line" "^7.2.0"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
+
+"@turf/boolean-intersects@^7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@turf/boolean-intersects/-/boolean-intersects-7.3.3.tgz#41edafb9da800ea135948b2a6df2bacdc735791f"
+  integrity sha512-NiwD37d5bHmTdrpBh+AKggKRF/Vpkbfs7WBy5oce2iineyrSj6p203yCbzo8tSVWTgA0NEW2t+YHwpLjvlv47g==
+  dependencies:
+    "@turf/boolean-disjoint" "7.3.3"
+    "@turf/helpers" "7.3.3"
+    "@turf/meta" "7.3.3"
     "@types/geojson" "^7946.0.10"
     tslib "^2.8.1"
 
@@ -586,6 +610,17 @@
     "@turf/meta" "^7.2.0"
     "@types/geojson" "^7946.0.10"
     geojson-equality-ts "^1.0.2"
+    tslib "^2.8.1"
+
+"@turf/boolean-point-in-polygon@7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@turf/boolean-point-in-polygon/-/boolean-point-in-polygon-7.3.3.tgz#7e0672c3e71b72b1102ef78a76733525045045b5"
+  integrity sha512-hmXV4PofLAVbVZcnKk/yp//0s65huap+L3wKGKzbLWk57fWla/eRmFKx/iQ15xGu05zylHz5cA5AfriVGZHj2g==
+  dependencies:
+    "@turf/helpers" "7.3.3"
+    "@turf/invariant" "7.3.3"
+    "@types/geojson" "^7946.0.10"
+    point-in-polygon-hao "^1.1.0"
     tslib "^2.8.1"
 
 "@turf/boolean-point-in-polygon@^7.2.0":
@@ -686,6 +721,14 @@
     "@types/geojson" "^7946.0.10"
     rbush "^3.0.1"
 
+"@turf/helpers@7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@turf/helpers/-/helpers-7.3.3.tgz#7fc3c4241464be3a854d8289fe2096221d9b7165"
+  integrity sha512-9Ias0L1GuZPIzO6sk8jraTEuLJye6n9LYNEdw69ZGOQ6C1IigjxkPW49zmn21aTv1z27vxdVLSS3r+78DB2QnQ==
+  dependencies:
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
+
 "@turf/helpers@^7.2.0":
   version "7.2.0"
   resolved "https://registry.yarnpkg.com/@turf/helpers/-/helpers-7.2.0.tgz#5771308108c98d608eb8e7f16dcd0eb3fb8a3417"
@@ -705,6 +748,15 @@
     polyclip-ts "^0.16.8"
     tslib "^2.8.1"
 
+"@turf/invariant@7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@turf/invariant/-/invariant-7.3.3.tgz#e8c96e200de92df26ef0619290916583c4fcdf66"
+  integrity sha512-q6UDgWmtIlU+AIxt5Awnh18ZMSuNti6drCXbIBdGdgQaQ1qEiyGZDE3P9RKk6otoLXOBYecOuI0HIwf2IxurhQ==
+  dependencies:
+    "@turf/helpers" "7.3.3"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
+
 "@turf/invariant@^7.2.0":
   version "7.2.0"
   resolved "https://registry.yarnpkg.com/@turf/invariant/-/invariant-7.2.0.tgz#ba5b377ea20ee8c45af0a4c9b8bf03aa1c43bd5d"
@@ -720,6 +772,16 @@
   integrity sha512-zAezGlwWHPyU0zxwcX2wQY3RkRpwuoBmhhNE9HY9kWhFDkCxZ3aWK5URKwa/SWKJbj9aztO+8vtdiBA28KVJFg==
   dependencies:
     jsts "2.7.1"
+
+"@turf/line-intersect@7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@turf/line-intersect/-/line-intersect-7.3.3.tgz#cd647432c6436d71062b5f04bf425a707531ba3f"
+  integrity sha512-RXlIPDseXT2PplbN8GMQOE3oa6DzAGSVm6xp7qaf4VyNvhRH85J+SpCYXuilYfd6eYWUrewUI1CkO5RIqHGlCA==
+  dependencies:
+    "@turf/helpers" "7.3.3"
+    "@types/geojson" "^7946.0.10"
+    sweepline-intersections "^1.5.0"
+    tslib "^2.8.1"
 
 "@turf/line-intersect@^7.2.0":
   version "7.2.0"
@@ -758,6 +820,15 @@
     "@types/geojson" "^7946.0.10"
     tslib "^2.8.1"
 
+"@turf/meta@7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@turf/meta/-/meta-7.3.3.tgz#0080c026f2c4247f2dcb50dfb2b477aeaf14b590"
+  integrity sha512-Tz1j4h70iFB5SebWWoVv/uL59x4aOngXU+d1xQDXzOCn/O6txnreGVGMcYU362c5F06yqZx38H9UFTQ553lK0w==
+  dependencies:
+    "@turf/helpers" "7.3.3"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
+
 "@turf/meta@^7.2.0":
   version "7.2.0"
   resolved "https://registry.yarnpkg.com/@turf/meta/-/meta-7.2.0.tgz#6a6b1918890b4d9d2b5ff10b3ad47e2fd7470912"
@@ -787,6 +858,16 @@
     "@turf/distance" "^7.2.0"
     "@turf/helpers" "^7.2.0"
     "@turf/meta" "^7.2.0"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
+
+"@turf/polygon-to-line@7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@turf/polygon-to-line/-/polygon-to-line-7.3.3.tgz#120e118f49c118e935990adf8e3e5dd43a2ff308"
+  integrity sha512-DK47Ne3hHgoukTKn5ZlHKk+XuxnED4ePTQHxDHJoPJHd2lVVZugur9GnGx82ZZBSV/aWLonOGQhrdL+bLux4lw==
+  dependencies:
+    "@turf/helpers" "7.3.3"
+    "@turf/invariant" "7.3.3"
     "@types/geojson" "^7946.0.10"
     tslib "^2.8.1"
 
