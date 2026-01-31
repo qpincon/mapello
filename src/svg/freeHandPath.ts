@@ -15,6 +15,16 @@ export function freeHandDrawPath(svg: SVGSVGElement, onEnd: (path: SVGPathElemen
     svgElem.addEventListener('mousemove', onMouseMove);
 }
 
+export function cancelFreeHandDrawPath(): void {
+    detachListeners();
+    if (fittedCurve) {
+        fittedCurve.remove();
+        fittedCurve = null;
+    }
+    rawLineData = [];
+    isMouseDown = false;
+}
+
 function onMouseDown(): void {
     rawLineData = [];
     fittedCurve = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -31,6 +41,7 @@ function onMouseUp(): void {
     if (endCb && fittedCurve) {
         endCb(fittedCurve);
     }
+    fittedCurve = null;
 }
 
 function onMouseMove(event: MouseEvent): void {

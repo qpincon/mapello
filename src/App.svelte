@@ -16,7 +16,7 @@
     import { drawShapes } from "./svg/shape";
     import iso3Data from "./assets/data/iso3_filtered.json";
     import Examples from "./components/Examples.svelte";
-    import { freeHandDrawPath } from "./svg/freeHandPath";
+    import { freeHandDrawPath, cancelFreeHandDrawPath } from "./svg/freeHandPath";
     import Modal from "./components/Modal.svelte";
     import Navbar from "./components/Navbar.svelte";
     import macroImg from "./assets/img/macro.png";
@@ -74,6 +74,7 @@
         chosingMarker: false,
     });
     let editedLabelId: string | null = $state(null);
+    let drawingTooltip: HTMLDivElement | null = $state(null);
     let textInput: HTMLTextAreaElement | null = $state(null);
     let typedText = $state("");
     let styleEditor: InlineStyleEditor | null = $state(null);
@@ -86,6 +87,8 @@
     let editingPath = $state(false);
     let isDrawingFreeHand = $state(false);
     let isDrawingPath = $state(false);
+    let isCursorInsideMap = $state(false);
+    let isActivelyDrawingPath = $state(false);
     let iseOnClickEnabled = $derived(!editingPath && !isDrawingFreeHand && !isDrawingPath);
 
     let zoomFunc: d3.ZoomBehavior<any, any> | null = $state(null);
@@ -215,6 +218,9 @@
         window.addEventListener("keydown", (e) => {
             if (e.code === "Escape") {
                 stopDrawFreeHand();
+                cancelDrawPath();
+            } else if (e.code === "Enter") {
+                stopDrawFreeHand();
             }
         });
     });
@@ -303,7 +309,15 @@
             "contextmenu",
             function (e) {
                 if (editingPath) return;
-                stopDrawFreeHand();
+                let shouldOpenMenu = true;
+                if (isDrawingFreeHand) {
+                    stopDrawFreeHand();
+                    shouldOpenMenu = false;
+                }
+                if (isDrawingPath) {
+                    cancelDrawPath();
+                    shouldOpenMenu = false;
+                }
                 e.preventDefault();
                 closeMenu();
                 let target = null;
@@ -324,7 +338,7 @@
                     target = closestPoint.elem;
                     selectedPathIndex = parseInt(closestPoint.elem!.getAttribute("id")!.match(/\d+$/)![0]);
                 }
-                showMenu(e, target);
+                if (shouldOpenMenu) showMenu(e, target);
                 return false;
             },
             false,
@@ -531,10 +545,17 @@
         closeMenu();
         detachListeners();
         isDrawingPath = true;
+        isCursorInsideMap = true; // Assume cursor is inside since menu was just clicked
+        document.addEventListener("mousemove", updateDrawingTooltip);
+        document.addEventListener("mousedown", onPathDrawMouseDown);
+        document.addEventListener("mouseup", onPathDrawMouseUp);
+        addMapCursorListeners();
         freeHandDrawPath(svg.node() as SVGSVGElement, (finishedElem) => {
             console.log("finishedElem", finishedElem);
             const d = finishedElem.getAttribute("d");
             if (!d) return;
+            cleanupPathDrawListeners();
+            removeMapCursorListeners();
             attachListeners();
             const pathIndex = commonState.providedPaths.length;
             const id = `path-${pathIndex}`;
@@ -543,19 +564,80 @@
             saveDebounced();
             setTimeout(() => {
                 isDrawingPath = false;
+                isActivelyDrawingPath = false;
             }, 0);
         });
     }
 
+    function onPathDrawMouseDown(): void {
+        isActivelyDrawingPath = true;
+    }
+
+    function onPathDrawMouseUp(): void {
+        isActivelyDrawingPath = false;
+    }
+
+    function cleanupPathDrawListeners(): void {
+        document.removeEventListener("mousemove", updateDrawingTooltip);
+        document.removeEventListener("mousedown", onPathDrawMouseDown);
+        document.removeEventListener("mouseup", onPathDrawMouseUp);
+    }
+
+    function cancelDrawPath(): void {
+        if (!isDrawingPath) return;
+        cancelFreeHandDrawPath();
+        cleanupPathDrawListeners();
+        removeMapCursorListeners();
+        attachListeners();
+        isDrawingPath = false;
+        isActivelyDrawingPath = false;
+    }
+
+    function onMapMouseEnter(): void {
+        isCursorInsideMap = true;
+    }
+
+    function onMapMouseLeave(): void {
+        isCursorInsideMap = false;
+    }
+
+    function addMapCursorListeners(): void {
+        const mapContent = document.getElementById("map-content");
+        if (mapContent) {
+            mapContent.addEventListener("mouseenter", onMapMouseEnter);
+            mapContent.addEventListener("mouseleave", onMapMouseLeave);
+        }
+    }
+
+    function removeMapCursorListeners(): void {
+        const mapContent = document.getElementById("map-content");
+        if (mapContent) {
+            mapContent.removeEventListener("mouseenter", onMapMouseEnter);
+            mapContent.removeEventListener("mouseleave", onMapMouseLeave);
+        }
+        isCursorInsideMap = false;
+    }
+
+    function updateDrawingTooltip(e: MouseEvent): void {
+        if (!drawingTooltip) return;
+        drawingTooltip.style.left = e.clientX + 15 + "px";
+        drawingTooltip.style.top = e.clientY + 15 + "px";
+    }
+
     function drawFreeHand(): void {
         isDrawingFreeHand = true;
+        isCursorInsideMap = true; // Assume cursor is inside since menu was just clicked
         closeMenu();
         detachListeners();
         freeHandDrawer.start(svg.node() as SVGSVGElement);
+        document.addEventListener("mousemove", updateDrawingTooltip);
+        addMapCursorListeners();
     }
 
     function stopDrawFreeHand(): void {
         if (!isDrawingFreeHand) return;
+        document.removeEventListener("mousemove", updateDrawingTooltip);
+        removeMapCursorListeners();
         attachListeners();
         isDrawingFreeHand = false;
         const newGroup = freeHandDrawer.stop();
@@ -571,7 +653,7 @@
             console.log(parsed);
         });
         if (unprojected.length) commonState.providedFreeHand.push(unprojected);
-        console.log(commonState.providedFreeHand);
+        drawFreeHandShapes(svg, commonState.providedFreeHand);
     }
 
     function closeMenu(): void {
@@ -762,11 +844,11 @@
         <div role="button" class="px-2 py-1" onclick={copySelection}>Copy</div>
         <div role="button" class="px-2 py-1" onclick={deleteSelection}>Delete</div>
     {:else if menuStates.pathSelected}
-        <div role="button" class="px-2 py-1" onclick={editPath}>Edit path</div>
+        <div role="button" class="px-2 py-1" onclick={editPath}>Edit curve</div>
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit style</div>
-        <div role="button" class="px-2 py-1" onclick={deletePath}>Delete path</div>
-        <div role="button" class="px-2 py-1" onclick={addImageToPath}>Image along path</div>
-        <div role="button" class="px-2 py-1" onclick={choseMarker}>Chose marker</div>
+        <div role="button" class="px-2 py-1" onclick={deletePath}>Delete curve</div>
+        <div role="button" class="px-2 py-1" onclick={addImageToPath}>Image along curve</div>
+        <div role="button" class="px-2 py-1" onclick={choseMarker}>Chose curve marker</div>
     {:else if menuStates.chosingMarker}
         <div class="d-flex">
             <div role="button" class="px-2 py-1" onclick={() => changeMarker("delete")}>
@@ -830,12 +912,22 @@
         </div>
     {:else}
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>
-        <div role="button" class="px-2 py-1" onclick={addPath}>Draw path</div>
+        <div role="button" class="px-2 py-1" onclick={addPath}>Draw curve</div>
         <div role="button" class="px-2 py-1" onclick={drawFreeHand}>Draw freehand</div>
         <div role="button" class="px-2 py-1" onclick={addPoint}>Add point</div>
         <div role="button" class="px-2 py-1" onclick={addLabel}>Add label</div>
     {/if}
 </div>
+
+{#if (isDrawingFreeHand || (isDrawingPath && !isActivelyDrawingPath)) && isCursorInsideMap}
+    <div id="drawing-tooltip" bind:this={drawingTooltip} class="drawing-tooltip">
+        {#if isDrawingPath}
+            Left-click and hold to draw a curve
+        {:else}
+            Right-click or press Enter to finish
+        {/if}
+    </div>
+{/if}
 
 <div class="d-flex align-items-start h-100">
     <aside id="params" class="h-100">
@@ -881,8 +973,17 @@
                 {#if commonState.currentMode === "macro"}
                     <MacroSidebar bind:this={macroSidebar} {draw} {svg} {styleEditor}></MacroSidebar>
                 {:else}
-                    <MicroSidebar bind:this={microSidebar} {draw} {svg} {styleEditor} bind:viewLocked={microLocked}
-                    onMapMoveStart={closeMenu}></MicroSidebar>
+                    <MicroSidebar
+                        bind:this={microSidebar}
+                        {draw}
+                        {svg}
+                        {styleEditor}
+                        bind:viewLocked={microLocked}
+                        onMapMoveStart={() => {
+                            closeMenu();
+                            stopDrawFreeHand();
+                        }}
+                    ></MicroSidebar>
                 {/if}
             </div>
         </div>
@@ -1163,5 +1264,17 @@
     #map-container {
         margin: 0 auto;
         flex: 0 0 auto;
+    }
+
+    .drawing-tooltip {
+        position: fixed;
+        background: rgba(0, 0, 0, 0.75);
+        color: white;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        pointer-events: none;
+        z-index: 9999;
+        white-space: nowrap;
     }
 </style>
