@@ -65,7 +65,7 @@ export function projectWithHeightUsingMainMatrix(
     const clip = applyMatrixToMerc(mainMatrix, merc);
     const ndc = clipToNDC(clip);
     const canvas = map.getCanvas();
-    const screen = ndcToScreen(ndc, canvas.width, canvas.height);
+    const screen = ndcToScreen(ndc, canvas.clientWidth, canvas.clientHeight);
 
     return {
         screen,
@@ -153,7 +153,6 @@ function renderExtrudedBuildingImproved(
     if (!allRings || allRings.length === 0 || !allRings[0] || allRings[0].length < 3) {
         return null;
     }
-
     const heightMeters = feature.properties.height ?? defaultHeight;
     if (!heightMeters || heightMeters < 0.1) return null;
 
@@ -265,7 +264,7 @@ export function renderBuildingsToSvgImproved(
         try {
             const buildingId = feature.properties.uuid ?? `building-${allElements.length}`;
             /** Don't render containing feature if its a group */
-            if (!groupedFeature.parts || groupedFeature.parts.length === 0) {
+            if (!groupedFeature.parts || groupedFeature.parts.length <= 2) {
 
                 // Process main feature
                 const mainResult = renderExtrudedBuildingImproved(

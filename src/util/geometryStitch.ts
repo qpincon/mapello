@@ -339,8 +339,6 @@ export async function stitch(renderedFeatures: RenderedFeature[], tiles: Tiles, 
   const dist = distance([p1.lng, p1.lat], [p2.lng, p2.lat]);
   // console.log('distance for 1px is', dist, 'km')
   const mapBoundsExtended = buffer(mapBounds, dist) as Feature<Polygon>;
-  console.log('mapBounds', mapBounds);
-  console.log('mapBoundsExtended', mapBoundsExtended);
   mapBoundsExtended!.bbox = bbox(mapBoundsExtended!);
 
   const bottomEdge = threeDimensionsBuildings ? getViewportBottomEdge(mapBounds) : null;
@@ -352,7 +350,7 @@ export async function stitch(renderedFeatures: RenderedFeature[], tiles: Tiles, 
 
     // For 3D buildings: skip clipping if polygon intersects bottom edge
     if (bottomEdge && polygon.properties.mapLayerId === "buildings" &&
-        booleanIntersects(polygon, bottomEdge)) {
+      booleanIntersects(polygon, bottomEdge)) {
       return polygon;
     }
 

@@ -207,9 +207,9 @@
 - [x] micro 3D: fix cut buidlings at the bottom of the frame
 - [x] micro 3D: use min_height for extrusion base: https://github.com/protomaps/basemaps/issues/465
 - [ ] sketchmeup / transparentracks
-- [ ] micro: only enable hover effect on buildings?
-- [ ] micro 3D: remove element if contains all other parts and altitude is high (eiffel, london eye)
-- [ ] micro 3D: Fix rendering when browser zoom different
+- [x] micro: only enable hover effect on buildings?
+- [x] micro 3D: remove element if contains all other parts and altitude is high (eiffel, london eye)
+- [x] micro 3D: Fix rendering when browser zoom different
 - [ ] ISE: default to "fill color" when already defined
 - [ ] ISE: Fix "fill color" selected by default that changes stroke after one popup was opened before
 - [ ] Remove "path-images" out of frame

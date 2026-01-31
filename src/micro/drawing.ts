@@ -21,7 +21,6 @@ import bbox from '@turf/bbox';
 import { featureCollection } from '@turf/helpers';
 import { renderBuildingsToSvgImproved } from './3d';
 import area from '@turf/area';
-import intersect from '@turf/intersect';
 import center from '@turf/center';
 import { commonState } from 'src/state.svelte';
 
@@ -391,7 +390,6 @@ export function groupBuildingFeatures(features: RenderedFeaturePoly[]): GroupBui
         const pData = partData[pIdx];
         const part = pData.feature as RenderedFeaturePoly;
         const partBbox = pData.bbox;
-        const partArea = pData.area;
 
         let bestMatch: GroupedFeature | null = null;
         let bestOverlap = 0;
@@ -445,7 +443,6 @@ export function groupBuildingFeatures(features: RenderedFeaturePoly[]): GroupBui
             orphanParts.push({ partIdx: pIdx, data: pData });
         }
     }
-    console.log('orphans', orphanParts);
     // Step 5: Assign orphan parts to the closest non-part by centroid distance
     for (const orphan of orphanParts) {
         const orphanCenter = orphan.data.center;
