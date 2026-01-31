@@ -197,12 +197,27 @@ export function resizeMaplibreMap(generalParams: MicroParams, mapLibreMap: MapLi
     const currentStyle = mapLibreContainer.node()?.style;
     let styleChanged = currentStyle?.width !== `${finalWidth}px`
         || currentStyle?.height !== `${finalHeight}px`
-        || currentStyle?.padding !== `${finalPadding}px`
+        || currentStyle?.padding !== `${finalPadding}px`;
     mapLibreContainer
         .style('width', `${finalWidth}px`)
         .style('height', `${finalHeight}px`)
         .style('padding', `${finalPadding}px`);
     if (styleChanged) mapLibreMap.resize();
+
+    // Check if canvas size differs from expected container size
+    const canvas = mapLibreMap.getCanvas();
+    const canvasWidth = canvas.clientWidth;
+    const canvasHeight = canvas.clientHeight;
+
+    if (canvasWidth !== finalWidth || canvasHeight !== finalHeight) {
+        // Canvas doesn't fill container - force resize by setting dimensions on canvas wrapper
+        const canvasContainer = canvas.parentElement;
+        if (canvasContainer) {
+            canvasContainer.style.width = `${finalWidth}px`;
+            canvasContainer.style.height = `${finalHeight}px`;
+        }
+        mapLibreMap.resize();
+    }
 }
 
 function postClip(generalParams: MicroParams): void {

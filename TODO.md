@@ -216,3 +216,4 @@
 - [ ] Fix points / labels not displayed when moving (micro)
 - [ ] micro: clip-path freehand drawing
 - [ ] Macro export bug, stuff drawn outside of frame
+- [ ] Macro: use noise from fitler instead of image
