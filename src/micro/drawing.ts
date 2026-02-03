@@ -575,6 +575,15 @@ export function computeBaseHeights(groupedFeatures: GroupedFeature[]): void {
                 currentPart.properties.base_height = tallestContainerHeight;
             }
         }
+
+        // Compute shouldRender for the root element
+        const rootHeight = groupedFeature.properties.height;
+        if (rootHeight == null || parts.length < 5) {
+            groupedFeature.properties.shouldRender = true;
+        } else {
+            const meanPartHeight = parts.reduce((sum, p) => sum + (p.properties.height ?? rootHeight), 0) / parts.length;
+            groupedFeature.properties.shouldRender = rootHeight < meanPartHeight;
+        }
     }
 }
 

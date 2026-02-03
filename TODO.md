@@ -214,7 +214,8 @@
 - [ ] ISE: Fix "fill color" selected by default that changes stroke after one popup was opened before
 - [x] Remove "path-images" out of frame
 - [x] Fix points / labels not displayed when moving (micro)
-- [ ] micro: clip-path freehand drawing
-- [ ] Macro export bug, stuff drawn outside of frame
+- [x] micro: clip-path freehand drawing
+- [x] Macro export bug, stuff drawn outside of frame
 - [ ] Macro: use noise from fitler instead of image
 - [ ] Style independently and globally freehand
+- [ ] Micro 3D: problem with complex geometries (louvre)

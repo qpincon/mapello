@@ -271,7 +271,7 @@ export function renderBuildingsToSvgImproved(
         try {
             const buildingId = feature.properties.uuid ?? `building-${allElements.length}`;
             /** Don't render containing feature if its a group */
-            if (!groupedFeature.parts || groupedFeature.parts.length <= 2) {
+            if (!groupedFeature.parts || (Array.isArray(groupedFeature.parts) && groupedFeature.parts.length === 0) || groupedFeature.properties.shouldRender) {
 
                 // Process main feature
                 const mainResult = renderExtrudedBuildingImproved(
