@@ -29,9 +29,9 @@ export function dragged(event: d3.D3DragEvent<SVGSVGElement, unknown, unknown>):
     macroState.inlinePropsMacro.translateX += event.dx;
     macroState.inlinePropsMacro.translateY += event.dy;
     const isSatellite = macroState.macroParams.General.projection === "satellite";
-    if (isSatellite && event.sourceEvent.shiftKey) {
-        macroState.inlinePropsMacro.tilt += event.dy / 10;
-    } else if (isSatellite && (event.sourceEvent.metaKey || event.sourceEvent.ctrlKey)) {
+    if (isSatellite && (event.sourceEvent.metaKey || event.sourceEvent.ctrlKey)) {
+        const MAX_TILT = 35;
+        macroState.inlinePropsMacro.tilt = Math.min(MAX_TILT, Math.max(0, macroState.inlinePropsMacro.tilt - event.dy / 10));
         macroState.inlinePropsMacro.rotation -= event.dx / 10;
     } else if (appState.projection?.rotate) {
         const rotate = appState.projection.rotate();

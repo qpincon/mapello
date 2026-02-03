@@ -198,7 +198,7 @@
 - [x] micro: when 3d, remove ground buildings
 - [x] micro 3D: proper plotting of building parts
 - [-] micro 3D: elevation to plot elevated sides of water ?
-- [ ] micro 3D animation: only animate roof
+- [x] micro 3D animation: only animate roof
 - [x] micro: fix use viewbox
 - [x] micro 3D: scale building height slider
 - [ ] micro: scale roads width slider
