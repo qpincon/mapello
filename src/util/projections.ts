@@ -1,6 +1,6 @@
 import { geoMercator, geoEqualEarth, geoAlbersUsa, geoNaturalEarth1, geoTransform } from 'd3-geo';
 import { geoSatellite, geoBaker } from 'd3-geo-projection';
-import { scaleLinear, geoClipCircle, geoClipRectangle } from 'd3';
+import { geoClipCircle, geoClipRectangle } from 'd3';
 import { LngLat, Point, Map } from 'maplibre-gl';
 import type { ProjectionParams } from 'src/types';
 
@@ -188,12 +188,6 @@ export function geoBakerProj(params: ProjectionParams): any {
     return standardProj(geoBaker, params);
 }
 
-export function updateAltitudeRange(fov: number | null = null): d3.ScaleLinear<number, number, never> | undefined {
-    if (!fov) return;
-    const fovExtent = Math.tan(0.5 * fov / degrees);
-    const altRange = [Math.round((1 / fovExtent) * 500), Math.round((1 / fovExtent) * 4000)];
-    return scaleLinear().domain([1, 0]).range(altRange);
-}
 
 export function getProjection(params: ProjectionParams): any {
     if (params.projectionName === 'satellite') {

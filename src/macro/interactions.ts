@@ -1,25 +1,28 @@
-import { scaleLinear, scalePow } from "d3";
+import { scalePow } from "d3";
 import { appState, macroState } from "src/state.svelte";
-import { updateAltitudeRange } from "src/util/projections";
 
+let altMin = 100;
+let altMax = 10000;
+// simplification threshold: maps altitude to visibleArea
+let threshScale = scalePow().domain([altMin, altMax]).range([0, 0.1]).exponent(0.08);
 
-let altScale = scaleLinear().domain([1, 0]).range([100, 10000]);
-// scale for simplification according to zoom
-let threshScale = scalePow().domain([0, 1]).range([0.1, 0]).exponent(0.08);
-export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): number | undefined {
-    if (!event.sourceEvent) return;
-    if (event.sourceEvent.type === "dblclick") return;
+export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
+    const src = event.sourceEvent;
+    if (!src) return;
+    if (src.type === "dblclick") return;
     if (!appState.projection) return;
-    // @ts-expect-error
-    event.transform.k = Math.max(Math.min(event.transform.k, 1), 0.00001);
-    let newAltitude = Math.round(altScale(event.transform.k));
-    // Ensure that zooming at max of scale actlually decreases altitude
-    if (event.transform.k === 1) {
-        if (macroState.macroParams.General.projection === "satellite") newAltitude = macroState.inlinePropsMacro.altitude - 30;
-        else newAltitude = macroState.inlinePropsMacro.altitude + 30;
-        newAltitude = Math.max(newAltitude, 30);
-    }
-    macroState.visibleArea = threshScale(event.transform.k);
+
+    // Same normalization as App.svelte wheelDelta
+    const delta = -src.deltaY * (src.deltaMode === 1 ? 0.05 : src.deltaMode ? 1 : 0.002);
+    const zoomFactor = Math.pow(2, delta);
+
+    const isSatellite = macroState.macroParams.General.projection === "satellite";
+    // Satellite: higher altitude = zoomed out, so divide to zoom in
+    // Standard: higher altitude = higher scale = zoomed in, so multiply
+    let newAltitude = macroState.inlinePropsMacro.altitude * (isSatellite ? 1 / zoomFactor : zoomFactor);
+    newAltitude = Math.round(Math.max(altMin, Math.min(altMax, newAltitude)));
+
+    macroState.visibleArea = threshScale(newAltitude);
     macroState.macroParams.General.altitude = newAltitude;
     macroState.inlinePropsMacro.altitude = newAltitude;
 }
@@ -50,27 +53,31 @@ export function dragged(event: d3.D3DragEvent<SVGSVGElement, unknown, unknown>):
 export function changeAltitudeScale(autoAdjustAltitude = true): void {
     const projName = macroState.macroParams.General.projection;
     const fov = macroState.macroParams.General.fieldOfView;
-    let invertAlt = false;
-    if (projName === "satellite") {
-        const newAltScale = updateAltitudeRange(fov);
-        if (newAltScale) altScale = newAltScale;
-        invertAlt = true;
+
+    if (projName === "satellite" && fov) {
+        const fovExtent = Math.tan((0.5 * fov * Math.PI) / 180);
+        altMin = Math.round((1 / fovExtent) * 500);
+        altMax = Math.round((1 / fovExtent) * 4000);
+        // low altitude (zoomed in) → 0, high altitude (zoomed out) → 0.1
+        threshScale = scalePow().domain([altMin, altMax]).range([0, 0.1]).exponent(0.08);
     } else {
-        altScale = scaleLinear().domain([0, 1]).range([90, 2000]);
+        altMin = 90;
+        altMax = 2000;
+        // high altitude (zoomed in for standard) → 0, low altitude → 0.1
+        threshScale = scalePow().domain([altMax, altMin]).range([0, 0.1]).exponent(0.08);
     }
+
     const altitude = macroState.inlinePropsMacro.altitude || macroState.macroParams.General.altitude;
-    const originalScale = altScale.invert(altitude);
-    macroState.visibleArea = threshScale(originalScale);
+    macroState.visibleArea = threshScale(altitude);
+
     if (!autoAdjustAltitude) return;
     let altChanged = false;
-    const firstScaleVal = altScale(invertAlt ? 1 : 0);
-    const secondScaleVal = altScale(invertAlt ? 0 : 1);
-    if (altitude < firstScaleVal) {
-        macroState.inlinePropsMacro.altitude = firstScaleVal;
+    if (altitude < altMin) {
+        macroState.inlinePropsMacro.altitude = altMin;
         altChanged = true;
     }
-    if (altitude > secondScaleVal) {
-        macroState.inlinePropsMacro.altitude = secondScaleVal;
+    if (altitude > altMax) {
+        macroState.inlinePropsMacro.altitude = altMax;
         altChanged = true;
     }
     if (altChanged) {
