@@ -7,7 +7,8 @@ import { applyStyles, DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts
 import { HatchPatternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download } from "../util/common";
-import { additionnalCssExport, changeIdAndReferences, exportFontChoices, getIntersectionObservingPart, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
+import { additionnalCssExport, changeIdAndReferences, exportFontChoices, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
+import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 import { createRoundedRectangleGeoJSON } from '../util/geometry';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanDisjoint from '@turf/boolean-disjoint';
@@ -813,7 +814,12 @@ export async function exportMicro(
         pathIsBetter = true;
     }
 
-    const js = stateMicro.microParams.General.animate ? getIntersectionObservingPart(false) : null;
+    const js = stateMicro.microParams.General.animate
+        ? `const allScripts = document.getElementsByTagName('script');
+           const scriptTag = allScripts[allScripts.length - 1];
+           const mapElement = scriptTag.parentNode;
+           ${intersectionObserverScript.replaceAll('__ON_ANIMATION_END__', '')}`
+        : null;
 
     // Styling
     const styleElem = document.createElementNS("http://www.w3.org/2000/svg", 'style');

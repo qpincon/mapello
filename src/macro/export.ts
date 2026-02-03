@@ -1,12 +1,18 @@
-import { additionnalCssExport, changeIdAndReferences, ExportFontChoice, getIntersectionObservingPart, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
+import { additionnalCssExport, changeIdAndReferences, ExportFontChoice, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
 import type { ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
 import { DOM_PARSER, fontsToCss, getUsedInlineFonts, reportStyle } from 'src/util/dom';
 import svgoConfig from '../svgoExport.config';
 import type { Config } from 'svgo/browser';
 import { discriminateCssForExport, download, htmlToElement, indexBy, pick } from 'src/util/common';
 import { encodeSVGDataImageStr, imageFromSpecialGElemStr } from 'src/svg/contourMethods';
+
+// Import export-only scripts as raw strings
 import hoverScript from 'src/svg/exportScripts/hover.js?raw';
 import tooltipScript from 'src/svg/exportScripts/tooltip.js?raw';
+import duplicateContoursScript from 'src/svg/exportScripts/duplicateContours.js?raw';
+import gElemsToImagesScript from 'src/svg/exportScripts/gElemsToImages.js?raw';
+import onResizeScript from 'src/svg/exportScripts/onResize.js?raw';
+import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 
 interface FinalDataByGroup {
     data: { [groupId: string]: { [shapeId: string]: any } };
@@ -114,15 +120,7 @@ export async function exportMacro(
         finalDataByGroup.data[groupId] = finalData;
     });
 
-    const onResize = hideOnResize ? `
-    let resizeTimeout;
-    window.addEventListener('resize', e => {
-        mapElement.style.display = "none"; clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => { mapElement.style.display = 'block' }, 300);
-    });` : '';
-
     // Build tooltip code by replacing placeholders with actual values
-    console.log(tooltipScript, stateMacro.macroParams.General.width.toString())
     const tooltipCode = tooltipEnabled
         ? tooltipScript
             .replaceAll('__WIDTH__', stateMacro.macroParams.General.width.toString())
@@ -130,46 +128,25 @@ export async function exportMacro(
             .replaceAll('__DATA_BY_GROUP__', JSON.stringify(finalDataByGroup))
         : '';
 
+    // Build intersection observer code with animation end handler
+    const animationCode = stateMacro.macroParams.General.animate
+        ? intersectionObserverScript.replaceAll('__ON_ANIMATION_END__', 'gElemsToImages(true);')
+        : 'gElemsToImages();';
+
     let finalScript = `
     (function() {
-        ${encodeSVGDataImageStr}
-        function duplicateContours(svgElem, transition=false) {
-            Array.from(svgElem.querySelectorAll('.contour-to-dup')).forEach(el => {
-                if (!el.hasAttribute('filter-name')) return;
-                const clone = el.cloneNode();
-                clone.setAttribute('href', el.getAttribute('href').replace(\`fill='none'\`, ''))
-                clone.setAttribute('filter', \`url(#\${el.getAttribute('filter-name')})\`);
-                if (transition) {
-                    clone.style['opacity'] = 0;
-                    setTimeout(() => {
-                        clone.style['opacity'] = 1;
-                    }, 0);
-                }
-                el.parentNode.insertBefore(clone, el);
-            });
-        }
         const allScripts = document.getElementsByTagName('script');
         const scriptTag = allScripts[allScripts.length - 1];
         const mapElement = scriptTag.parentNode;
 
-        function gElemsToImages(transition=false) {
-            const toTransformToImg = mapElement.querySelectorAll('g[image-class]');
-            toTransformToImg.forEach(gElem => {
-                const image = ${imageFromSpecialGElemStr}(gElem);
-                gElem.parentNode.append(image);
-                if (transition) {
-                    setTimeout(() => {
-                        gElem.remove();
-                    }, 500);
-                }
-                else gElem.remove();
-            });
-            duplicateContours(mapElement, transition);
-        }
-        ${onResize}
+        ${encodeSVGDataImageStr}
+        ${imageFromSpecialGElemStr}
+        ${duplicateContoursScript}
+        ${gElemsToImagesScript}
+        ${hideOnResize ? onResizeScript : ''}
         ${tooltipCode}
         ${hoverScript}
-        ${stateMacro.macroParams.General.animate ? getIntersectionObservingPart(true) : 'gElemsToImages()'}
+        ${animationCode}
     })()
         `;
 
