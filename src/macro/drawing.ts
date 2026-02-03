@@ -3,7 +3,7 @@ import { select } from "d3-selection";
 import { geoGraticule, geoPath } from "d3-geo";
 import { geometriesState, initializeAdms, resolvedAdmGeometry, updateLayerSimplification } from "./geometry-data";
 import type { FrameSelection, MacroGroupData, SvgSelection } from "src/types";
-import { appendBgPattern, appendGlow } from "src/svg/svgDefs";
+import { appendBgPattern, appendClip, appendGlow } from "src/svg/svgDefs";
 import type { MultiLineString } from "geojson";
 import { appendCountryImageNew, appendLandImageNew } from "src/svg/contourMethods";
 import { getNumericCols, sortBy } from "src/util/common";
@@ -82,7 +82,15 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     select("#outline").style("fill", "url(#noise)");
 
     let frame: FrameSelection;
-    frame = drawMacroFrame(svg);
+    frame = drawMacroFrame(
+        svg,
+        macroState.macroParams.General.width,
+        macroState.macroParams.General.height,
+        macroState.macroParams.Border.borderWidth,
+        macroState.macroParams.Border.borderRadius,
+        macroState.macroParams.Border.borderColor,
+        animated
+    );
     updateZonesDataFormatters();
 
     if (animated) {
@@ -233,8 +241,8 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
         .data(groupData)
         .join("g")
         .classed("macro-layer", true)
-        .attr("id", (d) => d.name!);
-    // .attr('clip-path', 'url(#clipMapBorder)')
+        .attr("id", (d) => d.name!)
+        .attr('clip-path', 'url(#clipMapBorder)');
 
     function drawPaths(this: SVGGElement, data: MacroGroupData) {
         if (data.type === "landImg")
@@ -283,25 +291,41 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     // @ts-expect-error
     groups.each(drawPaths);
 }
-function drawMacroFrame(svg: SvgSelection): FrameSelection {
-    const borderWidth = macroState.macroParams.Border.borderWidth;
-    const borderRadius = macroState.macroParams.Border.borderRadius;
-    const width = macroState.macroParams.General.width;
-    const height = macroState.macroParams.General.height;
+export function drawMacroFrame(
+    svg: SvgSelection,
+    width: number,
+    height: number,
+    borderWidth: number,
+    borderRadius: number,
+    borderColor: string,
+    animated: boolean
+): FrameSelection {
     const rx = Math.max(width, height) * (borderRadius / 100);
+
+    // Frame position (no padding, just half border width inset)
+    const frameX = borderWidth / 2;
+    const frameY = borderWidth / 2;
+    const frameWidth = width - borderWidth;
+    const frameHeight = height - borderWidth;
+
     svg.select("#frame").remove();
-    const frame = svg
-        .append("rect")
-        .attr("x", borderWidth / 2)
-        .attr("y", borderWidth / 2)
-        .attr("id", "frame")
-        .attr("pathLength", 1)
-        .attr("stroke", macroState.macroParams.Border.borderColor)
-        .attr("stroke-width", borderWidth)
-        .attr("fill", "none")
-        .attr("width", width - borderWidth)
-        .attr("height", height - borderWidth)
-        .attr("rx", rx);
+
+    const frame = svg.append('rect')
+        .attr('x', frameX)
+        .attr('y', frameY)
+        .attr('id', 'frame')
+        .attr('width', frameWidth)
+        .attr('height', frameHeight)
+        .attr('rx', rx)
+        .attr('fill', 'none')
+        .attr('stroke', borderColor)
+        .attr('stroke-width', borderWidth);
+
+    if (animated) frame.attr('pathLength', 1);
+
+    // Add clip path for proper content clipping
+    appendClip(svg, frameWidth, frameHeight, rx, frameX, frameY);
+
     return frame;
 }
 

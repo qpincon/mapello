@@ -17,6 +17,7 @@ export function drawCustomPaths(
     let elem: D3Selection<SVGGElement> = svg.select('#paths');
     if (elem.empty()) elem = svg.append('g').attr('id', 'paths');
     else elem.html('');
+    elem.attr("clip-path", "url(#clipMapBorder)")
 
     let exists = false;
     const images: Record<string, string> = {}; // imageName => content

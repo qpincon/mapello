@@ -409,24 +409,14 @@
     });
 
     export function computeCss(): string {
-        const width = macroState.macroParams.General.width;
-        const height = macroState.macroParams.General.height;
-        const borderRadius = macroState.macroParams.Border.borderRadius;
         const finalColorsCss = Object.values(colorsCssByTab).reduce((acc, cur) => {
             acc += cur;
             return acc;
         }, "");
-        const wantedRadiusInPx = Math.max(width, height) * (borderRadius / 100);
-        const radiusX = Math.round(Math.min((wantedRadiusInPx * 100) / width, 50));
-        const radiusY = Math.round(Math.min((wantedRadiusInPx * 100) / height, 50));
         let borderCss = `
     #static-svg-map {
         ${macroState.macroParams.Border.frameShadow ? "filter: drop-shadow(2px 2px 8px rgba(0,0,0,.2));" : ""}
     }`;
-
-        borderCss += `#static-svg-map, #static-svg-map > svg {
-            border-radius: ${radiusX}%/${radiusY}%;
-        }`;
         commonCss = finalColorsCss + borderCss;
         if (macroState.macroParams.General.animate) commonCss += transitionCssMacro;
         // const style = exportStyleSheet("#outline");
