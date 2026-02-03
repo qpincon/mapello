@@ -244,6 +244,7 @@ export function renderBuildingsToSvgImproved(
     svg: SvgSelection,
     translateAmount: number,
     layerState: MicroLayerDefinition,
+    animated: boolean = false,
 ) {
     const svgContainer = svg.append('g')
         .attr('id', 'buildings')
@@ -366,6 +367,10 @@ export function renderBuildingsToSvgImproved(
 
         // Append all elements of this building to the group
         for (const item of elements) {
+            // if (animated) {
+            if (animated && item.el.classList.contains('roof')) {
+                item.el.setAttribute('pathLength', '1');
+            }
             g.appendChild(item.el);
         }
 

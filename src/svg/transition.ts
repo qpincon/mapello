@@ -62,6 +62,19 @@ export const transitionCssMicro = `
 .animate #micro .line, .animate #paths path {
     animation: dash 2s ease 1.5s forwards;
 }
+.animate #buildings .wall {
+    opacity: 0;
+}
+.animate #buildings .roof {
+    stroke-dasharray: 1 !important;
+    fill-opacity: 0 !important;
+    stroke-dashoffset: 1;
+    animation: dash 2.5s ease 0.5s forwards;
+}
+.animate-transition #buildings .wall {
+    transition-property: opacity;
+    transition-duration: 0.5s;
+}
 
 @keyframes dash {
     from {

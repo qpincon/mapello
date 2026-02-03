@@ -172,7 +172,8 @@ export async function drawPrettyMap(
             maplibreMap,
             svg,
             translateAmount,
-            layerDefinitions['buildings']
+            layerDefinitions['buildings'],
+            animated
         );
     }
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, animated, outerFrameRx);
