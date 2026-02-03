@@ -217,3 +217,4 @@
 - [ ] micro: clip-path freehand drawing
 - [ ] Macro export bug, stuff drawn outside of frame
 - [ ] Macro: use noise from fitler instead of image
+- [ ] Style independently and globally freehand

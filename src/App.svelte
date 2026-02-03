@@ -710,6 +710,7 @@
     function drawAndSetupShapes(): void {
         const container = document.getElementById("points-labels");
         if (!container) return;
+        select(container).attr("clip-path", "url(#clipMapBorder)");
         drawShapes(commonState.providedShapes, container, appState.projection!, saveState);
         select(container).on("click", (e) => e.stopPropagation());
         select(container).on("dblclick", (e) => {

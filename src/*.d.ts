@@ -13,6 +13,11 @@ declare module '*.svg' {
   export = value;
 }
 
+declare module '*?raw' {
+  const value: string;
+  export default value;
+}
+
 // declare module 'layers/.*.json' {
 //   const value: TopoJSON.Topology;
 //   export default value;

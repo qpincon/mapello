@@ -171,7 +171,7 @@ export async function inlineFontVsPath(
 
         return new Promise<void>(resolve => {
             TextToSVG.load(content, function (err: any, textToSVG: any) {
-                console.log(content, err, textToSVG);
+                // console.log(content, err, textToSVG);
                 texts.forEach(textElem => {
                     if (textElem.tagName === 'text' && (textElem.firstChild as Element)?.tagName === 'tspan') return;
 

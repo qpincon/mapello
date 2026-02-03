@@ -11,35 +11,41 @@ export function addTooltipListener(
     map.append(tooltip.element);
     tooltip.element.style.display = 'none';
 
+    let hoveredPath: SVGPathElement | null = null;
+    let originalIndex: number | null = null;
+
+    function clearHover(): void {
+        if (!hoveredPath) return;
+        hoveredPath.classList.remove('hovered');
+        const parent = hoveredPath.parentNode as SVGElement;
+        if (originalIndex !== null && parent) {
+            parent.insertBefore(hoveredPath, parent.children[originalIndex]);
+        }
+        hoveredPath = null;
+        originalIndex = null;
+    }
+
     map.addEventListener('mouseleave', () => {
-        tooltip.element.style.display = 'none';
-        tooltip.element.style.opacity = '0';
+        hideTooltip(tooltip);
+        clearHover();
     });
 
     map.addEventListener('mousemove', (e: MouseEvent) => {
         onMouseMove(e, map, tooltipDefs, zonesData, tooltip);
-        const parent = e.target instanceof SVGElement ? e.target.parentNode as SVGElement : null;
-        if (e.target instanceof SVGPathElement && parent?.tagName === 'g') {
-            if ((e.target as any).previousPos === undefined) {
-                (e.target as any).previousPos = Array.from(parent.children).indexOf(e.target);
-            }
-            if (e.target !== parent.lastElementChild) {
-                parent.append(e.target);
-            }
-            /** Firefox bug: the :hover selector is not applied when we move the DOM node, we have to apply a class */
-            e.target.classList.add('hovered');
-        }
-    });
 
-    map.addEventListener('mouseout', (e: MouseEvent) => {
-        if (e.target instanceof SVGElement) {
-            e.target.classList.remove('hovered');
-            const previousPos = (e.target as any).previousPos;
-            if (previousPos !== undefined) {
-                const parent = e.target.parentNode as SVGElement;
-                parent.insertBefore(e.target, parent.children[previousPos]);
-                delete (e.target as any).previousPos;
+        const target = e.target;
+        const parent = target instanceof SVGElement ? target.parentNode as SVGElement : null;
+
+        if (target instanceof SVGPathElement && parent?.tagName === 'g') {
+            if (hoveredPath !== target) {
+                clearHover();
+                originalIndex = Array.from(parent.children).indexOf(target);
+                parent.append(target);
+                target.classList.add('hovered');
+                hoveredPath = target;
             }
+        } else {
+            clearHover();
         }
     });
 }

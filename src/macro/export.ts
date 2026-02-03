@@ -5,6 +5,8 @@ import svgoConfig from '../svgoExport.config';
 import type { Config } from 'svgo/browser';
 import { discriminateCssForExport, download, htmlToElement, indexBy, pick } from 'src/util/common';
 import { encodeSVGDataImageStr, imageFromSpecialGElemStr } from 'src/svg/contourMethods';
+import hoverScript from 'src/svg/exportScripts/hover.js?raw';
+import tooltipScript from 'src/svg/exportScripts/tooltip.js?raw';
 
 interface FinalDataByGroup {
     data: { [groupId: string]: { [shapeId: string]: any } };
@@ -114,117 +116,19 @@ export async function exportMacro(
 
     const onResize = hideOnResize ? `
     let resizeTimeout;
-    const contentSvg = mapElement.querySelector('svg');
     window.addEventListener('resize', e => {
-        contentSvg.style.display = "none"; clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => { contentSvg.style.display = 'block' }, 300);
+        mapElement.style.display = "none"; clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => { mapElement.style.display = 'block' }, 300);
     });` : '';
 
-    const onMouseEvents = `
-        mapElement.addEventListener('mousemove', (e) => {
-            ${tooltipEnabled ? 'onMouseMove(e);' : ''}
-            const parent = e.target.parentNode;
-            if (e.target.tagName === 'path' && parent.tagName === 'g') {
-                if (e.target.previousPos === undefined) e.target.previousPos = Array.from(parent.children).indexOf(e.target);
-                if (e.target !== parent.lastElementChild) {
-                    parent.append(e.target);
-                    e.target.classList.add('hovered');
-                }
-            } 
-        });
-
-        mapElement.addEventListener('mouseout', (e) => {
-            e.target.classList.remove('hovered');
-            const previousPos = e.target.previousPos;
-            if (previousPos) {
-                const parent = e.target.parentNode;
-                parent.insertBefore(e.target, parent.children[previousPos]);
-            }
-        });
-    `;
-
-    const tooltipCode = tooltipEnabled ? `
-    const parser = new DOMParser();
-    const width = ${stateMacro.macroParams.General.width}, height = ${stateMacro.macroParams.General.height};
-    const inverseScreenCTM = mapElement.getScreenCTM().inverse();
-    const tooltip = {shapeId: null, element: null};
-    tooltip.element = constructTooltip({}, '', 1, 1);
-    mapElement.append(tooltip.element);
-    tooltip.element.style.display = 'none';
-    const dataByGroup = ${JSON.stringify(finalDataByGroup)};
-    function constructTooltip(data, templateStr, shapeId, scaleX, scaleY) {
-        if(!data) return;
-        const elem = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-        elem.setAttribute('width', 1);
-        elem.setAttribute('height', 1);
-        elem.style.overflow = 'visible';
-        const parsed = parser.parseFromString(eval('\`' + templateStr + '\`' ), 'text/html').querySelector('body');
-        const container = document.createElementNS('http://www.w3.org/1999/xhtml', 'div')
-        container.style['position'] = 'fixed'; 
-        container.classList.add('.body');
-        container.append(parsed.firstChild);
-        elem.appendChild(container);
-        return elem;
-    }
-    mapElement.addEventListener('mouseleave', hideTooltip);
-
-    function hideTooltip() {
-        tooltip.element.style.display = 'none';
-        tooltip.element.style.opacity = 0;
-    }
-
-    function onMouseMove(e) {
-        const parent = e.target.parentNode;
-        if (!parent?.hasAttribute?.("id")) return hideTooltip();
-        const mapBounds = mapElement.querySelector('#frame').getBoundingClientRect();
-        const scaleX = width / mapBounds.width;
-        const scaleY = height / mapBounds.height;
-        const ttBounds = tooltip.element.firstChild?.firstChild?.getBoundingClientRect?.();
-        let posX = (e.clientX - mapBounds.left + 10) * scaleX, posY = (e.clientY - mapBounds.top + 10) * scaleY;
-        let tooltipVisibleOpacity = 1;
-        const groupId = parent.getAttribute('id');
-        const shapeId = e.target.getAttribute('id');
-        if (ttBounds?.width > 0) {
-            if (mapBounds.right - ttBounds.width < e.clientX + 10) {
-                posX = (e.clientX - mapBounds.left - ttBounds.width - 20) * scaleX;
-            }
-            if (mapBounds.bottom - ttBounds.height < e.clientY + 10) {
-                posY = (e.clientY - mapBounds.top - ttBounds.height - 20) * scaleY;
-            }
-        }
-        else if (shapeId && groupId in dataByGroup.data) {
-            tooltipVisibleOpacity = 0;
-            setTimeout(() => {
-                onMouseMove(e);
-            }, 0);
-        }
-        if (!(groupId in dataByGroup.data)) {
-            hideTooltip();
-        }
-        else if (shapeId && tooltip.shapeId === shapeId) {
-            tooltip.element.setAttribute('x', posX);
-            tooltip.element.setAttribute('y', posY);
-            // webkit positioning fix
-            tooltip.element.firstChild.style['position'] = 'absolute';
-            setTimeout(() => {tooltip.element.firstChild.style['position'] = 'fixed'}, 0)
-            tooltip.element.style.display = 'block';
-            tooltip.element.style.opacity = tooltipVisibleOpacity;
-        }
-        else {
-            const data = dataByGroup.data[groupId][shapeId];
-            if (!data) {
-                tooltip.element.style.display = 'none';
-                return;
-            }
-            const tt = constructTooltip(data, dataByGroup.tooltips[groupId], shapeId, scaleX, scaleY);
-            tooltip.element.replaceWith(tt);
-            tooltip.element = tt;
-            tooltip.shapeId = shapeId;
-            tooltip.element.setAttribute('x', posX);
-            tooltip.element.setAttribute('y', posY);
-            tooltip.element.style.opacity = tooltipVisibleOpacity;
-        }
-    }` : '';
+    // Build tooltip code by replacing placeholders with actual values
+    console.log(tooltipScript, stateMacro.macroParams.General.width.toString())
+    const tooltipCode = tooltipEnabled
+        ? tooltipScript
+            .replaceAll('__WIDTH__', stateMacro.macroParams.General.width.toString())
+            .replaceAll('__HEIGHT__', stateMacro.macroParams.General.height.toString())
+            .replaceAll('__DATA_BY_GROUP__', JSON.stringify(finalDataByGroup))
+        : '';
 
     let finalScript = `
     (function() {
@@ -264,7 +168,7 @@ export async function exportMacro(
         }
         ${onResize}
         ${tooltipCode}
-        ${onMouseEvents}
+        ${hoverScript}
         ${stateMacro.macroParams.General.animate ? getIntersectionObservingPart(true) : 'gElemsToImages()'}
     })()
         `;
