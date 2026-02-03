@@ -18,7 +18,6 @@ function constructTooltip(data, templateStr, shapeId) {
     elem.style.overflow = 'visible';
     const parsed = parser.parseFromString(eval('`' + templateStr + '`'), 'text/html').querySelector('body');
     const container = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-    container.style.position = 'fixed';
     container.classList.add('body');
     container.append(parsed.firstChild);
     elem.appendChild(container);
@@ -63,9 +62,6 @@ function onMouseMove(e) {
     } else if (shapeId && tooltip.shapeId === shapeId) {
         tooltip.element.setAttribute('x', posX);
         tooltip.element.setAttribute('y', posY);
-        // webkit positioning fix
-        tooltip.element.firstChild.style.position = 'absolute';
-        setTimeout(() => { tooltip.element.firstChild.style.position = 'fixed'; }, 0);
         tooltip.element.style.display = 'block';
         tooltip.element.style.opacity = tooltipVisibleOpacity;
     } else {
