@@ -205,11 +205,11 @@ export function getProjection(params: ProjectionParams): any {
     }
 }
 
-export function createD3ProjectionFromMapLibre(map: Map): any {
+export function createD3ProjectionFromMapLibre(map: Map, offset: number = 0): any {
     const projection = function (coordinates: [number, number]): [number, number] {
         const lngLat = new LngLat(coordinates[0], coordinates[1]);
         const point = map.project(lngLat);
-        return [point.x, point.y];
+        return [point.x + offset, point.y + offset];
     };
 
     projection.stream = function (stream: any): any {
@@ -217,13 +217,13 @@ export function createD3ProjectionFromMapLibre(map: Map): any {
             point: function (x: number, y: number) {
                 const lngLat = new LngLat(x, y);
                 const point = map.project(lngLat);
-                stream.point(point.x, point.y);
+                stream.point(point.x + offset, point.y + offset);
             }
         }).stream(stream);
     };
 
     projection.invert = function (pixels: [number, number]): [number, number] {
-        const point = new Point(pixels[0], pixels[1]);
+        const point = new Point(pixels[0] - offset, pixels[1] - offset);
         const lngLat = map.unproject(point);
         return [lngLat.lng, lngLat.lat];
     };

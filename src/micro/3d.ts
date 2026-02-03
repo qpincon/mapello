@@ -45,9 +45,9 @@ function clipToNDC({ cx, cy, cz, cw }: { cx: number; cy: number; cz: number; cw:
 /**
  * Convert NDC to screen pixels given map canvas size.
  */
-function ndcToScreen(ndc: { x: number; y: number }, width: number, height: number) {
-    const screenX = (ndc.x + 1) / 2 * width;
-    const screenY = (1 - ndc.y) / 2 * height;
+function ndcToScreen(ndc: { x: number; y: number }, width: number, height: number, offset: number = 0) {
+    const screenX = (ndc.x + 1) / 2 * width + offset;
+    const screenY = (1 - ndc.y) / 2 * height + offset;
     return { x: screenX, y: screenY };
 }
 
@@ -59,13 +59,14 @@ export function projectWithHeightUsingMainMatrix(
     mainMatrix: number[],
     lng: number,
     lat: number,
-    heightMeters: number
+    heightMeters: number,
+    offset: number = 0
 ) {
     const merc = MercatorCoordinate.fromLngLat([lng, lat], heightMeters);
     const clip = applyMatrixToMerc(mainMatrix, merc);
     const ndc = clipToNDC(clip);
     const canvas = map.getCanvas();
-    const screen = ndcToScreen(ndc, canvas.clientWidth, canvas.clientHeight);
+    const screen = ndcToScreen(ndc, canvas.clientWidth, canvas.clientHeight, offset);
 
     return {
         screen,
@@ -143,7 +144,8 @@ function renderExtrudedBuildingImproved(
     feature: RenderedFeaturePoly,
     map: MapLibreMap,
     mainMatrix: number[],
-    defaultHeight: number = MIN_BUILDING_HEIGHT
+    defaultHeight: number = MIN_BUILDING_HEIGHT,
+    offset: number = 0
 ): { elements: Array<{ el: SVGElement; depth: number }>; className: string; minVertexDepth: number } | null {
     if (!feature || feature.geometry.type !== 'Polygon') {
         return null;
@@ -167,13 +169,13 @@ function renderExtrudedBuildingImproved(
     // Project all rings (outer + holes) for bottom and top
     const projectedBottomRings = allRings.map(ring =>
         ring.map(([lng, lat]) =>
-            projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, baseHeight)
+            projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, baseHeight, offset)
         )
     );
 
     const projectedTopRings = allRings.map(ring =>
         ring.map(([lng, lat]) =>
-            projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, heightMeters)
+            projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, heightMeters, offset)
         )
     );
 
@@ -246,7 +248,6 @@ export function renderBuildingsToSvgImproved(
     const svgContainer = svg.append('g')
         .attr('id', 'buildings')
         .attr("clip-path", "url(#clipMapBorder)")
-        .attr('transform', `translate(${translateAmount}, ${translateAmount})`)
         .node()!;
 
     const mainMatrix = map.transform.getProjectionDataForCustomLayer(false).mainMatrix as number[];
@@ -277,7 +278,8 @@ export function renderBuildingsToSvgImproved(
                     feature,
                     map,
                     mainMatrix,
-                    layerState.defaultBuildingHeight ?? MIN_BUILDING_HEIGHT
+                    layerState.defaultBuildingHeight ?? MIN_BUILDING_HEIGHT,
+                    translateAmount
                 );
 
                 if (mainResult) {
@@ -304,7 +306,8 @@ export function renderBuildingsToSvgImproved(
                         part,
                         map,
                         mainMatrix,
-                        layerState.defaultBuildingHeight ?? MIN_BUILDING_HEIGHT
+                        layerState.defaultBuildingHeight ?? MIN_BUILDING_HEIGHT,
+                        translateAmount
                     );
 
                     if (partResult) {
@@ -359,7 +362,7 @@ export function renderBuildingsToSvgImproved(
         const g = document.createElementNS(SVG_NS, 'g');
         g.setAttribute('class', `buildings-${random(0, layerState.fills!.length - 1)}`);
         g.setAttribute('id', buildingId as string);
-        g.setAttribute('mindepth', String(buildingMinVertexDepths.get(buildingId)));
+        // g.setAttribute('mindepth', String(buildingMinVertexDepths.get(buildingId)));
 
         // Append all elements of this building to the group
         for (const item of elements) {

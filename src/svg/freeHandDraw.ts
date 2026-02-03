@@ -177,7 +177,9 @@ export class FreehandDrawer {
 
 
 export function drawFreeHandShapes(svg: SvgSelection, providedFreeHand: ParsedPath[][]) {
-    const container = svg.append("g").attr('id', 'freehand-drawings');
+    const container = svg.append("g")
+        .attr('id', 'freehand-drawings');
+    // .attr("clip-path", "url(#clipMapBorder)");
     providedFreeHand.forEach((drawingGroup) => {
         const gDrawing = container.append("g");
         for (const drawing of drawingGroup) {

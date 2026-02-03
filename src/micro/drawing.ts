@@ -131,7 +131,6 @@ export async function drawPrettyMap(
 
     svg.append('g')
         .attr('id', 'micro')
-        .attr('transform', `translate(${translateAmount}, ${translateAmount})`)
         .attr("clip-path", "url(#clipMapBorder)")
         .selectAll('path')
         .data(geometries2d)
@@ -260,8 +259,8 @@ function roundedRectFromParams(microParams: MicroParams): Feature<Polygon> {
         innerFrameWidth,
         innerFrameHeight,
         innerFrameRadius,
-        (innerFrameWidth / 2),
-        (innerFrameHeight / 2) + borderPadding * 2
+        (innerFrameWidth / 2) + borderPadding,
+        (innerFrameHeight / 2) + borderPadding
     );
 }
 
@@ -314,7 +313,7 @@ export function drawMicroFrame(
         .attr('stroke-width', borderWidth);
 
     if (animated) frame.attr('pathLength', 1)
-    appendClip(svg, innerFrameWidth, innerFrameHeight, innerFrameRx, -borderWidth / 2, -borderWidth / 2);
+    appendClip(svg, innerFrameWidth, innerFrameHeight, innerFrameRx, innerFrameX, innerFrameY);
 
     if (animated) {
         frame.on("animationend", (e) => {
