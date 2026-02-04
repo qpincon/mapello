@@ -1649,12 +1649,12 @@
     },
     "tooltipDefs": {
       "countries": {
-        "template": "<div>\n    <span> Country: {name}</span>\n</div>\n    ",
-        "content": "<div id=\"tooltip-preview\" style=\"will-change: opacity; font-size: 14px; padding: 5px; background-color: #FFFFFF; border: 1px solid black; max-width: 15rem; width: max-content; border-radius:7px;\">\n        <div>\n    <span> Country: {name}</span>\n</div>\n    \n    </div>",
+        "template": "<div>\n    <span> Country: __name__</span>\n</div>\n    ",
+        "content": "<div id=\"tooltip-preview\" style=\"will-change: opacity; font-size: 14px; padding: 5px; background-color: #FFFFFF; border: 1px solid black; max-width: 15rem; width: max-content; border-radius:7px;\">\n        <div>\n    <span> Country: __name__</span>\n</div>\n    \n    </div>",
         "locale": "en-US"
       },
       "Ukraine ADM1": {
-        "template": "<div>\n    <span> <b> Oblast </b>: {ukrainian_name}</span> <br/>\n    <span> <img src=\"https://raw.githubusercontent.com/twbs/icons/main/icons/person-fill.svg\"/> <b> Population </b>: {population} </span>\n</div>\n    ",
+        "template": "<div>\n    <span> <b> Oblast </b>: __ukrainian_name__</span> <br/>\n    <span> <img src=\"https://raw.githubusercontent.com/twbs/icons/main/icons/person-fill.svg\"/> <b> Population </b>: __population__ </span>\n</div>\n    ",
         "content": "<div id=\"tooltip-preview-Ukraine ADM1\" style=\"will-change: opacity; color:black; font-size: 14px; padding: 5px; background-color: rgb(247, 247, 243); border: 1px solid rgb(196, 178, 82); max-width: 15rem; width: max-content; border-radius: 4px;\" class=\"svelte-d50t4\"><div>\n    <span> <b> Oblast </b>: Автономна Республіка Крим</span> <br>\n    <span> <img src=\"https://raw.githubusercontent.com/twbs/icons/main/icons/person-fill.svg\"> <b> Population </b>: 2,124,000 </span>\n</div>\n    </div>",
         "enabled": true,
         "locale": "en-US"

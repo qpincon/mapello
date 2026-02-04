@@ -1831,12 +1831,12 @@
     },
     "tooltipDefs": {
       "countries": {
-        "template": "<div>\n    <span> Country: {name}</span>\n</div>\n    ",
-        "content": "<div id=\"tooltip-preview\" style=\"will-change: opacity; font-size: 14px; padding: 5px; background-color: #FFFFFF; border: 1px solid black; max-width: 15rem; width: max-content; border-radius:7px;\">\n        <div>\n    <span> Country: {name}</span>\n</div>\n    \n    </div>",
+        "template": "<div>\n    <span> Country: __name__</span>\n</div>\n    ",
+        "content": "<div id=\"tooltip-preview\" style=\"will-change: opacity; font-size: 14px; padding: 5px; background-color: #FFFFFF; border: 1px solid black; max-width: 15rem; width: max-content; border-radius:7px;\">\n        <div>\n    <span> Country: __name__</span>\n</div>\n    \n    </div>",
         "locale": "en-US"
       },
       "United States of America ADM1": {
-        "template": "<div>\n    <span style=\"display: block; text-align:center;\"> <b> {name} </b> </span>\n   <span> Electoral votes: {votes}</span>\n</div>\n    ",
+        "template": "<div>\n    <span style=\"display: block; text-align:center;\"> <b> __name__ </b> </span>\n   <span> Electoral votes: {votes}</span>\n</div>\n    ",
         "content": "<div id=\"tooltip-preview-United States of America ADM1\" style=\"will-change: opacity; font-size: 14px; padding: 5px; background-color: rgb(255, 255, 255); border: 1px solid rgb(168, 168, 168); max-width: 15rem; width: max-content; border-radius: 7px;\" class=\"svelte-d50t4\"><div>\n    <span style=\"display: block; text-align:center;\"> <b> Alabama </b> </span>\n   <span style=\"font-size: 12px;\"> Electoral votes: 32</span>\n</div>\n    </div>",
         "enabled": true,
         "locale": "en-US"

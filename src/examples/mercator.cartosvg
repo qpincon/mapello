@@ -1454,7 +1454,7 @@
     },
     "tooltipDefs": {
       "countries": {
-        "template": "<div>\n    <span> <b> Country: </b> {name} </span> <br/> <span> Region: {region}</span>\n</div>\n    ",
+        "template": "<div>\n    <span> <b> Country: </b> __name__ </span> <br/> <span> Region: __region__</span>\n</div>\n    ",
         "content": "<div id=\"tooltip-preview-countries\" style=\"will-change: opacity; font-size: 14px; padding: 5px; background-color: rgb(134, 113, 0); border: 1px solid rgb(17, 97, 125); max-width: 15rem; width: max-content; border-radius: 7px;\" class=\"svelte-d50t4\"><div style=\"color: rgb(255, 255, 255); background-color: rgba(0, 0, 0, 0); border-radius: 0px;\">\n    <span> <b> Country: </b> Afghanistan </span> <br> <span> Region: Asia</span>\n</div>\n    </div>",
         "locale": "en-US",
         "enabled": true

@@ -3,13 +3,14 @@
     import Accordions from "../../components/Accordions.svelte";
     import {
         download,
+        extractTemplateVariables,
         formatUnicorn,
         getColumns,
         getNumericCols,
         htmlToElement,
         initTooltips,
     } from "../../util/common";
-    import { applyStyles, DOM_PARSER, exportStyleSheet, reportStyle } from "../../util/dom";
+    import { applyStyles, exportStyleSheet, reportStyle } from "../../util/dom";
     import { helpParams, noSatelliteParams, type OtherParams, type ParamDefinitions } from "../../params";
     import { appState, commonState, macroState } from "../../state.svelte";
     import Icon from "../../components/Icon.svelte";
@@ -57,6 +58,7 @@
     import { dragged, zoomed } from "../interactions";
     import Modal from "src/components/Modal.svelte";
     import PaletteEditor from "src/components/PaletteEditor.svelte";
+    import QuillEditor from "src/components/QuillEditor.svelte";
     import { resolvedLocales, updateZonesDataFormatters } from "../formatting";
     import { handleInlineStyleChange } from "src/svg/svg";
 
@@ -78,7 +80,7 @@
     let currentMacroLayerTab = $state<string>("land");
     let currentTemplateHasNumeric = $state<boolean>(false);
     let showModal = $state<boolean>(false);
-    let templateErrorMessages = $state<Record<string, boolean>>({});
+    let templateErrorMessages = $state<Record<string, string | null>>({});
     let commonCss = $state<string | undefined>();
     let availableColumns = $state<string[]>([]);
     let availablePalettes = $state<string[]>([]);
@@ -262,7 +264,7 @@
     }
 
     function templateHasNumeric(layerName: string): boolean {
-        const toFind = macroState.zonesData[layerName]?.numericCols.map((colDef) => `{${colDef.column}}`);
+        const toFind = macroState.zonesData[layerName]?.numericCols.map((colDef) => `__${colDef.column}__`);
         const template = macroState.tooltipDefs[layerName]?.template;
         return toFind?.some((str) => template.includes(str));
     }
@@ -386,17 +388,25 @@
     }
 
     function onTemplateChange(): void {
-        const parsed = DOM_PARSER.parseFromString(
-            macroState.tooltipDefs[currentMacroLayerTab].template,
-            "application/xml",
-        );
-        const errorNode = parsed.querySelector("parsererror");
-        if (errorNode) {
-            templateErrorMessages[currentMacroLayerTab] = true;
+        const template = macroState.tooltipDefs[currentMacroLayerTab].template;
+        const variables = extractTemplateVariables(template);
+        const zoneData = macroState.zonesData[currentMacroLayerTab];
+
+        if (zoneData?.data?.length > 0) {
+            const availableCols = Object.keys(zoneData.data[0]);
+            const missingVars = variables.filter((v) => !availableCols.includes(v));
+
+            if (missingVars.length > 0) {
+                templateErrorMessages[currentMacroLayerTab] = `Unknown variable(s): ${missingVars.join(", ")}`;
+            } else {
+                // macroState.tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem!.outerHTML;
+                currentTemplateHasNumeric = templateHasNumeric(currentMacroLayerTab);
+                templateErrorMessages[currentMacroLayerTab] = null;
+            }
         } else {
-            macroState.tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem!.outerHTML;
+            // macroState.tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem!.outerHTML;
             currentTemplateHasNumeric = templateHasNumeric(currentMacroLayerTab);
-            delete templateErrorMessages[currentMacroLayerTab];
+            templateErrorMessages[currentMacroLayerTab] = null;
         }
         saveState();
     }
@@ -846,22 +856,18 @@
                                 <span
                                     class="help-tooltip"
                                     data-bs-toggle="tooltip"
-                                    data-bs-title="The template must be valid HTML (<br/> can be used to break lines). Brackets  &#123; &#125; can be used to reference columns from the data above.  "
+                                    data-bs-title="Use double underscore __column__ to reference columns from the data above."
                                     >?</span
                                 >
                             </label>
-                            <textarea
-                                class="form-control"
-                                class:is-invalid={templateErrorMessages[currentMacroLayerTab]}
-                                id="templatetooltip"
-                                rows="7"
+                            <QuillEditor
                                 bind:value={macroState.tooltipDefs[currentMacroLayerTab].template}
                                 onchange={onTemplateChange}
-                            ></textarea>
+                                hasError={!!templateErrorMessages[currentMacroLayerTab]}
+                            />
                             {#if templateErrorMessages[currentMacroLayerTab]}
-                                <div class="invalid-feedback">
-                                    <span> Malformed HTML. Please fix the template </span> <br />
-                                    <!-- {templateErrorMessages[currentTab]} -->
+                                <div class="invalid-feedback d-block">
+                                    {templateErrorMessages[currentMacroLayerTab]}
                                 </div>
                             {/if}
                         </div>

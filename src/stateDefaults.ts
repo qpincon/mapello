@@ -119,10 +119,7 @@ export const defaultLegendDef: LegendDef = {
 export const defaultCustomCategoricalPalette: Color[] = ["#ff0000ff", "#00ff00ff", "#0000ffff"];
 
 export function defaultTooltipContent(isCountry: boolean): string {
-    return `<div>
-<span> ${isCountry ? "Country" : "Region"}: {name}</span>
-</div>
-`;
+    return `<div>${isCountry ? "Country" : "Region"}: __name__</div>`;
 }
 
 export function defaultTooltipFull(template: string): string {

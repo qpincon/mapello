@@ -1,5 +1,4 @@
 import { Tooltip } from 'bootstrap';
-import { formatLocale } from "d3";
 import type { ActionReturn } from 'svelte/action';
 export function download(content: string, mimeType: string, filename: string): void {
     const a = document.createElement('a');
@@ -180,11 +179,23 @@ export function discriminateCssForExport(cssToTransform: string): { mapId: strin
 export function formatUnicorn(str: string, args: Record<string, string | number>): string {
     if (args) {
         for (const key in args) {
-            str = str.replace(new RegExp("\\{" + key + "\\}", "gi"), String(args[key]));
+            str = str.replace(new RegExp("__" + key + "__", "gi"), String(args[key]));
         }
     }
     return str;
-};
+}
+
+export function extractTemplateVariables(template: string): string[] {
+    const regex = /__(\w+)__/g;
+    const variables: string[] = [];
+    let match;
+    while ((match = regex.exec(template)) !== null) {
+        if (!variables.includes(match[1])) {
+            variables.push(match[1]);
+        }
+    }
+    return variables;
+}
 
 export function extractFileName(filePath: string): string {
     // Get the last part after the last slash

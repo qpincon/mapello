@@ -64,6 +64,8 @@
     "parse-svg-path": "^0.1.2",
     "perfect-freehand": "^1.2.2",
     "pmtiles": "^4.3.0",
+    "quill": "^2.0.3",
+    "quill-resize-image": "^1.0.11",
     "svgo": "^4.0.0",
     "terser": "^5.16.2",
     "text-to-svg": "^3.1.5",
