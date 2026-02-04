@@ -4,7 +4,7 @@ import { appState, macroState } from "src/state.svelte";
 let altMin = 100;
 let altMax = 10000;
 // simplification threshold: maps altitude to visibleArea
-let threshScale = scalePow().domain([altMin, altMax]).range([0, 0.1]).exponent(0.08);
+let threshScale = scalePow().domain([altMin, altMax]).range([0, 0.1]).exponent(1.5);
 
 export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
     const src = event.sourceEvent;
@@ -12,15 +12,43 @@ export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
     if (src.type === "dblclick") return;
     if (!appState.projection) return;
 
-    // Same normalization as App.svelte wheelDelta
     const delta = -src.deltaY * (src.deltaMode === 1 ? 0.05 : src.deltaMode ? 1 : 0.002);
     const zoomFactor = Math.pow(2, delta);
 
     const isSatellite = macroState.macroParams.General.projection === "satellite";
-    // Satellite: higher altitude = zoomed out, so divide to zoom in
-    // Standard: higher altitude = higher scale = zoomed in, so multiply
-    let newAltitude = macroState.inlinePropsMacro.altitude * (isSatellite ? 1 / zoomFactor : zoomFactor);
+    const oldAltitude = macroState.inlinePropsMacro.altitude;
+    let newAltitude = oldAltitude * (isSatellite ? 1 / zoomFactor : zoomFactor);
     newAltitude = Math.round(Math.max(altMin, Math.min(altMax, newAltitude)));
+
+    // Zoom toward cursor: adjust center so the point under the cursor stays fixed
+    const projection = appState.projection;
+    if (projection.invert) {
+        const container = (src.target as Element).closest("#map-container");
+        if (container) {
+            const rect = container.getBoundingClientRect();
+            const cx = src.clientX - rect.left;
+            const cy = src.clientY - rect.top;
+            const cursorGeo = projection.invert([cx, cy]);
+            if (cursorGeo && isFinite(cursorGeo[0]) && isFinite(cursorGeo[1])) {
+                const altRatio = newAltitude / oldAltitude;
+                if (isSatellite) {
+                    // Satellite: lon/lat control the center (translateX/Y are ignored)
+                    const lon = macroState.inlinePropsMacro.longitude;
+                    const lat = macroState.inlinePropsMacro.latitude;
+                    macroState.inlinePropsMacro.longitude = lon + ((cursorGeo[0] - lon) * (1 - altRatio));
+                    macroState.inlinePropsMacro.latitude = lat + ((cursorGeo[1] - lat) * (1 - altRatio));
+                } else {
+                    // Standard: translateX/Y control the pixel offset
+                    const w = container.clientWidth;
+                    const h = container.clientHeight;
+                    const centerX = w / 2 + macroState.inlinePropsMacro.translateX;
+                    const centerY = h / 2 + macroState.inlinePropsMacro.translateY;
+                    macroState.inlinePropsMacro.translateX -= (cx - centerX) * (altRatio - 1);
+                    macroState.inlinePropsMacro.translateY -= (cy - centerY) * (altRatio - 1);
+                }
+            }
+        }
+    }
 
     macroState.visibleArea = threshScale(newAltitude);
     macroState.macroParams.General.altitude = newAltitude;
@@ -59,12 +87,12 @@ export function changeAltitudeScale(autoAdjustAltitude = true): void {
         altMin = Math.round((1 / fovExtent) * 500);
         altMax = Math.round((1 / fovExtent) * 4000);
         // low altitude (zoomed in) → 0, high altitude (zoomed out) → 0.1
-        threshScale = scalePow().domain([altMin, altMax]).range([0, 0.1]).exponent(0.08);
+        threshScale = scalePow().domain([altMin, altMax]).range([0, 0.1]).exponent(1.5);
     } else {
         altMin = 90;
         altMax = 2000;
         // high altitude (zoomed in for standard) → 0, low altitude → 0.1
-        threshScale = scalePow().domain([altMax, altMin]).range([0, 0.1]).exponent(0.08);
+        threshScale = scalePow().domain([altMax, altMin]).range([0, 0.1]).exponent(1.5);
     }
 
     const altitude = macroState.inlinePropsMacro.altitude || macroState.macroParams.General.altitude;

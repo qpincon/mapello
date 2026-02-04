@@ -140,6 +140,7 @@
 
     export function onZoom(e: d3.D3ZoomEvent<SVGSVGElement, unknown>) {
         if (e.sourceEvent.type === "dblclick") return;
+        console.log("onZoom", e);
         zoomed(e);
         handleChangeProp("altitude", drawSimplifyThenReal);
     }

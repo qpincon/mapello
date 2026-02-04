@@ -219,3 +219,4 @@
 - [ ] Macro: use noise from fitler instead of image
 - [ ] Style independently and globally freehand
 - [ ] Micro 3D: problem with complex geometries (louvre)
+- [ ] Macro: less simplification for base layers (land + adm0)
