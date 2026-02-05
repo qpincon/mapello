@@ -10,12 +10,12 @@
         htmlToElement,
         initTooltips,
     } from "../../util/common";
-    import { applyStyles, exportStyleSheet, reportStyle } from "../../util/dom";
-    import { helpParams, noSatelliteParams, type OtherParams, type ParamDefinitions } from "../../params";
+    import { exportStyleSheet, reportStyle } from "../../util/dom";
+    import { helpParams, noSatelliteParams } from "../../params";
     import { appState, commonState, macroState } from "../../state.svelte";
     import Icon from "../../components/Icon.svelte";
     import { icons } from "../../shared/icons";
-    import { allAvailableAdm, geometriesState, initWorldData, updateLayerSimplification } from "../geometry-data";
+    import { allAvailableAdm, geometriesState, initWorldData } from "../geometry-data";
     import RangeInput from "src/components/RangeInput.svelte";
     import ColorPickerPreview from "src/components/ColorPickerPreview.svelte";
     import type {
@@ -35,11 +35,11 @@
 
     import { saveState } from "src/util/save";
     import DataTable from "src/components/DataTable.svelte";
-    import { defaultState, defaultTooltipStyle } from "src/stateDefaults";
+    import { defaultTooltipStyle } from "src/stateDefaults";
     import type InlineStyleEditor from "inline-style-editor";
     import Legend from "src/components/Legend.svelte";
     import { select } from "d3-selection";
-    import { scaleLinear, scalePow, scaleOrdinal, scaleQuantize, scaleQuantile } from "d3-scale";
+    import { scaleOrdinal, scaleQuantize, scaleQuantile } from "d3-scale";
 
     import {
         CATEGORICAL_SCHEMES,

@@ -23,7 +23,7 @@
     import microImg from "./assets/img/micro.png";
     import Instructions from "./components/Instructions.svelte";
     import Icon from "./components/Icon.svelte";
-    import { exportStyleSheet, getUsedInlineFonts, fontsToCss } from "./util/dom";
+    import { exportStyleSheet, getUsedInlineFonts, fontsToCss, applyStyles } from "./util/dom";
     import { getState, saveState } from "./util/save";
     import { exportFontChoices } from "./svg/export";
     import * as _microPalettes from "./micro/microPalettes";
@@ -366,7 +366,10 @@
         drawAndSetupShapes();
         drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
         drawFreeHandShapes(svg, commonState.providedFreeHand);
-        if (!simplified) saveState();
+        if (!simplified) {
+            applyStyles(commonState.inlineStyles);
+            saveState();
+        }
         isDrawing = false;
     }
 

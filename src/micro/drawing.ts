@@ -3,7 +3,7 @@ import { select, type Selection } from "d3-selection";
 import { bboxContains, bboxIntersects, getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
 import { cloneDeep, debounce, kebabCase, last, random, size } from "lodash-es";
 import { color, hsl } from "d3-color";
-import { applyStyles, DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
+import { DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
 import { HatchPatternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download } from "../util/common";
@@ -180,7 +180,6 @@ export async function drawPrettyMap(
     svg.style("pointer-events", isLocked ? "auto" : "none");
     svg.classed("animate-transition", true).classed("animate", generalParams.General.animate);
     mapLibreContainer.style('opacity', 0);
-    applyStyles(commonState.inlineStyles);
     setTimeout(() => postClip(generalParams), 100);
 }
 
