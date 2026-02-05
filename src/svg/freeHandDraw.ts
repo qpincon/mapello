@@ -109,7 +109,6 @@ export class FreehandDrawer {
 
         // Create new path element
         this.currentPath = document.createElementNS(SVG_NAMESPACE, "path");
-        this.currentPath.setAttribute("class", "freehand");
         this.currentPath.setAttribute("fill", this.strokeColor);
         this.currentPath.setAttribute("stroke", "none");
         this.currentGroup!.appendChild(this.currentPath);
@@ -180,11 +179,13 @@ export function drawFreeHandShapes(svg: SvgSelection, providedFreeHand: ParsedPa
     const container = svg.append("g")
         .attr('id', 'freehand-drawings')
         .attr("clip-path", "url(#clipMapBorder)");
-    providedFreeHand.forEach((drawingGroup) => {
-        const gDrawing = container.append("g");
-        for (const drawing of drawingGroup) {
-            const pathElem = gDrawing.append("path").attr("pathLength", 1).classed("freehand", true);
+    providedFreeHand.forEach((drawingGroup, i) => {
+        const groupId = `freehand-${i}`;
+        const gDrawing = container.append("g").classed("freehand", true).attr('id', groupId);
+        drawingGroup.forEach((drawing, j) => {
+            const id = `freehand-${i}-${j}`;
+            const pathElem = gDrawing.append("path").attr('id', id);
             pathElem.attr("d", pathStringFromParsed(drawing, appState.projection!));
-        }
+        })
     });
 }

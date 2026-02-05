@@ -220,3 +220,5 @@
 - [ ] Style independently and globally freehand
 - [ ] Micro 3D: problem with complex geometries (louvre)
 - [ ] Macro: less simplification for base layers (land + adm0)
+- [ ] ISE: use icons for fill / stroke / dasharray / width
+- [ ] ISE: don't display lines with only 1 item

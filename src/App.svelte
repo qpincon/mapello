@@ -124,8 +124,11 @@
                 },
                 getElems: (el: HTMLElement) => {
                     console.log(el);
-                    if (el.classList.contains("freehand")) {
-                        return [[el.parentElement, "Clicked"]];
+                    if (el.parentElement?.classList.contains("freehand")) {
+                        return [
+                            [el, "Clicked"],
+                            [el.parentElement, "Group"],
+                        ];
                     }
                     if (el.parentElement?.parentElement?.id === "buildings") {
                         return [[el.parentElement, "Selected building"]];
@@ -174,6 +177,7 @@
                 },
                 cssRuleFilter: (el: HTMLElement, cssSelector: string) => {
                     console.log(cssSelector);
+                    if (cssSelector.includes("#freehand-drawings > g")) return false;
                     if (cssSelector.includes("#static-svg-map")) return false;
                     // if (cssSelector.includes(".hovered")) return false;
                     if (cssSelector.includes("ssc-")) return false;
@@ -186,6 +190,7 @@
                 },
                 inlineDeletable: () => false,
                 getCssRuleName: (ruleName: string, el: HTMLElement) => {
+                    if (ruleName.includes("#freehand-drawings > .freehand")) return "All freehand";
                     let isHover = ruleName.includes(":hover") || ruleName.includes(".hovered");
                     let finalStr = "";
                     // if (ruleName.includes("#buildings .buildings-1")) finalStr = "Building type 1";
@@ -654,6 +659,7 @@
         });
         if (unprojected.length) commonState.providedFreeHand.push(unprojected);
         drawFreeHandShapes(svg, commonState.providedFreeHand);
+        saveState();
     }
 
     function closeMenu(): void {

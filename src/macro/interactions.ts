@@ -8,7 +8,7 @@ let threshScale = scalePow().domain([altMin, altMax]).range([0, 0.1]).exponent(1
 
 export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
     const src = event.sourceEvent;
-    if (!src) return;
+    if (!src || (!src.deltaY && !src.deltaX)) return;
     if (src.type === "dblclick") return;
     if (!appState.projection) return;
 
