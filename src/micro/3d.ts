@@ -188,6 +188,20 @@ function renderExtrudedBuildingImproved(
         const projectedTop = projectedTopRings[ringIdx];
 
         const n = projectedBottom.length;
+
+        // Determine ring winding in NDC via signed area (shoelace formula)
+        let ndcSignedArea = 0;
+        for (let j = 0; j < n; j++) {
+            const nj = (j + 1) % n;
+            ndcSignedArea += projectedBottom[j].ndc.x * projectedBottom[nj].ndc.y;
+            ndcSignedArea -= projectedBottom[nj].ndc.x * projectedBottom[j].ndc.y;
+        }
+        const isCCW = ndcSignedArea > 0;
+        const isHole = ringIdx > 0;
+        // Outer walls face outward; hole walls face inward (toward courtyard).
+        // isWallVisibleNDC assumes CW winding, so invert when isHole XOR isCCW.
+        const invertVisibility = isHole !== isCCW;
+
         for (let i = 0; i < n; i++) {
             const ni = (i + 1) % n;
 
@@ -201,8 +215,8 @@ function renderExtrudedBuildingImproved(
                 isInsideNDC(t0p.ndc) && isInsideNDC(t1p.ndc);
 
             if (allInsideNDC) {
-                // Use NDC-based culling for walls fully inside viewport
-                const visible = isWallVisibleNDC(b0p.ndc, b1p.ndc, t0p.ndc);
+                let visible = isWallVisibleNDC(b0p.ndc, b1p.ndc, t0p.ndc);
+                if (invertVisibility) visible = !visible;
                 if (!visible) continue;
             }
             // If any vertex is outside NDC bounds, skip culling and render the wall
@@ -259,9 +273,11 @@ export function renderBuildingsToSvgImproved(
         depth: number;
         className: string;
         buildingId: number | string;
+        partId: number;
     };
 
     const allElements: ElementWithDepth[] = [];
+    let nextPartId = 0;
 
     // Track minimum vertex depth per building for correct sorting
     const buildingMinVertexDepths = new Map<number | string, number>();
@@ -288,12 +304,14 @@ export function renderBuildingsToSvgImproved(
                     const currentMin = buildingMinVertexDepths.get(buildingId) ?? Infinity;
                     buildingMinVertexDepths.set(buildingId, Math.min(currentMin, mainResult.minVertexDepth));
 
+                    const partId = nextPartId++;
                     for (const item of mainResult.elements) {
                         allElements.push({
                             el: item.el,
                             depth: item.depth,
                             className: mainResult.className,
                             buildingId,
+                            partId,
                         });
                     }
                 }
@@ -316,12 +334,14 @@ export function renderBuildingsToSvgImproved(
                         const currentMin = buildingMinVertexDepths.get(buildingId) ?? Infinity;
                         buildingMinVertexDepths.set(buildingId, Math.min(currentMin, partResult.minVertexDepth));
 
+                        const partId = nextPartId++;
                         for (const item of partResult.elements) {
                             allElements.push({
                                 el: item.el,
                                 depth: item.depth,
                                 className: partResult.className,
                                 buildingId,
+                                partId,
                             });
                         }
                     }
@@ -346,6 +366,15 @@ export function renderBuildingsToSvgImproved(
     // Sort each building's elements by depth (for proper rendering within the building)
     for (const elements of buildingGroups.values()) {
         elements.sort((a, b) => b.depth - a.depth);
+        // elements.sort((a, b) => {
+        //     // Within the same part, ensure roof renders on top of its own walls
+        //     if (a.partId === b.partId) {
+        //         const aIsRoof = a.el.classList.contains('roof') ? 1 : 0;
+        //         const bIsRoof = b.el.classList.contains('roof') ? 1 : 0;
+        //         if (aIsRoof !== bIsRoof) return aIsRoof - bIsRoof;
+        //     }
+        //     return b.depth - a.depth;
+        // });
     }
 
     // Sort building IDs by their minimum vertex depth (descending - farthest buildings first)

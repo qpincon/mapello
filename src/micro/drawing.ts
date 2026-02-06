@@ -160,10 +160,6 @@ export async function drawPrettyMap(
     console.log('buildings features=', featureCollection(buildings));
     if (layerDefinitions.buildings['3dBuildings']) {
 
-        // const eiffel = buildings.find(b => b.id === 35184377102196);
-        // if (eiffel) {
-        //     eiffel.properties.height = 30;
-        // }
         const { normalFeatures, groupedFeatures } = groupBuildingFeatures(buildings);
         console.log('normalFeatures=', normalFeatures);
         console.log('groupedFeatures=', groupedFeatures);
@@ -582,7 +578,7 @@ export function computeBaseHeights(groupedFeatures: GroupedFeature[]): void {
             groupedFeature.properties.shouldRender = true;
         } else {
             const meanPartHeight = parts.reduce((sum, p) => sum + (p.properties.height ?? rootHeight), 0) / parts.length;
-            groupedFeature.properties.shouldRender = rootHeight < meanPartHeight;
+            groupedFeature.properties.shouldRender = rootHeight < 30 || rootHeight < meanPartHeight;
         }
     }
 }

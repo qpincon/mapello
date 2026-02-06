@@ -2238,10 +2238,10 @@ inherits@^2.0.1, inherits@^2.0.3, inherits@^2.0.4, inherits@~2.0.3, inherits@~2.
   resolved "https://registry.npmjs.org/inherits/-/inherits-2.0.4.tgz"
   integrity sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==
 
-inline-style-editor@1.5.0:
-  version "1.5.3"
-  resolved "https://registry.yarnpkg.com/inline-style-editor/-/inline-style-editor-1.5.3.tgz#bcf9a35b047ba305df8d1ac989e307b3206e0e6a"
-  integrity sha512-k5GyJO3p65Dt5ngtZdRdeWNobOO9lpHna87W7qrD1C4bULtNSRisjM065cis+CbdzwjYk9FnlmRKmDr5j2g1OA==
+inline-style-editor@1.5.4:
+  version "1.5.4"
+  resolved "https://registry.yarnpkg.com/inline-style-editor/-/inline-style-editor-1.5.4.tgz#6e936d46869e49b4926f4db4a98037677445cbc7"
+  integrity sha512-tr5wQIprAoEeKJwrbC1CrQ+WDKv/fj/PY/rk0k6cM17RFED0VRandq5Pk92jpxalnwCf6bCOY0si3TU9XAzy7Q==
   dependencies:
     d3-contour "^4.0.0"
     parse-svg-path "^0.1.2"

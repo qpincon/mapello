@@ -58,7 +58,7 @@
     "d3": "^7.6.1",
     "d3-geo-projection": "^4.0.0",
     "fit-curve": "^0.2.0",
-    "inline-style-editor": "1.5.0",
+    "inline-style-editor": "1.5.4",
     "lodash-es": "^4.17.21",
     "maplibre-gl": "^5.3.0",
     "parse-svg-path": "^0.1.2",
