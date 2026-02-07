@@ -279,6 +279,8 @@ export function renderBuildingsToSvgImproved(
     const allElements: ElementWithDepth[] = [];
     let nextPartId = 0;
 
+    const complexBuildings = new Set<number | string>();
+
     // Track minimum vertex depth per building for correct sorting
     const buildingMinVertexDepths = new Map<number | string, number>();
 
@@ -300,7 +302,6 @@ export function renderBuildingsToSvgImproved(
                 );
 
                 if (mainResult) {
-                    // Track minimum vertex depth for this building
                     const currentMin = buildingMinVertexDepths.get(buildingId) ?? Infinity;
                     buildingMinVertexDepths.set(buildingId, Math.min(currentMin, mainResult.minVertexDepth));
 
@@ -320,6 +321,10 @@ export function renderBuildingsToSvgImproved(
             // Process all parts (if any) - parts are directly on GroupedFeature, not in properties
 
             if (groupedFeature.parts && Array.isArray(groupedFeature.parts)) {
+                if (groupedFeature.parts.length > 10 &&
+                    groupedFeature.parts.some(p => p.properties.base_height != null)) {
+                    complexBuildings.add(buildingId);
+                }
                 for (const part of groupedFeature.parts) {
                     const partResult = renderExtrudedBuildingImproved(
                         part,
@@ -330,7 +335,6 @@ export function renderBuildingsToSvgImproved(
                     );
 
                     if (partResult) {
-                        // Track minimum vertex depth for this building
                         const currentMin = buildingMinVertexDepths.get(buildingId) ?? Infinity;
                         buildingMinVertexDepths.set(buildingId, Math.min(currentMin, partResult.minVertexDepth));
 
@@ -364,17 +368,19 @@ export function renderBuildingsToSvgImproved(
     }
 
     // Sort each building's elements by depth (for proper rendering within the building)
-    for (const elements of buildingGroups.values()) {
-        elements.sort((a, b) => b.depth - a.depth);
-        // elements.sort((a, b) => {
-        //     // Within the same part, ensure roof renders on top of its own walls
-        //     if (a.partId === b.partId) {
-        //         const aIsRoof = a.el.classList.contains('roof') ? 1 : 0;
-        //         const bIsRoof = b.el.classList.contains('roof') ? 1 : 0;
-        //         if (aIsRoof !== bIsRoof) return aIsRoof - bIsRoof;
-        //     }
-        //     return b.depth - a.depth;
-        // });
+    for (const [buildingId, elements] of buildingGroups.entries()) {
+        if (complexBuildings.has(buildingId)) {
+            // Complex multi-part buildings: pure depth sort preserves stacking order
+            elements.sort((a, b) => b.depth - a.depth);
+        } else {
+            // Simple buildings: walls first, then roofs (roofs paint over walls)
+            elements.sort((a, b) => {
+                const aIsRoof = a.el.classList.contains('roof') ? 1 : 0;
+                const bIsRoof = b.el.classList.contains('roof') ? 1 : 0;
+                if (aIsRoof !== bIsRoof) return aIsRoof - bIsRoof;
+                return b.depth - a.depth;
+            });
+        }
     }
 
     // Sort building IDs by their minimum vertex depth (descending - farthest buildings first)
