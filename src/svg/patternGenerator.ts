@@ -20,6 +20,11 @@ export class HatchPatternGenerator {
     { char: "O", label: "Large circles", id: "lgcircles" },
     { char: "0", label: "Diamonds", id: "diamonds" },
     { char: "v", label: "V-shape", id: "vshape" },
+    { char: "+", label: "Crosshatch", id: "crosshatch" },
+    { char: "~", label: "Waves", id: "waves" },
+    { char: "s", label: "Scales", id: "scales" },
+    { char: "b", label: "Brick", id: "brick" },
+    { char: "c", label: "Checkerboard", id: "checker" },
   ];
 
   private patternScale: number;
@@ -96,6 +101,33 @@ export class HatchPatternGenerator {
           break;
         case 'v': // V-shape
           this._createPathPattern('M0 0 5 5 10 0M0 5 5 10 10 5M-1 9 5 15 11 9M0-5 5 0 10-5', pattern, color, strokeWidth);
+          break;
+        case '+': // Crosshatch (plus signs)
+          this._createPathPattern(
+            'M3 5 L7 5 M5 3 L5 7 M-2 0 L2 0 M0 -2 L0 2 M8 0 L12 0 M10 -2 L10 2 M-2 10 L2 10 M0 8 L0 12 M8 10 L12 10 M10 8 L10 12',
+            pattern, color, strokeWidth
+          );
+          break;
+        case '~': // Waves (two lines + overflow for seamless vertical tiling)
+          this._createPathPattern(
+            'M0,5 C2.5,2 5,2 5,5 S7.5,8 10,5 M0,0 C2.5,-3 5,-3 5,0 S7.5,3 10,0 M0,10 C2.5,7 5,7 5,10 S7.5,13 10,10',
+            pattern, color, strokeWidth
+          );
+          break;
+        case 's': // Scales (upward-opening arcs, staggered rows)
+          this._createPathPattern(
+            'M0,5 A5,5 0 0 0 10,5 M-5,0 A5,5 0 0 0 5,0 M5,0 A5,5 0 0 0 15,0 M-5,10 A5,5 0 0 0 5,10 M5,10 A5,5 0 0 0 15,10',
+            pattern, color, strokeWidth
+          );
+          break;
+        case 'b': // Brick (running bond)
+          this._createPathPattern(
+            'M0 0 L10 0 M0 5 L10 5 M0 10 L10 10 M5 0 L5 5 M0 5 L0 10 M10 5 L10 10',
+            pattern, color, strokeWidth
+          );
+          break;
+        case 'c': // Checkerboard
+          this._addCheckerboard(pattern, color);
           break;
       }
     }
@@ -230,6 +262,22 @@ export class HatchPatternGenerator {
       diamond.setAttribute('fill', 'none');
       pattern.appendChild(diamond);
     }
+  }
+
+  _addCheckerboard(pattern: SVGElement, color: Color) {
+    const half = this.size / 2;
+    const r1 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    r1.setAttribute('width', `${half}`);
+    r1.setAttribute('height', `${half}`);
+    r1.setAttribute('fill', color);
+    pattern.appendChild(r1);
+    const r2 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    r2.setAttribute('x', `${half}`);
+    r2.setAttribute('y', `${half}`);
+    r2.setAttribute('width', `${half}`);
+    r2.setAttribute('height', `${half}`);
+    r2.setAttribute('fill', color);
+    pattern.appendChild(r2);
   }
 
   _createPathPattern(d: string, pattern: SVGElement, color: Color, strokeWidth: number) {
