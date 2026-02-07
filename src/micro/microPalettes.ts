@@ -35,7 +35,7 @@ export const midnightBloom: Partial<MicroPaletteWithBorder> = {
     sand: { fill: "#F6CD61", stroke: "#AB5236", active: true },
     grass: {
         fill: "#008751", stroke: "#29366A", active: true,
-        pattern: { hatch: '+', color: '#00613A', strokeWidth: 0.6, scale: 0.5 }
+        pattern: { hatch: '-', color: '#00613A', strokeWidth: 0.6, scale: 0.5 }
     },
     forest: { fill: "#00A941", stroke: "#29366A", active: true },
     roads: { stroke: "#7E85AD", active: true },
@@ -59,7 +59,7 @@ export const candyLand: Partial<MicroPaletteWithBorder> = {
     sand: { fill: "#FFFACD", stroke: "#C9C0BB", active: true },
     grass: {
         fill: "#BDFA7C", stroke: "#5D4A66", active: true,
-        pattern: { hatch: 'x', color: '#9ED063', strokeWidth: 0.5, scale: 0.8 }
+        pattern: { hatch: '/', color: '#9ED063', strokeWidth: 0.5, scale: 0.8 }
     },
     forest: { fill: "#52B788", stroke: "#5D4A66", active: true },
     roads: { stroke: "#5D4A66", active: true },
@@ -83,7 +83,7 @@ export const autumnVintage: Partial<MicroPaletteWithBorder> = {
     sand: { fill: "#EAD2AC", stroke: "#B6AA8D", active: true },
     grass: {
         fill: "#A1B56C", stroke: "#50514F", active: true,
-        pattern: { hatch: '+', color: '#879158', strokeWidth: 0.9, scale: 1.0 }
+        pattern: { hatch: '-', color: '#879158', strokeWidth: 0.9, scale: 1.0 }
     },
     forest: { fill: "#668F4C", stroke: "#50514F", active: true },
     roads: { stroke: "#50514F", active: true },
@@ -102,13 +102,13 @@ export const cyberpunkNeon: Partial<MicroPaletteWithBorder> = {
     buildings: { fills: ["#FF2A6D", "#D100D1", "#05D9E8"], stroke: "#1A1A2E", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#01012B", stroke: "#05D9E8", active: true,
-        pattern: { hatch: '+', color: "#05D9E8", strokeWidth: 0.5, scale: 0.9 }
+        pattern: { hatch: '-', color: "#05D9E8", strokeWidth: 0.5, scale: 0.9 }
     },
     sand: { fill: "#FEE440", stroke: "#D1B000", active: true },
     grass: { fill: "#39FF14", stroke: "#1A1A2E", active: true },
     forest: {
         fill: "#00FF9F", stroke: "#1A1A2E", active: true,
-        pattern: { hatch: 'x', color: "#00D486", strokeWidth: 0.6, scale: 0.8 }
+        pattern: { hatch: '/', color: "#00D486", strokeWidth: 0.6, scale: 0.8 }
     },
     roads: { stroke: "#9D00FF", active: true },
     railways: { stroke: "#05D9E8", active: true },
@@ -132,7 +132,7 @@ export const coastalSerenity: Partial<MicroPaletteWithBorder> = {
     grass: { fill: "#8BC4A0", stroke: "#456268", active: true },
     forest: {
         fill: "#5E9C76", stroke: "#456268", active: true,
-        pattern: { hatch: '+', color: "#4B7D5F", strokeWidth: 0.7, scale: 0.9 }
+        pattern: { hatch: '-', color: "#4B7D5F", strokeWidth: 0.7, scale: 0.9 }
     },
     roads: { stroke: "#456268", active: true },
     railways: { stroke: "#7B8F95", active: true },
@@ -155,7 +155,7 @@ export const desertSunset: Partial<MicroPaletteWithBorder> = {
     sand: { fill: "#FFEBD2", stroke: "#E6D5BE", active: true },
     grass: {
         fill: "#8DA97F", stroke: "#632B30", active: true,
-        pattern: { hatch: 'x', color: "#738563", strokeWidth: 0.6, scale: 0.7 }
+        pattern: { hatch: '/', color: "#738563", strokeWidth: 0.6, scale: 0.7 }
     },
     forest: { fill: "#5D7445", stroke: "#632B30", active: true },
     roads: { stroke: "#632B30", active: true },
@@ -179,7 +179,7 @@ export const winterFrost: Partial<MicroPaletteWithBorder> = {
     sand: { fill: "#EAE7DC", stroke: "#D2CFC6", active: true },
     grass: {
         fill: "#B8D9C5", stroke: "#2C3F59", active: true,
-        pattern: { hatch: 'x', color: "#9BC0A9", strokeWidth: 0.8, scale: 0.7 }
+        pattern: { hatch: '/', color: "#9BC0A9", strokeWidth: 0.8, scale: 0.7 }
     },
     forest: { fill: "#6E8B98", stroke: "#2C3F59", active: true },
     roads: { stroke: "#2C3F59", active: true },
@@ -204,7 +204,7 @@ export const barbapapa: Partial<MicroPaletteWithBorder> = {
     sand: { fill: "#FFF3CD", stroke: "#EADEB8", active: true },
     grass: {
         fill: "#C6F0B3", stroke: "#9B7EDE", active: true,
-        pattern: { hatch: '+', color: "#A7D999", strokeWidth: 0.5, scale: 0.8 }
+        pattern: { hatch: '-', color: "#A7D999", strokeWidth: 0.5, scale: 0.8 }
     },
     forest: { fill: "#9DDFD3", stroke: "#9B7EDE", active: true },
     roads: { stroke: "#9B7EDE", active: true },
@@ -228,7 +228,7 @@ export const iceCreamDreams: Partial<MicroPaletteWithBorder> = {
     sand: { fill: "#FFF1CF", stroke: "#E0D5B6", active: true },
     grass: {
         fill: "#C9F2C7", stroke: "#A57F60", active: true,
-        pattern: { hatch: 'x', color: "#ACDFA8", strokeWidth: 0.6, scale: 0.9 }
+        pattern: { hatch: '/', color: "#ACDFA8", strokeWidth: 0.6, scale: 0.9 }
     },
     forest: {
         fill: "#A3D9B1", stroke: "#A57F60", active: true,
@@ -245,13 +245,13 @@ export const iceCreamDreams: Partial<MicroPaletteWithBorder> = {
 export const vintageCartography: Partial<MicroPaletteWithBorder> = {
     background: {
         fill: "#F0EBE1", disabled: true, active: true,
-        pattern: { hatch: '~', color: "#D8D0C0", strokeWidth: 0.7, scale: 1.0 }
+        pattern: { hatch: '.', color: "#D8D0C0", strokeWidth: 0.7, scale: 1.0 }
     },
     other: { fill: "#F0EBE1", stroke: "#594A42", disabled: true, active: true },
     buildings: { fills: ["#B4846C", "#7D5A50", "#A27B5C"], stroke: "#594A42", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#94B9D2", stroke: "#7A9DB6", active: true,
-        pattern: { hatch: '~', color: "#7A9DB6", strokeWidth: 0.8, scale: 0.9 }
+        pattern: { hatch: 'o', color: "#7A9DB6", strokeWidth: 0.8, scale: 0.9 }
     },
     sand: { fill: "#E2D2B4", stroke: "#C9B99C", active: true },
     grass: {
@@ -276,7 +276,7 @@ export const classicAtlas: Partial<MicroPaletteWithBorder> = {
     buildings: { fills: ["#A5484B", "#7E5851", "#985558"], stroke: "#3C444D", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#8BADC9", stroke: "#3C444D", active: true,
-        pattern: { hatch: '~', color: "#7998B2", strokeWidth: 0.9, scale: 1.2 }
+        pattern: { hatch: 'o', color: "#7998B2", strokeWidth: 0.9, scale: 1.2 }
     },
     sand: { fill: "#E6D69E", stroke: "#CFBF8C", active: true },
     grass: { fill: "#B7CA9D", stroke: "#3C444D", active: true },
@@ -301,7 +301,7 @@ export const peach: Partial<MicroPaletteWithBorder> = {
     buildings: { fills: ["#FFCDB2", "#FFB4A2", "#E5989B"], stroke: "#6D4C41", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#B5E2FA", stroke: "#91C9E8", active: true,
-        pattern: { hatch: '~', color: "#91C9E8", strokeWidth: 0.8, scale: 1.0 }
+        pattern: { hatch: 'o', color: "#91C9E8", strokeWidth: 0.8, scale: 1.0 }
     },
     sand: { fill: "#FFDAB9", stroke: "#EECBA7", active: true },
     grass: {
@@ -325,7 +325,7 @@ export const citrus: Partial<MicroPaletteWithBorder> = {
     buildings: { fills: ["#FFA62B", "#F16A30", "#F4E285"], stroke: "#315E48", active: true, defaultBuildingHeight: 5 },
     water: {
         fill: "#73C2FB", stroke: "#5BA3D9", active: true,
-        pattern: { hatch: '~', color: "#5BA3D9", strokeWidth: 0.9, scale: 1.1 }
+        pattern: { hatch: 'o', color: "#5BA3D9", strokeWidth: 0.9, scale: 1.1 }
     },
     sand: { fill: "#F6E3BA", stroke: "#E4D3AD", active: true },
     grass: {
@@ -334,7 +334,7 @@ export const citrus: Partial<MicroPaletteWithBorder> = {
     },
     forest: {
         fill: "#539F53", stroke: "#315E48", active: true,
-        pattern: { hatch: '+', color: "#468046", strokeWidth: 0.5, scale: 0.8 }
+        pattern: { hatch: '-', color: "#468046", strokeWidth: 0.5, scale: 0.8 }
     },
     roads: { stroke: "#315E48", active: true },
     railways: { stroke: "#5B7B6E", active: true },

@@ -1,11 +1,10 @@
 import { color, hsl } from "d3";
 import { debounce, last, set } from "lodash-es";
 import { generateCssFromState } from "src/micro/drawing";
-import { HatchPatternGenerator } from "src/svg/patternGenerator";
+import { patternGenerator } from "src/svg/patternGenerator";
 import type { Color, MicroLayerId, MicroPalette, PatternDefinition } from "src/types";
 import { findStyleSheet } from "src/util/dom";
 
-const patternGenerator = new HatchPatternGenerator();
 const CSS_PROPS = ['stroke', 'stroke-width', 'fill', 'stroke-dasharray', 'stroke-linejoin', 'stroke-linecap'];
 
 // Returns true if we should redraw (layer deactivated for instance)

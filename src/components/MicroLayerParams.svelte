@@ -1,5 +1,6 @@
 <script lang="ts">
     import ColorPickerPreview from "./ColorPickerPreview.svelte";
+    import PatternPicker from "./PatternPicker.svelte";
     import RangeInput from "./RangeInput.svelte";
     import { camelCaseToSentence, initTooltips, pascalCaseToSentence } from "../util/common";
     import type { Color, MicroLayerId, MicroPalette, MicroPaletteWithBorder } from "src/types";
@@ -195,30 +196,13 @@
                     </div>
                     {#if def.pattern.menuOpened}
                         <div class="wrap-params ps-2 ms-4 border-start border-1 d-flex flex-wrap">
-                            <div class="mx-2">
-                                <label for={`${def.pattern.id}-hatch`}>
-                                    <a
-                                        href="https://matplotlib.org/stable/gallery/shapes_and_collections/hatch_style_reference.html"
-                                        target="_blank">Pattern</a
-                                    >
-                                    <span
-                                        class="help-tooltip fs-6"
-                                        data-bs-toggle="tooltip"
-                                        data-bs-title="One or multiple of \ / | + - * x  . o O, and more!">?</span
-                                    ></label
-                                >
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id={`${def.pattern.id}-hatch`}
-                                    bind:value={def.pattern.hatch}
-                                    oninput={(e) => {
-                                        let val = (e.target as HTMLInputElement).value;
-                                        def.pattern!.hatch = val;
-                                        updated(title as MicroLayerId, ["pattern", "hatch"], val);
-                                    }}
-                                />
-                            </div>
+                            <PatternPicker
+                                hatch={def.pattern.hatch ?? ''}
+                                onChange={(val) => {
+                                    def.pattern!.hatch = val;
+                                    updated(title as MicroLayerId, ["pattern", "hatch"], val);
+                                }}
+                            />
                             <ColorPickerPreview
                                 labelAbove={true}
                                 additionalClasses="mx-2 mb-1"
@@ -246,8 +230,7 @@
                             />
                             <RangeInput
                                 labelAbove={true}
-                                title="Scale"
-                                helpText="Controls the density of the pattern"
+                                title="Pattern density"
                                 id={`${def.pattern.id}-scale`}
                                 bind:value={def.pattern.scale!}
                                 min="0.1"

@@ -4,7 +4,7 @@ import { bboxContains, bboxIntersects, getRenderedFeatures, type RenderedFeature
 import { cloneDeep, debounce, kebabCase, last, random, size } from "lodash-es";
 import { color, hsl } from "d3-color";
 import { DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
-import { HatchPatternGenerator } from "../svg/patternGenerator";
+import { patternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download } from "../util/common";
 import { additionnalCssExport, changeIdAndReferences, exportFontChoices, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
@@ -42,8 +42,6 @@ function centroidDistance(c1: [number, number], c2: [number, number]): number {
 }
 
 type D3PathFunction = (geometry: Geometry) => string | null;
-
-const patternGenerator = new HatchPatternGenerator();
 
 export function orderFeaturesByLayer(features: RenderedFeature[]): void {
     features.sort((a, b) => {
