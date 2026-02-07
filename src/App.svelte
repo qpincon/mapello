@@ -176,7 +176,8 @@
                     },
                 },
                 cssRuleFilter: (el: HTMLElement, cssSelector: string) => {
-                    console.log(cssSelector);
+                    console.log(el, cssSelector);
+                    if (el.id === "micro-background" && cssSelector === "inline") return false;
                     if (cssSelector.includes("#freehand-drawings > g")) return false;
                     if (cssSelector.includes("#static-svg-map")) return false;
                     // if (cssSelector.includes(".hovered")) return false;
