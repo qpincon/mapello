@@ -7,7 +7,7 @@
 - [-] Add possibility to change background image (noise for now)
 - [x] Import geojson instead of topojson
 - [x] Draw on canvas on move, using simplified geometries
-- [ ] Export with a level of precision
+- [-] Export with a level of precision
 - [-] Export a JS file defining a class, to call on an element
 - [x] Allow placing points (choosing from a set of shapes)
     - [x] Make the shape resizable / stylable with inline-style-editor (right click -> edit size + edit style)
@@ -133,10 +133,10 @@
 - [ ] Freehand: Allow drag drawing
 - [ ] Freehand: Allow deletion
 - [x] Double click text edit prevent ISE
-- [ ] Micro: 3d elements (see maplibre 3D model demo) (three.js SVG renderer / zdog?)
+- [x] Micro: 3d elements (see maplibre 3D model demo) (three.js SVG renderer / zdog?)
 - [x] Micro: Use protomaps (upload tiles and configure nginx to serve it, using the pm plugin in the front)
 - [ ] Show tooltip conditionnaly
-- [ ] Tooltip creation: Use WYSIWYG editor
+- [x] Tooltip creation: Use WYSIWYG editor
 - [ ] Allow tooltip creation on single element - will take precedence over general one
 - [ ] Draw pin on map / any imported image (URL or uploaded as b64, must be < some size in kb)
 - [ ] Data export: remove empty objects
@@ -147,8 +147,8 @@
   - upgrade to 5.3
   - use color modes
   - pass mode as input of Map
-- [ ] Macro: Render simplified while changing altitude / fov (on slider change -> need to dispatch any change on slider)
-- [ ] Macro: Use same border method as micro (clip-path + remove geo entirely outside) 
+- [x] Macro: Render simplified while changing altitude / fov (on slider change -> need to dispatch any change on slider)
+- [x] Macro: Use same border method as micro (clip-path + remove geo entirely outside) 
 - [ ] Macro: be able to change graticule color
 - [ ] Macro: find a way to match ADM2 boundary data with land data (see UK adm2 for instance)
 
@@ -192,7 +192,7 @@
 - [x] fix background shadow on micro
 - [ ] Micro: minify class names + CSS on export ?
 - [ ] text-to-svg: don't accept woff2 fonts
-- [ ] Macro: have same tilt / rotation behavior as maplibre
+- [x] Macro: have same tilt / rotation behavior as maplibre
 - [x] micro landing: fix weird map expanding size
 - [x] micro: remove pathlength when no animation
 - [x] micro: when 3d, remove ground buildings
@@ -210,15 +210,16 @@
 - [x] micro: only enable hover effect on buildings?
 - [x] micro 3D: remove element if contains all other parts and altitude is high (eiffel, london eye)
 - [x] micro 3D: Fix rendering when browser zoom different
-- [ ] ISE: default to "fill color" when already defined
-- [ ] ISE: Fix "fill color" selected by default that changes stroke after one popup was opened before
+- [x] ISE: default to "fill color" when already defined
+- [x] ISE: Fix "fill color" selected by default that changes stroke after one popup was opened before
 - [x] Remove "path-images" out of frame
 - [x] Fix points / labels not displayed when moving (micro)
 - [x] micro: clip-path freehand drawing
 - [x] Macro export bug, stuff drawn outside of frame
 - [ ] Macro: use noise from fitler instead of image
-- [ ] Style independently and globally freehand
-- [ ] Micro 3D: problem with complex geometries (louvre)
+- [x] Style independently and globally freehand
+- [x] Micro 3D: problem with complex geometries (louvre)
 - [ ] Macro: less simplification for base layers (land + adm0)
-- [ ] ISE: use icons for fill / stroke / dasharray / width
-- [ ] ISE: don't display lines with only 1 item
+- [x] ISE: use icons for fill / stroke / dasharray / width
+- [x] ISE: don't display lines with only 1 item
+- [ ] Export: move "animate" option, explain how to usage SVG (script or c/c)

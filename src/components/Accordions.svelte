@@ -23,7 +23,7 @@
     const collapses = document.querySelectorAll(".collapse");
     console.log(collapses);
     collapses.forEach((collapseElement) => {
-      new Collapse(collapseElement);
+      new Collapse(collapseElement, { toggle: false });
     });
   });
 
@@ -49,7 +49,7 @@
     <div class="accordion-item">
       <h3 class="accordion-header">
         <button
-          class="accordion-button fs-5"
+          class={`accordion-button fs-5 ${i >= 3 ? 'collapsed' : ''}`}
           type="button"
           data-bs-toggle="collapse"
           data-bs-target={`#panel-${title}-collapse`}
@@ -61,7 +61,7 @@
           {/if}
         </button>
       </h3>
-      <div id={`panel-${title}-collapse`} class="accordion-collapse collapse">
+      <div id={`panel-${title}-collapse`} class={`accordion-collapse collapse ${i < 3 ? 'show' : ''}`}>
         <div class="accordion-body">
           {#each Object.keys(sections[title]) as key, i (key)}
             {#if otherParams[key]?.disabled !== true}

@@ -130,11 +130,12 @@ export function appendCountryImageNew(this: SVGGElement, countryData: Feature<Po
     if (ref) {
         const strokeParams = ['stroke', 'stroke-width', 'stroke-linejoin', 'stroke-dasharray'];
         const computedRef = window.getComputedStyle(ref);
+        const countryStyles = inlineStyles[countryName] || {};
         strokeParams.forEach(p => {
             // @ts-expect-error
-            pathElem.attr(p, computedRef[p])
+            const value = countryStyles[p] ?? computedRef[p];
+            pathElem.attr(p, value)
         });
-        ref.style.strokeWidth = '0px';
     }
     if (animate) return;
     const imageElem = imageFromSpecialGElem(gElem.node() as SVGGElement);
