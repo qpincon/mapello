@@ -93,7 +93,7 @@ export async function initWorldData() {
     console.log("initWorldData");
     const topoAdm0 = await import("../assets/layers/world_adm0_simplified_topo.json");
     adm0Topo = presimplify(topoAdm0 as unknown as TopoJSON.Topology<{}>);
-    const verySimpleLandTopo = await import("../assets/layers/world_land_very_simplified.json") as unknown as TopoJSON.Topology;
+    const verySimpleLandTopo = await import("../assets/layers/world_land_very_simplified_topo.json") as unknown as TopoJSON.Topology;
     const firstKey = Object.keys(verySimpleLandTopo.objects)[0];
     geometriesState.simpleLand = topojson.feature(verySimpleLandTopo, verySimpleLandTopo.objects[firstKey]) as Feature;
     await initializeAdms();
