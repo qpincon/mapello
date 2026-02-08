@@ -1715,6 +1715,13 @@
     "sub-region": "Polynesia"
   },
   {
+    "name": "Kosovo",
+    "alpha-2": "XK",
+    "alpha-3": "XKX",
+    "region": "Europe",
+    "sub-region": "Eastern Europe"
+  },
+  {
     "name": "Western Sahara",
     "alpha-2": "EH",
     "alpha-3": "ESH",
