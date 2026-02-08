@@ -208,7 +208,6 @@
                     select(`[id='${elemId}-img']`).node() as SVGGElement,
                     countryData,
                     filter,
-                    applyInlineStyles,
                     appState.path!,
                     commonState.inlineStyles,
                     false,

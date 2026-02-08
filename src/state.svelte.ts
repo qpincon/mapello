@@ -12,7 +12,6 @@ interface AppState {
     projection: d3.GeoProjection | null;
     projectionLarger: d3.GeoProjection | null;
     /** === Macro === */
-    countryFilteredImages: Set<string>;
     path?: d3.GeoPath<any, any>;
     pathLarger?: d3.GeoPath<any, any>;
 }
@@ -22,7 +21,6 @@ interface AppState {
 export const appState = $state<AppState>({
     projection: null,
     projectionLarger: null,
-    countryFilteredImages: new Set<string>(),
     path: undefined,
     pathLarger: undefined,
 });

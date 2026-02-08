@@ -72,10 +72,8 @@ export function exportStyleSheet(selectorToFind: string): string | undefined {
     if (sheet) return styleSheetToText(sheet);
 }
 
-// If countryFilteredImages set is passed, we ignore elements with IDs in the set
-export function applyStyles(inlineStyles: InlineStyles, countryFilteredImages: Set<string> | null = null): void {
+export function applyStyles(inlineStyles: InlineStyles): void {
     Object.entries(inlineStyles).forEach(([elemId, style]) => {
-        if (countryFilteredImages != null && countryFilteredImages.has(elemId)) return;
         const elem = document.getElementById(elemId) as unknown as SVGElement;
         if (!elem) return;
         Object.entries(style).forEach(([cssProp, cssValue]) => {

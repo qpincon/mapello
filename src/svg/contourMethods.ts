@@ -97,7 +97,7 @@ export function appendLandImageNew(this: SVGGElement, showSource: boolean, zones
 }
 
 export function appendCountryImageNew(this: SVGGElement, countryData: Feature<Polygon>, filter: string | null,
-    applyStyles: (a: boolean) => void, path: GeoPath, inlineStyles: InlineStyles, animate: boolean, clear = false) {
+    path: GeoPath, inlineStyles: InlineStyles, animate: boolean, clear = false) {
     if (clear) select(this).html('');
     const countryName = countryData.properties!.name;
     const ref = document.getElementById(countryName);
@@ -108,7 +108,6 @@ export function appendCountryImageNew(this: SVGGElement, countryData: Feature<Po
         if (!strokeWidth || strokeWidth == '0px') return;
         if (!ref) return;
     }
-    applyStyles(true);
     select(this).style('pointer-events', 'none')
         .style('will-change', 'opacity')
         .classed('country-img', true);

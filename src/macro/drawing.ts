@@ -34,7 +34,6 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     appState.path = geoPath(appState.projection);
     appState.pathLarger = geoPath(appState.projectionLarger);
 
-    appState.countryFilteredImages.clear();
     await initializeAdms();
     const graticule = geoGraticule().step([macroState.macroParams.Background.graticuleStep, macroState.macroParams.Background.graticuleStep])();
     if (!macroState.macroParams.Background.showGraticule) graticule.coordinates = [];
@@ -121,7 +120,6 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
                         svg.select(`[id='${def.name}']`).node() as SVGGElement,
                         def.countryData!,
                         def.filter ?? null,
-                        applyInlineStyles,
                         appState.path!,
                         commonState.inlineStyles,
                         false,
@@ -212,7 +210,6 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
             });
             const countryOutlineId = layer.substring(0, layer.length - 5);
             const countryData = geometriesState.countries?.features.find((country) => country.properties.name === countryOutlineId);
-            appState.countryFilteredImages.add(countryOutlineId);
             groupData.push({
                 name: `${countryOutlineId}-img`,
                 type: "filterImg",
@@ -221,7 +218,6 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
             });
         }
     });
-    console.log('groupData=', groupData);
     // groupData.push({
     //     name: "paths",
     //     data: [],
@@ -264,7 +260,6 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
                 this,
                 data.countryData!,
                 data.filter ?? null,
-                applyInlineStyles,
                 appState.path!,
                 commonState.inlineStyles,
                 animated,
@@ -272,7 +267,6 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
         if (!data.data) return;
         const parentPathElem = select(this).style("will-change", "opacity");
         if (data.containerClass) parentPathElem.classed(data.containerClass, true);
-        console.log(data, appState.path);
         const pathElem = parentPathElem
             .selectAll("path")
             // @ts-expect-error
@@ -329,8 +323,8 @@ export function drawMacroFrame(
     return frame;
 }
 
-export function applyInlineStyles(styleAll = false): void {
-    applyStyles(commonState.inlineStyles, styleAll ? appState.countryFilteredImages : null);
+export function applyInlineStyles(): void {
+    applyStyles(commonState.inlineStyles);
     saveState();
 }
 
