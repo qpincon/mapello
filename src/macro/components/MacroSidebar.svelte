@@ -467,9 +467,12 @@
         console.log("colorizeAndLegend");
         await tick();
         initTooltips();
-        const legendEntries = select("#svg-map-legend");
-        if (!legendEntries.empty()) legendEntries.remove();
-        const legendSelection = svg.append("g").attr("id", "svg-map-legend") as SvgGSelection;
+        let legendSelection: SvgGSelection = select("#svg-map-legend")! as unknown as SvgGSelection;
+        if (legendSelection.empty()) {
+            legendSelection = svg.append("g").attr("id", "svg-map-legend") as SvgGSelection;
+        } else {
+            legendSelection.selectAll("*").remove(); // Clear existing contents
+        }
         Object.entries(macroState.colorDataDefs).forEach(([tab, dataColorDef], tabIndex) => {
             if (!macroState.zonesData[tab]) return;
             if (!macroState.legendDefs[tab].noData.manual) macroState.legendDefs[tab].noData.active = false;

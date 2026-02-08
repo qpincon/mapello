@@ -93,11 +93,11 @@ export async function exportMacro(
 
         tooltipEnabled = true;
         const ttTemplate = getFinalTooltipTemplate(groupId, stateMacro.tooltipDefs);
-        let usedVars = [...ttTemplate.matchAll(/\{(\w+)\}/g)].map(group => group[1]);
+        let usedVars = [...ttTemplate.matchAll(/__(\w+)__/g)].map(group => group[1]);
         usedVars = [...new Set(usedVars)];
         usedVars = usedVars.filter(v => v !== 'name');
 
-        let functionStr = ttTemplate.replaceAll(/\{(\w+)\}/gi, '${data.$1}');
+        let functionStr = ttTemplate.replaceAll(/__(\w+)__/gi, '${data.$1}');
         functionStr = functionStr.replace('data.name', 'shapeId');
         finalDataByGroup.tooltips[groupId] = functionStr;
 
@@ -120,6 +120,7 @@ export async function exportMacro(
         finalDataByGroup.data[groupId] = finalData;
     });
 
+    console.log(finalDataByGroup)
     // Build tooltip code by replacing placeholders with actual values
     const tooltipCode = tooltipEnabled
         ? tooltipScript
