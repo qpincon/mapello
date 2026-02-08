@@ -25,6 +25,8 @@ export class HatchPatternGenerator {
     { char: "s", label: "Scales", id: "scales" },
     { char: "b", label: "Brick", id: "brick" },
     { char: "c", label: "Checkerboard", id: "checker" },
+    { char: "S", label: "4-point stars", id: "stars4pt" },
+    { char: "t", label: "Triangles", id: "triangles" },
   ];
 
   private patternScale: number;
@@ -128,6 +130,16 @@ export class HatchPatternGenerator {
           break;
         case 'c': // Checkerboard
           this._addCheckerboard(pattern, color);
+          break;
+        case 'S': // 4-point star centered at (5,5)
+          this._createPathPattern(
+            'M6.3,3.7 L9,5 L6.3,6.3 L5,9 L3.7,6.3 L1,5 L3.7,3.7 L5,1 Z',
+            pattern, color, strokeWidth);
+          break;
+        case 't': // Staggered triangles
+          this._createPathPattern(
+            'M0.5,1 L4.5,1 L2.5,4.5 Z M5.5,6 L9.5,6 L7.5,9.5 Z',
+            pattern, color, strokeWidth);
           break;
       }
     }
