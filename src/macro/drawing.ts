@@ -1,7 +1,7 @@
 import { appState, commonState, macroState } from "src/state.svelte";
 import { select } from "d3-selection";
 import { geoGraticule, geoPath } from "d3-geo";
-import { geometriesState, initializeAdms, resolvedAdmGeometry, updateLayerSimplification } from "./geometry-data";
+import { GEO_META_KEYS, geometriesState, initializeAdms, resolvedAdmGeometry, updateLayerSimplification } from "./geometry-data";
 import type { FrameSelection, MacroGroupData, SvgSelection } from "src/types";
 import { appendBgPattern, appendClip, appendGlow } from "src/svg/svgDefs";
 import type { MultiLineString } from "geojson";
@@ -178,10 +178,9 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
         const filter = macroState.zonesFilter[layer] ?? null;
         if (layer === "countries" && macroState.inlinePropsMacro.showCountries && geometriesState.countries) {
             if (!("countries" in macroState.zonesData) && !macroState.zonesData["countries"]?.provided) {
-                const geoMetaKeys = ["shapeID", "shapeId", "shapeGroup", "shapeType"];
                 const countryProps = geometriesState.countries.features.map((f) => {
                     const props = { ...f.properties };
-                    geoMetaKeys.forEach((k) => delete (props as any)[k]);
+                    GEO_META_KEYS.forEach((k) => delete (props as any)[k]);
                     return props;
                 });
                 sortBy(countryProps, "name")!;

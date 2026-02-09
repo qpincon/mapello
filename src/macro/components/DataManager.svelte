@@ -51,8 +51,8 @@
         const warns: string[] = [];
         const cols = columns.filter((c) => c !== "name");
         for (const col of cols) {
-            let hasNumeric = false;
-            let hasString = false;
+            let numericCount = 0;
+            let stringCount = 0;
             let emptyCount = 0;
             for (const row of workingData) {
                 const val = row[col];
@@ -60,11 +60,20 @@
                     emptyCount++;
                     continue;
                 }
-                if (typeof val === "number") hasNumeric = true;
-                else hasString = true;
+                if (typeof val === "number") numericCount++;
+                else stringCount++;
             }
-            if (hasNumeric && hasString) {
-                errs.push(`Column '${col}' has mixed types`);
+            if (numericCount > 0 && stringCount > 0) {
+                if (numericCount > stringCount) {
+                    errs.push(`Column '${col}' has mixed types`);
+                } else {
+                    // Majority strings: convert numbers to strings
+                    for (const row of workingData) {
+                        if (typeof row[col] === "number") {
+                            row[col] = String(row[col]);
+                        }
+                    }
+                }
             }
             if (emptyCount > 0) {
                 warns.push(`Column '${col}': ${emptyCount} empty cell(s)`);

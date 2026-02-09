@@ -140,8 +140,8 @@
 - [ ] Allow tooltip creation on single element - will take precedence over general one
 - [ ] Draw pin on map / any imported image (URL or uploaded as b64, must be < some size in kb)
 - [ ] Data export: remove empty objects
-- [ ] Data import / export: Move into modal
-- [ ] Data edition: allow inline edition with a lightweight grid edition sofware (lazy-loaded)
+- [x] Data import / export: Move into modal
+- [x] Data edition: allow inline edition with a lightweight grid edition sofware (lazy-loaded)
 - [x] Top space above "Max legend width"
 - [ ] Bootstrap: allow main colors customization
   - upgrade to 5.3
@@ -156,9 +156,9 @@
 - [ ] Text / icons / images / freehand : use https://github.com/daybrush/moveable
 - [x] Text: just use Maj+Enter for new line instead of ++
 
-- [ ] Geoboundaries: give name to disputed territories
+- [x] Geoboundaries: give name to disputed territories
 - [ ] Geoboundaries: attribution to exported file
-- [ ] Geoboundaries: remove job (or just send an alert)
+- [x] Geoboundaries: remove job (or just send an alert)
 - [ ] "No data color" should be available in "color using data"
 - [ ] ISE: 
   - [x] clearer wording (stroke-width -> Stroke Width)
@@ -222,4 +222,4 @@
 - [ ] Macro: less simplification for base layers (land + adm0)
 - [x] ISE: use icons for fill / stroke / dasharray / width
 - [x] ISE: don't display lines with only 1 item
-- [ ] Export: move "animate" option, explain how to usage SVG (script or c/c)
+- [ ] Export: move "animate" option, explain how to usage SVG (script or c/c), viewbox

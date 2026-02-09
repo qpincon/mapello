@@ -324,9 +324,7 @@
 
     function getGeoNames(layerTab: string): string[] {
         if (layerTab === "countries") {
-            return geometriesState.countries.features
-                .map((f) => f.properties?.name)
-                .filter((n): n is string => !!n);
+            return geometriesState.countries.features.map((f) => f.properties?.name).filter((n): n is string => !!n);
         }
         if (resolvedAdmGeometry[layerTab]) {
             return resolvedAdmGeometry[layerTab].features
@@ -783,11 +781,23 @@
                     </div>
                 {/if}
                 {#if macroState.zonesData[currentMacroLayerTab]?.["data"]}
-                    <button class="btn btn-outline-primary w-100 text-start mb-2 p-2" onclick={() => (showDataManager = true)}>
-                        <strong>Manage Data</strong>
+                    <button
+                        class="btn btn-outline-teal w-100 text-start mt-3 mb-2 p-2"
+                        onclick={() => (showDataManager = true)}
+                    >
+                        <div class="d-flex align-items-center gap-1">
+                            <Icon
+                                svg={icons["table"]}
+                                width="1rem"
+                                height="1rem"
+                                fillColor="currentColor"
+                                marginRight="0"
+                            />
+                            <strong>Manage Data</strong>
+                        </div>
                         <div class="small text-muted mt-1 d-flex flex-wrap gap-1">
                             {#each getColumns(macroState.zonesData[currentMacroLayerTab].data) as col}
-                                <span class="badge bg-light text-dark border">{col}</span>
+                                <span class="px-2 badge bg-light text-dark border">{col}</span>
                             {/each}
                         </div>
                     </button>

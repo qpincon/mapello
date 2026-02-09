@@ -79,9 +79,9 @@ export function getNumericCols(jsonData: Record<string, any>[]): { column: strin
     for (const row of jsonData) {
         Object.entries(row).forEach(([key, value]) => {
             allCols.add(key);
-            const isNullOrUndef = value === undefined || value === null;
-            if (isNullOrUndef) colWithNullOrUndef.add(key);
-            if (!isNullOrUndef && typeof value !== 'number') nonNumericoCols.add(key);
+            const isEmpty = value === undefined || value === null || value === "";
+            if (isEmpty) colWithNullOrUndef.add(key);
+            if (!isEmpty && typeof value !== 'number') nonNumericoCols.add(key);
         });
     }
     return [...allCols].reduce((acc, col) => {

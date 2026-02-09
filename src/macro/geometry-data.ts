@@ -11,7 +11,7 @@ import type { ZoneDataRow } from "src/types";
 import { featureCollection, polygon } from "@turf/helpers";
 
 const iso3DataById = indexBy([...iso3Data, ...disputedData], "alpha-3");
-const GEO_META_KEYS = ["shapeID", "shapeId", "shapeGroup", "shapeType"];
+export const GEO_META_KEYS = ["shapeID", "shapeId", "shapeGroup", "shapeType", "alpha-2"];
 export const resolvedAdmGeometry: Record<string, any> = {};
 const resolvedAdmTopo: Record<string, any> = {};
 let adm0Topo: any = null;

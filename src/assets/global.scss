@@ -1,4 +1,5 @@
 $primary: #506784;
+$teal: #2a7d6e;
 
 $accordion-padding-y: 0.3rem;
 $accordion-padding-x: 0.4rem;
@@ -28,6 +29,7 @@ $navbar-padding-y: 0px;
 @import "bootstrap/scss/variables";
 
 // // 4. Include any default map overrides here
+$theme-colors: map-merge($theme-colors, ("teal": $teal));
 
 // // 5. Include remainder of required parts
 @import "bootstrap/scss/maps";
