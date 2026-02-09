@@ -70,6 +70,7 @@
         pointSelected: false,
         addingLabel: false,
         pathSelected: false,
+        freehandSelected: false,
         addingImageToPath: false,
         chosingMarker: false,
     });
@@ -327,22 +328,31 @@
                 e.preventDefault();
                 closeMenu();
                 let target = null;
-                const [x, y] = pointer(e);
-                const point = { x, y };
-                const pathsElement = document.getElementById("paths");
-                if (!pathsElement) return;
-                const paths = Array.from(pathsElement.children) as SVGPathElement[];
-                console.log(paths);
-                const closestPoint = paths.reduce((prev: DistanceQueryResult, curElem) => {
-                    const curDist = closestDistance(point, curElem);
-                    curDist.elem = curElem;
-                    return prev.distance! < curDist.distance! ? prev : curDist;
-                }, {} as DistanceQueryResult);
-                console.log(closestPoint);
-                if (closestPoint.distance && closestPoint.distance < 6) {
-                    menuStates.pathSelected = true;
-                    target = closestPoint.elem;
-                    selectedPathIndex = parseInt(closestPoint.elem!.getAttribute("id")!.match(/\d+$/)![0]);
+                const clickedFreehandGroup = (e.target as Element).closest?.(".freehand");
+                if (clickedFreehandGroup) {
+                    menuStates.freehandSelected = true;
+                    target = e.target;
+                    selectedFreehandIndex = parseInt(clickedFreehandGroup.getAttribute("id")!.match(/\d+$/)![0]);
+                } else {
+                    const [x, y] = pointer(e);
+                    const point = { x, y };
+
+                    const pathsElement = document.getElementById("paths");
+                    if (pathsElement) {
+                        const paths = Array.from(pathsElement.children) as SVGPathElement[];
+                        if (paths.length) {
+                            const closestPath = paths.reduce((prev: DistanceQueryResult, curElem) => {
+                                const curDist = closestDistance(point, curElem);
+                                curDist.elem = curElem;
+                                return prev.distance! < curDist.distance! ? prev : curDist;
+                            }, {} as DistanceQueryResult);
+                            if (closestPath.distance != null && closestPath.distance < 6) {
+                                menuStates.pathSelected = true;
+                                target = closestPath.elem;
+                                selectedPathIndex = parseInt(closestPath.elem!.getAttribute("id")!.match(/\d+$/)![0]);
+                            }
+                        }
+                    }
                 }
                 if (shouldOpenMenu) showMenu(e, target);
                 return false;
@@ -444,6 +454,7 @@
         styleEditor!.open(e.target as HTMLElement, e.pageX, e.pageY);
     }
     let selectedPathIndex = $state<number>(0);
+    let selectedFreehandIndex = $state<number>(0);
 
     function editPath(): void {
         closeMenu();
@@ -469,6 +480,16 @@
         closeMenu();
         commonState.providedPaths.splice(selectedPathIndex, 1);
         drawShapesAndSave();
+    }
+
+    function deleteFreehand(): void {
+        closeMenu();
+        commonState.providedFreeHand.splice(selectedFreehandIndex, 1);
+        const existing = document.getElementById("freehand-drawings");
+        if (existing) existing.remove();
+        drawFreeHandShapes(svg, commonState.providedFreeHand);
+        applyStyles(commonState.inlineStyles);
+        saveState();
     }
 
     function addImageToPath(e: Event): void {
@@ -673,6 +694,7 @@
         menuStates.pointSelected = false;
         menuStates.addingLabel = false;
         menuStates.pathSelected = false;
+        menuStates.freehandSelected = false;
         menuStates.addingImageToPath = false;
         editedLabelId = null;
     }
@@ -860,6 +882,9 @@
         <div role="button" class="px-2 py-1" onclick={deletePath}>Delete curve</div>
         <div role="button" class="px-2 py-1" onclick={addImageToPath}>Image along curve</div>
         <div role="button" class="px-2 py-1" onclick={choseMarker}>Chose curve marker</div>
+    {:else if menuStates.freehandSelected}
+        <div role="button" class="px-2 py-1" onclick={editStyles}>Edit style</div>
+        <div role="button" class="px-2 py-1" onclick={deleteFreehand}>Delete drawing</div>
     {:else if menuStates.chosingMarker}
         <div class="d-flex">
             <div role="button" class="px-2 py-1" onclick={() => changeMarker("delete")}>

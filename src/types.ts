@@ -41,6 +41,7 @@ export interface MenuState {
     pointSelected: boolean;
     addingLabel: boolean;
     pathSelected: boolean;
+    freehandSelected: boolean;
     addingImageToPath: boolean;
     chosingMarker: boolean;
 }
