@@ -2,7 +2,6 @@
     import { onDestroy, onMount, tick } from "svelte";
     import Accordions from "../../components/Accordions.svelte";
     import {
-        download,
         extractTemplateVariables,
         formatUnicorn,
         getColumns,
@@ -15,7 +14,7 @@
     import { appState, commonState, macroState } from "../../state.svelte";
     import Icon from "../../components/Icon.svelte";
     import { icons } from "../../shared/icons";
-    import { allAvailableAdm, geometriesState, initWorldData } from "../geometry-data";
+    import { allAvailableAdm, geometriesState, initWorldData, resolvedAdmGeometry } from "../geometry-data";
     import RangeInput from "src/components/RangeInput.svelte";
     import ColorPickerPreview from "src/components/ColorPickerPreview.svelte";
     import type {
@@ -34,8 +33,8 @@
     import { paramDefs } from "../../params";
 
     import { saveState } from "src/util/save";
-    import DataTable from "src/components/DataTable.svelte";
     import { defaultTooltipStyle } from "src/stateDefaults";
+    import DataManager from "./DataManager.svelte";
     import type InlineStyleEditor from "inline-style-editor";
     import Legend from "src/components/Legend.svelte";
     import { select } from "d3-selection";
@@ -79,7 +78,7 @@
     let dragStartIndex = $state<number>(-1);
     let currentMacroLayerTab = $state<string>("land");
     let currentTemplateHasNumeric = $state<boolean>(false);
-    let showModal = $state<boolean>(false);
+    let showDataManager = $state<boolean>(false);
     let templateErrorMessages = $state<Record<string, string | null>>({});
     let commonCss = $state<string | undefined>();
     let availableColumns = $state<string[]>([]);
@@ -323,51 +322,29 @@
         draw();
     }
 
-    function handleDataImport(e: Event): void {
-        const file = (e.target as HTMLInputElement).files![0];
-        const reader = new FileReader();
-        reader.addEventListener("load", () => {
-            try {
-                let parsed = JSON.parse(reader.result as string);
-                const currentNames = new Set<string | undefined>(
-                    macroState.zonesData[currentMacroLayerTab].data.map((line) => line.name),
-                );
-                currentNames.delete(undefined);
-                if (!Array.isArray(parsed)) {
-                    return window.alert("JSON should be a list of objects, each object reprensenting a line.");
-                }
-                const noNameLinesMsg = parsed.reduce((errorMsg, entry, index) => {
-                    if (entry.name === undefined) {
-                        errorMsg += `Entry ${index} is ${JSON.stringify(entry)} \n`;
-                    }
-                    return errorMsg;
-                }, "");
-                if (parsed.some((line) => line.name === undefined)) {
-                    return window.alert(`All lines should have a 'name' property \n${noNameLinesMsg}`);
-                }
-                const newNames = new Set(parsed.map((line) => line.name));
-                const difference = new Set([...currentNames].filter((x) => !newNames.has(x)));
-                if (difference.size) {
-                    return window.alert(`Missing names ${[...difference]}`);
-                }
-                macroState.zonesData[currentMacroLayerTab] = {
-                    data: parsed,
-                    provided: true,
-                    numericCols: getNumericCols(parsed),
-                };
-                updateZonesDataFormatters();
-                autoSelectColors();
-                saveState();
-            } catch (e) {
-                console.log("Parse error:", e);
-                window.alert("Provided file should be valid JSON.");
-            }
-        });
-        reader.readAsText(file);
+    function getGeoNames(layerTab: string): string[] {
+        if (layerTab === "countries") {
+            return geometriesState.countries.features
+                .map((f) => f.properties?.name)
+                .filter((n): n is string => !!n);
+        }
+        if (resolvedAdmGeometry[layerTab]) {
+            return resolvedAdmGeometry[layerTab].features
+                .map((f: any) => f.properties?.name)
+                .filter((n: any): n is string => !!n);
+        }
+        return macroState.zonesData[layerTab]?.data.map((r) => r.name) ?? [];
     }
 
-    function exportJson(data: any): void {
-        download(JSON.stringify(data, null, "\t"), "text/json", "data.json");
+    function handleDataManagerSave(newData: ZoneDataRow[]): void {
+        macroState.zonesData[currentMacroLayerTab] = {
+            data: newData,
+            provided: true,
+            numericCols: getNumericCols(newData),
+        };
+        updateZonesDataFormatters();
+        autoSelectColors();
+        saveState();
     }
 
     function changeNumericFormatter(): void {
@@ -806,34 +783,14 @@
                     </div>
                 {/if}
                 {#if macroState.zonesData[currentMacroLayerTab]?.["data"]}
-                    <div class="d-flex align-items-center">
-                        <div>
-                            <label for="data-input-json" class="m-2 btn btn-light">
-                                Import data for {currentMacroLayerTab}
-                            </label>
-                            <input
-                                id="data-input-json"
-                                type="file"
-                                accept=".json"
-                                onchange={(e) => handleDataImport(e)}
-                            />
+                    <button class="btn btn-outline-primary w-100 text-start mb-2 p-2" onclick={() => (showDataManager = true)}>
+                        <strong>Manage Data</strong>
+                        <div class="small text-muted mt-1 d-flex flex-wrap gap-1">
+                            {#each getColumns(macroState.zonesData[currentMacroLayerTab].data) as col}
+                                <span class="badge bg-light text-dark border">{col}</span>
+                            {/each}
                         </div>
-                        <span
-                            class="help-tooltip"
-                            data-bs-toggle="tooltip"
-                            data-bs-title="Import data for current layer. The 'name' property must be defined for each line. You can export the default data to have a template to start from."
-                            >?</span
-                        >
-                        <div
-                            class="mx-2 ms-auto btn btn-outline-primary"
-                            onclick={() => exportJson(macroState.zonesData[currentMacroLayerTab]?.["data"])}
-                        >
-                            Export JSON
-                        </div>
-                    </div>
-                    <div class="data-table border rounded-2 mb-2" onclick={() => (showModal = true)}>
-                        <DataTable data={macroState.zonesData[currentMacroLayerTab]?.["data"]}></DataTable>
-                    </div>
+                    </button>
                     <div class="mx-2 form-check form-switch">
                         <input
                             type="checkbox"
@@ -1066,9 +1023,16 @@
     {/if}
 </div>
 
-<Modal open={showModal} onClosed={() => (showModal = false)}>
-    <DataTable slot="content" data={macroState.zonesData?.[currentMacroLayerTab]?.["data"]}></DataTable>
-</Modal>
+{#if macroState.zonesData[currentMacroLayerTab]?.data}
+    <DataManager
+        bind:open={showDataManager}
+        onClose={() => (showDataManager = false)}
+        data={macroState.zonesData[currentMacroLayerTab].data}
+        geoNames={getGeoNames(currentMacroLayerTab)}
+        layerName={currentMacroLayerTab}
+        onSave={handleDataManagerSave}
+    />
+{/if}
 
 <Modal open={showCustomPalette} onClosed={() => (showCustomPalette = false)}>
     <div slot="content">
@@ -1081,10 +1045,6 @@
 </Modal>
 
 <style lang="scss" scoped>
-    .data-table {
-        max-height: 10rem;
-        overflow-y: scroll;
-    }
     #country-select {
         opacity: 0;
         position: absolute;
@@ -1093,10 +1053,6 @@
     }
     #country-select:hover ~ span {
         color: #aeafaf;
-    }
-
-    input[type="file"] {
-        display: none;
     }
 
     :global(.is-dnd-hovering-right) {

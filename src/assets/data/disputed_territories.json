@@ -1,100 +1,100 @@
 [
   {
-    "name": "Demchok",
-    "alpha-3": "114",
-    "alpha-2": "",
-    "region": "",
-    "sub-region": ""
-  },
-  {
-    "name": "Isla Brasilera",
-    "alpha-3": "120",
-    "alpha-2": "",
-    "region": "",
-    "sub-region": ""
-  },
-  {
-    "name": "Sanafir & Tiran Is.",
-    "alpha-3": "126",
-    "alpha-2": "",
-    "region": "",
-    "sub-region": ""
-  },
-  {
-    "name": "No Man's Land",
-    "alpha-3": "124",
-    "alpha-2": "",
-    "region": "",
-    "sub-region": ""
-  },
-  {
-    "name": "CH-IN",
-    "alpha-3": "113",
-    "alpha-2": "",
-    "region": "",
-    "sub-region": ""
-  },
-  {
-    "name": "Dragonja",
-    "alpha-3": "115",
-    "alpha-2": "",
-    "region": "",
-    "sub-region": ""
-  },
-  {
-    "name": "West Bank",
-    "alpha-3": "129",
-    "alpha-2": "",
-    "region": "",
-    "sub-region": ""
-  },
-  {
-    "name": "Gaza Strip",
-    "alpha-3": "118",
-    "alpha-2": "",
-    "region": "",
-    "sub-region": ""
-  },
-  {
-    "name": "Siachen-Saltoro",
-    "alpha-3": "121",
-    "alpha-2": "",
-    "region": "",
-    "sub-region": ""
-  },
-  {
     "name": "Abyei",
     "alpha-3": "111",
     "alpha-2": "",
-    "region": "",
-    "sub-region": ""
-  },
-  {
-    "name": "Kalapani",
-    "alpha-3": "119",
-    "alpha-2": "",
-    "region": "",
-    "sub-region": ""
-  },
-  {
-    "name": "Dramana-Shakatoe",
-    "alpha-3": "116",
-    "alpha-2": "",
-    "region": "",
-    "sub-region": ""
-  },
-  {
-    "name": "Falkland Islands (UK)",
-    "alpha-3": "117",
-    "alpha-2": "",
-    "region": "",
-    "sub-region": ""
+    "region": "Africa",
+    "sub-region": "Sub-Saharan Africa"
   },
   {
     "name": "Aksai Chin",
     "alpha-3": "112",
     "alpha-2": "",
-    "region": "",
-    "sub-region": ""
+    "region": "Asia",
+    "sub-region": "Southern Asia"
+  },
+  {
+    "name": "CH-IN",
+    "alpha-3": "113",
+    "alpha-2": "",
+    "region": "Asia",
+    "sub-region": "Southern Asia"
+  },
+  {
+    "name": "Demchok",
+    "alpha-3": "114",
+    "alpha-2": "",
+    "region": "Asia",
+    "sub-region": "Southern Asia"
+  },
+  {
+    "name": "Dragonja",
+    "alpha-3": "115",
+    "alpha-2": "",
+    "region": "Europe",
+    "sub-region": "Southern Europe"
+  },
+  {
+    "name": "Dramana-Shakatoe",
+    "alpha-3": "116",
+    "alpha-2": "",
+    "region": "Africa",
+    "sub-region": "Sub-Saharan Africa"
+  },
+  {
+    "name": "Falkland Islands (UK)",
+    "alpha-3": "117",
+    "alpha-2": "",
+    "region": "Americas",
+    "sub-region": "Latin America and the Caribbean"
+  },
+  {
+    "name": "Gaza Strip",
+    "alpha-3": "118",
+    "alpha-2": "",
+    "region": "Asia",
+    "sub-region": "Western Asia"
+  },
+  {
+    "name": "Kalapani",
+    "alpha-3": "119",
+    "alpha-2": "",
+    "region": "Asia",
+    "sub-region": "Southern Asia"
+  },
+  {
+    "name": "Isla Brasilera",
+    "alpha-3": "120",
+    "alpha-2": "",
+    "region": "Americas",
+    "sub-region": "Latin America and the Caribbean"
+  },
+  {
+    "name": "Siachen-Saltoro",
+    "alpha-3": "121",
+    "alpha-2": "",
+    "region": "Asia",
+    "sub-region": "Southern Asia"
+  },
+  {
+    "name": "No Man's Land",
+    "alpha-3": "124",
+    "alpha-2": "",
+    "region": "Asia",
+    "sub-region": "Western Asia"
+  },
+  {
+    "name": "Sanafir & Tiran Is.",
+    "alpha-3": "126",
+    "alpha-2": "",
+    "region": "Africa",
+    "sub-region": "Northern Africa"
+  },
+  {
+    "name": "West Bank",
+    "alpha-3": "129",
+    "alpha-2": "",
+    "region": "Asia",
+    "sub-region": "Western Asia"
   }
 ]

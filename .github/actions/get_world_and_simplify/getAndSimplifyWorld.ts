@@ -23,7 +23,18 @@ async function getWorldTopojson() {
     await mapshaper.runCommands(`-i ${assetsPath}/adm1_simplified.geojson -split shapeGroup -o format=topojson singles quantization=100000000000 ${assetsPath}/adm1/`);
     fs.unlinkSync(`${assetsPath}/adm1_simplified.geojson`);
 
-    // Generate disputed_territories.json from numeric-ID layer files
+    // Generate disputed_territories.json from numeric-ID layer files,
+    // preserving existing region/sub-region values from the previous file
+    const dataPath = path.resolve(assetsPath, '../data');
+    if (!fs.existsSync(dataPath)) fs.mkdirSync(dataPath, { recursive: true });
+    const disputedPath = `${dataPath}/disputed_territories.json`;
+    const existingById: Record<string, { region: string; "sub-region": string }> = {};
+    if (fs.existsSync(disputedPath)) {
+        const existing = JSON.parse(fs.readFileSync(disputedPath, 'utf-8'));
+        for (const entry of existing) {
+            existingById[entry["alpha-3"]] = { region: entry.region || "", "sub-region": entry["sub-region"] || "" };
+        }
+    }
     const adm1Files = fs.readdirSync(`${assetsPath}/adm1`);
     const disputedTerritories = adm1Files
         .filter(f => /^\d+\.json$/.test(f))
@@ -32,11 +43,10 @@ async function getWorldTopojson() {
             const topo = JSON.parse(fs.readFileSync(`${assetsPath}/adm1/${f}`, 'utf-8'));
             const firstObj = topo.objects[Object.keys(topo.objects)[0]];
             const name = firstObj.geometries[0].properties.name;
-            return { name, "alpha-3": id, "alpha-2": "", region: "", "sub-region": "" };
+            const prev = existingById[id];
+            return { name, "alpha-3": id, "alpha-2": "", region: prev?.region ?? "", "sub-region": prev?.["sub-region"] ?? "" };
         });
-    const dataPath = path.resolve(assetsPath, '../data');
-    if (!fs.existsSync(dataPath)) fs.mkdirSync(dataPath, { recursive: true });
-    fs.writeFileSync(`${dataPath}/disputed_territories.json`, JSON.stringify(disputedTerritories, null, 2));
+    fs.writeFileSync(disputedPath, JSON.stringify(disputedTerritories, null, 2));
 
     let topologyAdm2 = await fetch('https://github.com/wmgeolab/geoBoundaries/raw/main/releaseData/CGAZ/geoBoundariesCGAZ_ADM2.geojson');
     topologyAdm2 = await topologyAdm2.json();

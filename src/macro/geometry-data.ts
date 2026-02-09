@@ -1,5 +1,6 @@
 import { extractFileName, getNumericCols, indexBy, sortBy } from "src/util/common";
 import iso3Data from "../assets/data/iso3_filtered.json";
+import disputedData from "../assets/data/disputed_territories.json";
 import { appState, commonState, macroState } from "src/state.svelte";
 import { presimplify, simplify } from "topojson-simplify";
 import * as topojson from "topojson-client";
@@ -9,7 +10,8 @@ import { defaultColorDef, defaultLegendDef, defaultTooltipContent, defaultToolti
 import type { ZoneDataRow } from "src/types";
 import { featureCollection, polygon } from "@turf/helpers";
 
-const iso3DataById = indexBy(iso3Data, "alpha-3");
+const iso3DataById = indexBy([...iso3Data, ...disputedData], "alpha-3");
+const GEO_META_KEYS = ["shapeID", "shapeId", "shapeGroup", "shapeType"];
 export const resolvedAdmGeometry: Record<string, any> = {};
 const resolvedAdmTopo: Record<string, any> = {};
 let adm0Topo: any = null;
@@ -121,7 +123,11 @@ export async function initializeAdms(): Promise<void> {
         }
         if (!(countryAdm in macroState.zonesData) && !macroState.zonesData?.[countryAdm]?.provided) {
             const data: ZoneDataRow[] = sortBy(
-                resolvedAdmGeometry[countryAdm].features.map((f: Feature) => f.properties),
+                resolvedAdmGeometry[countryAdm].features.map((f: Feature) => {
+                    const props = { ...f.properties };
+                    GEO_META_KEYS.forEach((k) => delete props[k]);
+                    return props;
+                }),
                 "name",
             )!;
             macroState.zonesData[countryAdm] = {

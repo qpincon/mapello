@@ -1,5 +1,5 @@
 // https://stackoverflow.com/a/14991797
-function parseCSV(str: string) {
+export function parseCSV(str: string) {
     const arr: unknown[][] = [];
     let quote = false;  // 'true' means we're inside a quoted field
 
@@ -33,4 +33,21 @@ function parseCSV(str: string) {
         arr[row][col] += cc;
     }
     return arr;
+}
+
+export function csvToObjects(csv: string): Record<string, string | number>[] {
+    const rows = parseCSV(csv);
+    if (rows.length < 2) return [];
+    const headers = rows[0].map((h) => String(h).trim());
+    return rows.slice(1)
+        .filter((row) => row.some((cell) => String(cell).trim() !== ""))
+        .map((row) => {
+            const obj: Record<string, string | number> = {};
+            headers.forEach((header, i) => {
+                const raw = String(row[i] ?? "").trim();
+                const num = Number(raw);
+                obj[header] = raw !== "" && !isNaN(num) ? num : raw;
+            });
+            return obj;
+        });
 }

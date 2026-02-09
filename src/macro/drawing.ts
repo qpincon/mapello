@@ -178,7 +178,12 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
         const filter = macroState.zonesFilter[layer] ?? null;
         if (layer === "countries" && macroState.inlinePropsMacro.showCountries && geometriesState.countries) {
             if (!("countries" in macroState.zonesData) && !macroState.zonesData["countries"]?.provided) {
-                const countryProps = geometriesState.countries.features.map((f) => f.properties);
+                const geoMetaKeys = ["shapeID", "shapeId", "shapeGroup", "shapeType"];
+                const countryProps = geometriesState.countries.features.map((f) => {
+                    const props = { ...f.properties };
+                    geoMetaKeys.forEach((k) => delete (props as any)[k]);
+                    return props;
+                });
                 sortBy(countryProps, "name")!;
                 macroState.zonesData["countries"] = {
                     data: countryProps,
