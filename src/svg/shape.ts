@@ -1,22 +1,13 @@
-import { select, create } from 'd3-selection';
-import { drag, type D3DragEvent } from 'd3-drag';
-import { createSvgFromPart, setTransformTranslate, getTranslateFromTransform } from './svg';
+import { create } from 'd3-selection';
+import { createSvgFromPart } from './svg';
 import * as shapes from './shapeDefs';
 import type { Coords, ShapeDefinition } from 'src/types';
 import type { GeoProjection } from 'd3-geo';
-
-
-
-type DragCallback = () => void;
-
-// Global state
-let currentlyDragging: SVGElement | null = null;
 
 export function drawShapes(
     shapeDefinitions: ShapeDefinition[],
     container: HTMLElement | null,
     projection: GeoProjection,
-    dragCb: DragCallback
 ): void {
     if (!container) return;
 
@@ -38,53 +29,14 @@ export function drawShapes(
             throw new Error(`Shape definition ${shapeDef.id} must have either 'name' or 'text' property`);
         }
 
-        const transform: string = `translate(${projectedPos[0]} ${projectedPos[1]})`;
+        let transform: string = `translate(${projectedPos[0]} ${projectedPos[1]})`;
+        if (shapeDef.scale && shapeDef.scale !== 1) {
+            transform += ` scale(${shapeDef.scale})`;
+        }
         svgShape.setAttribute('transform', transform);
         svgShape.setAttribute('id', shapeDef.id);
         container.appendChild(svgShape);
     });
-
-    let dragging: boolean = false;
-
-    select(container).call(drag<HTMLElement, unknown>()
-        .on("drag", function (event: D3DragEvent<HTMLElement, unknown, unknown>) {
-            dragging = true;
-            if (!currentlyDragging) return;
-
-            const [x, y]: Coords = getTranslateFromTransform(currentlyDragging)!;
-            setTransformTranslate(currentlyDragging, `translate(${x + event.dx} ${y + event.dy})`);
-        })
-        .on('start', (event: D3DragEvent<HTMLElement, unknown, unknown>) => {
-            const target = event.sourceEvent.target as Element;
-            if (target.tagName === 'tspan') {
-                currentlyDragging = target.parentNode as SVGElement;
-            } else {
-                currentlyDragging = target as SVGElement;
-            }
-        })
-        .on('end', (event: D3DragEvent<HTMLElement, unknown, unknown>) => {
-            if (!dragging || !currentlyDragging) return;
-
-            dragging = false;
-            const pointId: string | null = currentlyDragging.getAttribute('id');
-
-            if (!pointId) {
-                currentlyDragging = null;
-                return;
-            }
-
-            const pointDef: ShapeDefinition | undefined = shapeDefinitions.find(def => def.id === pointId);
-            if (!pointDef) {
-                currentlyDragging = null;
-                return;
-            }
-
-            const [x, y]: Coords = getTranslateFromTransform(currentlyDragging)!;
-            pointDef.pos = projection.invert ? projection.invert([x, y])! : [x, y];
-            currentlyDragging = null;
-            dragCb();
-        })
-    );
 }
 
 

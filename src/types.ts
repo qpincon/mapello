@@ -296,3 +296,5 @@ export interface GlobalState {
     stateMicro: StateMicro;
     stateCommon: StateCommon;
 }
+
+export type SelectableEntityType = "shape" | "path" | "freehand";

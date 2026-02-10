@@ -1,9 +1,6 @@
-import svgoConfig from '../svgoExport.config';
 import svgoConfigText from '../svgoExportText.config';
 
-import { htmlToElement } from '../util/common';
-import { indexBy, pick, download, discriminateCssForExport } from '../util/common';
-import { reportStyle, reportStyleElem, fontsToCss, getUsedInlineFonts, DOM_PARSER } from '../util/dom';
+import { reportStyleElem, DOM_PARSER } from '../util/dom';
 import type { Config } from 'svgo/browser';
 import type { ProvidedFont, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
 

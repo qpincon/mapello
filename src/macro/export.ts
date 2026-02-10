@@ -38,6 +38,10 @@ export async function exportMacro(
     if (fo) document.body.append(fo as Node);
     const svgNode = svg.node()!;
 
+    // Remove selection overlay from export
+    const selectionOverlay = svgNode.querySelector('#selection-overlay');
+    if (selectionOverlay) selectionOverlay.remove();
+
     // === Remove contours images (keep only <g> element to duplicate afterwards) ==
     let contours = Array.from(svgNode.querySelectorAll('image.contour-to-dup'));
     const contoursWithParents: [Element, Element][] = contours.map(el => {

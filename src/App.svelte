@@ -49,6 +49,18 @@
     import { exportMacro } from "./macro/export";
     import MicroSidebar from "./micro/components/MicroSidebar.svelte";
     import { exportMicro } from "./micro/drawing";
+    import {
+        selectionState,
+        identifyClickedEntity,
+        identifyClickedPath,
+        toggleSelection,
+        clearSelection,
+        isSelectionActive,
+        copySelected,
+        pasteFromClipboard,
+        deleteSelected,
+        refreshOverlay,
+    } from "./selection.svelte";
 
     let openContextMenuInfo: ContextMenuInfo;
 
@@ -57,8 +69,6 @@
     let svg: SvgSelection = $state(select("#map-container") as unknown as SvgSelection);
     let isDrawing = $state(false);
 
-    // TODO: remove and compute from shape + label size
-    let shapeCount = 0;
 
     let cssFonts = $derived(fontsToCss(commonState.providedFonts));
 
@@ -224,10 +234,32 @@
         // maplibreMap.showTileBoundaries = true;
         window.addEventListener("keydown", (e) => {
             if (e.code === "Escape") {
+                if (isSelectionActive()) {
+                    clearSelection();
+                    return;
+                }
                 stopDrawFreeHand();
                 cancelDrawPath();
             } else if (e.code === "Enter") {
                 stopDrawFreeHand();
+            } else if (e.ctrlKey && e.code === "KeyC") {
+                if (isSelectionActive()) {
+                    e.preventDefault();
+                    copySelected();
+                }
+            } else if (e.ctrlKey && e.code === "KeyV") {
+                if (selectionState.clipboard) {
+                    e.preventDefault();
+                    pasteFromClipboard(() => redrawEntities());
+                }
+            } else if (e.code === "Delete" || e.code === "Backspace") {
+                if (isSelectionActive()) {
+                    // Don't intercept if user is typing in an input/textarea
+                    const tag = (e.target as HTMLElement)?.tagName;
+                    if (tag === "INPUT" || tag === "TEXTAREA") return;
+                    e.preventDefault();
+                    deleteSelected(() => redrawEntities());
+                }
             }
         });
     });
@@ -300,6 +332,7 @@
     async function draw(simplified = false) {
         if (isDrawing) return;
         isDrawing = true;
+        clearSelection();
         console.log("draw", simplified);
         const container = select("#map-container");
         container.html("");
@@ -361,9 +394,41 @@
         );
 
         svg.on("click", function (e) {
-            if (contextualMenu!.opened) closeMenu();
-            else if (styleEditor!.isOpened()) styleEditor!.close();
-            else if (iseOnClickEnabled) openEditor(e);
+            if (contextualMenu!.opened) {
+                closeMenu();
+                return;
+            }
+            if (styleEditor!.isOpened()) {
+                styleEditor!.close();
+                return;
+            }
+            if (!iseOnClickEnabled) return;
+
+            // Try to identify a clicked entity for selection
+            let entity = identifyClickedEntity(e.target as Element);
+            // Fallback: proximity hit-test for thin paths
+            if (!entity) entity = identifyClickedPath(e);
+            if (entity) {
+                toggleSelection(entity, e.shiftKey);
+            } else {
+                clearSelection();
+            }
+        });
+
+        svg.on("dblclick", function (e) {
+            if (!iseOnClickEnabled) return;
+            // If a single entity is selected, open editor on that entity (not the overlay)
+            if (selectionState.selected.length === 1) {
+                const sel = selectionState.selected[0];
+                const el = document.getElementById(sel.id);
+                if (el) {
+                    styleEditor!.open(el as HTMLElement, e.pageX, e.pageY);
+                    return;
+                }
+            }
+            // Multiple selected: do nothing (bulk style editing not supported)
+            if (selectionState.selected.length > 1) return;
+            openEditor(e);
         });
 
         if (commonState.currentMode === "macro") {
@@ -458,6 +523,7 @@
 
     function editPath(): void {
         closeMenu();
+        clearSelection();
         const pathElem = openContextMenuInfo.target;
         detachListeners();
         editingPath = true;
@@ -558,6 +624,16 @@
         saveState();
     }
 
+    /** Re-render all user entities (shapes, paths, freehand) after a selection operation */
+    function redrawEntities(): void {
+        drawAndSetupShapes();
+        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
+        const existing = document.getElementById("freehand-drawings");
+        if (existing) existing.remove();
+        drawFreeHandShapes(svg, commonState.providedFreeHand);
+        applyStyles(commonState.inlineStyles);
+    }
+
     function handleInputFont(e: Event): void {
         // @ts-expect-error
         const file = e.target.files[0];
@@ -573,6 +649,7 @@
 
     function addPath(): void {
         closeMenu();
+        clearSelection();
         detachListeners();
         isDrawingPath = true;
         isCursorInsideMap = true; // Assume cursor is inside since menu was just clicked
@@ -658,6 +735,7 @@
         isDrawingFreeHand = true;
         isCursorInsideMap = true; // Assume cursor is inside since menu was just clicked
         closeMenu();
+        clearSelection();
         detachListeners();
         freeHandDrawer.start(svg.node() as SVGSVGElement);
         document.addEventListener("mousemove", updateDrawingTooltip);
@@ -683,6 +761,10 @@
             console.log(parsed);
         });
         if (unprojected.length) commonState.providedFreeHand.push(unprojected);
+        // Remove the drawer's temporary group and existing freehand container before re-rendering
+        newGroup.remove();
+        const existing = document.getElementById("freehand-drawings");
+        if (existing) existing.remove();
         drawFreeHandShapes(svg, commonState.providedFreeHand);
         saveState();
     }
@@ -724,7 +806,7 @@
                 const labelDef = commonState.providedShapes.find((def) => def.id === editedLabelId)!;
                 labelDef.text = typedText;
             } else {
-                const labelId = `label-${shapeCount++}`;
+                const labelId = `label-${commonState.shapeCount++}`;
                 commonState.providedShapes.push({
                     pos: openContextMenuInfo.position,
                     scale: 1,
@@ -743,18 +825,24 @@
         const container = document.getElementById("points-labels");
         if (!container) return;
         select(container).attr("clip-path", "url(#clipMapBorder)");
-        drawShapes(commonState.providedShapes, container, appState.projection!, saveState);
-        select(container).on("click", (e) => e.stopPropagation());
+        drawShapes(commonState.providedShapes, container, appState.projection!);
+        select(container).on("click", (e) => {
+            // Let clicks propagate to SVG for selection handling
+            // but stop propagation only if selection overlay handled it
+        });
         select(container).on("dblclick", (e) => {
             const target = e.target;
             let targetId = target.getAttribute("id");
             if (target.tagName == "tspan") targetId = target.parentNode.getAttribute("id");
-            if (targetId.includes("label")) {
+            if (targetId && targetId.includes("label")) {
                 editedLabelId = targetId;
                 const labelDef = commonState.providedShapes.find((def) => def.id === editedLabelId)!;
                 typedText = labelDef.text!;
                 addLabel();
                 showMenu(e);
+            } else {
+                // Double-click on shapes opens style editor
+                openEditor(e);
             }
             e.preventDefault();
             e.stopPropagation();
@@ -786,7 +874,7 @@
     }
 
     async function addShape(shapeName: ShapeName): Promise<void> {
-        const shapeId = `${shapeName}-${shapeCount++}`;
+        const shapeId = `${shapeName}-${commonState.shapeCount++}`;
         commonState.providedShapes.push({
             name: shapeName,
             pos: openContextMenuInfo.position,
@@ -812,7 +900,7 @@
         const newDef: ShapeDefinition = { ...commonState.providedShapes.find((def) => def.id === objectId)! };
         const projected = appState.projection!(newDef.pos)!;
         newDef.pos = appState.projection!.invert!([projected[0] - 10, projected[1]])!;
-        const newShapeId = `${newDef.name ? newDef.name : "label"}-${shapeCount++}`;
+        const newShapeId = `${newDef.name ? newDef.name : "label"}-${commonState.shapeCount++}`;
         commonState.inlineStyles[newShapeId] = { ...commonState.inlineStyles[newDef.id] };
         newDef.id = newShapeId;
         commonState.providedShapes.push(newDef);

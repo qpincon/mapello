@@ -802,6 +802,11 @@ export async function exportMicro(
     const borderPadding = stateMicro.microParams.Border.borderPadding;
     const svgNode = svg.node()! as SVGSVGElement;
     svgNode.removeAttribute('style');
+
+    // Remove selection overlay from export
+    const selectionOverlay = svgNode.querySelector('#selection-overlay');
+    if (selectionOverlay) selectionOverlay.remove();
+
     const usedFonts = getUsedInlineFonts(svgNode);
     const usedProvidedFonts = providedFonts.filter(font => usedFonts.has(font.name));
     const { optimize } = await import('svgo/browser');
