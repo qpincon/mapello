@@ -1,5 +1,6 @@
 import { commonState, macroState, microState } from "src/state.svelte";
 import type { GlobalState } from "src/types";
+import { recordIfChanged } from "./history";
 
 const LOCAL_STORAGE_KEY = "map-builder-state";
 export function saveState() {
@@ -7,6 +8,7 @@ export function saveState() {
     console.log('saveState', params)
     const serialized = JSON.stringify(params);
     localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
+    recordIfChanged();
 }
 
 export function getState(): GlobalState | null {

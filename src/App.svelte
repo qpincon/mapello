@@ -25,6 +25,7 @@
     import Icon from "./components/Icon.svelte";
     import { exportStyleSheet, getUsedInlineFonts, fontsToCss, applyStyles } from "./util/dom";
     import { getState, saveState } from "./util/save";
+    import { undo, redo, setRestoring, clearHistory } from "./util/history";
     import { exportFontChoices } from "./svg/export";
     import * as _microPalettes from "./micro/microPalettes";
     import { drawFreeHandShapes, FreehandDrawer } from "./svg/freeHandDraw";
@@ -68,7 +69,6 @@
     let microSidebar: MicroSidebar | null = $state(null);
     let svg: SvgSelection = $state(select("#map-container") as unknown as SvgSelection);
     let isDrawing = $state(false);
-
 
     let cssFonts = $derived(fontsToCss(commonState.providedFonts));
 
@@ -251,6 +251,15 @@
                 if (selectionState.clipboard) {
                     e.preventDefault();
                     pasteFromClipboard(() => redrawEntities());
+                }
+            } else if (e.ctrlKey && e.key.toLowerCase() === "z") {
+                const tag = (e.target as HTMLElement)?.tagName;
+                if (tag === "INPUT" || tag === "TEXTAREA") return;
+                e.preventDefault();
+                if (e.shiftKey) {
+                    performRedo();
+                } else {
+                    performUndo();
                 }
             } else if (e.code === "Delete" || e.code === "Backspace") {
                 if (isSelectionActive()) {
@@ -463,16 +472,21 @@
 
     async function applyState(state: GlobalState): Promise<void> {
         console.trace("applyState", state);
-        Object.assign(commonState, state.stateCommon);
-        Object.assign(macroState, state.stateMacro.macroParams ? state.stateMacro : defaultState.stateMacro);
-        Object.assign(microState, state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro);
-        // merge(commonState, state.stateCommon);
-        // merge(macroState, state.stateMacro);
-        // merge(microState, state.stateMicro);
-        await tick();
-        changeProjection();
-        draw();
-        saveState();
+        clearHistory();
+        setRestoring(true);
+        try {
+            Object.assign(commonState, state.stateCommon);
+            Object.assign(macroState, state.stateMacro.macroParams ? state.stateMacro : defaultState.stateMacro);
+            Object.assign(microState, state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro);
+            await tick();
+            changeProjection();
+            draw();
+            saveState();
+        } finally {
+            setRestoring(false);
+            // Record initial drawing state as baseline for undo
+            saveState();
+        }
     }
 
     function restoreStateFromSave() {
@@ -632,6 +646,32 @@
         if (existing) existing.remove();
         drawFreeHandShapes(svg, commonState.providedFreeHand);
         applyStyles(commonState.inlineStyles);
+    }
+
+    function performUndo(): void {
+        const snapshot = undo();
+        if (!snapshot) return;
+        setRestoring(true);
+        try {
+            Object.assign(commonState, JSON.parse(snapshot));
+            redrawEntities();
+            saveState();
+        } finally {
+            setRestoring(false);
+        }
+    }
+
+    function performRedo(): void {
+        const snapshot = redo();
+        if (!snapshot) return;
+        setRestoring(true);
+        try {
+            Object.assign(commonState, JSON.parse(snapshot));
+            redrawEntities();
+            saveState();
+        } finally {
+            setRestoring(false);
+        }
     }
 
     function handleInputFont(e: Event): void {
