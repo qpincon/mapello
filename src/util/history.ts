@@ -1,4 +1,4 @@
-import { commonState, macroState } from "src/state.svelte";
+import { commonState, macroState, microState } from "src/state.svelte";
 
 const MAX_HISTORY = 50;
 let undoStack: string[] = [];
@@ -13,6 +13,8 @@ function serializeDrawingState(): string {
         inlineStyles: commonState.inlineStyles,
         shapeCount: commonState.shapeCount,
         lastUsedLabelProps: commonState.lastUsedLabelProps,
+        baseCss: macroState.baseCss,
+        microLayerDefinitions: microState.microLayerDefinitions,
     });
 }
 

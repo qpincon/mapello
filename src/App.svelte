@@ -50,6 +50,7 @@
     import { exportMacro } from "./macro/export";
     import MicroSidebar from "./micro/components/MicroSidebar.svelte";
     import { exportMicro } from "./micro/drawing";
+    import { replaceCssSheetContent, updateSvgPatterns } from "./micro/change";
     import {
         selectionState,
         identifyClickedEntity,
@@ -648,13 +649,31 @@
         applyStyles(commonState.inlineStyles);
     }
 
+    function restoreStyleState(parsed: Record<string, any>): void {
+        if (parsed.baseCss !== undefined && commonState.currentMode === "macro") {
+            macroState.baseCss = parsed.baseCss;
+            const styleElem = document.getElementById("style-sheet-macro");
+            if (!styleElem) return;
+            styleElem.innerHTML = macroState.baseCss;
+        }
+        if (parsed.microLayerDefinitions !== undefined && commonState.currentMode === "micro") {
+            microState.microLayerDefinitions = parsed.microLayerDefinitions;
+            const svgNode = document.getElementById("static-svg-map") as unknown as SVGSVGElement;
+            updateSvgPatterns(svgNode, microState.microLayerDefinitions);
+            replaceCssSheetContent(microState.microLayerDefinitions);
+        }
+    }
+
     function performUndo(): void {
         const snapshot = undo();
         if (!snapshot) return;
         setRestoring(true);
         try {
-            Object.assign(commonState, JSON.parse(snapshot));
+            const parsed = JSON.parse(snapshot);
+            Object.assign(commonState, parsed);
+            restoreStyleState(parsed);
             redrawEntities();
+            refreshOverlay();
             saveState();
         } finally {
             setRestoring(false);
@@ -666,8 +685,11 @@
         if (!snapshot) return;
         setRestoring(true);
         try {
-            Object.assign(commonState, JSON.parse(snapshot));
+            const parsed = JSON.parse(snapshot);
+            Object.assign(commonState, parsed);
+            restoreStyleState(parsed);
             redrawEntities();
+            refreshOverlay();
             saveState();
         } finally {
             setRestoring(false);

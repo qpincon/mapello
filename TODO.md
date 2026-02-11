@@ -22,9 +22,9 @@
 - [x] If viewBox, always fill container, and get dynamic size for drawing with canvas
 - [x] If width/height, give control over width/height
 - [x] Fix change sea color not working
-- [ ] Add spinner on loading (geosjon / font)
+- [-] Add spinner on loading (geosjon / font)
 - [x] Fix dragging created paths
-- [ ] Display labels using projection (how?)
+- [-] Display labels using projection (how?)
 - [x] Add credits to:
     - geoboundaries
     - d3
@@ -129,9 +129,9 @@
 - [x] Micro: Stop computations when moving
 - [x] Bug: Click on increment range on significant digits legend does nothing
 - [ ] Remove labels off canvas
-- [ ] Freehand: style group with ISE (add custom CSS rule on the fly on <g> parent)
-- [ ] Freehand: Allow drag drawing
-- [ ] Freehand: Allow deletion
+- [x] Freehand: style group with ISE (add custom CSS rule on the fly on <g> parent)
+- [x] Freehand: Allow drag drawing
+- [x] Freehand: Allow deletion
 - [x] Double click text edit prevent ISE
 - [x] Micro: 3d elements (see maplibre 3D model demo) (three.js SVG renderer / zdog?)
 - [x] Micro: Use protomaps (upload tiles and configure nginx to serve it, using the pm plugin in the front)
@@ -153,7 +153,7 @@
 - [ ] Macro: find a way to match ADM2 boundary data with land data (see UK adm2 for instance)
 
 - [ ] Allow external link on click of entity (a xmlns="http://www.w3.org/2000/svg" xlink:href="url.html" xmlns:xlink="http://www.w3.org/1999/xlink" )
-- [ ] Text / icons / images / freehand : use https://github.com/daybrush/moveable
+- [-] Text / icons / images / freehand : use https://github.com/daybrush/moveable
 - [x] Text: just use Maj+Enter for new line instead of ++
 
 - [x] Geoboundaries: give name to disputed territories
@@ -184,7 +184,6 @@
   - [x] require.context => import.meta.glob
   - [x] Inline imports -> ?raw (https://vite.dev/guide/assets)
 - [ ] Option to have fade out gradient like https://www.mapiful.com/editor/#/editor/location
-- [ ] Move "use view box" in export options
 - [x] Micro: always stitch water when zoom level low enough to avoid cut oceans
 - [x] Micro: make clip-path smaller when border width is big (avoid overlap with geometries)
 - [x] Bug wen reset project on micro
@@ -223,3 +222,4 @@
 - [x] ISE: use icons for fill / stroke / dasharray / width
 - [x] ISE: don't display lines with only 1 item
 - [ ] Export: move "animate" option, explain how to usage SVG (script or c/c), viewbox
+- [ ] Font picker
