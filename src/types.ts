@@ -107,8 +107,11 @@ export interface TooltipDefs {
 }
 
 export interface ProvidedFont {
-    name: string;
-    content: string;
+    name: string;       // familyName (e.g., "Roboto")
+    slug: string;       // Bunny Fonts slug (e.g., "roboto")
+    weight: number;     // e.g., 400
+    style: string;      // "normal"
+    defSubset: string;  // "latin"
 }
 
 

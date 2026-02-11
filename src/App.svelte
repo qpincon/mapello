@@ -18,6 +18,7 @@
     import Examples from "./components/Examples.svelte";
     import { freeHandDrawPath, cancelFreeHandDrawPath } from "./svg/freeHandPath";
     import Modal from "./components/Modal.svelte";
+    import FontPicker from "./components/FontPicker.svelte";
     import Navbar from "./components/Navbar.svelte";
     import macroImg from "./assets/img/macro.png";
     import microImg from "./assets/img/micro.png";
@@ -696,17 +697,9 @@
         }
     }
 
-    function handleInputFont(e: Event): void {
-        // @ts-expect-error
-        const file = e.target.files[0];
-        const fileName = file.name.split(".")[0];
-        const reader = new FileReader();
-        reader.addEventListener("load", () => {
-            const newFont: ProvidedFont = { name: fileName, content: reader.result as string };
-            commonState.providedFonts.push(newFont);
-            saveState();
-        });
-        reader.readAsDataURL(file);
+    function handleFontSelected(font: ProvidedFont): void {
+        commonState.providedFonts.push(font);
+        saveState();
     }
 
     function addPath(): void {
@@ -1219,15 +1212,9 @@
             {/if}
             <div class="mt-4 d-flex align-items-center justify-content-center">
                 <div class="mx-2">
-                    <label for="fontinput" class="m-2 d-flex align-items-center btn btn-outline-primary">
-                        <Icon svg={icons["font"]} /> Add font</label
-                    >
-                    <input
-                        type="file"
-                        class="d-none"
-                        id="fontinput"
-                        accept=".ttf,.woff,.otf"
-                        onchange={handleInputFont}
+                    <FontPicker
+                        onFontSelected={handleFontSelected}
+                        existingFontNames={commonState.providedFonts.map(f => f.name)}
                     />
                 </div>
                 <div class="dropdown mx-2">

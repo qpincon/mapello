@@ -24,13 +24,38 @@ export function reportStyleElem(ref: Element, target: Element): void {
     }
 }
 
+export function fontBaseUrl(font: ProvidedFont): string {
+    return `https://fonts.bunny.net/${font.slug}/files/${font.slug}-${font.defSubset}-${font.weight}-${font.style}`;
+}
+
 export function fontsToCss(fonts: ProvidedFont[]): string {
-    return fonts.map(({ name, content }) => {
+    return fonts.map(font => {
+        const base = fontBaseUrl(font);
         return `@font-face {
-            font-family: ${name};
-            src: url("${content}");
+            font-family: ${font.name};
+            src: url("${base}.woff2") format("woff2"), url("${base}.woff") format("woff");
         }`;
     }).join('\n') || '';
+}
+
+export async function fetchFontAsDataUrl(font: ProvidedFont): Promise<string> {
+    const url = fontBaseUrl(font) + '.woff';
+    const res = await fetch(url);
+    const buffer = await res.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return `data:font/woff;base64,${btoa(binary)}`;
+}
+
+export async function fontsToCssEmbed(fonts: ProvidedFont[]): Promise<string> {
+    const results = await Promise.all(fonts.map(async font => {
+        const dataUrl = await fetchFontAsDataUrl(font);
+        return `@font-face { font-family: ${font.name}; src: url("${dataUrl}"); }`;
+    }));
+    return results.join('\n') || '';
 }
 
 export function getUsedInlineFonts(svg: SVGSVGElement): Set<string> {

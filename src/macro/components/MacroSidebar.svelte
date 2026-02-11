@@ -1083,10 +1083,6 @@
         cursor: grab !important;
     }
 
-    textarea {
-        font-size: 0.82rem;
-    }
-
     .layers {
         background-color: white;
     }

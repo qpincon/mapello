@@ -3,7 +3,7 @@ import { select, type Selection } from "d3-selection";
 import { bboxContains, bboxIntersects, getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
 import { cloneDeep, debounce, kebabCase, last, random, size } from "lodash-es";
 import { color, hsl } from "d3-color";
-import { DOM_PARSER, findStyleSheet, fontsToCss, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
+import { DOM_PARSER, findStyleSheet, fontsToCss, fontsToCssEmbed, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
 import { patternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download } from "../util/common";
@@ -845,7 +845,8 @@ export async function exportMicro(
     svgElement.querySelectorAll('#micro > path, #buildings > g').forEach(el => el.removeAttribute('id'));
     changeIdAndReferences(svgElement, mapId);
 
-    styleElem.innerHTML = pathIsBetter ? finalCss : finalCss + fontsToCss(usedProvidedFonts);
+    const embeddedFontCss = pathIsBetter ? '' : await fontsToCssEmbed(usedProvidedFonts);
+    styleElem.innerHTML = finalCss + embeddedFontCss;
     svgElement.append(styleElem);
     svgElement.classList.remove('animate-transition');
     svgElement.classList.add('cartosvg');

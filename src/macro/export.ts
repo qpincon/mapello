@@ -1,6 +1,6 @@
 import { additionnalCssExport, changeIdAndReferences, ExportFontChoice, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
 import type { ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
-import { DOM_PARSER, fontsToCss, getUsedInlineFonts, reportStyle } from 'src/util/dom';
+import { DOM_PARSER, fontsToCss, fontsToCssEmbed, getUsedInlineFonts, reportStyle } from 'src/util/dom';
 import svgoConfig from '../svgoExport.config';
 import type { Config } from 'svgo/browser';
 import { discriminateCssForExport, download, htmlToElement, indexBy, pick } from 'src/util/common';
@@ -163,7 +163,8 @@ export async function exportMacro(
     changeIdAndReferences(optimizedSVG.firstChild as Element, mapId);
     // === End styling ===
 
-    styleElem.innerHTML = pathIsBetter ? finalCss : finalCss + fontsToCss(usedProvidedFonts);
+    const embeddedFontCss = pathIsBetter ? '' : await fontsToCssEmbed(usedProvidedFonts);
+    styleElem.innerHTML = finalCss + embeddedFontCss;
     (optimizedSVG.firstChild as Element)!.append(styleElem);
     (optimizedSVG.firstChild as Element).classList.remove('animate-transition');
     (optimizedSVG.firstChild as Element).classList.add('cartosvg');
