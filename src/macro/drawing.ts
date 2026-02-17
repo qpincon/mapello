@@ -232,6 +232,9 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     }
     // @ts-expect-error
     groups.each(drawPaths);
+    svg.select("#graticule").selectAll("path")
+        .attr("stroke", macroState.macroParams.Background.graticuleColor)
+        .attr("stroke-width", macroState.macroParams.Background.graticuleWidth);
 }
 export function drawMacroFrame(
     svg: SvgSelection,

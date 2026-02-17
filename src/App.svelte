@@ -29,7 +29,6 @@
     import { undo, redo, setRestoring, clearHistory } from "./util/history";
     import { type ExportOptions } from "./svg/export";
     import ExportModal from "./components/ExportModal.svelte";
-    import * as _microPalettes from "./micro/microPalettes";
     import { drawFreeHandShapes, FreehandDrawer } from "./svg/freeHandDraw";
     import type {
         SvgSelection,
@@ -1208,7 +1207,7 @@
                 <div class="mx-2">
                     <FontPicker
                         onFontSelected={handleFontSelected}
-                        existingFontNames={commonState.providedFonts.map(f => f.name)}
+                        existingFontNames={commonState.providedFonts.map((f) => f.name)}
                     />
                 </div>
                 <div class="dropdown mx-2">

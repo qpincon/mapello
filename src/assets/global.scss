@@ -182,6 +182,10 @@ aside .nav-link.active {
     &:first-child {
         border-top: 0;
     }
+
+    &>.row {
+        width: 100%;
+    }
 }
 
 #main-menu {

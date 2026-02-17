@@ -28,6 +28,8 @@ export interface MacroBorderParams {
 export interface MacroBackgroundParams {
     showGraticule: boolean;
     graticuleStep: number;
+    graticuleColor: Color;
+    graticuleWidth: number;
     seaColor: Color;
     backgroundNoise: boolean;
 }
@@ -38,40 +40,6 @@ export interface MacroParams {
     Background: MacroBackgroundParams;
     firstGlow: GlowParams;
     secondGlow: GlowParams;
-}
-
-export const defaultParams: MacroParams = {
-    General: {
-        width: 600,
-        height: 670,
-        projection: 'satellite',
-        fieldOfView: 50,
-        altitude: 3200,
-    },
-    Border: {
-        borderRadius: 1.5,
-        borderWidth: 1,
-        borderColor: "#b8b8b8",
-    },
-    Background: {
-        showGraticule: true,
-        graticuleStep: 3,
-        seaColor: "#dde2eeff",
-        backgroundNoise: true,
-    },
-
-    firstGlow: {
-        innerStrength: 0.3,
-        innerBlur: 4.8,
-        innerColor: "#ffbc6eff",
-        outerBlur: 3.5,
-        outerStrength: 0.2,
-        outerColor: "#ffffffff"
-    },
-    secondGlow: {
-        innerStrength: 1.5, innerBlur: 0.2, innerColor: "#ffffff",
-        outerBlur: 3, outerStrength: 0.1, outerColor: '#2d2626ff',
-    },
 }
 
 export interface MicroGeneralParams {
@@ -125,7 +93,8 @@ export const paramDefs: ParamDefinitions = {
     innerStrength: { type: 'range', min: 0, max: 6, step: 0.1 },
     outerBlur: { type: 'range', min: 0, max: 10, step: 0.1 },
     outerStrength: { type: 'range', min: 0, max: 6, step: 0.1 },
-    graticuleStep: { type: 'range', min: 0.1, max: 20, step: 0.1 },
+    graticuleStep: { type: 'range', min: 0.5, max: 10, step: 0.1 },
+    graticuleWidth: { type: 'range', min: 0.1, max: 3, step: 0.1 },
     borderRadius: { type: 'range', min: 0, max: 50, step: 0.5 },
     borderWidth: { type: 'range', min: 0, max: 10 },
     borderPadding: { type: 'range', min: 0, max: 30 },
