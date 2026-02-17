@@ -2,7 +2,7 @@ import svgoConfigText from '../svgoExportText.config';
 
 import { reportStyleElem, DOM_PARSER, fetchFontAsDataUrl } from '../util/dom';
 import type { Config } from 'svgo/browser';
-import type { ProvidedFont, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
+import type { ProvidedFont } from 'src/types';
 
 
 export enum ExportFontChoice {
@@ -166,7 +166,8 @@ export async function inlineFontVsPath(
     await Promise.all(providedFonts.map(async ({ name, slug, weight, style, defSubset }) => {
         const content = await fetchFontAsDataUrl({ name, slug, weight, style, defSubset });
         transformedTexts[name] = {};
-        nbFontChars += content.length;
+        const base64Part = content.substring(content.indexOf(',') + 1);
+        nbFontChars += Math.ceil(base64Part.length * 3 / 4);
         const texts = getTextElems(svgElem);
 
         return new Promise<void>(resolve => {

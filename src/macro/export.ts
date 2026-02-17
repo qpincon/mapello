@@ -85,7 +85,7 @@ export async function exportMacro(
 
     let pathIsBetter = false;
     if (exportFonts === ExportFontChoice.smallest || exportFonts === ExportFontChoice.convertToPath) {
-        pathIsBetter = await inlineFontVsPath(optimizedSVG.firstChild as SVGElement, providedFonts, exportFonts);
+        pathIsBetter = await inlineFontVsPath(optimizedSVG.firstChild as SVGElement, usedProvidedFonts, exportFonts);
     } else if (exportFonts === ExportFontChoice.noExport) {
         pathIsBetter = true;
     }
@@ -166,7 +166,7 @@ export async function exportMacro(
 
     let fontCss = '';
     if (!pathIsBetter) {
-        if (exportFonts === ExportFontChoice.embedFontFace) {
+        if (exportFonts === ExportFontChoice.embedFontFace || exportFonts === ExportFontChoice.smallest) {
             fontCss = fontsToCss(usedProvidedFonts);
         } else {
             fontCss = await fontsToCssEmbed(usedProvidedFonts);

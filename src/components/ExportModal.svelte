@@ -23,14 +23,16 @@
     let animate = $state(false);
     let useViewBox = $state(false);
     let frameShadow = $state(true);
-    let fontUsedElsewhere = $state(true);
+    let fontUsedElsewhere = $state(false);
     let showAdvanced = $state(false);
     let minifyJs = $state(true);
+    let sizeText = $state("");
+    let modalWidth = $state("600px");
     let previewContainer: HTMLDivElement;
 
     function getExportFontChoice(): ExportFontChoice {
         if (!inlineFontUsed) return ExportFontChoice.convertToPath;
-        return fontUsedElsewhere ? ExportFontChoice.noExport : ExportFontChoice.embedFontFace;
+        return fontUsedElsewhere ? ExportFontChoice.noExport : ExportFontChoice.smallest;
     }
 
     function buildOptions(): ExportOptions {
@@ -59,7 +61,32 @@
             svgString = await exportMicro(svgNode, microState, commonState.providedFonts, microCss, options, false);
         }
         if (!svgString) return;
+
+        const rawBytes = new TextEncoder().encode(svgString).byteLength;
+        const rawKB = (rawBytes / 1024).toFixed(1);
+        const blob = new Blob([svgString]);
+        const cs = new CompressionStream("gzip");
+        const stream = blob.stream().pipeThrough(cs);
+        const compressedBlob = await new Response(stream).blob();
+        const gzKB = (compressedBlob.size / 1024).toFixed(1);
+        sizeText = `${rawKB} KB (${gzKB} KB gzipped)`;
+
         loadSvgString(svgString, previewContainer);
+        const svgEl = previewContainer.querySelector("svg");
+        let mapWidth = 0;
+        if (svgEl) {
+            const vb = svgEl.getAttribute("viewBox");
+            const w = svgEl.getAttribute("width");
+            if (vb) {
+                mapWidth = +vb.split(/[\s,]+/)[2];
+            } else if (w) {
+                mapWidth = parseFloat(w);
+            }
+        }
+        const overhead = 400;
+        const needed = mapWidth + overhead;
+        const maxWidth = window.innerWidth * 0.9;
+        modalWidth = `${Math.max(600, Math.min(needed, maxWidth))}px`;
     }
 
     function onExportClicked() {
@@ -82,7 +109,7 @@
     });
 </script>
 
-<Modal {open} {onClosed} onOpened={onModalOpened} modalWidth="70%">
+<Modal {open} {onClosed} onOpened={onModalOpened} {modalWidth}>
     <div slot="header">
         <h2 class="fs-3 p-2 m-0">Export options</h2>
     </div>
@@ -162,50 +189,54 @@
                         />
                         <label class="form-check-label" for="fontNo">
                             No
-                            <span class="text-muted small">&mdash; embed @font-face URLs</span>
+                            <span class="text-muted small">&mdash; auto-pick smallest (paths or @font-face)</span>
                         </label>
                     </div>
                 {/if}
 
-                <hr />
-                <button
-                    class="btn btn-sm btn-link p-0 text-decoration-none advanced-toggle"
-                    type="button"
-                    onclick={() => (showAdvanced = !showAdvanced)}
-                >
-                    <svg class="chevron" class:open={showAdvanced} width="12" height="12" viewBox="0 0 12 12">
-                        <path
-                            d="M4 2 L8 6 L4 10"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                    </svg>
-                    Advanced
-                </button>
+                {#if mode === "macro"}
+                    <hr />
+                    <button
+                        class="btn btn-sm btn-link p-0 text-decoration-none advanced-toggle"
+                        type="button"
+                        onclick={() => (showAdvanced = !showAdvanced)}
+                    >
+                        <svg class="chevron" class:open={showAdvanced} width="12" height="12" viewBox="0 0 12 12">
+                            <path
+                                d="M4 2 L8 6 L4 10"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+                        </svg>
+                        Advanced
+                    </button>
 
-                {#if showAdvanced}
-                    <div class="mt-2">
-                        {#if mode === "macro"}
-                            <div class="form-check form-switch">
-                                <input
-                                    class="form-check-input"
-                                    type="checkbox"
-                                    role="switch"
-                                    id="export-minify"
-                                    bind:checked={minifyJs}
-                                />
-                                <label class="form-check-label" for="export-minify"> Minify JavaScript </label>
-                            </div>
-                        {/if}
-                    </div>
+                    {#if showAdvanced}
+                        <div class="mt-2">
+                            {#if mode === "macro"}
+                                <div class="form-check form-switch">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        id="export-minify"
+                                        bind:checked={minifyJs}
+                                    />
+                                    <label class="form-check-label" for="export-minify"> Minify JavaScript </label>
+                                </div>
+                            {/if}
+                        </div>
+                    {/if}
                 {/if}
             </div>
 
             <div class="export-preview">
-                <h6 class="mb-2">Preview</h6>
+                <h6 class="mb-2">
+                    Preview {#if sizeText}<span class="size-text">{sizeText}</span>{/if}
+                </h6>
                 <div class="preview-container" bind:this={previewContainer}></div>
             </div>
         </div>
@@ -222,8 +253,7 @@
         min-height: 300px;
     }
     .export-options {
-        flex: 0 0 35%;
-        min-width: 200px;
+        flex: 0 0 260px;
     }
     .export-preview {
         flex: 1;
@@ -231,11 +261,13 @@
         position: relative;
     }
     .preview-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-        margin: 2rem;
+        padding: 1.5rem;
+        margin: 1rem;
+        overflow: auto;
+    }
+    .preview-container :global(svg) {
+        max-width: 100%;
+        height: auto;
     }
     .advanced-toggle {
         display: inline-flex;
@@ -247,5 +279,10 @@
     }
     .chevron.open {
         transform: rotate(90deg);
+    }
+    .size-text {
+        font-weight: normal;
+        color: var(--bs-secondary-color, #6c757d);
+        font-size: 0.8em;
     }
 </style>

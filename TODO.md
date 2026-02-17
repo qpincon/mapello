@@ -190,7 +190,7 @@
 - [x] fix animate on micro
 - [x] fix background shadow on micro
 - [ ] Micro: minify class names + CSS on export ?
-- [ ] text-to-svg: don't accept woff2 fonts
+- [x] text-to-svg: don't accept woff2 fonts
 - [x] Macro: have same tilt / rotation behavior as maplibre
 - [x] micro landing: fix weird map expanding size
 - [x] micro: remove pathlength when no animation
@@ -200,7 +200,7 @@
 - [x] micro 3D animation: only animate roof
 - [x] micro: fix use viewbox
 - [x] micro 3D: scale building height slider
-- [ ] micro: scale roads width slider
+- [-] micro: scale roads width slider
 - [ ] micro: monochrome palettes (dark water, dark land)
 - [ ] micro optim: remove features totally included in other feature and smaller
 - [x] micro 3D: fix cut buidlings at the bottom of the frame

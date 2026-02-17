@@ -85,6 +85,7 @@ export async function drawPrettyMap(
     console.log('geometries=', geometries)
     // Process got interrupted, a new call to this function is coming soon
     if (geometries == null) return;
+    console.log('find', geometries.find(g => g.id === 35185052532472));
     const geometries2d = geometries.filter(geom =>
         geom.properties.mapLayerId !== "buildings" || !layerDefinitions.buildings['3dBuildings']
     ) as RenderedFeaturePoly[];
@@ -807,7 +808,7 @@ export async function exportMicro(
     let pathIsBetter = false;
 
     if (exportFonts == exportFontChoices.smallest || exportFonts == exportFontChoices.convertToPath) {
-        pathIsBetter = await inlineFontVsPath(optimizedSVG.firstChild as SVGElement, providedFonts, exportFonts);
+        pathIsBetter = await inlineFontVsPath(optimizedSVG.firstChild as SVGElement, usedProvidedFonts, exportFonts);
     }
     else if (exportFonts == exportFontChoices.noExport) {
         pathIsBetter = true;
@@ -834,7 +835,7 @@ export async function exportMicro(
 
     let fontCss = '';
     if (!pathIsBetter) {
-        if (exportFonts === exportFontChoices.embedFontFace) {
+        if (exportFonts === exportFontChoices.embedFontFace || exportFonts === exportFontChoices.smallest) {
             fontCss = fontsToCss(usedProvidedFonts);
         } else {
             fontCss = await fontsToCssEmbed(usedProvidedFonts);
