@@ -10,12 +10,15 @@ export enum ExportFontChoice {
     convertToPath = "1",
     embedFont = "2",
     smallest = "3",
+    embedFontFace = "4",
 }
 
 export interface ExportOptions {
     exportFonts?: ExportFontChoice;
-    hideOnResize?: boolean;
     minifyJs?: boolean;
+    animate?: boolean;
+    useViewBox?: boolean;
+    frameShadow?: boolean;
 }
 
 interface Position {

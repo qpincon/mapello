@@ -149,7 +149,7 @@ export function RGBAToHexA(rgba: string, forceRemoveAlpha = false): string {
 }
 
 const chars = 'azertyuiopqsdfghjklmwxcvbn-_';
-function randomString(length: number): string {
+export function randomString(length: number): string {
     let result = '';
     for (let i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
     return result;
@@ -160,20 +160,18 @@ const cssSelectorRegex = /([^\r\n,{}]+)(,(?=[^}]*{)|\s*{)/gm;
 // - Generate a unique ID for the map 
 // - Replace #static-svg-map with this ID
 // - Prefix all selectors from provided CSS with generated ID
-export function discriminateCssForExport(cssToTransform: string): { mapId: string; finalCss: string } {
-    const id = randomString(5);
-    cssToTransform = cssToTransform.replaceAll('#static-svg-map', `#${id}`);
+export function discriminateCssForExport(cssToTransform: string, mapId: string): string {
+    cssToTransform = cssToTransform.replaceAll('#static-svg-map', `#${mapId}`);
     const replacer = (group: string): string => {
-        if (group.includes('animate')) return group;
-        if (group.includes(id)) return group;
+        if (group.includes(mapId)) return group;
         if (group.includes('@keyframes') || group.includes('from {') || group.includes('to {')) return group;
-        return `#${id} ${group}`;
+        return `#${mapId} ${group}`;
     };
     let transformed = cssToTransform.replaceAll(cssSelectorRegex, replacer);
     transformed = transformed.replaceAll(/url\("?#(.*?)"?\)/g, (g, capture1) => {
-        return `url(#${id}-${capture1})`;
+        return `url(#${mapId}-${capture1})`;
     });
-    return { mapId: id, finalCss: transformed };
+    return transformed;
 }
 
 export function formatUnicorn(str: string, args: Record<string, string | number>): string {

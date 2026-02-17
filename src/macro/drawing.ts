@@ -29,7 +29,6 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     const height = macroState.macroParams.General.height;
     const container = select("#map-container");
     const mapLibreContainer = select("#maplibre-map");
-    const animated = macroState.macroParams.General.animate;
 
     appState.path = geoPath(appState.projection);
     appState.pathLarger = geoPath(appState.projectionLarger);
@@ -59,13 +58,7 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
         return;
     }
 
-    svg.classed("animate-transition", true).classed("animate", animated);
-
-    if (macroState.macroParams.General.useViewBox) {
-        svg.attr("viewBox", `0 0 ${width} ${height}`);
-    } else {
-        svg.attr("width", `${width}`).attr("height", `${height}`);
-    }
+    svg.attr("width", `${width}`).attr("height", `${height}`);
     container.style("width", `${width}px`).style("height", `${height}px`);
 
     const groupData: MacroGroupData[] = [];
@@ -88,61 +81,13 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
         macroState.macroParams.Border.borderWidth,
         macroState.macroParams.Border.borderRadius,
         macroState.macroParams.Border.borderColor,
-        animated
+        false
     );
     updateZonesDataFormatters();
 
-    if (animated) {
-        frame!.on("animationend", (e) => {
-            setTimeout(() => {
-                svg.classed("animate", false);
-                svg.selectAll("path[pathLength]").attr("pathLength", null);
-                const landElem = svg.select("#land");
-                const landGroupDef = groupData.find((x) => x.type === "landImg")!;
-                const countryGroupDefs = groupData.filter((x) => x.type === "filterImg");
-                if (!landElem.empty() && landGroupDef) {
-                    appendLandImageNew.call(
-                        landElem.node() as SVGGElement,
-                        landGroupDef.showSource || false,
-                        macroState.zonesFilter,
-                        width,
-                        height,
-                        macroState.macroParams.Border.borderWidth,
-                        macroState.contourParams,
-                        geometriesState.land,
-                        appState.pathLarger!,
-                        macroState.macroParams[macroState.zonesFilter["land"] as 'firstGlow' | 'secondGlow'],
-                        false,
-                    );
-                }
-                countryGroupDefs.forEach((def) => {
-                    appendCountryImageNew.call(
-                        svg.select(`[id='${def.name}']`).node() as SVGGElement,
-                        def.countryData!,
-                        def.filter ?? null,
-                        appState.path!,
-                        commonState.inlineStyles,
-                        false,
-                    );
-                });
-                duplicateContourCleanFirst(svg.node() as SVGSVGElement);
-                setTimeout(() => {
-                    svg.selectAll("g[image-class]").classed("hidden-after", true);
-                    svg.classed("animate-transition", false);
-                }, 1500);
-            }, 200);
-        });
-    }
-
-    // const map = document.getElementById("static-svg-map") as unknown as SVGSVGElement;
-    // if (!map) return;
-    // await tick();
-
     duplicateContourCleanFirst(svg.node() as SVGSVGElement);
-    if (!animated) {
-        svg.selectAll("path[pathLength]").attr("pathLength", null);
-        svg.selectAll("g[image-class]").classed("hidden-after", true);
-    }
+    svg.selectAll("path[pathLength]").attr("pathLength", null);
+    svg.selectAll("g[image-class]").classed("hidden-after", true);
 
     setTimeout(() => postClipSimple(), 100);
     /** Wait a bit before attaching the tooltip in order to make it the last element and to appear above everything else */
@@ -155,7 +100,6 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     const width = macroState.macroParams.General.width;
     const height = macroState.macroParams.General.height;
     const borderWidth = macroState.macroParams.Border.borderWidth;
-    const animated = macroState.macroParams.General.animate;
     const outline = { type: "Sphere" };
     svg.selectAll('.macro-layer').remove();
     groupData.push({
@@ -257,7 +201,7 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
                 geometriesState.land,
                 appState.pathLarger!,
                 macroState.macroParams[macroState.zonesFilter["land"] as 'firstGlow' | 'secondGlow'],
-                animated,
+                false,
             );
         if (data.type === "filterImg")
             return appendCountryImageNew.call(
@@ -266,7 +210,7 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
                 data.filter ?? null,
                 appState.path!,
                 commonState.inlineStyles,
-                animated,
+                false,
             );
         if (!data.data) return;
         const parentPathElem = select(this).style("will-change", "opacity");

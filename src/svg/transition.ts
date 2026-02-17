@@ -1,30 +1,29 @@
 export const transitionCssMacro = `
-.animate-transition path, .animate-transition #graticule, .animate-transition #outline, .animate-transition image, .animate-transition text, .animate-transition #points-labels, .animate-transition #svg-map-legend *, .animate-transition #path-images {
+#static-svg-map.animate-transition path, #static-svg-map.animate-transition #graticule, #static-svg-map.animate-transition #outline, #static-svg-map.animate-transition image, #static-svg-map.animate-transition text, #static-svg-map.animate-transition #points-labels, #static-svg-map.animate-transition #svg-map-legend *, #static-svg-map.animate-transition #path-images {
     transition-property: fill-opacity, opacity;
     transition-duration: 1s;
     transition-timing-function: ease;
 }
-.animate-transition #graticule, .animate-transition #outline {
+#static-svg-map.animate-transition #graticule, #static-svg-map.animate-transition #outline {
     transition-delay: 0.5s;
 }
-.animate path, .animate rect, .animate circle {
+#static-svg-map.animate path, #static-svg-map.animate rect, #static-svg-map.animate circle {
     stroke-dasharray: 1 !important;
     fill-opacity: 0 !important;
     stroke-dashoffset: 1;
 }
-.animate text, .animate image, .animate #points-labels, .animate #path-images, .animate #graticule {
+#static-svg-map.animate text, #static-svg-map.animate image, #static-svg-map.animate #points-labels, #static-svg-map.animate #path-images, #static-svg-map.animate #graticule {
     opacity: 0 !important;
 }
-.animate #frame{
+#static-svg-map.animate #frame{
     animation: dash 3s ease 0s forwards;
 }
-.animate #land path, .animate #paths path, .animate .country-img path {
+#static-svg-map.animate #land path, #static-svg-map.animate #paths path, #static-svg-map.animate .country-img path {
     animation: dash 3s ease 0.5s forwards;
 }
-.animate .country, .animate .adm, .animate #svg-map-legend * {
+#static-svg-map.animate .country, #static-svg-map.animate .adm, #static-svg-map.animate #svg-map-legend * {
     animation: dash 3s ease 1s forwards;
 }
-
 
 @keyframes dash {
     from {
@@ -37,41 +36,41 @@ export const transitionCssMacro = `
 `;
 
 export const transitionCssMicro = `
-.animate-transition path, .animate-transition text, .animate-transition #points-labels {
+#static-svg-map.animate-transition path, #static-svg-map.animate-transition text, #static-svg-map.animate-transition #points-labels {
     transition-property: fill-opacity, opacity;
     transition-duration: 1s;
     transition-timing-function: ease;
 }
 
-.animate path, .animate #frame {
+#static-svg-map.animate path, #static-svg-map.animate #frame {
     stroke-dasharray: 1 !important;
     fill-opacity: 0 !important;
     stroke-dashoffset: 1;
 }
 
-.animate #micro .line { stroke-opacity: 0; }
-.animate text, .animate #points-labels, .animate #path-images {
+#static-svg-map.animate #micro .line { stroke-opacity: 0; }
+#static-svg-map.animate text, #static-svg-map.animate #points-labels, #static-svg-map.animate #path-images {
     opacity: 0 !important;
 }
-.animate #frame{
+#static-svg-map.animate #frame{
     animation: dash 3.5s ease 0s forwards;
 }
-.animate #micro .poly {
+#static-svg-map.animate #micro .poly {
     animation: dash 2.5s ease 0.5s forwards;
 }
-.animate #micro .line, .animate #paths path {
+#static-svg-map.animate #micro .line, #static-svg-map.animate #paths path {
     animation: dash 2s ease 1.5s forwards;
 }
-.animate #buildings .wall {
+#static-svg-map.animate #buildings .wall {
     opacity: 0;
 }
-.animate #buildings .roof {
+#static-svg-map.animate #buildings .roof {
     stroke-dasharray: 1 !important;
     fill-opacity: 0 !important;
     stroke-dashoffset: 1;
     animation: dash 2.5s ease 0.5s forwards;
 }
-.animate-transition #buildings .wall {
+#static-svg-map.animate-transition #buildings .wall {
     transition-property: opacity;
     transition-duration: 0.5s;
 }

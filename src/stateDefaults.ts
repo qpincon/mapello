@@ -8,17 +8,14 @@ const defaultMacroParams: MacroParams = {
     General: {
         width: 600,
         height: 670,
-        useViewBox: false,
         projection: 'satellite',
         fieldOfView: 50,
         altitude: 3200,
-        animate: false,
     },
     Border: {
         borderRadius: 1.5,
         borderWidth: 1,
         borderColor: "#b8b8b8",
-        frameShadow: true,
     },
     Background: {
         showGraticule: true,
@@ -45,15 +42,12 @@ const defaultMicroParams: MicroParams = {
     General: {
         width: 700,
         height: 700,
-        useViewBox: false,
-        animate: false,
     },
     Border: {
         borderRadius: 1.5,
         borderPadding: 15,
         borderWidth: 1,
         borderColor: "#b8b8b8",
-        frameShadow: true,
     },
 };
 

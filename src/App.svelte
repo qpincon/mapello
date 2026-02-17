@@ -27,7 +27,8 @@
     import { exportStyleSheet, getUsedInlineFonts, fontsToCss, applyStyles } from "./util/dom";
     import { getState, saveState } from "./util/save";
     import { undo, redo, setRestoring, clearHistory } from "./util/history";
-    import { exportFontChoices } from "./svg/export";
+    import { type ExportOptions } from "./svg/export";
+    import ExportModal from "./components/ExportModal.svelte";
     import * as _microPalettes from "./micro/microPalettes";
     import { drawFreeHandShapes, FreehandDrawer } from "./svg/freeHandDraw";
     import type {
@@ -94,7 +95,6 @@
     let contextualMenu: (HTMLDivElement & { opened?: boolean }) | null = $state(null);
     let showExportConfirm = $state(false);
     let showInstructions = $state(false);
-    let exportForm: HTMLFormElement | null = $state(null);
 
     // TODO: move in menuStates
     let editingPath = $state(false);
@@ -975,15 +975,13 @@
         closeMenu();
     }
 
-    function validateExport(): void {
-        const formData = exportForm ? Object.fromEntries(new FormData(exportForm!).entries()) : {};
-        console.log("formData", formData);
+    function validateExport(options: ExportOptions): void {
         if (commonState.currentMode === "macro") {
             const totalCss = macroSidebar!.computeCss();
-            exportMacro(svg, macroState, commonState.providedFonts, true, totalCss, formData);
+            exportMacro(svg, macroState, commonState.providedFonts, true, totalCss, options);
         } else {
             const microCss = exportStyleSheet("#micro .line")!;
-            exportMicro(svg, microState, commonState.providedFonts, microCss, formData);
+            exportMicro(svg, microState, commonState.providedFonts, microCss, options);
         }
         showExportConfirm = false;
     }
@@ -993,10 +991,6 @@
         const usedFonts = getUsedInlineFonts(svg.node()!);
         const usedProvidedFonts = commonState.providedFonts.filter((font) => usedFonts.has(font.name));
         inlineFontUsed = usedProvidedFonts.length > 0;
-        if (commonState.currentMode === "micro" && !inlineFontUsed) {
-            validateExport();
-            return;
-        }
         showExportConfirm = true;
     }
 </script>
@@ -1267,126 +1261,15 @@
     <DataTable slot="content" data={zonesData?.[currentMacroLayerTab]?.["data"]}></DataTable>
 </Modal> -->
 
-<Modal open={showExportConfirm} onClosed={() => (showExportConfirm = false)} modalWidth="35%">
-    <div slot="header">
-        <h2 class="fs-3 p-2 m-0">Export options</h2>
-    </div>
-    <form slot="content" bind:this={exportForm}>
-        {#if inlineFontUsed}
-            <h3 class="fs-4">Font export</h3>
-            <div class="form-check">
-                <input
-                    class="form-check-input"
-                    type="radio"
-                    name="exportFonts"
-                    value={exportFontChoices.noExport}
-                    id="exportFonts1"
-                />
-                <label class="form-check-label" for="exportFonts1">
-                    Do not export fonts
-                    <span
-                        class="help-tooltip"
-                        data-bs-toggle="tooltip"
-                        data-bs-title="If the final HTML document containing the map contains imported fonts, no need to export it as part of the SVG"
-                        >?</span
-                    >
-                </label>
-            </div>
-            <div class="form-check">
-                <input
-                    class="form-check-input"
-                    type="radio"
-                    name="exportFonts"
-                    value={exportFontChoices.convertToPath}
-                    id="exportFonts2"
-                />
-                <label class="form-check-label" for="exportFonts2">
-                    Convert texts with imported fonts to path
-                    <span
-                        class="help-tooltip"
-                        data-bs-toggle="tooltip"
-                        data-bs-title="Convert text to <path> elements to remove dependency on the imported font(s)"
-                        >?</span
-                    >
-                </label>
-            </div>
-            <div class="form-check">
-                <input
-                    class="form-check-input"
-                    type="radio"
-                    name="exportFonts"
-                    value={exportFontChoices.embedFont}
-                    id="exportFonts3"
-                />
-                <label class="form-check-label" for="exportFonts3">
-                    Embed font(s)
-                    <span
-                        class="help-tooltip"
-                        data-bs-toggle="tooltip"
-                        data-bs-title="Always embed imported font(s) (only used fonts will be exported)">?</span
-                    >
-                </label>
-            </div>
-            <div class="form-check">
-                <input
-                    class="form-check-input"
-                    type="radio"
-                    name="exportFonts"
-                    id="exportFonts4"
-                    value={exportFontChoices.smallest}
-                    checked
-                />
-                <label class="form-check-label" for="exportFonts4">
-                    Smallest of the 2
-                    <span
-                        class="help-tooltip"
-                        data-bs-toggle="tooltip"
-                        data-bs-title="Automatically determine the smallest file size between converting to <path> and embedding font"
-                        >?</span
-                    >
-                </label>
-            </div>
-        {/if}
-        {#if commonState.currentMode === "macro"}
-            <h3 class="fs-4">Resize</h3>
-            <div class="form-check form-switch">
-                <input
-                    class="form-check-input"
-                    name="hideOnResize"
-                    type="checkbox"
-                    role="switch"
-                    id="hideOnResize"
-                    checked
-                />
-                <label class="form-check-label" for="hideOnResize">
-                    Hide svg on resize
-                    <span
-                        class="help-tooltip"
-                        data-bs-toggle="tooltip"
-                        data-bs-title="On some browsers, resizing the window triggers a re-render, which can cause a slowdown. If activated, the SVG will be hidden while the window is being resized, thus reducing the computing load."
-                        >?</span
-                    >
-                </label>
-            </div>
-            <h3 class="fs-4">Javascript</h3>
-            <div class="form-check form-switch">
-                <input class="form-check-input" name="minifyJs" type="checkbox" role="switch" id="minifyJs" checked />
-                <label class="form-check-label" for="minifyJs">
-                    Minify javascript
-                    <span
-                        class="help-tooltip"
-                        data-bs-toggle="tooltip"
-                        data-bs-title="Some JS is included in the SVG (for the tooltip for instance). Minifying it will make the file smaller, but more difficult to edit."
-                        >?</span
-                    >
-                </label>
-            </div>
-        {/if}
-    </form>
-    <div slot="footer" class="d-flex justify-content-end">
-        <button type="button" class="btn btn-success" onclick={validateExport}> Export </button>
-    </div>
-</Modal>
+<ExportModal
+    bind:open={showExportConfirm}
+    mode={commonState.currentMode}
+    svgNode={svg}
+    {inlineFontUsed}
+    computeMacroCss={() => macroSidebar!.computeCss()}
+    onExport={validateExport}
+    onClosed={() => (showExportConfirm = false)}
+/>
 
 <Modal open={showInstructions} onClosed={() => (showInstructions = false)}>
     <div slot="header">

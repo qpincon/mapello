@@ -222,4 +222,5 @@
 - [x] ISE: use icons for fill / stroke / dasharray / width
 - [x] ISE: don't display lines with only 1 item
 - [ ] Export: move "animate" option, explain how to usage SVG (script or c/c), viewbox
-- [ ] Font picker
+- [x] Font picker
+- [x] Font: Add "Will font be used only on map" -> if yes, transform to path or embed font face declaration

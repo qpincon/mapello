@@ -172,6 +172,18 @@ export function pathStringFromParsed(parsedD: ParsedPath, projection: GeoProject
     }, '');
 }
 
+export function loadSvgString(svgString: string, container: HTMLElement): void {
+    container.innerHTML = svgString;
+    container.querySelectorAll('script').forEach(oldScript => {
+        const newScript = document.createElement('script');
+        newScript.textContent = oldScript.textContent;
+        Array.from(oldScript.attributes).forEach(attr => {
+            newScript.setAttribute(attr.name, attr.value);
+        });
+        oldScript.parentNode!.replaceChild(newScript, oldScript);
+    });
+}
+
 export function handleInlineStyleChange(elemId: string, target: HTMLElement, cssProp: string, value: string): void {
     if (elemId.includes("label")) {
         commonState.lastUsedLabelProps[cssProp] = value;
@@ -182,7 +194,6 @@ export function handleInlineStyleChange(elemId: string, target: HTMLElement, css
     }
     if (elemId in commonState.inlineStyles) commonState.inlineStyles[elemId][cssProp] = value;
     else commonState.inlineStyles[elemId] = { [cssProp]: value };
-    console.log({ ...commonState.inlineStyles });
     // update path markers
     if (cssProp === "stroke" && target.hasAttribute("marker-end")) {
         const markerId = target.getAttribute("marker-end")?.match(/url\(#(.*)\)/)?.[1];

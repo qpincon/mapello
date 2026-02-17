@@ -21,7 +21,7 @@
     import mapStyle from "./mapstyle.json";
     import { initTooltips } from "src/util/common";
     import type { SearchResult } from "src/components/Geocoding.svelte";
-    import { transitionCssMicro } from "src/svg/transition";
+
 
     let protocol = new Protocol();
     addProtocol("pmtiles", protocol.tile);
@@ -171,10 +171,7 @@
     });
 
     function computeCss(microParams: MicroParams): string {
-        let css = "";
-        if (microParams.General.animate) css += transitionCssMicro;
-        if (microParams.Border.frameShadow) css += "#static-svg-map { filter: drop-shadow(2px 2px 8px rgba(0,0,0,.2));";
-        return css;
+        return "";
     }
 
     function lockUnlock(isLocked: boolean) {

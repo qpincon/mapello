@@ -15,17 +15,14 @@ export type ProjectionName = 'satellite' | 'mercator';
 export interface MacroGeneralParams {
     width: number;
     height: number;
-    useViewBox: boolean;
     projection: ProjectionName;
     fieldOfView: number;
     altitude: number;
-    animate: boolean;
 }
 export interface MacroBorderParams {
     borderRadius: number;
     borderWidth: number;
     borderColor: Color;
-    frameShadow?: boolean;
 }
 
 export interface MacroBackgroundParams {
@@ -47,17 +44,14 @@ export const defaultParams: MacroParams = {
     General: {
         width: 600,
         height: 670,
-        useViewBox: false,
         projection: 'satellite',
         fieldOfView: 50,
         altitude: 3200,
-        animate: false,
     },
     Border: {
         borderRadius: 1.5,
         borderWidth: 1,
         borderColor: "#b8b8b8",
-        frameShadow: true,
     },
     Background: {
         showGraticule: true,
@@ -83,8 +77,6 @@ export const defaultParams: MacroParams = {
 export interface MicroGeneralParams {
     width: number;
     height: number;
-    useViewBox: boolean;
-    animate: boolean;
 }
 
 export interface MicroBorderParams extends MacroBorderParams {
@@ -100,15 +92,12 @@ export const microDefaultParams: MicroParams = {
     General: {
         width: 700,
         height: 700,
-        useViewBox: false,
-        animate: false,
     },
     Border: {
         borderRadius: 1.5,
         borderPadding: 15,
         borderWidth: 1,
         borderColor: "#b8b8b8",
-        frameShadow: true,
     },
 };
 
@@ -168,6 +157,4 @@ export const helpParams: HelpParams = {
     secondGlow: glowHelpGeneral,
     innerBlur: blurHelp,
     innerStrength: strengthHelp,
-    useViewBox: `If checked, the exported SVG will fit to its container and will not define its own width/height.`,
-    animate: `The map will animate when entering the viewport on your page. You can turn it off during edition of the map, as it will trigger on every change.`,
 };

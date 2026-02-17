@@ -50,7 +50,7 @@
     import { drawLegend } from "src/svg/legend";
     import { debounce } from "lodash-es";
     import { extent } from "d3";
-    import { transitionCssMacro } from "src/svg/transition";
+
     import dataExplanation from "../../assets/dataColor.svg";
     import { applyInlineStyles, drawMacroBase, handleChangeProp, projectAndDraw } from "../drawing";
     import { appendCountryImageNew } from "src/svg/contourMethods";
@@ -397,12 +397,8 @@
             acc += cur;
             return acc;
         }, "");
-        let borderCss = `
-    #static-svg-map {
-        ${macroState.macroParams.Border.frameShadow ? "filter: drop-shadow(2px 2px 8px rgba(0,0,0,.2));" : ""}
-    }`;
+        let borderCss = '';
         commonCss = finalColorsCss + borderCss;
-        if (macroState.macroParams.General.animate) commonCss += transitionCssMacro;
         // const style = exportStyleSheet("#outline");
         return macroState.baseCss + commonCss;
     }

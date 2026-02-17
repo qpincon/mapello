@@ -14,7 +14,7 @@ function intersectionCallback(entries) {
     setTimeout(() => {
         mapElement.style.visibility = 'visible';
         mapElement.classList.add('animate');
-        mapElement.querySelectorAll('path').forEach(pathElem => {
+        mapElement.querySelectorAll('path, #frame').forEach(pathElem => {
             pathElem.setAttribute('pathLength', 1);
         });
         setTimeout(() => {

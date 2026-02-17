@@ -3,15 +3,15 @@ import type { ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } f
 import { DOM_PARSER, fontsToCss, fontsToCssEmbed, getUsedInlineFonts, reportStyle } from 'src/util/dom';
 import svgoConfig from '../svgoExport.config';
 import type { Config } from 'svgo/browser';
-import { discriminateCssForExport, download, htmlToElement, indexBy, pick } from 'src/util/common';
+import { discriminateCssForExport, download, htmlToElement, indexBy, pick, randomString } from 'src/util/common';
 import { encodeSVGDataImageStr, imageFromSpecialGElemStr } from 'src/svg/contourMethods';
+import { transitionCssMacro } from 'src/svg/transition';
 
 // Import export-only scripts as raw strings
 import hoverScript from 'src/svg/exportScripts/hover.js?raw';
 import tooltipScript from 'src/svg/exportScripts/tooltip.js?raw';
 import duplicateContoursScript from 'src/svg/exportScripts/duplicateContours.js?raw';
 import gElemsToImagesScript from 'src/svg/exportScripts/gElemsToImages.js?raw';
-import onResizeScript from 'src/svg/exportScripts/onResize.js?raw';
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 
 interface FinalDataByGroup {
@@ -29,8 +29,10 @@ export async function exportMacro(
 ): Promise<string | void> {
     const {
         exportFonts = ExportFontChoice.convertToPath,
-        hideOnResize = false,
-        minifyJs = false
+        minifyJs = false,
+        animate = false,
+        useViewBox = false,
+        frameShadow = false,
     } = options;
 
     const fo = svg.select('foreignObject').node();
@@ -134,21 +136,18 @@ export async function exportMacro(
         : '';
 
     // Build intersection observer code with animation end handler
-    const animationCode = stateMacro.macroParams.General.animate
+    const animationCode = animate
         ? intersectionObserverScript.replaceAll('__ON_ANIMATION_END__', 'gElemsToImages(true);')
         : 'gElemsToImages();';
 
     let finalScript = `
     (function() {
-        const allScripts = document.getElementsByTagName('script');
-        const scriptTag = allScripts[allScripts.length - 1];
-        const mapElement = scriptTag.parentNode;
+        const mapElement = document.currentScript.parentNode;
 
         ${encodeSVGDataImageStr}
         ${imageFromSpecialGElemStr}
         ${duplicateContoursScript}
         ${gElemsToImagesScript}
-        ${hideOnResize ? onResizeScript : ''}
         ${tooltipCode}
         ${hoverScript}
         ${animationCode}
@@ -156,20 +155,42 @@ export async function exportMacro(
         `;
 
     // === Styling ===
+    const mapId = randomString(5);
     const styleElem = document.createElementNS("http://www.w3.org/2000/svg", 'style');
     const renderedCss = commonCss.replaceAll(/rgb\(.*?\)/g, rgb2hex) + additionnalCssExport;
-    const { mapId, finalCss } = discriminateCssForExport(renderedCss);
+    const animateCss = animate ? transitionCssMacro : '';
+    const finalCss = discriminateCssForExport(renderedCss + animateCss, mapId);
     (optimizedSVG.firstChild as Element).setAttribute('id', mapId);
     changeIdAndReferences(optimizedSVG.firstChild as Element, mapId);
     // === End styling ===
 
-    const embeddedFontCss = pathIsBetter ? '' : await fontsToCssEmbed(usedProvidedFonts);
-    styleElem.innerHTML = finalCss + embeddedFontCss;
-    (optimizedSVG.firstChild as Element)!.append(styleElem);
-    (optimizedSVG.firstChild as Element).classList.remove('animate-transition');
-    (optimizedSVG.firstChild as Element).classList.add('cartosvg');
+    let fontCss = '';
+    if (!pathIsBetter) {
+        if (exportFonts === ExportFontChoice.embedFontFace) {
+            fontCss = fontsToCss(usedProvidedFonts);
+        } else {
+            fontCss = await fontsToCssEmbed(usedProvidedFonts);
+        }
+    }
+    styleElem.innerHTML = finalCss + fontCss;
+    const svgElement = optimizedSVG.firstChild as Element;
+    svgElement.append(styleElem);
+    svgElement.classList.remove('animate-transition');
+    svgElement.classList.add('cartosvg');
 
-    if (!downloadExport) return (optimizedSVG.firstChild as Element).outerHTML;
+    if (frameShadow) {
+        svgElement.setAttribute('filter', 'drop-shadow(2px 2px 8px rgba(0,0,0,.2))');
+    }
+
+    if (useViewBox) {
+        const w = svgElement.getAttribute('width');
+        const h = svgElement.getAttribute('height');
+        if (w && h) {
+            svgElement.setAttribute('viewBox', `0 0 ${w} ${h}`);
+            svgElement.removeAttribute('width');
+            svgElement.removeAttribute('height');
+        }
+    }
 
     if (minifyJs !== false) {
         const terser = await import('terser');
@@ -183,8 +204,10 @@ export async function exportMacro(
     const scriptElem = document.createElementNS("http://www.w3.org/2000/svg", 'script');
     const scriptContent = document.createTextNode(finalScript);
     scriptElem.appendChild(scriptContent);
-    (optimizedSVG.firstChild as Element)!.append(scriptElem);
-    download((optimizedSVG.firstChild as Element).outerHTML, 'text/plain', 'cartosvg-export.svg');
+    svgElement.append(scriptElem);
+
+    if (!downloadExport) return svgElement.outerHTML;
+    download(svgElement.outerHTML, 'text/plain', 'cartosvg-export.svg');
 }
 
 export function getFinalTooltipTemplate(groupId: string, tooltipDefs: TooltipDefs): string {

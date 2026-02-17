@@ -6,7 +6,7 @@ import { color, hsl } from "d3-color";
 import { DOM_PARSER, findStyleSheet, fontsToCss, fontsToCssEmbed, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
 import { patternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
-import { discriminateCssForExport, download } from "../util/common";
+import { discriminateCssForExport, download, randomString } from "../util/common";
 import { additionnalCssExport, changeIdAndReferences, exportFontChoices, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 import { createRoundedRectangleGeoJSON } from '../util/geometry';
@@ -23,7 +23,7 @@ import { featureCollection } from '@turf/helpers';
 import { renderBuildingsToSvgImproved } from './3d';
 import area from '@turf/area';
 import center from '@turf/center';
-import { commonState } from 'src/state.svelte';
+import { transitionCssMicro } from 'src/svg/transition';
 
 
 // Interfaces for building grouping
@@ -54,25 +54,6 @@ export function orderFeaturesByLayer(features: RenderedFeature[]): void {
     });
 }
 
-// const pathStrokeWidth = scaleLinear([15, 22], [0.5, 4]).clamp(true);
-// const roadPrimaryStrokeWidth = scaleLinear([14, 18], [5, 14]).clamp(true);
-// const roadSecondaryStrokeWidth = scaleLinear([14, 18], [4, 12]).clamp(true);
-// const roadTertiaryStrokeWidth = scaleLinear([14, 18], [3, 10]).clamp(true);
-// const roadMinorStrokeWidth = scaleLinear([14, 18], [2, 6]).clamp(true);
-// const scaleLowZoom = scaleLinear([4, 14], [0.5, 2.5]).clamp(true);
-
-// export function getRoadStrokeWidth(roadFeature: GeometryFeature, maplibreMap: MapLibreMaplibreMap): number | null {
-//     if (roadFeature.properties.sourceLayer !== "transportation") return null;
-//     const zoom = maplibreMap.getZoom();
-//     if (zoom <= 14) return scaleLowZoom(zoom);
-//     const computedId = roadFeature.properties.computedId;
-//     if (computedId.includes('path')) return pathStrokeWidth(zoom);
-//     if (computedId.includes('primary') || computedId.includes('motorway') || computedId.includes('trunk')) return roadPrimaryStrokeWidth(zoom);
-//     if (computedId.includes('secondary')) return roadSecondaryStrokeWidth(zoom);
-//     if (computedId.includes('tertiary')) return roadTertiaryStrokeWidth(zoom);
-//     return roadMinorStrokeWidth(zoom);
-// }
-
 export async function drawPrettyMap(
     maplibreMap: MapLibreMap,
     svg: SvgSelection,
@@ -92,12 +73,15 @@ export async function drawPrettyMap(
     const height = generalParams.General.height;
 
     svg.attr("width", `${width}`).attr("height", `${height}`);
-    if (generalParams.General.useViewBox) {
-        svg.attr("viewBox", `0 0 ${width} ${height}`);
-    }
     const use3d = layerDefinitions.buildings['3dBuildings'];
     const geometries = (await getRenderedFeatures(maplibreMap, { layers: layersToQuery }, use3d!))
-        ?.filter(geom => geom.properties['kind_detail'] !== 'corridor') as RenderedFeature[];
+        ?.filter(geom => {
+            if (geom.properties['kind_detail'] === 'corridor') return false;
+            const layer = geom.properties['layer'];
+            /** Remove below ground buildings */
+            if (layer != null && layer < 0) return false;
+            return true;
+        });
     console.log('geometries=', geometries)
     // Process got interrupted, a new call to this function is coming soon
     if (geometries == null) return;
@@ -117,13 +101,11 @@ export async function drawPrettyMap(
     const outerFrameWidth = width - borderPadding;
     const outerFrameHeight = height - borderPadding;
     const outerFrameRx = (borderRadius / 100) * Math.min(outerFrameWidth, outerFrameHeight);
-    const animated = generalParams.General.animate;
     // Background layer
     svg.append('rect')
         .attr('id', 'micro-background')
         .attr('x', 0)
         .attr('y', 0)
-        .attr('pathLength', animated ? 1 : null)
         .attr('width', width)
         .attr('height', height)
         .attr('rx', outerFrameRx);
@@ -135,7 +117,6 @@ export async function drawPrettyMap(
         .data(geometries2d)
         .enter()
         .append("path")
-        .attr('pathLength', animated ? 1 : null)
         .attr("d", (d) => d3PathFunction(d.geometry))
         .attr("class", d => {
             const layerIdKebab = kebabCase(d.properties.mapLayerId) as MicroLayerId;
@@ -167,12 +148,11 @@ export async function drawPrettyMap(
             svg,
             translateAmount,
             layerDefinitions['buildings'],
-            animated
+            false
         );
     }
-    drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, animated, outerFrameRx);
+    drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, false, outerFrameRx);
     svg.style("pointer-events", isLocked ? "auto" : "none");
-    svg.classed("animate-transition", true).classed("animate", generalParams.General.animate);
     mapLibreContainer.style('opacity', 0);
     setTimeout(() => postClip(generalParams), 100);
 }
@@ -795,8 +775,15 @@ export async function exportMicro(
     stateMicro: StateMicro,
     providedFonts: ProvidedFont[],
     commonCss: string,
-    { exportFonts = exportFontChoices.convertToPath }: ExportOptions = {}
-): Promise<void> {
+    options: ExportOptions = {},
+    downloadExport: boolean = true,
+): Promise<string | void> {
+    const {
+        exportFonts = exportFontChoices.convertToPath,
+        animate = false,
+        useViewBox = false,
+        frameShadow = false,
+    } = options;
     const width = stateMicro.microParams.General.width;
     const height = stateMicro.microParams.General.height;
     const borderPadding = stateMicro.microParams.Border.borderPadding;
@@ -826,17 +813,17 @@ export async function exportMicro(
         pathIsBetter = true;
     }
 
-    const js = stateMicro.microParams.General.animate
-        ? `const allScripts = document.getElementsByTagName('script');
-           const scriptTag = allScripts[allScripts.length - 1];
-           const mapElement = scriptTag.parentNode;
+    const js = animate
+        ? `const mapElement = document.currentScript.parentNode;
            ${intersectionObserverScript.replaceAll('__ON_ANIMATION_END__', '')}`
         : null;
 
     // Styling
+    const mapId = randomString(5);
     const styleElem = document.createElementNS("http://www.w3.org/2000/svg", 'style');
     const renderedCss = commonCss.replaceAll(/rgb\(.*?\)/g, rgb2hex) + additionnalCssExport;
-    const { mapId, finalCss } = discriminateCssForExport(renderedCss);
+    const animateCss = animate ? transitionCssMicro : '';
+    const finalCss = discriminateCssForExport(renderedCss + animateCss, mapId);
 
     const svgElement = optimizedSVG.firstChild as SVGElement;
     svgElement.setAttribute('id', mapId);
@@ -845,11 +832,22 @@ export async function exportMicro(
     svgElement.querySelectorAll('#micro > path, #buildings > g').forEach(el => el.removeAttribute('id'));
     changeIdAndReferences(svgElement, mapId);
 
-    const embeddedFontCss = pathIsBetter ? '' : await fontsToCssEmbed(usedProvidedFonts);
-    styleElem.innerHTML = finalCss + embeddedFontCss;
+    let fontCss = '';
+    if (!pathIsBetter) {
+        if (exportFonts === exportFontChoices.embedFontFace) {
+            fontCss = fontsToCss(usedProvidedFonts);
+        } else {
+            fontCss = await fontsToCssEmbed(usedProvidedFonts);
+        }
+    }
+    styleElem.innerHTML = finalCss + fontCss;
     svgElement.append(styleElem);
     svgElement.classList.remove('animate-transition');
     svgElement.classList.add('cartosvg');
+
+    if (frameShadow) {
+        svgElement.setAttribute('filter', 'drop-shadow(2px 2px 8px rgba(0,0,0,.2))');
+    }
 
     if (js) {
         const scriptElem = document.createElementNS("http://www.w3.org/2000/svg", 'script');
@@ -859,14 +857,9 @@ export async function exportMicro(
     }
 
     /** Add attribution */
-    // const roundedRectPoints = explode(roundedRectFromParams(generalParams));
     svgElement.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
     const attributionColor = stateMicro.microLayerDefinitions["roads"]["stroke"] ?? "#aaa";
     const createAnchor = (text: string, href: string, x: number, y: number) => {
-        // const nearest = nearestPoint([x, height - y], roundedRectPoints);
-        // const attrPos = nearest.geometry.coordinates;
-        // attrPos[1] = height - attrPos[1];
-
         const a = document.createElementNS('http://www.w3.org/2000/svg', 'a');
         a.setAttribute('xlink:href', href);
         a.setAttribute('target', '_blank');
@@ -877,21 +870,20 @@ export async function exportMicro(
         t.setAttribute("fill", attributionColor);
         t.setAttribute("font-size", "8");
         t.setAttribute("style", "font-family: 'trebuchet ms',sans-serif;");
-        // t.setAttribute("style", "mix-blend-mode: difference; font-family: 'trebuchet ms',sans-serif;");
         t.textContent = text;
         a.append(t);
         svgElement.append(a);
     };
 
-    // const xOffset = borderPadding + borderRadius;
-    // createAnchor('data © OpenStreetMap', 'https://www.openstreetmap.org/copyright', width - borderPadding - 10, height - borderPadding - 20);
-    // createAnchor('CartoSVG', 'https://cartosvg.com', width - borderPadding - 10, height - borderPadding - 10);
     createAnchor('data © OpenStreetMap', 'https://www.openstreetmap.org/copyright', width - borderPadding * 2, height - borderPadding - 16);
     createAnchor('CartoSVG', 'https://cartosvg.com', width - borderPadding * 2, height - borderPadding - 8);
 
-    if (stateMicro.microParams.General.useViewBox) {
+    if (useViewBox) {
         svgElement.removeAttribute('height');
         svgElement.removeAttribute('width');
+        svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
     }
+
+    if (!downloadExport) return svgElement.outerHTML;
     download(svgElement.outerHTML, 'text/plain', 'cartosvg-export.svg');
 }
