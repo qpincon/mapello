@@ -355,7 +355,9 @@ export async function stitch(renderedFeatures: RenderedFeature[], tiles: Tiles, 
     }
 
     nbClipped += 1;
-    return intersect(featureCollection<Polygon>([mapBoundsExtended!, polygon as Feature<Polygon>]), { properties: polygon.properties }) as RenderedFeature<Polygon>
+    const clipped = intersect(featureCollection<Polygon>([mapBoundsExtended!, polygon as Feature<Polygon>]), { properties: polygon.properties }) as RenderedFeature<Polygon>;
+    if (clipped) clipped.id = polygon.id;
+    return clipped;
   }).filter(p => p);
   console.log(nbClipped, 'geometries clipped');
   // @ts-expect-error
@@ -569,7 +571,12 @@ async function stitchPolygons(allPolygons: RenderedFeaturePoly[], cuts: Cuts, de
     for (const group of finalStichGroups) {
       const groupArr = [...group];
       const polygons = featureCollection(groupArr.map(polygonIndex => layerPolygons[polygonIndex]));
-      const stitched = union(polygons, { properties: layerPolygons[groupArr[0]].properties }) as RenderedFeaturePolyOrMutli;
+      const mergedProperties = {};
+      for (const polygonIndex of groupArr) {
+        Object.assign(mergedProperties, layerPolygons[polygonIndex].properties);
+      }
+      const stitched = union(polygons, { properties: mergedProperties }) as RenderedFeaturePolyOrMutli;
+      stitched.id = layerPolygons[groupArr[0]].id;
       await yieldToMain();
       if (currentProcessId !== processCounter) return null;
       computeFeatureUuid(stitched);
