@@ -225,3 +225,4 @@
 - [x] Font picker
 - [x] Font: Add "Will font be used only on map" -> if yes, transform to path or embed font face declaration
 - [ ] Live-update as much as possible without calling the full draw routine for better interactivity
+- [ ] Font: chosing a font will change default font used for new labels / all labels with manually changed fonts

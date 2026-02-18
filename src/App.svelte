@@ -133,6 +133,7 @@
                     } else if (commonState.currentMode === "micro") {
                         microSidebar!.onStyleChanged(target, eventType, cssProp, value);
                     }
+                    requestAnimationFrame(() => refreshOverlay());
                 },
                 getElems: (el: HTMLElement) => {
                     console.log(el);

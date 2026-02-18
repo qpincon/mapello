@@ -268,6 +268,8 @@ export function pasteFromClipboard(redrawCallback: () => void): void {
     const projection = appState.projection!;
     const OFFSET_PX = 15;
 
+    const newEntities: SelectedEntity[] = [];
+
     for (const item of selectionState.clipboard) {
         if (item.type === "shape") {
             const shapeDef: ShapeDefinition = cloneDeep(item.data);
@@ -279,7 +281,9 @@ export function pasteFromClipboard(redrawCallback: () => void): void {
                 commonState.inlineStyles[newId] = { ...item.styles };
             }
             shapeDef.id = newId;
+            const newIndex = commonState.providedShapes.length;
             commonState.providedShapes.push(shapeDef);
+            newEntities.push({ type: "shape", index: newIndex, id: newId });
         } else if (item.type === "path") {
             const pathDef: PathDef = cloneDeep(item.data);
             pathDef.d = offsetParsedPath(pathDef.d, projection, OFFSET_PX, OFFSET_PX);
@@ -289,6 +293,7 @@ export function pasteFromClipboard(redrawCallback: () => void): void {
                 commonState.inlineStyles[newId] = { ...item.styles };
             }
             commonState.providedPaths.push(pathDef);
+            newEntities.push({ type: "path", index: newIndex, id: newId });
         } else if (item.type === "freehand") {
             const freehandGroup: ParsedPath[] = cloneDeep(item.data);
             const offsetGroup = freehandGroup.map((parsed) =>
@@ -300,10 +305,13 @@ export function pasteFromClipboard(redrawCallback: () => void): void {
                 commonState.inlineStyles[newId] = { ...item.styles };
             }
             commonState.providedFreeHand.push(offsetGroup);
+            newEntities.push({ type: "freehand", index: newIndex, id: newId });
         }
     }
 
     redrawCallback();
+    selectionState.selected = newEntities;
+    updateOverlay();
     saveState();
 }
 
