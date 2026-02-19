@@ -82,10 +82,9 @@ export async function drawPrettyMap(
             if (layer != null && layer < 0) return false;
             return true;
         });
-    console.log('geometries=', geometries)
+    // console.log('geometries=', geometries)
     // Process got interrupted, a new call to this function is coming soon
     if (geometries == null) return;
-    console.log('find', geometries.find(g => g.id === 35185052532472));
     const geometries2d = geometries.filter(geom =>
         geom.properties.mapLayerId !== "buildings" || !layerDefinitions.buildings['3dBuildings']
     ) as RenderedFeaturePoly[];

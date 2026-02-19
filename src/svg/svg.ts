@@ -187,6 +187,10 @@ export function loadSvgString(svgString: string, container: HTMLElement): void {
 export function handleInlineStyleChange(elemId: string, target: HTMLElement, cssProp: string, value: string): void {
     if (elemId.includes("label")) {
         commonState.lastUsedLabelProps[cssProp] = value;
+        if (cssProp === "font-family") {
+            const shape = commonState.providedShapes.find(s => s.id === elemId);
+            if (shape) shape.fontManual = true;
+        }
     }
     if (target.classList?.[0]?.includes("buildings") && cssProp === "fill") {
         cssProp = "--building-color";

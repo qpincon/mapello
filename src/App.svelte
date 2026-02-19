@@ -459,8 +459,14 @@
     function onSvgContextMenu(e: MouseEvent): void {
         if (editingPath) return;
         let shouldOpenMenu = true;
-        if (isDrawingFreeHand) { stopDrawFreeHand(); shouldOpenMenu = false; }
-        if (isDrawingPath) { cancelDrawPath(); shouldOpenMenu = false; }
+        if (isDrawingFreeHand) {
+            stopDrawFreeHand();
+            shouldOpenMenu = false;
+        }
+        if (isDrawingPath) {
+            cancelDrawPath();
+            shouldOpenMenu = false;
+        }
         e.preventDefault();
         closeMenu();
         let target = null;
@@ -493,8 +499,14 @@
     }
 
     function onSvgClick(e: MouseEvent): void {
-        if (contextualMenu!.opened) { closeMenu(); return; }
-        if (styleEditor!.isOpened()) { styleEditor!.close(); return; }
+        if (contextualMenu!.opened) {
+            closeMenu();
+            return;
+        }
+        if (styleEditor!.isOpened()) {
+            styleEditor!.close();
+            return;
+        }
         if (!iseOnClickEnabled) return;
         let entity = identifyClickedEntity(e.target as Element);
         if (!entity) entity = identifyClickedPath(e);
@@ -516,14 +528,17 @@
         }
         if (entity) {
             const el = document.getElementById(entity.id);
-            if (el) { styleEditor!.open(el as HTMLElement, e.pageX, e.pageY); return; }
+            if (el) {
+                styleEditor!.open(el as HTMLElement, e.pageX, e.pageY);
+                return;
+            }
         }
         openEditor(e);
     }
 
     // Select-and-drag: intercept mousedown before d3 drag; labels get click-vs-drag disambiguation
     function onSvgMouseDown(e: MouseEvent): void {
-        if (commonState.currentMode !== "macro") return;
+        // if (commonState.currentMode !== "macro") return;
         if (e.button !== 0) return;
         const entity = identifyClickedEntity(e.target as Element) ?? identifyClickedPath(e);
         if (!entity) return;
@@ -729,6 +744,17 @@
 
     function handleFontSelected(font: ProvidedFont): void {
         commonState.providedFonts.push(font);
+        for (const shape of commonState.providedShapes) {
+            if (shape.text !== undefined && !shape.fontManual) {
+                if (shape.id in commonState.inlineStyles) {
+                    commonState.inlineStyles[shape.id]["font-family"] = font.name;
+                } else {
+                    commonState.inlineStyles[shape.id] = { "font-family": font.name };
+                }
+            }
+        }
+        commonState.lastUsedLabelProps["font-family"] = font.name;
+        drawAndSetupShapes();
         saveState();
     }
 
