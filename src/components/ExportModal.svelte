@@ -27,6 +27,7 @@
     let showAdvanced = $state(false);
     let minifyJs = $state(true);
     let sizeText = $state("");
+    let isLargeExport = $state(false);
     let modalWidth = $state("600px");
     let previewContainer: HTMLDivElement;
 
@@ -63,6 +64,7 @@
         if (!svgString) return;
 
         const rawBytes = new TextEncoder().encode(svgString).byteLength;
+        isLargeExport = rawBytes > 500 * 1024;
         const rawKB = (rawBytes / 1024).toFixed(1);
         const blob = new Blob([svgString]);
         const cs = new CompressionStream("gzip");
@@ -71,7 +73,7 @@
         const gzKB = (compressedBlob.size / 1024).toFixed(1);
         sizeText = `${rawKB} KB (${gzKB} KB gzipped)`;
 
-        loadSvgString(svgString, previewContainer);
+        await loadSvgString(svgString, previewContainer);
         const svgEl = previewContainer.querySelector("svg");
         let mapWidth = 0;
         if (svgEl) {
@@ -128,6 +130,11 @@
                         <label class="form-check-label" for="export-animate">Animate</label>
                     </div>
                     <small class="text-muted d-block ms-4"> The map will animate when entering the viewport </small>
+                    {#if isLargeExport}
+                        <small class="perf-warning d-block ms-4">
+                            Large file — may impact page performance
+                        </small>
+                    {/if}
                 </div>
 
                 <div class="mb-3">
@@ -284,5 +291,9 @@
         font-weight: normal;
         color: var(--bs-secondary-color, #6c757d);
         font-size: 0.8em;
+    }
+    .perf-warning {
+        color: #b45309;
+        font-style: italic;
     }
 </style>

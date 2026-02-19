@@ -149,7 +149,7 @@
   - pass mode as input of Map
 - [x] Macro: Render simplified while changing altitude / fov (on slider change -> need to dispatch any change on slider)
 - [x] Macro: Use same border method as micro (clip-path + remove geo entirely outside) 
-- [ ] Macro: be able to change graticule color
+- [x] Macro: be able to change graticule color
 - [ ] Macro: find a way to match ADM2 boundary data with land data (see UK adm2 for instance)
 
 - [ ] Allow external link on click of entity (a xmlns="http://www.w3.org/2000/svg" xlink:href="url.html" xmlns:xlink="http://www.w3.org/1999/xlink" )
@@ -224,6 +224,7 @@
 - [ ] Export: move "animate" option, explain how to usage SVG (script or c/c), viewbox
 - [x] Font picker
 - [x] Font: Add "Will font be used only on map" -> if yes, transform to path or embed font face declaration
-- [ ] Live-update as much as possible without calling the full draw routine for better interactivity
-- [ ] Font: chosing a font will change default font used for new labels / all labels with manually changed fonts
+- [ ] Macro: Live-update as much as possible without calling the full draw routine for better interactivity
+- [x] Font: chosing a font will change default font used for new labels / all labels with manually changed fonts
 - [ ] Micro: change style to have more roads visible (manhattan example)
+- [ ] Attribution: add it to macro, better styling

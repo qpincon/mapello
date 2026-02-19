@@ -176,7 +176,9 @@ export function loadSvgString(svgString: string, container: HTMLElement): void {
     container.innerHTML = svgString;
     container.querySelectorAll('script').forEach(oldScript => {
         const newScript = document.createElement('script');
-        newScript.textContent = oldScript.textContent;
+        // Wrap content in IIFE so top-level let/const don't pollute the global
+        // lexical environment and cause redeclaration errors on repeated loads.
+        newScript.textContent = `(function(){\n${oldScript.textContent}\n})();`;
         Array.from(oldScript.attributes).forEach(attr => {
             newScript.setAttribute(attr.name, attr.value);
         });
