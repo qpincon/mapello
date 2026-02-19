@@ -1,7 +1,7 @@
 import { getStroke, type StrokeOptions } from "perfect-freehand";
-import { appState, commonState } from "src/state.svelte";
+import { appState } from "src/state.svelte";
 import type { Color, ParsedPath, SvgSelection } from "src/types";
-import { pathStringFromParsed } from "./svg";
+import { pathStringFromParsed, createSvgAnchor } from "./svg";
 const average = (a: number, b: number) => (a + b) / 2
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
@@ -175,7 +175,7 @@ export class FreehandDrawer {
 }
 
 
-export function drawFreeHandShapes(svg: SvgSelection, providedFreeHand: ParsedPath[][]) {
+export function drawFreeHandShapes(svg: SvgSelection, providedFreeHand: ParsedPath[][], elementLinks: { [elemId: string]: string } = {}) {
     const container = svg.append("g")
         .attr('id', 'freehand-drawings')
         .attr("clip-path", "url(#clipMapBorder)");
@@ -186,6 +186,14 @@ export function drawFreeHandShapes(svg: SvgSelection, providedFreeHand: ParsedPa
             const id = `freehand-${i}-${j}`;
             const pathElem = gDrawing.append("path").attr('id', id);
             pathElem.attr("d", pathStringFromParsed(drawing, appState.projection!));
-        })
+        });
+
+        const url = elementLinks[groupId];
+        if (url) {
+            const node = gDrawing.node()!;
+            const a = createSvgAnchor(url);
+            node.parentNode!.insertBefore(a, node);
+            a.appendChild(node);
+        }
     });
 }

@@ -1,17 +1,18 @@
 import parsePath from 'parse-svg-path';
 import * as markers from './markerDefs';
 import { RGBAToHexA } from '../util/common';
-import { pathStringFromParsed } from './svg';
+import { pathStringFromParsed, createSvgAnchor } from './svg';
+import { select } from 'd3-selection';
 import type { D3Selection, InlineStyles, MarkerName, ParsedPath, PathDef, SvgSelection } from 'src/types';
 import type { GeoProjection } from 'd3-geo';
-import { commonState, macroState, microState } from 'src/state.svelte';
 
 
 export function drawCustomPaths(
     pathDefs: PathDef[],
     svg: SvgSelection,
     projection: GeoProjection,
-    inlineStyles: InlineStyles = {}
+    inlineStyles: InlineStyles = {},
+    elementLinks: { [elemId: string]: string } = {}
 ): void {
     if (!pathDefs) return;
     let elem: D3Selection<SVGGElement> = svg.select('#paths');
@@ -29,8 +30,6 @@ export function drawCustomPaths(
         exists = true;
     }
 
-    const animated = commonState.currentMode === "macro" && macroState.macroParams.General.animate
-        || commonState.currentMode === "micro" && microState.microParams.General.animate;
     pathDefs.forEach((pathDef, index) => {
         if (pathDef.image) {
             if (!(pathDef.image.name in images)) {
@@ -39,7 +38,16 @@ export function drawCustomPaths(
         }
 
         const id = `path-${index}`;
-        const pathElem = elem.append('path').attr('id', id).attr('pathLength', animated ? 1 : null);
+        const url = elementLinks[id];
+        let pathContainer: D3Selection<any>;
+        if (url) {
+            const a = createSvgAnchor(url);
+            elem.node()!.appendChild(a);
+            pathContainer = select(a) as D3Selection<any>;
+        } else {
+            pathContainer = elem;
+        }
+        const pathElem = pathContainer.append('path').attr('id', id);
 
         if (pathDef.marker) {
             let color = inlineStyles[id]?.stroke;

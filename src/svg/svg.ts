@@ -186,6 +186,14 @@ export function loadSvgString(svgString: string, container: HTMLElement): void {
     });
 }
 
+/** Creates an SVG <a> element with proper xlink:href attribute for a hyperlink. */
+export function createSvgAnchor(url: string): SVGAElement {
+    const a = document.createElementNS('http://www.w3.org/2000/svg', 'a');
+    a.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);
+    a.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    return a;
+}
+
 export function handleInlineStyleChange(elemId: string, target: HTMLElement, cssProp: string, value: string): void {
     if (elemId.includes("label")) {
         commonState.lastUsedLabelProps[cssProp] = value;

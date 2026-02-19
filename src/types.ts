@@ -40,6 +40,7 @@ export interface MenuState {
     chosingPoint: boolean;
     pointSelected: boolean;
     addingLabel: boolean;
+    addingLink: boolean;
     pathSelected: boolean;
     freehandSelected: boolean;
     addingImageToPath: boolean;
@@ -288,6 +289,7 @@ export interface StateCommon {
     providedPaths: PathDef[];
     providedFreeHand: ParsedPath[][];
     inlineStyles: InlineStyles;
+    elementLinks?: { [elemId: string]: string };
     // TODO: remove and compute from shape + label size
     shapeCount: number;
     currentMode: Mode;

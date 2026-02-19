@@ -1,5 +1,5 @@
 import { create } from 'd3-selection';
-import { createSvgFromPart } from './svg';
+import { createSvgFromPart, createSvgAnchor } from './svg';
 import * as shapes from './shapeDefs';
 import type { Coords, ShapeDefinition } from 'src/types';
 import type { GeoProjection } from 'd3-geo';
@@ -8,6 +8,7 @@ export function drawShapes(
     shapeDefinitions: ShapeDefinition[],
     container: HTMLElement | null,
     projection: GeoProjection,
+    elementLinks: { [elemId: string]: string } = {},
 ): void {
     if (!container) return;
 
@@ -35,7 +36,15 @@ export function drawShapes(
         }
         svgShape.setAttribute('transform', transform);
         svgShape.setAttribute('id', shapeDef.id);
-        container.appendChild(svgShape);
+
+        const url = elementLinks[shapeDef.id];
+        if (url) {
+            const a = createSvgAnchor(url);
+            a.appendChild(svgShape);
+            container.appendChild(a);
+        } else {
+            container.appendChild(svgShape);
+        }
     });
 }
 

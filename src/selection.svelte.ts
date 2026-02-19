@@ -85,7 +85,7 @@ export function identifyClickedPath(e: MouseEvent): SelectedEntity | null {
     const svgPt = pt.matrixTransform(svgElem.getScreenCTM()?.inverse());
     const point = { x: svgPt.x, y: svgPt.y };
 
-    const paths = Array.from(pathsElement.children) as SVGPathElement[];
+    const paths = Array.from(pathsElement.querySelectorAll('path')) as SVGPathElement[];
     if (!paths.length) return null;
 
     let bestDist = Infinity;

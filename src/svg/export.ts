@@ -72,7 +72,7 @@ const anchorToAnchor: Record<string, string> = {
     right: 'right'
 };
 
-export const additionnalCssExport = '#points-labels {pointer-events:none}';
+export const additionnalCssExport = '#points-labels {pointer-events:none} #points-labels a, #points-labels a * {pointer-events:auto}';
 const cssFontProps = ['font-family', 'font-size', 'font-weight', 'color'];
 
 export function getTextElems(svgElem: SVGElement): Element[] {

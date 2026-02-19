@@ -12,7 +12,7 @@
     import { download, initTooltips, pascalCaseToSentence, sleep } from "./util/common";
     import * as shapes from "./svg/shapeDefs";
     import * as markers from "./svg/markerDefs";
-    import { setTransformScale, closestDistance, type DistanceQueryResult, pathStringFromParsed } from "./svg/svg";
+    import { setTransformScale, closestDistance, type DistanceQueryResult, pathStringFromParsed, createSvgAnchor } from "./svg/svg";
     import { drawShapes } from "./svg/shape";
     import iso3Data from "./assets/data/iso3_filtered.json";
     import Examples from "./components/Examples.svelte";
@@ -84,6 +84,7 @@
         chosingPoint: false,
         pointSelected: false,
         addingLabel: false,
+        addingLink: false,
         pathSelected: false,
         freehandSelected: false,
         addingImageToPath: false,
@@ -92,6 +93,11 @@
     let drawingTooltip: HTMLDivElement | null = $state(null);
     let textInput: HTMLTextAreaElement | null = $state(null);
     let typedText = $state("");
+    let selectedShapeId: string | null = $state(null);
+    let linkInputValue = $state("");
+    let linkTargetId: string | null = $state(null);
+    let linkInput: HTMLInputElement | null = $state(null);
+    let genericSelectedId: string | null = $state(null);
     let styleEditor: InlineStyleEditor | null = $state(null);
     let contextualMenu: (HTMLDivElement & { opened?: boolean }) | null = $state(null);
     let showExportConfirm = $state(false);
@@ -372,10 +378,11 @@
         svg.append("g").attr("id", "points-labels");
         svg.append("g").attr("id", "paths");
         drawAndSetupShapes();
-        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
-        drawFreeHandShapes(svg, commonState.providedFreeHand);
+        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks ?? {});
+        drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
         if (!simplified) {
             applyStyles(commonState.inlineStyles);
+            applyGenericLinks();
             saveState();
         }
         isDrawing = false;
@@ -480,7 +487,7 @@
             const point = { x, y };
             const pathsElement = document.getElementById("paths");
             if (pathsElement) {
-                const paths = Array.from(pathsElement.children) as SVGPathElement[];
+                const paths = Array.from(pathsElement.querySelectorAll('path')) as SVGPathElement[];
                 if (paths.length) {
                     const closestPath = paths.reduce((prev: DistanceQueryResult, curElem) => {
                         const curDist = closestDistance(point, curElem);
@@ -495,10 +502,22 @@
                 }
             }
         }
+        // Track generic element ID for "Add link" in else-branch menu
+        if (!menuStates.freehandSelected && !menuStates.pathSelected) {
+            let el: Element | null = e.target as Element;
+            genericSelectedId = null;
+            const svgRoot = document.getElementById('static-svg-map');
+            while (el && el !== svgRoot) {
+                const id = el.getAttribute('id');
+                if (id) { genericSelectedId = id; break; }
+                el = el.parentElement;
+            }
+        }
         if (shouldOpenMenu) showMenu(e, target);
     }
 
     function onSvgClick(e: MouseEvent): void {
+        if ((e.target as Element).closest('a')) e.preventDefault();
         if (contextualMenu!.opened) {
             closeMenu();
             return;
@@ -614,7 +633,7 @@
         commonState.providedFreeHand.splice(selectedFreehandIndex, 1);
         const existing = document.getElementById("freehand-drawings");
         if (existing) existing.remove();
-        drawFreeHandShapes(svg, commonState.providedFreeHand);
+        drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
         applyStyles(commonState.inlineStyles);
         saveState();
     }
@@ -642,7 +661,7 @@
                 commonState.providedPaths[selectedPathIndex].width = 20;
                 commonState.providedPaths[selectedPathIndex].height = 10;
             }
-            drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
+            drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks ?? {});
             applyInlineStyles();
             saveState();
         });
@@ -680,7 +699,7 @@
     }
 
     function drawShapesAndSave(): void {
-        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
+        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks ?? {});
         applyInlineStyles();
         saveState();
     }
@@ -688,10 +707,10 @@
     /** Re-render all user entities (shapes, paths, freehand) after a selection operation */
     function redrawEntities(): void {
         drawAndSetupShapes();
-        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles);
+        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks ?? {});
         const existing = document.getElementById("freehand-drawings");
         if (existing) existing.remove();
-        drawFreeHandShapes(svg, commonState.providedFreeHand);
+        drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
         applyStyles(commonState.inlineStyles);
     }
 
@@ -876,8 +895,63 @@
         newGroup.remove();
         const existing = document.getElementById("freehand-drawings");
         if (existing) existing.remove();
-        drawFreeHandShapes(svg, commonState.providedFreeHand);
+        drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
         saveState();
+    }
+
+    async function beginAddLink(elemId: string): Promise<void> {
+        linkTargetId = elemId;
+        linkInputValue = commonState.elementLinks?.[elemId] ?? "";
+        menuStates.pointSelected = false;
+        menuStates.pathSelected = false;
+        menuStates.freehandSelected = false;
+        menuStates.addingLink = true;
+        await tick();
+        linkInput!.focus();
+        linkInput!.addEventListener("keydown", (ev: KeyboardEvent) => {
+            if (ev.key === "Enter") validateLink();
+        });
+    }
+
+    function applyGenericLinks(): void {
+        if (!commonState.elementLinks) return;
+        const svgElem = document.getElementById('static-svg-map');
+        if (!svgElem) return;
+
+        for (const [elemId, url] of Object.entries(commonState.elementLinks)) {
+            const el = svgElem.querySelector(`#${CSS.escape(elemId)}`);
+            if (!el) continue;
+            if (el.parentElement?.tagName.toLowerCase() === 'a') {
+                // Already wrapped — just ensure href is current
+                (el.parentElement as SVGAElement).setAttributeNS(
+                    'http://www.w3.org/1999/xlink', 'xlink:href', url
+                );
+                continue;
+            }
+            const a = createSvgAnchor(url);
+            el.parentNode!.insertBefore(a, el);
+            a.appendChild(el);
+        }
+    }
+
+    function validateLink(): void {
+        if (linkTargetId) {
+            if (!commonState.elementLinks) commonState.elementLinks = {};
+            if (linkInputValue.trim()) {
+                commonState.elementLinks[linkTargetId] = linkInputValue.trim();
+            } else {
+                delete commonState.elementLinks[linkTargetId];
+            }
+            drawAndSetupShapes();
+            drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks);
+            const existing = document.getElementById("freehand-drawings");
+            if (existing) existing.remove();
+            drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks);
+            applyInlineStyles();
+            applyGenericLinks();
+            saveState();
+        }
+        closeMenu();
     }
 
     function closeMenu(): void {
@@ -886,9 +960,11 @@
         menuStates.chosingPoint = false;
         menuStates.pointSelected = false;
         menuStates.addingLabel = false;
+        menuStates.addingLink = false;
         menuStates.pathSelected = false;
         menuStates.freehandSelected = false;
         menuStates.addingImageToPath = false;
+        genericSelectedId = null;
     }
 
     function editStyles(): void {
@@ -954,12 +1030,23 @@
         const container = document.getElementById("points-labels");
         if (!container) return;
         select(container).attr("clip-path", "url(#clipMapBorder)");
-        drawShapes(commonState.providedShapes, container, appState.projection!);
+        drawShapes(commonState.providedShapes, container, appState.projection!, commonState.elementLinks ?? {});
         select(container).on(
             "contextmenu",
             function (e) {
                 e.stopPropagation();
                 e.preventDefault();
+                // Track which shape was right-clicked
+                let el = e.target as Element;
+                if (el.tagName === 'tspan') el = el.parentElement!;
+                while (el && el !== container) {
+                    const id = el.getAttribute('id');
+                    if (id && commonState.providedShapes.some(s => s.id === id)) {
+                        selectedShapeId = id;
+                        break;
+                    }
+                    el = el.parentElement!;
+                }
                 menuStates.pointSelected = true;
                 showMenu(e);
                 return false;
@@ -1075,16 +1162,36 @@
     {:else if menuStates.pointSelected}
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>
         <div role="button" class="px-2 py-1" onclick={copySelection}>Copy</div>
+        <div role="button" class="px-2 py-1" onclick={() => beginAddLink(selectedShapeId!)}>
+            {commonState.elementLinks?.[selectedShapeId!] ? 'Edit link' : 'Add link'}
+        </div>
         <div role="button" class="px-2 py-1" onclick={deleteSelection}>Delete</div>
     {:else if menuStates.pathSelected}
         <div role="button" class="px-2 py-1" onclick={editPath}>Edit curve</div>
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit style</div>
+        <div role="button" class="px-2 py-1" onclick={() => beginAddLink(`path-${selectedPathIndex}`)}>
+            {commonState.elementLinks?.[`path-${selectedPathIndex}`] ? 'Edit link' : 'Add link'}
+        </div>
         <div role="button" class="px-2 py-1" onclick={deletePath}>Delete curve</div>
         <div role="button" class="px-2 py-1" onclick={addImageToPath}>Image along curve</div>
         <div role="button" class="px-2 py-1" onclick={choseMarker}>Chose curve marker</div>
     {:else if menuStates.freehandSelected}
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit style</div>
+        <div role="button" class="px-2 py-1" onclick={() => beginAddLink(`freehand-${selectedFreehandIndex}`)}>
+            {commonState.elementLinks?.[`freehand-${selectedFreehandIndex}`] ? 'Edit link' : 'Add link'}
+        </div>
         <div role="button" class="px-2 py-1" onclick={deleteFreehand}>Delete drawing</div>
+    {:else if menuStates.addingLink}
+        <div class="px-2 py-1">
+            <input
+                bind:this={linkInput}
+                type="text"
+                class="form-control form-control-sm"
+                placeholder="https://..."
+                bind:value={linkInputValue}
+                onblur={validateLink}
+            />
+        </div>
     {:else if menuStates.chosingMarker}
         <div class="d-flex">
             <div role="button" class="px-2 py-1" onclick={() => changeMarker("delete")}>
@@ -1148,6 +1255,11 @@
         </div>
     {:else}
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>
+        {#if genericSelectedId}
+            <div role="button" class="px-2 py-1" onclick={() => beginAddLink(genericSelectedId!)}>
+                {commonState.elementLinks?.[genericSelectedId!] ? 'Edit link' : 'Add link'}
+            </div>
+        {/if}
         <div role="button" class="px-2 py-1" onclick={addPath}>Draw curve</div>
         <div role="button" class="px-2 py-1" onclick={drawFreeHand}>Draw freehand</div>
         <div role="button" class="px-2 py-1" onclick={addPoint}>Add point</div>
