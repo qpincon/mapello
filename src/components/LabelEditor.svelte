@@ -31,15 +31,18 @@
 
         const rect = svgTextElem.getBoundingClientRect();
         const cs = window.getComputedStyle(svgTextElem);
+        const scaleMatch = svgTextElem.getAttribute('transform')?.match(/scale\(([0-9.e+-]+)\)/);
+        const scaleFactor = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
 
         editorElem.style.left = rect.left + "px";
         editorElem.style.top = rect.top + "px";
         editorElem.style.width = Math.max(rect.width, 80) + "px";
         editorElem.style.height = Math.max(rect.height, 20) + "px";
-        editorElem.style.fontSize = cs.fontSize;
+        editorElem.style.fontSize = parseFloat(cs.fontSize) * scaleFactor + "px";
         editorElem.style.fontFamily = cs.fontFamily;
         editorElem.style.fontWeight = cs.fontWeight;
-        editorElem.style.letterSpacing = cs.letterSpacing;
+        const lsNum = parseFloat(cs.letterSpacing);
+        editorElem.style.letterSpacing = isNaN(lsNum) ? cs.letterSpacing : lsNum * scaleFactor + "px";
         editorElem.style.color = cs.color;
         editorElem.value = text;
 

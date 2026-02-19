@@ -201,7 +201,7 @@ function postClip(generalParams: MicroParams): void {
     // select('#micro').append("path").attr('d', polyToPath(roundedRect.geometry.coordinates[0], height));
     postClipSimple();
     const toRemove: Element[] = [];
-    document.querySelectorAll('#static-svg-map g path, #static-svg-map g text, #static-svg-map g circle, #static-svg-map g rectangle').forEach(el => {
+    document.querySelectorAll('#static-svg-map g path, #static-svg-map g circle, #static-svg-map g rectangle').forEach(el => {
         const bbox = (el as SVGGraphicsElement).getBBox();
         const bboxRect: [number, number, number, number] = [
             bbox.x,
