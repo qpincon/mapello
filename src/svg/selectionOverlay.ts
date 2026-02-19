@@ -17,6 +17,7 @@ interface DragState {
     mode: "move" | "resize";
     startX: number;
     startY: number;
+    started?: boolean;
     corner?: Corner;
     anchorX?: number;
     anchorY?: number;
@@ -34,6 +35,8 @@ export class SelectionOverlay {
     private entities: SelectedEntity[];
     private onCommit: TransformCommitFn;
     private dragState: DragState | null = null;
+    private onDragConfirmed?: () => void;
+    private onSimpleClick?: () => void;
 
     // Bound handlers for cleanup
     private boundMouseMove: (e: MouseEvent) => void;
@@ -188,8 +191,6 @@ export class SelectionOverlay {
                         cancelable: true,
                         clientX: e.clientX,
                         clientY: e.clientY,
-                        pageX: e.pageX,
-                        pageY: e.pageY,
                         button: e.button,
                         buttons: e.buttons,
                         ctrlKey: e.ctrlKey,
@@ -214,6 +215,15 @@ export class SelectionOverlay {
                 this.startResize(e, corner);
             });
         }
+    }
+
+    public beginDrag(e: MouseEvent): void {
+        this.startDrag(e, "move");
+    }
+
+    public setCallbacks(callbacks: { onDragConfirmed?: () => void; onSimpleClick?: () => void }): void {
+        this.onDragConfirmed = callbacks.onDragConfirmed;
+        this.onSimpleClick = callbacks.onSimpleClick;
     }
 
     private svgPoint(e: MouseEvent): { x: number; y: number } {
@@ -292,6 +302,13 @@ export class SelectionOverlay {
 
     private onMouseMove(e: MouseEvent): void {
         if (!this.dragState) return;
+
+        // First real movement: let caller cancel any in-progress edit
+        if (!this.dragState.started) {
+            this.dragState.started = true;
+            this.onDragConfirmed?.();
+        }
+
         const pt = this.svgPoint(e);
 
         if (this.dragState.mode === "move") {
@@ -384,11 +401,13 @@ export class SelectionOverlay {
             // Skip if barely moved
             if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
                 this.dragState = null;
+                this.suppressNextClick(); // eat the synthetic click so the SVG handler doesn't deselect
                 // Restore original positions
                 for (const el of this.elements) {
                     const orig = state.origPositions!.get(el.id);
                     if (orig) setTransformTranslate(el, `translate(${orig.x} ${orig.y})`);
                 }
+                this.onSimpleClick?.();
                 return;
             }
 

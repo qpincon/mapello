@@ -18,6 +18,7 @@
     import Examples from "./components/Examples.svelte";
     import { freeHandDrawPath, cancelFreeHandDrawPath } from "./svg/freeHandPath";
     import Modal from "./components/Modal.svelte";
+    import LabelEditor from "./components/LabelEditor.svelte";
     import FontPicker from "./components/FontPicker.svelte";
     import Navbar from "./components/Navbar.svelte";
     import macroImg from "./assets/img/macro.png";
@@ -63,12 +64,14 @@
         pasteFromClipboard,
         deleteSelected,
         refreshOverlay,
+        getOverlay,
     } from "./selection.svelte";
 
     let openContextMenuInfo: ContextMenuInfo;
 
     let macroSidebar: MacroSidebar | null = $state(null);
     let microSidebar: MicroSidebar | null = $state(null);
+    let labelEditor: LabelEditor | null = $state(null);
     let svg: SvgSelection = $state(select("#map-container") as unknown as SvgSelection);
     let isDrawing = $state(false);
 
@@ -86,7 +89,6 @@
         addingImageToPath: false,
         chosingMarker: false,
     });
-    let editedLabelId: string | null = $state(null);
     let drawingTooltip: HTMLDivElement | null = $state(null);
     let textInput: HTMLTextAreaElement | null = $state(null);
     let typedText = $state("");
@@ -356,91 +358,10 @@
                 .attr("id", "static-svg-map") as unknown as SvgSelection;
 
         svg.append("defs");
-        svg.on(
-            "contextmenu",
-            function (e) {
-                if (editingPath) return;
-                let shouldOpenMenu = true;
-                if (isDrawingFreeHand) {
-                    stopDrawFreeHand();
-                    shouldOpenMenu = false;
-                }
-                if (isDrawingPath) {
-                    cancelDrawPath();
-                    shouldOpenMenu = false;
-                }
-                e.preventDefault();
-                closeMenu();
-                let target = null;
-                const clickedFreehandGroup = (e.target as Element).closest?.(".freehand");
-                if (clickedFreehandGroup) {
-                    menuStates.freehandSelected = true;
-                    target = e.target;
-                    selectedFreehandIndex = parseInt(clickedFreehandGroup.getAttribute("id")!.match(/\d+$/)![0]);
-                } else {
-                    const [x, y] = pointer(e);
-                    const point = { x, y };
-
-                    const pathsElement = document.getElementById("paths");
-                    if (pathsElement) {
-                        const paths = Array.from(pathsElement.children) as SVGPathElement[];
-                        if (paths.length) {
-                            const closestPath = paths.reduce((prev: DistanceQueryResult, curElem) => {
-                                const curDist = closestDistance(point, curElem);
-                                curDist.elem = curElem;
-                                return prev.distance! < curDist.distance! ? prev : curDist;
-                            }, {} as DistanceQueryResult);
-                            if (closestPath.distance != null && closestPath.distance < 6) {
-                                menuStates.pathSelected = true;
-                                target = closestPath.elem;
-                                selectedPathIndex = parseInt(closestPath.elem!.getAttribute("id")!.match(/\d+$/)![0]);
-                            }
-                        }
-                    }
-                }
-                if (shouldOpenMenu) showMenu(e, target);
-                return false;
-            },
-            false,
-        );
-
-        svg.on("click", function (e) {
-            if (contextualMenu!.opened) {
-                closeMenu();
-                return;
-            }
-            if (styleEditor!.isOpened()) {
-                styleEditor!.close();
-                return;
-            }
-            if (!iseOnClickEnabled) return;
-
-            // Try to identify a clicked entity for selection
-            let entity = identifyClickedEntity(e.target as Element);
-            // Fallback: proximity hit-test for thin paths
-            if (!entity) entity = identifyClickedPath(e);
-            if (entity) {
-                toggleSelection(entity, e.shiftKey);
-            } else {
-                clearSelection();
-            }
-        });
-
-        svg.on("dblclick", function (e) {
-            if (!iseOnClickEnabled) return;
-            // If a single entity is selected, open editor on that entity (not the overlay)
-            if (selectionState.selected.length === 1) {
-                const sel = selectionState.selected[0];
-                const el = document.getElementById(sel.id);
-                if (el) {
-                    styleEditor!.open(el as HTMLElement, e.pageX, e.pageY);
-                    return;
-                }
-            }
-            // Multiple selected: do nothing (bulk style editing not supported)
-            if (selectionState.selected.length > 1) return;
-            openEditor(e);
-        });
+        svg.on("contextmenu", onSvgContextMenu, false);
+        svg.on("click", onSvgClick);
+        svg.on("dblclick", onSvgDblClick);
+        svg.on("mousedown", onSvgMouseDown);
 
         if (commonState.currentMode === "macro") {
             await macroSidebar!.drawMacroTotal(simplified);
@@ -534,6 +455,115 @@
     function openEditor(e: MouseEvent): void {
         styleEditor!.open(e.target as HTMLElement, e.pageX, e.pageY);
     }
+
+    function onSvgContextMenu(e: MouseEvent): void {
+        if (editingPath) return;
+        let shouldOpenMenu = true;
+        if (isDrawingFreeHand) { stopDrawFreeHand(); shouldOpenMenu = false; }
+        if (isDrawingPath) { cancelDrawPath(); shouldOpenMenu = false; }
+        e.preventDefault();
+        closeMenu();
+        let target = null;
+        const clickedFreehandGroup = (e.target as Element).closest?.(".freehand");
+        if (clickedFreehandGroup) {
+            menuStates.freehandSelected = true;
+            target = e.target;
+            selectedFreehandIndex = parseInt(clickedFreehandGroup.getAttribute("id")!.match(/\d+$/)![0]);
+        } else {
+            const [x, y] = pointer(e);
+            const point = { x, y };
+            const pathsElement = document.getElementById("paths");
+            if (pathsElement) {
+                const paths = Array.from(pathsElement.children) as SVGPathElement[];
+                if (paths.length) {
+                    const closestPath = paths.reduce((prev: DistanceQueryResult, curElem) => {
+                        const curDist = closestDistance(point, curElem);
+                        curDist.elem = curElem;
+                        return prev.distance! < curDist.distance! ? prev : curDist;
+                    }, {} as DistanceQueryResult);
+                    if (closestPath.distance != null && closestPath.distance < 6) {
+                        menuStates.pathSelected = true;
+                        target = closestPath.elem;
+                        selectedPathIndex = parseInt(closestPath.elem!.getAttribute("id")!.match(/\d+$/)![0]);
+                    }
+                }
+            }
+        }
+        if (shouldOpenMenu) showMenu(e, target);
+    }
+
+    function onSvgClick(e: MouseEvent): void {
+        if (contextualMenu!.opened) { closeMenu(); return; }
+        if (styleEditor!.isOpened()) { styleEditor!.close(); return; }
+        if (!iseOnClickEnabled) return;
+        let entity = identifyClickedEntity(e.target as Element);
+        if (!entity) entity = identifyClickedPath(e);
+        if (entity) {
+            // Labels are handled by mousedown (edit mode), not click (selection)
+            if (entity.type === "shape" && commonState.providedShapes[entity.index]?.text !== undefined) return;
+            toggleSelection(entity, e.shiftKey);
+        } else {
+            clearSelection();
+        }
+    }
+
+    function onSvgDblClick(e: MouseEvent): void {
+        if (!iseOnClickEnabled) return;
+        let entity = identifyClickedEntity(e.target as Element) ?? identifyClickedPath(e);
+        // Fallback: if clicking on the overlay, use the single selected entity
+        if (!entity && (e.target as Element).closest?.("#selection-overlay") && selectionState.selected.length === 1) {
+            entity = selectionState.selected[0];
+        }
+        if (entity) {
+            const el = document.getElementById(entity.id);
+            if (el) { styleEditor!.open(el as HTMLElement, e.pageX, e.pageY); return; }
+        }
+        openEditor(e);
+    }
+
+    // Select-and-drag: intercept mousedown before d3 drag; labels get click-vs-drag disambiguation
+    function onSvgMouseDown(e: MouseEvent): void {
+        if (commonState.currentMode !== "macro") return;
+        if (e.button !== 0) return;
+        const entity = identifyClickedEntity(e.target as Element) ?? identifyClickedPath(e);
+        if (!entity) return;
+        e.stopPropagation();
+        // Labels: disambiguate click vs drag
+        if (entity.type === "shape" && commonState.providedShapes[entity.index]?.text !== undefined) {
+            const savedEvent = e;
+            const savedEntity = entity;
+            let moved = false;
+            function onMove(ev: MouseEvent) {
+                const dx = ev.clientX - savedEvent.clientX;
+                const dy = ev.clientY - savedEvent.clientY;
+                if (Math.sqrt(dx * dx + dy * dy) > 5) {
+                    moved = true;
+                    document.removeEventListener("mousemove", onMove);
+                    document.removeEventListener("mouseup", onUp);
+                    toggleSelection(savedEntity, savedEvent.shiftKey);
+                    getOverlay()?.beginDrag(savedEvent);
+                    setupLabelOverlayCallbacks(savedEntity.id, savedEntity.index);
+                }
+            }
+            function onUp() {
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+                if (!moved) {
+                    toggleSelection(savedEntity, savedEvent.shiftKey);
+                    setupLabelOverlayCallbacks(savedEntity.id, savedEntity.index);
+                    const svgText = document.getElementById(savedEntity.id) as SVGTextElement | null;
+                    if (svgText) labelEditor?.enter(savedEntity.id, savedEntity.index, svgText);
+                }
+            }
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onUp);
+            return;
+        }
+        // Non-labels: select + drag
+        toggleSelection(entity, e.shiftKey);
+        getOverlay()?.beginDrag(e);
+    }
+
     let selectedPathIndex = $state<number>(0);
     let selectedFreehandIndex = $state<number>(0);
 
@@ -833,7 +863,6 @@
         menuStates.pathSelected = false;
         menuStates.freehandSelected = false;
         menuStates.addingImageToPath = false;
-        editedLabelId = null;
     }
 
     function editStyles(): void {
@@ -857,23 +886,42 @@
 
     function validateLabel(): void {
         if (typedText.length) {
-            if (editedLabelId) {
-                const labelDef = commonState.providedShapes.find((def) => def.id === editedLabelId)!;
-                labelDef.text = typedText;
-            } else {
-                const labelId = `label-${commonState.shapeCount++}`;
-                commonState.providedShapes.push({
-                    pos: openContextMenuInfo.position,
-                    scale: 1,
-                    id: labelId,
-                    text: typedText,
-                });
-                commonState.inlineStyles[labelId] = { ...commonState.lastUsedLabelProps };
-            }
+            const labelId = `label-${commonState.shapeCount++}`;
+            commonState.providedShapes.push({
+                pos: openContextMenuInfo.position,
+                scale: 1,
+                id: labelId,
+                text: typedText,
+            });
+            commonState.inlineStyles[labelId] = { ...commonState.lastUsedLabelProps };
             typedText = "";
         }
         drawAndSetupShapes();
         closeMenu();
+    }
+
+    function setupLabelOverlayCallbacks(labelId: string, labelIndex: number): void {
+        getOverlay()?.setCallbacks({
+            onDragConfirmed: () => labelEditor?.exit(),
+            onSimpleClick: () => {
+                if (labelEditor?.isEditing()) return; // already in edit mode
+                const svgText = document.getElementById(labelId) as SVGTextElement | null;
+                if (svgText) labelEditor?.enter(labelId, labelIndex, svgText);
+            },
+        });
+    }
+
+    function onLabelCommit(entityIndex: number, newText: string): void {
+        commonState.providedShapes[entityIndex].text = newText;
+        drawAndSetupShapes();
+        refreshOverlay(); // re-point overlay to the newly created DOM element
+        const shape = commonState.providedShapes[entityIndex];
+        if (shape) setupLabelOverlayCallbacks(shape.id, entityIndex);
+        saveState();
+    }
+
+    function onLabelCancel(): void {
+        // Nothing to do; LabelEditor.exit() already restored SVG text visibility
     }
 
     function drawAndSetupShapes(): void {
@@ -881,27 +929,6 @@
         if (!container) return;
         select(container).attr("clip-path", "url(#clipMapBorder)");
         drawShapes(commonState.providedShapes, container, appState.projection!);
-        select(container).on("click", (e) => {
-            // Let clicks propagate to SVG for selection handling
-            // but stop propagation only if selection overlay handled it
-        });
-        select(container).on("dblclick", (e) => {
-            const target = e.target;
-            let targetId = target.getAttribute("id");
-            if (target.tagName == "tspan") targetId = target.parentNode.getAttribute("id");
-            if (targetId && targetId.includes("label")) {
-                editedLabelId = targetId;
-                const labelDef = commonState.providedShapes.find((def) => def.id === editedLabelId)!;
-                typedText = labelDef.text!;
-                addLabel();
-                showMenu(e);
-            } else {
-                // Double-click on shapes opens style editor
-                openEditor(e);
-            }
-            e.preventDefault();
-            e.stopPropagation();
-        });
         select(container).on(
             "contextmenu",
             function (e) {
@@ -999,6 +1026,16 @@
     {@html `<${""}style> ${commonCss} </${""}style>`}
     {@html `<${""}style> ${cssFonts} .test {} </${""}style>`}
 </svelte:head>
+
+<LabelEditor
+    bind:this={labelEditor}
+    onCommit={onLabelCommit}
+    onCancel={onLabelCancel}
+    onStyleEdit={(id, x, y) => {
+        const el = document.getElementById(id);
+        if (el) styleEditor!.open(el as HTMLElement, x, y);
+    }}
+/>
 
 <div id="contextmenu" class="border rounded" bind:this={contextualMenu} class:hidden={!contextualMenu?.opened}>
     {#if menuStates.chosingPoint}

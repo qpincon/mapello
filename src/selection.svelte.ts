@@ -29,6 +29,10 @@ export const selectionState: SelectionState = $state({
 
 let overlay: SelectionOverlay | null = null;
 
+export function getOverlay(): SelectionOverlay | null {
+    return overlay;
+}
+
 export function identifyClickedEntity(target: Element): SelectedEntity | null {
     // Check if clicked on a shape/label in #points-labels
     const pointsLabelsContainer = target.closest("#points-labels");

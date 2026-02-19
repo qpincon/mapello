@@ -201,7 +201,7 @@
 - [x] micro: fix use viewbox
 - [x] micro 3D: scale building height slider
 - [-] micro: scale roads width slider
-- [ ] micro: monochrome palettes (dark water, dark land)
+- [ ] micro: monochrome palettes (dark water, dark land) https://snazzymaps.com/
 - [ ] micro optim: remove features totally included in other feature and smaller
 - [x] micro 3D: fix cut buidlings at the bottom of the frame
 - [x] micro 3D: use min_height for extrusion base: https://github.com/protomaps/basemaps/issues/465
@@ -226,3 +226,4 @@
 - [x] Font: Add "Will font be used only on map" -> if yes, transform to path or embed font face declaration
 - [ ] Live-update as much as possible without calling the full draw routine for better interactivity
 - [ ] Font: chosing a font will change default font used for new labels / all labels with manually changed fonts
+- [ ] Micro: change style to have more roads visible (manhattan example)
