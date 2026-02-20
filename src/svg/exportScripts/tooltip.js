@@ -30,8 +30,21 @@ function hideTooltip() {
 }
 
 function onMouseMove(e) {
-    const parent = e.target.parentNode;
-    if (!parent?.hasAttribute?.('id')) return hideTooltip();
+    let parent = e.target.parentNode;
+    while (parent && !parent.hasAttribute?.('id')) {
+        parent = parent.parentNode;
+    }
+    if (!parent) return hideTooltip();
+
+    const groupId = parent.getAttribute('id');
+    if (!(groupId in dataByGroup.data)) return hideTooltip();
+
+    let shapeElem = e.target;
+    if (!shapeElem.getAttribute?.('id') && shapeElem.tagName?.toLowerCase() === 'a') {
+        shapeElem = shapeElem.querySelector('[id]') ?? shapeElem;
+    }
+    const shapeId = shapeElem.getAttribute?.('id') ?? null;
+    if (!shapeId) return hideTooltip();
 
     const mapBounds = mapElement.querySelector('#frame').getBoundingClientRect();
     const scaleX = width / mapBounds.width;
@@ -40,11 +53,6 @@ function onMouseMove(e) {
 
     let posX = (e.clientX - mapBounds.left + 10) * scaleX;
     let posY = (e.clientY - mapBounds.top + 10) * scaleY;
-    let tooltipVisibleOpacity = 1;
-
-    const groupId = parent.getAttribute('id');
-    const shapeId = e.target.getAttribute('id');
-
     if (ttBounds?.width > 0) {
         if (mapBounds.right - ttBounds.width < e.clientX + 10) {
             posX = (e.clientX - mapBounds.left - ttBounds.width - 20) * scaleX;
@@ -52,30 +60,23 @@ function onMouseMove(e) {
         if (mapBounds.bottom - ttBounds.height < e.clientY + 10) {
             posY = (e.clientY - mapBounds.top - ttBounds.height - 20) * scaleY;
         }
-    } else if (shapeId && groupId in dataByGroup.data) {
-        tooltipVisibleOpacity = 0;
-        setTimeout(() => onMouseMove(e), 0);
     }
 
-    if (!(groupId in dataByGroup.data)) {
-        hideTooltip();
-    } else if (shapeId && tooltip.shapeId === shapeId) {
+    if (tooltip.shapeId === shapeId) {
         tooltip.element.setAttribute('x', posX);
         tooltip.element.setAttribute('y', posY);
         tooltip.element.style.display = 'block';
-        tooltip.element.style.opacity = tooltipVisibleOpacity;
+        tooltip.element.style.opacity = 1;
     } else {
         const data = dataByGroup.data[groupId][shapeId];
-        if (!data) {
-            tooltip.element.style.display = 'none';
-            return;
-        }
+        if (!data) return hideTooltip();
         const tt = constructTooltip(data, dataByGroup.tooltips[groupId], shapeId);
         tooltip.element.replaceWith(tt);
         tooltip.element = tt;
         tooltip.shapeId = shapeId;
         tooltip.element.setAttribute('x', posX);
         tooltip.element.setAttribute('y', posY);
-        tooltip.element.style.opacity = tooltipVisibleOpacity;
+        tooltip.element.style.display = 'block';
+        tooltip.element.style.opacity = 1;
     }
 }

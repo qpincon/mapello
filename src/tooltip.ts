@@ -12,16 +12,18 @@ export function addTooltipListener(
     tooltip.element.style.display = 'none';
 
     let hoveredPath: SVGPathElement | null = null;
+    let zOrderElem: SVGElement | null = null;
     let originalIndex: number | null = null;
 
     function clearHover(): void {
         if (!hoveredPath) return;
         hoveredPath.classList.remove('hovered');
-        const parent = hoveredPath.parentNode as SVGElement;
+        const parent = zOrderElem?.parentNode as SVGElement;
         if (originalIndex !== null && parent) {
-            parent.insertBefore(hoveredPath, parent.children[originalIndex]);
+            parent.insertBefore(zOrderElem!, parent.children[originalIndex]);
         }
         hoveredPath = null;
+        zOrderElem = null;
         originalIndex = null;
     }
 
@@ -34,15 +36,25 @@ export function addTooltipListener(
         onMouseMove(e, map, tooltipDefs, zonesData, tooltip);
 
         const target = e.target;
-        const parent = target instanceof SVGElement ? target.parentNode as SVGElement : null;
-
-        if (target instanceof SVGPathElement && parent?.tagName === 'g') {
-            if (hoveredPath !== target) {
+        let pathElem: SVGPathElement | null = null;
+        let zElem: SVGElement | null = null;
+        if (target instanceof SVGPathElement) {
+            pathElem = target;
+            const par = target.parentElement;
+            zElem = par?.tagName.toLowerCase() === 'a' ? par : target;
+        } else if ((target as SVGElement).tagName?.toLowerCase() === 'a') {
+            pathElem = (target as SVGElement).querySelector('path');
+            zElem = target as SVGElement;
+        }
+        const gParent = zElem?.parentElement;
+        if (pathElem && gParent?.tagName === 'g') {
+            if (hoveredPath !== pathElem) {
                 clearHover();
-                originalIndex = Array.from(parent.children).indexOf(target);
-                parent.append(target);
-                target.classList.add('hovered');
-                hoveredPath = target;
+                originalIndex = Array.from(gParent.children).indexOf(zElem!);
+                gParent.append(zElem!);
+                pathElem.classList.add('hovered');
+                hoveredPath = pathElem;
+                zOrderElem = zElem;
             }
         } else {
             clearHover();
@@ -62,13 +74,20 @@ function onMouseMove(
     zonesData: ZonesData,
     tooltip: Tooltip
 ): void {
-    const parent = e.target instanceof SVGElement ? e.target.parentNode as SVGElement : null;
-    if (!parent?.hasAttribute?.("id")) return hideTooltip(tooltip);
+    let parent = e.target instanceof SVGElement ? e.target.parentNode as SVGElement | null : null;
+    while (parent && !parent.hasAttribute('id')) {
+        parent = parent.parentNode as SVGElement | null;
+    }
+    if (!parent) return hideTooltip(tooltip);
 
     const groupId = parent.getAttribute('id')!;
     if (!tooltipDefs?.[groupId]?.enabled) return hideTooltip(tooltip);
 
-    const shapeId = (e.target as SVGElement).getAttribute('id');
+    let shapeElem = e.target as SVGElement;
+    if (!shapeElem.getAttribute('id') && shapeElem.tagName.toLowerCase() === 'a') {
+        shapeElem = (shapeElem.querySelector('[id]') as SVGElement) ?? shapeElem;
+    }
+    const shapeId = shapeElem.getAttribute('id');
     const mapBounds = map.getBoundingClientRect();
     const ttBounds = (tooltip.element.firstChild?.firstChild as HTMLElement)?.getBoundingClientRect();
     let posX = e.clientX - mapBounds.left + 10;

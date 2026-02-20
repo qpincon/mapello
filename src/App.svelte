@@ -12,7 +12,13 @@
     import { download, initTooltips, pascalCaseToSentence, sleep } from "./util/common";
     import * as shapes from "./svg/shapeDefs";
     import * as markers from "./svg/markerDefs";
-    import { setTransformScale, closestDistance, type DistanceQueryResult, pathStringFromParsed, createSvgAnchor } from "./svg/svg";
+    import {
+        setTransformScale,
+        closestDistance,
+        type DistanceQueryResult,
+        pathStringFromParsed,
+        createSvgAnchor,
+    } from "./svg/svg";
     import { drawShapes } from "./svg/shape";
     import iso3Data from "./assets/data/iso3_filtered.json";
     import Examples from "./components/Examples.svelte";
@@ -378,7 +384,13 @@
         svg.append("g").attr("id", "points-labels");
         svg.append("g").attr("id", "paths");
         drawAndSetupShapes();
-        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks ?? {});
+        drawCustomPaths(
+            commonState.providedPaths,
+            svg,
+            appState.projection!,
+            commonState.inlineStyles,
+            commonState.elementLinks ?? {},
+        );
         drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
         if (!simplified) {
             applyStyles(commonState.inlineStyles);
@@ -487,7 +499,7 @@
             const point = { x, y };
             const pathsElement = document.getElementById("paths");
             if (pathsElement) {
-                const paths = Array.from(pathsElement.querySelectorAll('path')) as SVGPathElement[];
+                const paths = Array.from(pathsElement.querySelectorAll("path")) as SVGPathElement[];
                 if (paths.length) {
                     const closestPath = paths.reduce((prev: DistanceQueryResult, curElem) => {
                         const curDist = closestDistance(point, curElem);
@@ -506,10 +518,13 @@
         if (!menuStates.freehandSelected && !menuStates.pathSelected) {
             let el: Element | null = e.target as Element;
             genericSelectedId = null;
-            const svgRoot = document.getElementById('static-svg-map');
+            const svgRoot = document.getElementById("static-svg-map");
             while (el && el !== svgRoot) {
-                const id = el.getAttribute('id');
-                if (id) { genericSelectedId = id; break; }
+                const id = el.getAttribute("id");
+                if (id) {
+                    genericSelectedId = id;
+                    break;
+                }
                 el = el.parentElement;
             }
         }
@@ -517,7 +532,7 @@
     }
 
     function onSvgClick(e: MouseEvent): void {
-        if ((e.target as Element).closest('a')) e.preventDefault();
+        if ((e.target as Element).closest("a")) e.preventDefault();
         if (contextualMenu!.opened) {
             closeMenu();
             return;
@@ -661,7 +676,13 @@
                 commonState.providedPaths[selectedPathIndex].width = 20;
                 commonState.providedPaths[selectedPathIndex].height = 10;
             }
-            drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks ?? {});
+            drawCustomPaths(
+                commonState.providedPaths,
+                svg,
+                appState.projection!,
+                commonState.inlineStyles,
+                commonState.elementLinks ?? {},
+            );
             applyInlineStyles();
             saveState();
         });
@@ -699,7 +720,13 @@
     }
 
     function drawShapesAndSave(): void {
-        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks ?? {});
+        drawCustomPaths(
+            commonState.providedPaths,
+            svg,
+            appState.projection!,
+            commonState.inlineStyles,
+            commonState.elementLinks ?? {},
+        );
         applyInlineStyles();
         saveState();
     }
@@ -707,7 +734,13 @@
     /** Re-render all user entities (shapes, paths, freehand) after a selection operation */
     function redrawEntities(): void {
         drawAndSetupShapes();
-        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks ?? {});
+        drawCustomPaths(
+            commonState.providedPaths,
+            svg,
+            appState.projection!,
+            commonState.inlineStyles,
+            commonState.elementLinks ?? {},
+        );
         const existing = document.getElementById("freehand-drawings");
         if (existing) existing.remove();
         drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
@@ -900,6 +933,7 @@
     }
 
     async function beginAddLink(elemId: string): Promise<void> {
+        console.log("adding link to", elemId);
         linkTargetId = elemId;
         linkInputValue = commonState.elementLinks?.[elemId] ?? "";
         menuStates.pointSelected = false;
@@ -915,16 +949,18 @@
 
     function applyGenericLinks(): void {
         if (!commonState.elementLinks) return;
-        const svgElem = document.getElementById('static-svg-map');
+        const svgElem = document.getElementById("static-svg-map");
         if (!svgElem) return;
 
         for (const [elemId, url] of Object.entries(commonState.elementLinks)) {
             const el = svgElem.querySelector(`#${CSS.escape(elemId)}`);
             if (!el) continue;
-            if (el.parentElement?.tagName.toLowerCase() === 'a') {
+            if (el.parentElement?.tagName.toLowerCase() === "a") {
                 // Already wrapped — just ensure href is current
-                (el.parentElement as SVGAElement).setAttributeNS(
-                    'http://www.w3.org/1999/xlink', 'xlink:href', url
+                (el.parentElement as unknown as SVGAElement).setAttributeNS(
+                    "http://www.w3.org/1999/xlink",
+                    "xlink:href",
+                    url,
                 );
                 continue;
             }
@@ -932,6 +968,36 @@
             el.parentNode!.insertBefore(a, el);
             a.appendChild(el);
         }
+    }
+
+    function removeLink(elemId: string): void {
+        if (!commonState.elementLinks) return;
+        delete commonState.elementLinks[elemId];
+
+        const svgElem = document.getElementById("static-svg-map");
+        const el = svgElem?.querySelector(`#${CSS.escape(elemId)}`);
+        if (el?.parentElement?.tagName.toLowerCase() === "a") {
+            const a = el.parentElement;
+            const parent = a.parentNode!;
+            while (a.firstChild) parent.insertBefore(a.firstChild, a);
+            a.remove();
+        }
+
+        drawAndSetupShapes();
+        drawCustomPaths(
+            commonState.providedPaths,
+            svg,
+            appState.projection!,
+            commonState.inlineStyles,
+            commonState.elementLinks ?? {},
+        );
+        const existing = document.getElementById("freehand-drawings");
+        if (existing) existing.remove();
+        drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
+        applyInlineStyles();
+        applyGenericLinks();
+        saveState();
+        closeMenu();
     }
 
     function validateLink(): void {
@@ -943,7 +1009,13 @@
                 delete commonState.elementLinks[linkTargetId];
             }
             drawAndSetupShapes();
-            drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks);
+            drawCustomPaths(
+                commonState.providedPaths,
+                svg,
+                appState.projection!,
+                commonState.inlineStyles,
+                commonState.elementLinks,
+            );
             const existing = document.getElementById("freehand-drawings");
             if (existing) existing.remove();
             drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks);
@@ -1038,10 +1110,10 @@
                 e.preventDefault();
                 // Track which shape was right-clicked
                 let el = e.target as Element;
-                if (el.tagName === 'tspan') el = el.parentElement!;
+                if (el.tagName === "tspan") el = el.parentElement!;
                 while (el && el !== container) {
-                    const id = el.getAttribute('id');
-                    if (id && commonState.providedShapes.some(s => s.id === id)) {
+                    const id = el.getAttribute("id");
+                    if (id && commonState.providedShapes.some((s) => s.id === id)) {
                         selectedShapeId = id;
                         break;
                     }
@@ -1151,6 +1223,21 @@
 />
 
 <div id="contextmenu" class="border rounded" bind:this={contextualMenu} class:hidden={!contextualMenu?.opened}>
+    {#snippet linkMenuItem(elemId: string)}
+        {#if commonState.elementLinks?.[elemId]}
+            <div class="menu-link-item d-flex align-items-center px-2 py-1">
+                <span role="button" class="flex-grow-1" onclick={() => beginAddLink(elemId)}>Edit link</span>
+                <span
+                    role="button"
+                    class="ms-2 text-danger menu-link-remove"
+                    title="Remove link"
+                    onclick={() => removeLink(elemId)}>×</span
+                >
+            </div>
+        {:else}
+            <div role="button" class="px-2 py-1" onclick={() => beginAddLink(elemId)}>Add link</div>
+        {/if}
+    {/snippet}
     {#if menuStates.chosingPoint}
         {#each Object.keys(shapes) as shapeName (shapeName)}
             <div role="button" class="px-2 py-1" onclick={() => addShape(shapeName as ShapeName)}>
@@ -1162,24 +1249,18 @@
     {:else if menuStates.pointSelected}
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>
         <div role="button" class="px-2 py-1" onclick={copySelection}>Copy</div>
-        <div role="button" class="px-2 py-1" onclick={() => beginAddLink(selectedShapeId!)}>
-            {commonState.elementLinks?.[selectedShapeId!] ? 'Edit link' : 'Add link'}
-        </div>
+        {@render linkMenuItem(selectedShapeId!)}
         <div role="button" class="px-2 py-1" onclick={deleteSelection}>Delete</div>
     {:else if menuStates.pathSelected}
         <div role="button" class="px-2 py-1" onclick={editPath}>Edit curve</div>
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit style</div>
-        <div role="button" class="px-2 py-1" onclick={() => beginAddLink(`path-${selectedPathIndex}`)}>
-            {commonState.elementLinks?.[`path-${selectedPathIndex}`] ? 'Edit link' : 'Add link'}
-        </div>
+        {@render linkMenuItem(`path-${selectedPathIndex}`)}
         <div role="button" class="px-2 py-1" onclick={deletePath}>Delete curve</div>
         <div role="button" class="px-2 py-1" onclick={addImageToPath}>Image along curve</div>
         <div role="button" class="px-2 py-1" onclick={choseMarker}>Chose curve marker</div>
     {:else if menuStates.freehandSelected}
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit style</div>
-        <div role="button" class="px-2 py-1" onclick={() => beginAddLink(`freehand-${selectedFreehandIndex}`)}>
-            {commonState.elementLinks?.[`freehand-${selectedFreehandIndex}`] ? 'Edit link' : 'Add link'}
-        </div>
+        {@render linkMenuItem(`freehand-${selectedFreehandIndex}`)}
         <div role="button" class="px-2 py-1" onclick={deleteFreehand}>Delete drawing</div>
     {:else if menuStates.addingLink}
         <div class="px-2 py-1">
@@ -1256,9 +1337,7 @@
     {:else}
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>
         {#if genericSelectedId}
-            <div role="button" class="px-2 py-1" onclick={() => beginAddLink(genericSelectedId!)}>
-                {commonState.elementLinks?.[genericSelectedId!] ? 'Edit link' : 'Add link'}
-            </div>
+            {@render linkMenuItem(genericSelectedId!)}
         {/if}
         <div role="button" class="px-2 py-1" onclick={addPath}>Draw curve</div>
         <div role="button" class="px-2 py-1" onclick={drawFreeHand}>Draw freehand</div>

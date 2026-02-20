@@ -119,7 +119,9 @@ export async function exportMacro(
         const finalData: { [shapeId: string]: any } = {};
 
         for (const child of group.children) {
-            const id = child.getAttribute('id');
+            // If the child is an <a> link wrapper, look inside for the actual element
+            const elem = child.tagName.toLowerCase() === 'a' ? child.firstElementChild : child;
+            const id = elem?.getAttribute('id');
             if (!id || !indexed[id]) continue;
             finalData[id] = pick(indexed[id], usedVars);
         }

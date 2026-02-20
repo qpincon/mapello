@@ -3,16 +3,18 @@
 // Works standalone, optionally integrates with tooltip (calls onMouseMove/hideTooltip if defined)
 
 let hoveredPath = null;
+let zOrderElem = null;
 let originalIndex = null;
 
 function clearHover() {
     if (!hoveredPath) return;
     hoveredPath.classList.remove('hovered');
-    const parent = hoveredPath.parentNode;
+    const parent = zOrderElem?.parentNode;
     if (originalIndex !== null && parent) {
-        parent.insertBefore(hoveredPath, parent.children[originalIndex]);
+        parent.insertBefore(zOrderElem, parent.children[originalIndex]);
     }
     hoveredPath = null;
+    zOrderElem = null;
     originalIndex = null;
 }
 
@@ -25,15 +27,27 @@ mapElement.addEventListener('mousemove', (e) => {
     if (typeof onMouseMove === 'function') onMouseMove(e);
 
     const target = e.target;
-    const parent = target.parentNode;
 
-    if (target.tagName === 'path' && parent?.tagName === 'g') {
-        if (hoveredPath !== target) {
+    // Resolve pathElem and zElem regardless of whether target is <path> or <a>
+    let pathElem, zElem;
+    if (target.tagName === 'path') {
+        pathElem = target;
+        zElem = target.parentNode?.tagName?.toLowerCase() === 'a' ? target.parentNode : target;
+    } else if (target.tagName?.toLowerCase() === 'a') {
+        pathElem = target.querySelector('path');
+        zElem = target;
+    }
+
+    const gParent = zElem?.parentNode;
+
+    if (pathElem && gParent?.tagName === 'g') {
+        if (hoveredPath !== pathElem) {
             clearHover();
-            originalIndex = Array.from(parent.children).indexOf(target);
-            parent.append(target);
-            target.classList.add('hovered');
-            hoveredPath = target;
+            originalIndex = Array.from(gParent.children).indexOf(zElem);
+            gParent.append(zElem);
+            pathElem.classList.add('hovered');
+            hoveredPath = pathElem;
+            zOrderElem = zElem;
         }
     } else {
         clearHover();

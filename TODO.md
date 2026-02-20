@@ -152,7 +152,7 @@
 - [x] Macro: be able to change graticule color
 - [ ] Macro: find a way to match ADM2 boundary data with land data (see UK adm2 for instance)
 
-- [ ] Allow external link on click of entity (a xmlns="http://www.w3.org/2000/svg" xlink:href="url.html" xmlns:xlink="http://www.w3.org/1999/xlink" )
+- [x] Allow external link on click of entity (a xmlns="http://www.w3.org/2000/svg" xlink:href="url.html" xmlns:xlink="http://www.w3.org/1999/xlink" )
 - [-] Text / icons / images / freehand : use https://github.com/daybrush/moveable
 - [x] Text: just use Maj+Enter for new line instead of ++
 
