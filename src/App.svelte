@@ -1225,6 +1225,9 @@
 <div id="contextmenu" class="border rounded" bind:this={contextualMenu} class:hidden={!contextualMenu?.opened}>
     {#snippet linkMenuItem(elemId: string)}
         {#if commonState.elementLinks?.[elemId]}
+            <div class="px-2 pt-1 menu-link-url">
+                <small class="text-muted text-truncate d-block">{commonState.elementLinks[elemId]}</small>
+            </div>
             <div class="menu-link-item d-flex align-items-center px-2 py-1">
                 <span role="button" class="flex-grow-1" onclick={() => beginAddLink(elemId)}>Edit link</span>
                 <span
@@ -1339,6 +1342,7 @@
         {#if genericSelectedId}
             {@render linkMenuItem(genericSelectedId!)}
         {/if}
+        <hr class="my-1 menu-divider" />
         <div role="button" class="px-2 py-1" onclick={addPath}>Draw curve</div>
         <div role="button" class="px-2 py-1" onclick={drawFreeHand}>Draw freehand</div>
         <div role="button" class="px-2 py-1" onclick={addPoint}>Add point</div>

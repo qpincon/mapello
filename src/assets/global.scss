@@ -91,6 +91,16 @@ body {
         line-height: 1;
         cursor: pointer;
     }
+
+    .menu-divider {
+        border-color: #ddd;
+        opacity: 1;
+    }
+
+    .menu-link-url small {
+        font-size: 0.7rem;
+        max-width: 13rem;
+    }
 }
 
 .accordion-item.noborder {
