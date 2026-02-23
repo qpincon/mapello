@@ -19,7 +19,7 @@ export function showElementPopover(
 ): void {
     if (_activeId === elemId) { hidePopover(); return; }
     const ann = elementAnnotations[elemId];
-    if (!ann || ann.type !== 'popover') return;
+    if (!ann?.popover) return;
     hidePopover();
     _activeId = elemId;
 
@@ -29,10 +29,12 @@ export function showElementPopover(
     const centerX = rect.left + rect.width / 2 - svgRect.left;
     const centerY = rect.top + rect.height / 2 - svgRect.top;
 
-    // Extract user-defined background color for arrow
+    // Extract user-defined background color for arrow; strip box-shadow (handled by filter on wrapper)
     const tmpDiv = document.createElement('div');
-    tmpDiv.innerHTML = ann.html;
-    const bgColor = (tmpDiv.firstElementChild as HTMLElement)?.style?.backgroundColor || 'white';
+    tmpDiv.innerHTML = ann.popover;
+    const outerEl = tmpDiv.firstElementChild as HTMLElement | null;
+    const bgColor = outerEl?.style?.backgroundColor || 'white';
+    if (outerEl) outerEl.style.boxShadow = '';
 
     const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') as SVGForeignObjectElement;
     fo.setAttribute('width', '1');
@@ -42,19 +44,15 @@ export function showElementPopover(
     _fo = fo;
 
     const wrapper = document.createElementNS('http://www.w3.org/1999/xhtml', 'div') as HTMLElement;
-    wrapper.style.cssText = 'display:inline-block;position:relative;';
-
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'btn-close';
-    closeBtn.style.cssText = 'position:absolute;right:4px;top:4px;font-size:0.6rem;z-index:1;';
-    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); hidePopover(); });
+    wrapper.style.cssText = 'display:inline-block;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));';
+    // Prevent clicks inside the popover from closing it
+    wrapper.addEventListener('click', (e) => e.stopPropagation());
 
     const content = document.createElement('div');
-    content.innerHTML = ann.html;
+    content.innerHTML = tmpDiv.innerHTML;
 
     const arrow = document.createElement('div');
 
-    wrapper.appendChild(closeBtn);
     wrapper.appendChild(content);
     wrapper.appendChild(arrow);
     fo.appendChild(wrapper);
@@ -97,7 +95,7 @@ export function setupPopoverCursors(
     elementAnnotations: ElementAnnotations,
 ): void {
     for (const [id, ann] of Object.entries(elementAnnotations)) {
-        if (ann.type !== 'popover') continue;
+        if (!ann.popover) continue;
         const el = svgEl.getElementById(id) as SVGElement | null;
         if (el) el.style.cursor = 'pointer';
     }

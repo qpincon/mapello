@@ -822,7 +822,10 @@ export async function exportMicro(
             JSON.stringify(
                 Object.fromEntries(
                     Object.entries(elementAnnotations!).map(([id, ann]) => [
-                        id, { ...ann, html: xhtmlifyHtml(ann.html) }
+                        id, {
+                            tooltip: ann.tooltip ? xhtmlifyHtml(ann.tooltip) : undefined,
+                            popover: ann.popover ? xhtmlifyHtml(ann.popover) : undefined,
+                        }
                     ])
                 )
             )

@@ -1,6 +1,6 @@
 import { reportStyle } from './util/dom';
 import { formatUnicorn, htmlToElement } from './util/common';
-import type { ElementAnnotation, ElementAnnotations, Tooltip, TooltipDefs, ZonesData } from './types';
+import type { ElementAnnotations, Tooltip, TooltipDefs, ZonesData } from './types';
 
 export function addTooltipListener(
     map: SVGSVGElement,
@@ -96,8 +96,8 @@ function onMouseMove(
 
     // Element-level annotation takes precedence over macro tooltip
     const ann = elementAnnotations?.[shapeId ?? ''];
-    if (ann?.type === 'tooltip') {
-        return showElementAnnotationTooltip(ann, shapeId!, posX, posY, map, tooltip);
+    if (ann?.tooltip) {
+        return showElementAnnotationTooltip(ann.tooltip, shapeId!, posX, posY, map, tooltip);
     }
 
     if (!tooltipDefs?.[groupId]?.enabled) return hideTooltip(tooltip);
@@ -148,7 +148,7 @@ function onMouseMove(
 }
 
 function showElementAnnotationTooltip(
-    ann: ElementAnnotation,
+    html: string,
     shapeId: string,
     posX: number,
     posY: number,
@@ -164,7 +164,7 @@ function showElementAnnotationTooltip(
 
         const body = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
         body.style.cssText = 'display:inline-block;width:max-content;';
-        body.innerHTML = ann.html;
+        body.innerHTML = html;
         elem.append(body);
 
         tooltip.element.replaceWith(elem);
@@ -196,12 +196,19 @@ export function addElementAnnotationListener(
         if (!shapeId) return hideTooltip(tooltip);
 
         const ann = elementAnnotations[shapeId];
-        if (!ann || ann.type !== 'tooltip') return hideTooltip(tooltip);
+        if (!ann?.tooltip) return hideTooltip(tooltip);
 
         const mapBounds = map.getBoundingClientRect();
-        const posX = e.clientX - mapBounds.left + 12;
+        let posX = e.clientX - mapBounds.left + 12;
         const posY = e.clientY - mapBounds.top + 12;
-        showElementAnnotationTooltip(ann, shapeId, posX, posY, map, tooltip);
+
+        // Fix right-edge clipping: shift tooltip to the left if it would overflow
+        const ttBounds = (tooltip.element.firstChild?.firstChild as HTMLElement)?.getBoundingClientRect();
+        if (ttBounds?.width > 0 && mapBounds.right - ttBounds.width < e.clientX + 12) {
+            posX -= ttBounds.width + 24;
+        }
+
+        showElementAnnotationTooltip(ann.tooltip, shapeId, posX, posY, map, tooltip);
     });
 }
 

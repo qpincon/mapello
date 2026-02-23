@@ -16,8 +16,15 @@ mapElement.append(_poFO);
 
 function _positionTooltipAnn(e) {
     var b = mapElement.getBoundingClientRect();
-    _ttFO.setAttribute('x', (e.clientX - b.left + 12).toString());
-    _ttFO.setAttribute('y', (e.clientY - b.top + 12).toString());
+    var posX = e.clientX - b.left + 12;
+    var posY = e.clientY - b.top + 12;
+    // Fix right-edge clipping
+    var ttContent = _ttFO.firstChild;
+    if (ttContent && ttContent.offsetWidth > 0 && b.right - ttContent.offsetWidth < e.clientX + 12) {
+        posX -= ttContent.offsetWidth + 24;
+    }
+    _ttFO.setAttribute('x', posX.toString());
+    _ttFO.setAttribute('y', posY.toString());
 }
 
 function _positionPopoverAnn(el, arrowEl, bgColor) {
@@ -48,12 +55,14 @@ for (var _annId in _annData) {
     (function (id, ann) {
         var el = mapElement.getElementById(id);
         if (!el) return;
-        if (ann.type === 'tooltip') {
+
+        // Tooltip: mousemove/mouseleave
+        if (ann.tooltip) {
             el.addEventListener('mousemove', function (e) {
                 _ttFO.innerHTML = '';
                 var _ttDiv = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
                 _ttDiv.style.cssText = 'display:inline-block;width:max-content;';
-                _ttDiv.innerHTML = ann.html;
+                _ttDiv.innerHTML = ann.tooltip;
                 _ttFO.appendChild(_ttDiv);
                 _positionTooltipAnn(e);
                 _ttFO.style.display = 'block';
@@ -61,7 +70,10 @@ for (var _annId in _annData) {
             el.addEventListener('mouseleave', function () {
                 _ttFO.style.display = 'none';
             });
-        } else {
+        }
+
+        // Popover: click
+        if (ann.popover) {
             el.style.cursor = 'pointer';
             el.addEventListener('click', function (e) {
                 e.stopPropagation();
@@ -70,15 +82,19 @@ for (var _annId in _annData) {
                     _openPopoverId = '';
                     return;
                 }
-                // Extract bg color for arrow
-                var _bgColorMatch = ann.html.match(/background-color:\s*([^;}"]+)/i);
-                var _bgColor = _bgColorMatch ? _bgColorMatch[1].trim() : 'white';
+                // Extract bg color for arrow; strip box-shadow (handled by filter on wrapper)
+                var _tmpEl = document.createElement('div');
+                _tmpEl.innerHTML = ann.popover;
+                var _outerEl = _tmpEl.firstElementChild;
+                var _bgColor = (_outerEl && _outerEl.style.backgroundColor) ? _outerEl.style.backgroundColor : 'white';
+                if (_outerEl) _outerEl.style.boxShadow = '';
 
                 _poFO.innerHTML = '';
                 var _poWrapper = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-                _poWrapper.style.cssText = 'display:inline-block;width:max-content;position:relative;';
+                _poWrapper.style.cssText = 'display:inline-block;width:max-content;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));';
+                _poWrapper.addEventListener('click', function (e) { e.stopPropagation(); });
                 var _poContent = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-                _poContent.innerHTML = ann.html;
+                _poContent.innerHTML = _tmpEl.innerHTML;
                 var _poArrow = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
                 _poWrapper.appendChild(_poContent);
                 _poWrapper.appendChild(_poArrow);

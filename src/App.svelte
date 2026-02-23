@@ -155,7 +155,7 @@
                     value: string,
                 ) => {
                     if (annotationEditingElemId !== null) {
-                        if (annotationPreviewEl) (annotationPreviewEl.style as any)[cssProp] = value;
+                        (target.style as any)[cssProp] = value;
                         return;
                     }
                     if (commonState.currentMode === "macro") {
@@ -167,6 +167,12 @@
                 },
                 getElems: (el: HTMLElement) => {
                     console.log(el);
+                    if (el.closest(".elem-annotation-preview")) {
+                        return [
+                            [el, "Clicked"],
+                            [el.parentElement, "All annotation"],
+                        ];
+                    }
                     if (el.parentElement?.classList.contains("freehand")) {
                         return [
                             [el, "Clicked"],
@@ -220,7 +226,7 @@
                 },
                 cssRuleFilter: (el: HTMLElement, cssSelector: string) => {
                     console.log(el, cssSelector);
-                    if (el.classList.contains("elem-annotation-preview")) return cssSelector === "inline";
+                    if (el.closest("foreignObject")) return false;
                     if (el.id === "micro-background" && cssSelector === "inline") return false;
                     if (cssSelector.includes("#freehand-drawings > g")) return false;
                     if (cssSelector.includes("#static-svg-map")) return false;
@@ -238,17 +244,12 @@
                     if (ruleName.includes("#freehand-drawings > .freehand")) return "All freehand";
                     let isHover = ruleName.includes(":hover") || ruleName.includes(".hovered");
                     let finalStr = "";
-                    // if (ruleName.includes("#buildings .buildings-1")) finalStr = "Building type 1";
-                    // else if (ruleName.includes("#buildings .buildings-2")) finalStr = "Building type 2";
-                    // else if (ruleName.includes("#buildings .buildings-3")) finalStr = "Building type 3";
-                    // else
                     if (ruleName.includes("#micro")) {
                         const layerId = ruleName.match(/#micro \.(.*?)(\:|$)/)?.[1];
                         if (!layerId) return ruleName;
                         finalStr = pascalCaseToSentence(layerId);
-                    }
-                    //  else if (ruleName.includes("#buildings .buildings")) finalStr = "Buildings";
-                    else if (ruleName.includes(".adm")) finalStr = "Region";
+                    } else if (ruleName.includes(".adm")) finalStr = "Region";
+                    else if (ruleName.includes(".country")) finalStr = "Countries";
                     if (finalStr.length) {
                         if (isHover) return `${finalStr} hover`;
                         return finalStr;
@@ -581,7 +582,7 @@
             }
             el = el.parentElement;
         }
-        if (clickedId && commonState.elementAnnotations?.[clickedId]?.type === "popover") {
+        if (clickedId && commonState.elementAnnotations?.[clickedId]?.popover) {
             showElementPopover(clickedId, svg.node() as SVGSVGElement, commonState.elementAnnotations ?? {});
             return;
         }
@@ -1089,10 +1090,11 @@
         annotationEditingElemId = elemId;
         annotationEditingType = type;
         const existing = commonState.elementAnnotations?.[elemId];
-        if (existing?.type === type) {
-            const tmp = new DOMParser().parseFromString(existing.html, "text/html").body
+        const existingHtml = type === "tooltip" ? existing?.tooltip : existing?.popover;
+        if (existingHtml) {
+            const tmp = new DOMParser().parseFromString(existingHtml, "text/html").body
                 .firstElementChild as HTMLElement | null;
-            annotationEditorContent = tmp?.innerHTML ?? existing.html;
+            annotationEditorContent = tmp?.innerHTML ?? existingHtml;
         } else {
             annotationEditorContent = "";
         }
@@ -1103,8 +1105,9 @@
     function initAnnotationEditor(): void {
         if (!annotationPreviewEl) return;
         const existing = annotationEditingElemId ? commonState.elementAnnotations?.[annotationEditingElemId] : null;
-        if (existing && existing.type === annotationEditingType) {
-            const tmp = new DOMParser().parseFromString(existing.html, "text/html").body
+        const existingHtml = annotationEditingType === "tooltip" ? existing?.tooltip : existing?.popover;
+        if (existingHtml) {
+            const tmp = new DOMParser().parseFromString(existingHtml, "text/html").body
                 .firstElementChild as HTMLElement | null;
             annotationPreviewEl.style.cssText = tmp?.style.cssText ?? "";
         } else {
@@ -1117,26 +1120,36 @@
         if (!annotationEditingElemId) return;
         if (!commonState.elementAnnotations) commonState.elementAnnotations = {};
         const styleStr = annotationPreviewEl?.style.cssText ?? "";
-        const html = `<div style="${styleStr}">${annotationEditorContent}</div>`;
-        commonState.elementAnnotations[annotationEditingElemId] = {
-            type: annotationEditingType,
-            html,
-        };
+        const innerHtml = annotationPreviewEl?.innerHTML ?? annotationEditorContent;
+        const html = `<div style="${styleStr}">${innerHtml}</div>`;
+        const entry = commonState.elementAnnotations[annotationEditingElemId] ?? {};
+        if (annotationEditingType === "tooltip") {
+            entry.tooltip = html;
+        } else {
+            entry.popover = html;
+            // Apply cursor:pointer immediately without needing a full redraw
+            const svgEl = svg.node() as SVGSVGElement | null;
+            const el = svgEl?.getElementById(annotationEditingElemId);
+            if (el) (el as SVGElement).style.cursor = "pointer";
+        }
+        commonState.elementAnnotations[annotationEditingElemId] = entry;
         saveState();
-        annotationEditorOpen = false;
-        annotationEditingElemId = null;
     }
 
-    function removeAnnotation(elemId: string): void {
-        if (!commonState.elementAnnotations) return;
-        delete commonState.elementAnnotations[elemId];
-        hidePopover();
+    function removeAnnotation(elemId: string, type: "tooltip" | "popover"): void {
+        const entry = commonState.elementAnnotations?.[elemId];
+        if (!entry) return;
+        delete entry[type];
+        if (!entry.tooltip && !entry.popover) {
+            delete commonState.elementAnnotations![elemId];
+        }
+        if (type === "popover") hidePopover();
         saveState();
     }
 
     function openAnnotationStyleEditor(e: MouseEvent): void {
         if (!annotationPreviewEl) return;
-        styleEditor!.open(annotationPreviewEl as HTMLElement, e.pageX, e.pageY);
+        styleEditor!.open(e.target as HTMLElement, e.pageX, e.pageY);
     }
 
     function editStyles(): void {
@@ -1346,7 +1359,7 @@
 
 <div id="contextmenu" class="border rounded" bind:this={contextualMenu} class:hidden={!contextualMenu?.opened}>
     {#snippet linkMenuItem(elemId: string)}
-        {#if commonState.elementAnnotations?.[elemId]?.type !== "popover"}
+        {#if !commonState.elementAnnotations?.[elemId]?.popover}
             {#if commonState.elementLinks?.[elemId]}
                 <div class="px-2 pt-1 menu-link-url">
                     <small class="text-muted text-truncate d-block">{commonState.elementLinks[elemId]}</small>
@@ -1367,9 +1380,9 @@
     {/snippet}
     {#snippet annotationMenuItem(elemId: string)}
         {@const ann = commonState.elementAnnotations?.[elemId]}
-        {#if ann?.type === "tooltip"}
+        {#if ann?.tooltip}
             <div class="px-2 pt-1 menu-ann-preview">
-                <small class="text-muted d-block text-truncate">{@html ann.html}</small>
+                <small class="text-muted d-block text-truncate">{@html ann.tooltip}</small>
             </div>
             <div class="menu-ann-item d-flex align-items-center px-2 py-1">
                 <span role="button" class="flex-grow-1" onclick={() => beginAddAnnotation(elemId, "tooltip")}
@@ -1379,16 +1392,16 @@
                     role="button"
                     class="ms-2 text-danger menu-ann-remove"
                     title="Remove tooltip"
-                    onclick={() => removeAnnotation(elemId)}>×</span
+                    onclick={() => removeAnnotation(elemId, "tooltip")}>×</span
                 >
             </div>
         {:else}
             <div role="button" class="px-2 py-1" onclick={() => beginAddAnnotation(elemId, "tooltip")}>Add tooltip</div>
         {/if}
         {#if !commonState.elementLinks?.[elemId]}
-            {#if ann?.type === "popover"}
+            {#if ann?.popover}
                 <div class="px-2 pt-1 menu-ann-preview">
-                    <small class="text-muted d-block text-truncate">{@html ann.html}</small>
+                    <small class="text-muted d-block text-truncate">{@html ann.popover}</small>
                 </div>
                 <div class="menu-ann-item d-flex align-items-center px-2 py-1">
                     <span role="button" class="flex-grow-1" onclick={() => beginAddAnnotation(elemId, "popover")}
@@ -1398,7 +1411,7 @@
                         role="button"
                         class="ms-2 text-danger menu-ann-remove"
                         title="Remove popover"
-                        onclick={() => removeAnnotation(elemId)}>×</span
+                        onclick={() => removeAnnotation(elemId, "popover")}>×</span
                     >
                 </div>
             {:else}
@@ -1526,6 +1539,7 @@
     modalWidth="55%"
     onOpened={initAnnotationEditor}
     onClosed={() => {
+        saveAnnotation();
         annotationEditorOpen = false;
         annotationEditingElemId = null;
         styleEditor?.close();
@@ -1537,7 +1551,7 @@
     <div slot="content">
         <div class="d-flex gap-3">
             <div class="flex-grow-1" style="min-width: 0;">
-                <QuillEditor bind:value={annotationEditorContent} />
+                <QuillEditor bind:value={annotationEditorContent} placeholder="" />
             </div>
             <div class="flex-shrink-0" style="width: 40%;">
                 <p class="text-muted small mb-1">
@@ -1552,16 +1566,6 @@
                 </div>
             </div>
         </div>
-    </div>
-    <div slot="footer">
-        <button
-            class="btn btn-secondary btn-sm"
-            onclick={() => {
-                annotationEditorOpen = false;
-                styleEditor?.close();
-            }}>Cancel</button
-        >
-        <button class="btn btn-primary btn-sm ms-2" onclick={saveAnnotation}>Save</button>
     </div>
 </Modal>
 

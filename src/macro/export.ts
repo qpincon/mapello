@@ -133,7 +133,7 @@ export async function exportMacro(
     console.log(finalDataByGroup)
     // Build tooltip code by replacing placeholders with actual values
     const annotationTooltipIds = elementAnnotations
-        ? Object.entries(elementAnnotations).filter(([, v]) => v.type === 'tooltip').map(([k]) => k)
+        ? Object.entries(elementAnnotations).filter(([, v]) => v.tooltip).map(([k]) => k)
         : [];
     const tooltipCode = tooltipEnabled
         ? tooltipScript
@@ -155,7 +155,10 @@ export async function exportMacro(
             JSON.stringify(
                 Object.fromEntries(
                     Object.entries(elementAnnotations!).map(([id, ann]) => [
-                        id, { ...ann, html: xhtmlifyHtml(ann.html) }
+                        id, {
+                            tooltip: ann.tooltip ? xhtmlifyHtml(ann.tooltip) : undefined,
+                            popover: ann.popover ? xhtmlifyHtml(ann.popover) : undefined,
+                        }
                     ])
                 )
             )

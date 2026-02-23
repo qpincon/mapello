@@ -36,11 +36,12 @@ export interface ContextMenuInfo {
     target: SVGPathElement;
 }
 
-export interface ElementAnnotation {
-    type: 'tooltip' | 'popover';
-    html: string;   // fully-styled HTML, ready to inject (inline styles included)
-}
-export type ElementAnnotations = { [elemId: string]: ElementAnnotation };
+export type ElementAnnotations = {
+    [elemId: string]: {
+        tooltip?: string;   // fully-styled HTML for tooltip (inline styles included)
+        popover?: string;   // fully-styled HTML for popover (inline styles included)
+    }
+};
 
 export interface MenuState {
     chosingPoint: boolean;

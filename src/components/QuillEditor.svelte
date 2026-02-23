@@ -16,9 +16,10 @@
         value: string;
         onchange?: () => void;
         hasError?: boolean;
+        placeholder?: string;
     }
 
-    let { value = $bindable(), onchange, hasError = false }: Props = $props();
+    let { value = $bindable(), onchange, hasError = false, placeholder = "Enter tooltip template using __column__ for variables..." }: Props = $props();
 
     let editorContainer: HTMLDivElement;
     let quillInstance: Quill | null = null;
@@ -57,7 +58,7 @@
                     locale: {},
                 },
             },
-            placeholder: "Enter tooltip template using __column__ for variables...",
+            placeholder: placeholder,
         });
 
         // Add tooltips to toolbar buttons
