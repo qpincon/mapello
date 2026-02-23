@@ -239,11 +239,11 @@ export function changeIdAndReferences(exportedMapElem: Element, newMapId: string
 
     // change inline styles with url(#...)
     exportedMapElem.querySelectorAll('[style*="url"]').forEach(elem => {
-        const computed = window.getComputedStyle(elem as Element);
         const elementStyle = (elem as HTMLElement).style;
 
-        for (const prop of elementStyle) {
-            const propValue = computed[prop as any];
+        for (let i = 0; i < elementStyle.length; i++) {
+            const prop = elementStyle[i];
+            const propValue = elementStyle.getPropertyValue(prop);
             if (!propValue?.includes('url')) continue;
             const newValue = replaceReferenceValue(propValue, newMapId);
             if (newValue) elementStyle[prop as any] = newValue;
