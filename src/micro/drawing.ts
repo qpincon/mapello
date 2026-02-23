@@ -6,7 +6,7 @@ import { color, hsl } from "d3-color";
 import { DOM_PARSER, findStyleSheet, fontsToCss, fontsToCssEmbed, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
 import { patternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
-import { discriminateCssForExport, download, randomString } from "../util/common";
+import { discriminateCssForExport, download, randomString, xhtmlifyHtml } from "../util/common";
 import { additionnalCssExport, changeIdAndReferences, exportFontChoices, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.js?raw';
@@ -817,7 +817,16 @@ export async function exportMicro(
 
     const hasAnnotations = elementAnnotations && Object.keys(elementAnnotations).length > 0;
     const annotationCode = hasAnnotations
-        ? elementAnnotationsScript.replaceAll('__ELEMENT_ANNOTATIONS__', JSON.stringify(elementAnnotations))
+        ? elementAnnotationsScript.replaceAll(
+            '__ELEMENT_ANNOTATIONS__',
+            JSON.stringify(
+                Object.fromEntries(
+                    Object.entries(elementAnnotations!).map(([id, ann]) => [
+                        id, { ...ann, html: xhtmlifyHtml(ann.html) }
+                    ])
+                )
+            )
+        )
         : '';
     const animationCode = animate
         ? intersectionObserverScript.replaceAll('__ON_ANIMATION_END__', '')

@@ -3,7 +3,7 @@ import type { ElementAnnotations, ProvidedFont, StateMacro, SvgSelection, Toolti
 import { DOM_PARSER, fontsToCss, fontsToCssEmbed, getUsedInlineFonts, reportStyle } from 'src/util/dom';
 import svgoConfig from '../svgoExport.config';
 import type { Config } from 'svgo/browser';
-import { discriminateCssForExport, download, htmlToElement, indexBy, pick, randomString } from 'src/util/common';
+import { discriminateCssForExport, download, htmlToElement, indexBy, pick, randomString, xhtmlifyHtml } from 'src/util/common';
 import { encodeSVGDataImageStr, imageFromSpecialGElemStr } from 'src/svg/contourMethods';
 import { transitionCssMacro } from 'src/svg/transition';
 
@@ -150,7 +150,16 @@ export async function exportMacro(
 
     const hasAnnotations = elementAnnotations && Object.keys(elementAnnotations).length > 0;
     const annotationCode = hasAnnotations
-        ? elementAnnotationsScript.replaceAll('__ELEMENT_ANNOTATIONS__', JSON.stringify(elementAnnotations))
+        ? elementAnnotationsScript.replaceAll(
+            '__ELEMENT_ANNOTATIONS__',
+            JSON.stringify(
+                Object.fromEntries(
+                    Object.entries(elementAnnotations!).map(([id, ann]) => [
+                        id, { ...ann, html: xhtmlifyHtml(ann.html) }
+                    ])
+                )
+            )
+        )
         : '';
 
     let finalScript = `

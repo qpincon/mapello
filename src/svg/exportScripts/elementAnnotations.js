@@ -71,18 +71,15 @@ for (var _annId in _annData) {
                     return;
                 }
                 // Extract bg color for arrow
-                var _tmpDiv = document.createElement('div');
-                console.log(ann.html, _tmpDiv);
-                _tmpDiv.innerHTML = ann.html;
-                console.log(_tmpDiv);
-                var _bgColor = (_tmpDiv.firstElementChild && _tmpDiv.firstElementChild.style.backgroundColor) || 'white';
+                var _bgColorMatch = ann.html.match(/background-color:\s*([^;}"]+)/i);
+                var _bgColor = _bgColorMatch ? _bgColorMatch[1].trim() : 'white';
 
                 _poFO.innerHTML = '';
                 var _poWrapper = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
                 _poWrapper.style.cssText = 'display:inline-block;width:max-content;position:relative;';
-                var _poContent = document.createElement('div');
+                var _poContent = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
                 _poContent.innerHTML = ann.html;
-                var _poArrow = document.createElement('div');
+                var _poArrow = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
                 _poWrapper.appendChild(_poContent);
                 _poWrapper.appendChild(_poArrow);
                 _poFO.appendChild(_poWrapper);

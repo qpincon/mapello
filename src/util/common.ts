@@ -211,3 +211,10 @@ export function sleep(ms: number): Promise<void> {
         setTimeout(() => res(), ms);
     })
 }
+
+export function xhtmlifyHtml(html: string): string {
+    return html.replace(
+        /<(img|br|hr|input|area|base|col|embed|link|meta|param|source|track|wbr)(\s[^>]*)?>/gi,
+        (_, tag, attrs) => `<${tag}${attrs ?? ''}/>`
+    );
+}
