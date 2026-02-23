@@ -36,6 +36,12 @@ export interface ContextMenuInfo {
     target: SVGPathElement;
 }
 
+export interface ElementAnnotation {
+    type: 'tooltip' | 'popover';
+    html: string;   // fully-styled HTML, ready to inject (inline styles included)
+}
+export type ElementAnnotations = { [elemId: string]: ElementAnnotation };
+
 export interface MenuState {
     chosingPoint: boolean;
     pointSelected: boolean;
@@ -45,6 +51,7 @@ export interface MenuState {
     freehandSelected: boolean;
     addingImageToPath: boolean;
     chosingMarker: boolean;
+    addingAnnotation: boolean;
 }
 
 export interface ProjectionParams {
@@ -290,6 +297,7 @@ export interface StateCommon {
     providedFreeHand: ParsedPath[][];
     inlineStyles: InlineStyles;
     elementLinks?: { [elemId: string]: string };
+    elementAnnotations?: ElementAnnotations;
     // TODO: remove and compute from shape + label size
     shapeCount: number;
     currentMode: Mode;

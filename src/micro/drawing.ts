@@ -9,12 +9,13 @@ import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download, randomString } from "../util/common";
 import { additionnalCssExport, changeIdAndReferences, exportFontChoices, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
+import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.js?raw';
 import { createRoundedRectangleGeoJSON } from '../util/geometry';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanDisjoint from '@turf/boolean-disjoint';
 import type { Feature, Geometry, Polygon } from 'geojson';
 import type { MicroParams } from '../params';
-import { MICRO_LAYERS, type Color, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type StateMicro, type SvgSelection } from '../types';
+import { MICRO_LAYERS, type Color, type ElementAnnotations, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type StateMicro, type SvgSelection } from '../types';
 import type { Config } from 'svgo/browser';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { postClipSimple } from 'src/svg/svg';
@@ -777,6 +778,7 @@ export async function exportMicro(
     commonCss: string,
     options: ExportOptions = {},
     downloadExport: boolean = true,
+    elementAnnotations?: ElementAnnotations,
 ): Promise<string | void> {
     const {
         exportFonts = exportFontChoices.convertToPath,
@@ -813,10 +815,13 @@ export async function exportMicro(
         pathIsBetter = true;
     }
 
-    const js = animate
-        ? `const mapElement = document.currentScript.parentNode;
-           ${intersectionObserverScript.replaceAll('__ON_ANIMATION_END__', '')}`
-        : null;
+    const hasAnnotations = elementAnnotations && Object.keys(elementAnnotations).length > 0;
+    const annotationCode = hasAnnotations
+        ? elementAnnotationsScript.replaceAll('__ELEMENT_ANNOTATIONS__', JSON.stringify(elementAnnotations))
+        : '';
+    const animationCode = animate
+        ? intersectionObserverScript.replaceAll('__ON_ANIMATION_END__', '')
+        : '';
 
     // Styling
     const mapId = randomString(5);
@@ -849,7 +854,12 @@ export async function exportMicro(
         svgElement.setAttribute('filter', 'drop-shadow(2px 2px 8px rgba(0,0,0,.2))');
     }
 
-    if (js) {
+    if (animate || hasAnnotations) {
+        const js = `(function() {
+        const mapElement = document.currentScript.parentNode;
+        ${animationCode}
+        ${annotationCode}
+    })()`;
         const scriptElem = document.createElementNS("http://www.w3.org/2000/svg", 'script');
         const scriptContent = document.createTextNode(js);
         scriptElem.appendChild(scriptContent);

@@ -92,7 +92,7 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     setTimeout(() => postClipSimple(), 100);
     /** Wait a bit before attaching the tooltip in order to make it the last element and to appear above everything else */
     setTimeout(() => {
-        addTooltipListener(svg.node() as SVGSVGElement, macroState.tooltipDefs, macroState.zonesData);
+        addTooltipListener(svg.node() as SVGSVGElement, macroState.tooltipDefs, macroState.zonesData, commonState.elementAnnotations);
     }, 500);
 }
 

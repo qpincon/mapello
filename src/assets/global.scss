@@ -101,7 +101,33 @@ body {
         font-size: 0.7rem;
         max-width: 13rem;
     }
+
+    .menu-ann-item {
+        &:hover {
+            background-color: #e2eef8;
+        }
+    }
+
+    .menu-ann-remove {
+        font-size: 1.1rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .menu-ann-preview small {
+        font-size: 0.7rem;
+        max-width: 13rem;
+
+        * {
+            display: inline;
+        }
+
+        img {
+            display: none;
+        }
+    }
 }
+
 
 .accordion-item.noborder {
     border: none;

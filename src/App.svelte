@@ -49,6 +49,9 @@
         ShapeName,
         Mode,
     } from "./types";
+    import QuillEditor from "./components/QuillEditor.svelte";
+    import { addElementAnnotationListener } from "./tooltip";
+    import { showElementPopover, hidePopover, getActivePopoverId, setupPopoverCursors } from "./popover";
     import { Dropdown } from "bootstrap";
     import { applyInlineStyles, changeProjection } from "./macro/drawing";
     import MacroSidebar from "./macro/components/MacroSidebar.svelte";
@@ -95,7 +98,16 @@
         freehandSelected: false,
         addingImageToPath: false,
         chosingMarker: false,
+        addingAnnotation: false,
     });
+
+    // Annotation editor state
+    let annotationEditorOpen = $state(false);
+    let annotationEditingElemId = $state<string | null>(null);
+    let annotationEditingType = $state<"tooltip" | "popover">("tooltip");
+    let annotationEditorContent = $state("");
+    let annotationPreviewEl: HTMLElement | null = null;
+
     let drawingTooltip: HTMLDivElement | null = $state(null);
     let textInput: HTMLTextAreaElement | null = $state(null);
     let typedText = $state("");
@@ -142,6 +154,10 @@
                     cssProp: string,
                     value: string,
                 ) => {
+                    if (annotationEditingElemId !== null) {
+                        if (annotationPreviewEl) (annotationPreviewEl.style as any)[cssProp] = value;
+                        return;
+                    }
                     if (commonState.currentMode === "macro") {
                         macroSidebar!.onStyleChanged(target, eventType, cssProp, value);
                     } else if (commonState.currentMode === "micro") {
@@ -204,6 +220,7 @@
                 },
                 cssRuleFilter: (el: HTMLElement, cssSelector: string) => {
                     console.log(el, cssSelector);
+                    if (el.classList.contains("elem-annotation-preview")) return cssSelector === "inline";
                     if (el.id === "micro-background" && cssSelector === "inline") return false;
                     if (cssSelector.includes("#freehand-drawings > g")) return false;
                     if (cssSelector.includes("#static-svg-map")) return false;
@@ -357,6 +374,7 @@
     async function draw(simplified = false) {
         if (isDrawing) return;
         isDrawing = true;
+        hidePopover();
         clearSelection();
         console.log("draw", simplified);
         const container = select("#map-container");
@@ -395,7 +413,15 @@
         if (!simplified) {
             applyStyles(commonState.inlineStyles);
             applyGenericLinks();
+            if (commonState.elementAnnotations) {
+                setupPopoverCursors(svg.node() as SVGSVGElement, commonState.elementAnnotations);
+            }
             saveState();
+        }
+        if (!simplified && commonState.currentMode !== "macro") {
+            setTimeout(() => {
+                addElementAnnotationListener(svg.node() as SVGSVGElement, commonState.elementAnnotations ?? {});
+            }, 600);
         }
         isDrawing = false;
     }
@@ -542,6 +568,24 @@
             return;
         }
         if (!iseOnClickEnabled) return;
+
+        // Check for popover annotation on clicked element
+        let clickedId: string | null = null;
+        let el: Element | null = e.target as Element;
+        const svgRoot = document.getElementById("static-svg-map");
+        while (el && el !== svgRoot) {
+            const id = el.getAttribute("id");
+            if (id) {
+                clickedId = id;
+                break;
+            }
+            el = el.parentElement;
+        }
+        if (clickedId && commonState.elementAnnotations?.[clickedId]?.type === "popover") {
+            showElementPopover(clickedId, svg.node() as SVGSVGElement, commonState.elementAnnotations ?? {});
+            return;
+        }
+
         let entity = identifyClickedEntity(e.target as Element);
         if (!entity) entity = identifyClickedPath(e);
         if (entity) {
@@ -549,6 +593,7 @@
             if (entity.type === "shape" && commonState.providedShapes[entity.index]?.text !== undefined) return;
             toggleSelection(entity, e.shiftKey);
         } else {
+            if (getActivePopoverId()) hidePopover();
             clearSelection();
         }
     }
@@ -1036,7 +1081,62 @@
         menuStates.pathSelected = false;
         menuStates.freehandSelected = false;
         menuStates.addingImageToPath = false;
+        menuStates.addingAnnotation = false;
         genericSelectedId = null;
+    }
+
+    function beginAddAnnotation(elemId: string, type: "tooltip" | "popover"): void {
+        annotationEditingElemId = elemId;
+        annotationEditingType = type;
+        const existing = commonState.elementAnnotations?.[elemId];
+        if (existing?.type === type) {
+            const tmp = new DOMParser().parseFromString(existing.html, "text/html").body
+                .firstElementChild as HTMLElement | null;
+            annotationEditorContent = tmp?.innerHTML ?? existing.html;
+        } else {
+            annotationEditorContent = "";
+        }
+        annotationEditorOpen = true;
+        closeMenu();
+    }
+
+    function initAnnotationEditor(): void {
+        if (!annotationPreviewEl) return;
+        const existing = annotationEditingElemId ? commonState.elementAnnotations?.[annotationEditingElemId] : null;
+        if (existing && existing.type === annotationEditingType) {
+            const tmp = new DOMParser().parseFromString(existing.html, "text/html").body
+                .firstElementChild as HTMLElement | null;
+            annotationPreviewEl.style.cssText = tmp?.style.cssText ?? "";
+        } else {
+            annotationPreviewEl.style.cssText =
+                "background-color:white;padding:4px 8px;border-radius:4px;font-size:0.82rem;box-shadow:0 2px 6px rgba(0,0,0,.3);max-width:15rem;width:max-content;";
+        }
+    }
+
+    function saveAnnotation(): void {
+        if (!annotationEditingElemId) return;
+        if (!commonState.elementAnnotations) commonState.elementAnnotations = {};
+        const styleStr = annotationPreviewEl?.style.cssText ?? "";
+        const html = `<div style="${styleStr}">${annotationEditorContent}</div>`;
+        commonState.elementAnnotations[annotationEditingElemId] = {
+            type: annotationEditingType,
+            html,
+        };
+        saveState();
+        annotationEditorOpen = false;
+        annotationEditingElemId = null;
+    }
+
+    function removeAnnotation(elemId: string): void {
+        if (!commonState.elementAnnotations) return;
+        delete commonState.elementAnnotations[elemId];
+        hidePopover();
+        saveState();
+    }
+
+    function openAnnotationStyleEditor(e: MouseEvent): void {
+        if (!annotationPreviewEl) return;
+        styleEditor!.open(annotationPreviewEl as HTMLElement, e.pageX, e.pageY);
     }
 
     function editStyles(): void {
@@ -1190,16 +1290,38 @@
     function validateExport(options: ExportOptions): void {
         if (commonState.currentMode === "macro") {
             const totalCss = macroSidebar!.computeCss();
-            exportMacro(svg, macroState, commonState.providedFonts, true, totalCss, options);
+            exportMacro(
+                svg,
+                macroState,
+                commonState.providedFonts,
+                true,
+                totalCss,
+                options,
+                commonState.elementAnnotations,
+            );
         } else {
             const microCss = exportStyleSheet("#micro .line")!;
-            exportMicro(svg, microState, commonState.providedFonts, microCss, options);
+            exportMicro(
+                svg,
+                microState,
+                commonState.providedFonts,
+                microCss,
+                options,
+                true,
+                commonState.elementAnnotations,
+            );
         }
         showExportConfirm = false;
     }
 
     let inlineFontUsed = $state(false);
     function onExportSvgClicked() {
+        hidePopover();
+        closeMenu();
+        stopDrawFreeHand();
+        cancelDrawPath();
+        styleEditor?.close();
+
         const usedFonts = getUsedInlineFonts(svg.node()!);
         const usedProvidedFonts = commonState.providedFonts.filter((font) => usedFonts.has(font.name));
         inlineFontUsed = usedProvidedFonts.length > 0;
@@ -1224,21 +1346,66 @@
 
 <div id="contextmenu" class="border rounded" bind:this={contextualMenu} class:hidden={!contextualMenu?.opened}>
     {#snippet linkMenuItem(elemId: string)}
-        {#if commonState.elementLinks?.[elemId]}
-            <div class="px-2 pt-1 menu-link-url">
-                <small class="text-muted text-truncate d-block">{commonState.elementLinks[elemId]}</small>
+        {#if commonState.elementAnnotations?.[elemId]?.type !== "popover"}
+            {#if commonState.elementLinks?.[elemId]}
+                <div class="px-2 pt-1 menu-link-url">
+                    <small class="text-muted text-truncate d-block">{commonState.elementLinks[elemId]}</small>
+                </div>
+                <div class="menu-link-item d-flex align-items-center px-2 py-1">
+                    <span role="button" class="flex-grow-1" onclick={() => beginAddLink(elemId)}>Edit link</span>
+                    <span
+                        role="button"
+                        class="ms-2 text-danger menu-link-remove"
+                        title="Remove link"
+                        onclick={() => removeLink(elemId)}>×</span
+                    >
+                </div>
+            {:else}
+                <div role="button" class="px-2 py-1" onclick={() => beginAddLink(elemId)}>Add link</div>
+            {/if}
+        {/if}
+    {/snippet}
+    {#snippet annotationMenuItem(elemId: string)}
+        {@const ann = commonState.elementAnnotations?.[elemId]}
+        {#if ann?.type === "tooltip"}
+            <div class="px-2 pt-1 menu-ann-preview">
+                <small class="text-muted d-block text-truncate">{@html ann.html}</small>
             </div>
-            <div class="menu-link-item d-flex align-items-center px-2 py-1">
-                <span role="button" class="flex-grow-1" onclick={() => beginAddLink(elemId)}>Edit link</span>
+            <div class="menu-ann-item d-flex align-items-center px-2 py-1">
+                <span role="button" class="flex-grow-1" onclick={() => beginAddAnnotation(elemId, "tooltip")}
+                    >Edit tooltip</span
+                >
                 <span
                     role="button"
-                    class="ms-2 text-danger menu-link-remove"
-                    title="Remove link"
-                    onclick={() => removeLink(elemId)}>×</span
+                    class="ms-2 text-danger menu-ann-remove"
+                    title="Remove tooltip"
+                    onclick={() => removeAnnotation(elemId)}>×</span
                 >
             </div>
         {:else}
-            <div role="button" class="px-2 py-1" onclick={() => beginAddLink(elemId)}>Add link</div>
+            <div role="button" class="px-2 py-1" onclick={() => beginAddAnnotation(elemId, "tooltip")}>Add tooltip</div>
+        {/if}
+        {#if !commonState.elementLinks?.[elemId]}
+            {#if ann?.type === "popover"}
+                <div class="px-2 pt-1 menu-ann-preview">
+                    <small class="text-muted d-block text-truncate">{@html ann.html}</small>
+                </div>
+                <div class="menu-ann-item d-flex align-items-center px-2 py-1">
+                    <span role="button" class="flex-grow-1" onclick={() => beginAddAnnotation(elemId, "popover")}
+                        >Edit popover</span
+                    >
+                    <span
+                        role="button"
+                        class="ms-2 text-danger menu-ann-remove"
+                        title="Remove popover"
+                        onclick={() => removeAnnotation(elemId)}>×</span
+                    >
+                </div>
+            {:else}
+                <div role="button" class="px-2 py-1" onclick={() => beginAddAnnotation(elemId, "popover")}>
+                    Add popover
+                </div>
+            {/if}
         {/if}
     {/snippet}
     {#if menuStates.chosingPoint}
@@ -1253,17 +1420,20 @@
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>
         <div role="button" class="px-2 py-1" onclick={copySelection}>Copy</div>
         {@render linkMenuItem(selectedShapeId!)}
+        {@render annotationMenuItem(selectedShapeId!)}
         <div role="button" class="px-2 py-1" onclick={deleteSelection}>Delete</div>
     {:else if menuStates.pathSelected}
         <div role="button" class="px-2 py-1" onclick={editPath}>Edit curve</div>
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit style</div>
         {@render linkMenuItem(`path-${selectedPathIndex}`)}
+        {@render annotationMenuItem(`path-${selectedPathIndex}`)}
         <div role="button" class="px-2 py-1" onclick={deletePath}>Delete curve</div>
         <div role="button" class="px-2 py-1" onclick={addImageToPath}>Image along curve</div>
         <div role="button" class="px-2 py-1" onclick={choseMarker}>Chose curve marker</div>
     {:else if menuStates.freehandSelected}
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit style</div>
         {@render linkMenuItem(`freehand-${selectedFreehandIndex}`)}
+        {@render annotationMenuItem(`freehand-${selectedFreehandIndex}`)}
         <div role="button" class="px-2 py-1" onclick={deleteFreehand}>Delete drawing</div>
     {:else if menuStates.addingLink}
         <div class="px-2 py-1">
@@ -1341,6 +1511,7 @@
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>
         {#if genericSelectedId}
             {@render linkMenuItem(genericSelectedId!)}
+            {@render annotationMenuItem(genericSelectedId!)}
         {/if}
         <hr class="my-1 menu-divider" />
         <div role="button" class="px-2 py-1" onclick={addPath}>Draw curve</div>
@@ -1349,6 +1520,50 @@
         <div role="button" class="px-2 py-1" onclick={addLabel}>Add label</div>
     {/if}
 </div>
+
+<Modal
+    bind:open={annotationEditorOpen}
+    modalWidth="55%"
+    onOpened={initAnnotationEditor}
+    onClosed={() => {
+        annotationEditorOpen = false;
+        annotationEditingElemId = null;
+        styleEditor?.close();
+    }}
+>
+    <div slot="header">
+        {annotationEditingType === "tooltip" ? "Tooltip" : "Popover"} for <code>{annotationEditingElemId}</code>
+    </div>
+    <div slot="content">
+        <div class="d-flex gap-3">
+            <div class="flex-grow-1" style="min-width: 0;">
+                <QuillEditor bind:value={annotationEditorContent} />
+            </div>
+            <div class="flex-shrink-0" style="width: 40%;">
+                <p class="text-muted small mb-1">
+                    Preview <span class="text-muted" style="font-size: 0.7rem;">(click to style)</span>
+                </p>
+                <div
+                    class="elem-annotation-preview"
+                    bind:this={annotationPreviewEl}
+                    onclick={openAnnotationStyleEditor}
+                >
+                    {@html annotationEditorContent}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div slot="footer">
+        <button
+            class="btn btn-secondary btn-sm"
+            onclick={() => {
+                annotationEditorOpen = false;
+                styleEditor?.close();
+            }}>Cancel</button
+        >
+        <button class="btn btn-primary btn-sm ms-2" onclick={saveAnnotation}>Save</button>
+    </div>
+</Modal>
 
 {#if (isDrawingFreeHand || (isDrawingPath && !isActivelyDrawingPath)) && isCursorInsideMap}
     <div id="drawing-tooltip" bind:this={drawingTooltip} class="drawing-tooltip">

@@ -1,9 +1,10 @@
 // Tooltip functionality for exported SVGs
-// Placeholders: __WIDTH__, __HEIGHT__, __DATA_BY_GROUP__
+// Placeholders: __WIDTH__, __HEIGHT__, __DATA_BY_GROUP__, __ANNOTATION_IDS__
 
 const parser = new DOMParser();
 const width = __WIDTH__, height = __HEIGHT__;
 const dataByGroup = __DATA_BY_GROUP__;
+const _annotationIds = new Set(__ANNOTATION_IDS__);
 const tooltip = { shapeId: null, element: null };
 
 tooltip.element = constructTooltip({}, '', '');
@@ -45,6 +46,7 @@ function onMouseMove(e) {
     }
     const shapeId = shapeElem.getAttribute?.('id') ?? null;
     if (!shapeId) return hideTooltip();
+    if (_annotationIds.has(shapeId)) return hideTooltip();
 
     const mapBounds = mapElement.querySelector('#frame').getBoundingClientRect();
     const scaleX = width / mapBounds.width;

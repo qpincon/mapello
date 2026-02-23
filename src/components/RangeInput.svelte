@@ -1,12 +1,13 @@
 <script lang="ts">
+    import { clamp } from "lodash-es";
     import { tapHold } from "../util/common";
 
     interface Props {
         value: number;
         title: string;
-        min: number | string;
-        max: number | string;
-        step?: number | string;
+        min: number;
+        max: number;
+        step?: number;
         onChange?: (newVal: number) => void;
         id: string;
         helpText?: string | null;
@@ -14,10 +15,6 @@
     }
 
     let { value = $bindable(), title, min, max, step = 1, onChange, id, helpText, labelAbove }: Props = $props();
-
-    let _step: number = $derived(parseFloat(step as string));
-    let _min: number = $derived(parseFloat(min as string));
-    let _max: number = $derived(parseFloat(max as string));
 
     let slider: HTMLElement | undefined = $state();
     /** This is to enable onchange event propagation when the increment / decrement counters are clicked
@@ -33,23 +30,28 @@
         return val.toString().split(".")[1]?.length || 0;
     }
 
-    let nbDecimals: number = $derived(countDecimals(_step));
+    let nbDecimals: number = $derived(countDecimals(step));
 
     const increment = (e?: MouseEvent): void => {
         if (e) e.stopPropagation();
-        if (value === null) value = _step;
-        else if (value === _max) return;
-        else value += _step;
+        const beforeValue = value;
+        if (value === null) value = step;
+        else if (value === max) return;
+        else value += step;
+        value = clamp(value, min, max);
+        if (value === beforeValue) return;
         if (onChange) onChange!(value);
         slider?.dispatchEvent(changeEvent);
-        console.log(value);
     };
 
     const decrement = (e?: MouseEvent): void => {
         if (e) e.stopPropagation();
-        if (value === null) value = _min;
-        else if (value === _min) return;
-        else value -= _step;
+        const beforeValue = value;
+        if (value === null) value = min;
+        else if (value === min) return;
+        else value -= step;
+        value = clamp(value, min, max);
+        if (value === beforeValue) return;
         if (onChange) onChange!(value);
         slider?.dispatchEvent(changeEvent);
     };
@@ -72,9 +74,9 @@
             class="form-range"
             {id}
             bind:value
-            min={_min}
-            max={_max}
-            step={_step}
+            {min}
+            {max}
+            {step}
             onchange={(e) => {
                 console.log("slider change", e);
                 if (e.target && e.target instanceof HTMLInputElement) {

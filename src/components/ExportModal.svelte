@@ -52,14 +52,31 @@
             useViewBox,
             frameShadow,
             exportFonts: getExportFontChoice(),
+            minifyJs,
         };
         let svgString: string | void;
         if (mode === "macro") {
             const totalCss = computeMacroCss();
-            svgString = await exportMacro(svgNode, macroState, commonState.providedFonts, false, totalCss, options);
+            svgString = await exportMacro(
+                svgNode,
+                macroState,
+                commonState.providedFonts,
+                false,
+                totalCss,
+                options,
+                commonState.elementAnnotations,
+            );
         } else {
             const microCss = exportStyleSheet("#micro .line") ?? "";
-            svgString = await exportMicro(svgNode, microState, commonState.providedFonts, microCss, options, false);
+            svgString = await exportMicro(
+                svgNode,
+                microState,
+                commonState.providedFonts,
+                microCss,
+                options,
+                false,
+                commonState.elementAnnotations,
+            );
         }
         if (!svgString) return;
 
@@ -106,6 +123,7 @@
             animate;
             useViewBox;
             frameShadow;
+            minifyJs;
             updatePreview();
         }
     });
@@ -131,9 +149,7 @@
                     </div>
                     <small class="text-muted d-block ms-4"> The map will animate when entering the viewport </small>
                     {#if isLargeExport}
-                        <small class="perf-warning d-block ms-4">
-                            Large file — may impact page performance
-                        </small>
+                        <small class="perf-warning d-block ms-4"> Large file — may impact page performance </small>
                     {/if}
                 </div>
 

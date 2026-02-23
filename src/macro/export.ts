@@ -1,5 +1,5 @@
 import { additionnalCssExport, changeIdAndReferences, ExportFontChoice, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
-import type { ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
+import type { ElementAnnotations, ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
 import { DOM_PARSER, fontsToCss, fontsToCssEmbed, getUsedInlineFonts, reportStyle } from 'src/util/dom';
 import svgoConfig from '../svgoExport.config';
 import type { Config } from 'svgo/browser';
@@ -13,6 +13,7 @@ import tooltipScript from 'src/svg/exportScripts/tooltip.js?raw';
 import duplicateContoursScript from 'src/svg/exportScripts/duplicateContours.js?raw';
 import gElemsToImagesScript from 'src/svg/exportScripts/gElemsToImages.js?raw';
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
+import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.js?raw';
 
 interface FinalDataByGroup {
     data: { [groupId: string]: { [shapeId: string]: any } };
@@ -25,7 +26,8 @@ export async function exportMacro(
     providedFonts: ProvidedFont[],
     downloadExport: boolean = true,
     commonCss: string,
-    options: ExportOptions = {}
+    options: ExportOptions = {},
+    elementAnnotations?: ElementAnnotations,
 ): Promise<string | void> {
     const {
         exportFonts = ExportFontChoice.convertToPath,
@@ -34,7 +36,7 @@ export async function exportMacro(
         useViewBox = false,
         frameShadow = false,
     } = options;
-
+    console.log('options', options);
     const fo = svg.select('foreignObject').node();
     // remove foreign object from dom when exporting
     if (fo) document.body.append(fo as Node);
@@ -130,17 +132,26 @@ export async function exportMacro(
 
     console.log(finalDataByGroup)
     // Build tooltip code by replacing placeholders with actual values
+    const annotationTooltipIds = elementAnnotations
+        ? Object.entries(elementAnnotations).filter(([, v]) => v.type === 'tooltip').map(([k]) => k)
+        : [];
     const tooltipCode = tooltipEnabled
         ? tooltipScript
             .replaceAll('__WIDTH__', stateMacro.macroParams.General.width.toString())
             .replaceAll('__HEIGHT__', stateMacro.macroParams.General.height.toString())
             .replaceAll('__DATA_BY_GROUP__', JSON.stringify(finalDataByGroup))
+            .replaceAll('__ANNOTATION_IDS__', JSON.stringify(annotationTooltipIds))
         : '';
 
     // Build intersection observer code with animation end handler
     const animationCode = animate
         ? intersectionObserverScript.replaceAll('__ON_ANIMATION_END__', 'gElemsToImages(true);')
         : 'gElemsToImages();';
+
+    const hasAnnotations = elementAnnotations && Object.keys(elementAnnotations).length > 0;
+    const annotationCode = hasAnnotations
+        ? elementAnnotationsScript.replaceAll('__ELEMENT_ANNOTATIONS__', JSON.stringify(elementAnnotations))
+        : '';
 
     let finalScript = `
     (function() {
@@ -152,6 +163,7 @@ export async function exportMacro(
         ${gElemsToImagesScript}
         ${tooltipCode}
         ${hoverScript}
+        ${annotationCode}
         ${animationCode}
     })()
         `;

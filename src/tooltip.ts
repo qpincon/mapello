@@ -1,11 +1,12 @@
 import { reportStyle } from './util/dom';
 import { formatUnicorn, htmlToElement } from './util/common';
-import type { Tooltip, TooltipDefs, ZonesData } from './types';
+import type { ElementAnnotation, ElementAnnotations, Tooltip, TooltipDefs, ZonesData } from './types';
 
 export function addTooltipListener(
     map: SVGSVGElement,
     tooltipDefs: TooltipDefs,
-    zonesData: ZonesData
+    zonesData: ZonesData,
+    elementAnnotations?: ElementAnnotations,
 ): void {
     const tooltip: Tooltip = { shapeId: null, element: document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') };
     map.append(tooltip.element);
@@ -33,7 +34,7 @@ export function addTooltipListener(
     });
 
     map.addEventListener('mousemove', (e: MouseEvent) => {
-        onMouseMove(e, map, tooltipDefs, zonesData, tooltip);
+        onMouseMove(e, map, tooltipDefs, zonesData, tooltip, elementAnnotations);
 
         const target = e.target;
         let pathElem: SVGPathElement | null = null;
@@ -72,7 +73,8 @@ function onMouseMove(
     map: SVGElement,
     tooltipDefs: TooltipDefs,
     zonesData: ZonesData,
-    tooltip: Tooltip
+    tooltip: Tooltip,
+    elementAnnotations?: ElementAnnotations,
 ): void {
     let parent = e.target instanceof SVGElement ? e.target.parentNode as SVGElement | null : null;
     while (parent && !parent.hasAttribute('id')) {
@@ -81,7 +83,6 @@ function onMouseMove(
     if (!parent) return hideTooltip(tooltip);
 
     const groupId = parent.getAttribute('id')!;
-    if (!tooltipDefs?.[groupId]?.enabled) return hideTooltip(tooltip);
 
     let shapeElem = e.target as SVGElement;
     if (!shapeElem.getAttribute('id') && shapeElem.tagName.toLowerCase() === 'a') {
@@ -92,6 +93,15 @@ function onMouseMove(
     const ttBounds = (tooltip.element.firstChild?.firstChild as HTMLElement)?.getBoundingClientRect();
     let posX = e.clientX - mapBounds.left + 10;
     let posY = e.clientY - mapBounds.top + 10;
+
+    // Element-level annotation takes precedence over macro tooltip
+    const ann = elementAnnotations?.[shapeId ?? ''];
+    if (ann?.type === 'tooltip') {
+        return showElementAnnotationTooltip(ann, shapeId!, posX, posY, map, tooltip);
+    }
+
+    if (!tooltipDefs?.[groupId]?.enabled) return hideTooltip(tooltip);
+
     let tooltipVisibleOpacity = 1;
 
     if (ttBounds?.width > 0) {
@@ -104,7 +114,7 @@ function onMouseMove(
     } else if (groupId in zonesData) {
         tooltipVisibleOpacity = 0;
         setTimeout(() => {
-            onMouseMove(e, map, tooltipDefs, zonesData, tooltip);
+            onMouseMove(e, map, tooltipDefs, zonesData, tooltip, elementAnnotations);
         }, 0);
     }
 
@@ -135,6 +145,64 @@ function onMouseMove(
         tooltip.element.setAttribute('y', posY.toString());
         tooltip.element.style.opacity = tooltipVisibleOpacity.toString();
     }
+}
+
+function showElementAnnotationTooltip(
+    ann: ElementAnnotation,
+    shapeId: string,
+    posX: number,
+    posY: number,
+    map: SVGElement,
+    tooltip: Tooltip,
+): void {
+    if (tooltip.shapeId !== shapeId) {
+        const elem = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+        elem.setAttribute('width', '1');
+        elem.setAttribute('height', '1');
+        elem.style.overflow = 'visible';
+        elem.style.pointerEvents = 'none';
+
+        const body = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
+        body.style.cssText = 'display:inline-block;width:max-content;';
+        body.innerHTML = ann.html;
+        elem.append(body);
+
+        tooltip.element.replaceWith(elem);
+        tooltip.element = elem;
+        tooltip.shapeId = shapeId;
+    }
+    tooltip.element.setAttribute('x', posX.toString());
+    tooltip.element.setAttribute('y', posY.toString());
+    tooltip.element.style.display = 'block';
+    tooltip.element.style.opacity = '1';
+}
+
+export function addElementAnnotationListener(
+    map: SVGSVGElement,
+    elementAnnotations: ElementAnnotations,
+): void {
+    const tooltip: Tooltip = { shapeId: null, element: document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') };
+    map.append(tooltip.element);
+    tooltip.element.style.display = 'none';
+
+    map.addEventListener('mouseleave', () => hideTooltip(tooltip));
+    map.addEventListener('mousemove', (e: MouseEvent) => {
+        let el: SVGElement | null = e.target instanceof SVGElement ? e.target : null;
+        while (el && !el.getAttribute('id')) {
+            el = el.parentElement instanceof SVGElement ? el.parentElement : null;
+        }
+        if (!el) return hideTooltip(tooltip);
+        const shapeId = el.getAttribute('id');
+        if (!shapeId) return hideTooltip(tooltip);
+
+        const ann = elementAnnotations[shapeId];
+        if (!ann || ann.type !== 'tooltip') return hideTooltip(tooltip);
+
+        const mapBounds = map.getBoundingClientRect();
+        const posX = e.clientX - mapBounds.left + 12;
+        const posY = e.clientY - mapBounds.top + 12;
+        showElementAnnotationTooltip(ann, shapeId, posX, posY, map, tooltip);
+    });
 }
 
 function instanciateTooltip(
