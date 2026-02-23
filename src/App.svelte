@@ -325,7 +325,7 @@
             });
 
         zoomFunc = zoom()
-            .filter((e) => commonState.currentMode === "macro")
+            .filter((e) => commonState.currentMode === "macro" && !e.button)
             .wheelDelta((event) => -event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002))
             .on("zoom", (e) => {
                 if (commonState.currentMode === "macro") macroSidebar!.onZoom(e);
