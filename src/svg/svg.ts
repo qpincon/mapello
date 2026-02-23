@@ -150,6 +150,7 @@ export function duplicateContours(svgElem: SVGSVGElement): void {
         const filterName = el.getAttribute('filter-name');
         if (filterName) {
             clone.setAttribute('filter', `url(#${filterName})`);
+            clone.style.willChange = "transform";
         }
         // set opacity to 0 once to initiate transition
         (clone.style as CSSStyleDeclaration).opacity = '0';

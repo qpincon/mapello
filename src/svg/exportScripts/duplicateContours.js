@@ -5,6 +5,7 @@ function duplicateContours(svgElem, transition) {
         const clone = el.cloneNode();
         clone.setAttribute('href', el.getAttribute('href').replace("fill='none'", ''));
         clone.setAttribute('filter', 'url(#' + el.getAttribute('filter-name') + ')');
+        clone.style.willChange = "transform";
         if (transition) {
             clone.style.opacity = 0;
             setTimeout(() => {
