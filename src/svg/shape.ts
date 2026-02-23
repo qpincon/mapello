@@ -19,7 +19,16 @@ export function drawShapes(
         const projectedPos: Coords = projection(shapeDef.pos)!;
         let svgShape: SVGElement;
 
-        if (shapeDef.name) {
+        if (shapeDef.customImage) {
+            const { content, width, height } = shapeDef.customImage;
+            svgShape = document.createElementNS("http://www.w3.org/2000/svg", "image") as unknown as SVGElement;
+            svgShape.setAttribute("href", content);
+            svgShape.setAttribute("width", String(width));
+            svgShape.setAttribute("height", String(height));
+            // Bottom-middle at (0,0): shift left by half width, shift up by full height
+            svgShape.setAttribute("x", String(-width / 2));
+            svgShape.setAttribute("y", String(-height));
+        } else if (shapeDef.name) {
             svgShape = createSvgFromPart(shapes[shapeDef.name]);
         }
         // shape is a label

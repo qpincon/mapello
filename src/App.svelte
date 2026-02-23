@@ -88,6 +88,16 @@
 
     // ==== End state =====
 
+    const shapeViewBoxes: Record<string, string> = {
+        circle: "-4 -4 8 8",
+        rectangle: "0 0 8 8",
+        star: "-1 -1 14 14",
+        cross: "0 0 12 13",
+        heart: "0 -1 8 10",
+        location: "-9 -22 18 23",
+        pin: "-8 -24 16 25",
+    };
+
     let commonCss: string | undefined = $state(undefined);
     const menuStates: MenuState = $state({
         chosingPoint: false,
@@ -110,6 +120,7 @@
 
     let drawingTooltip: HTMLDivElement | null = $state(null);
     let textInput: HTMLTextAreaElement | null = $state(null);
+    let customImageInput: HTMLInputElement | null = $state(null);
     let typedText = $state("");
     let selectedShapeId: string | null = $state(null);
     let linkInputValue = $state("");
@@ -1255,12 +1266,18 @@
 
     async function addShape(shapeName: ShapeName): Promise<void> {
         const shapeId = `${shapeName}-${commonState.shapeCount++}`;
+        const lastPoint = [...commonState.providedShapes]
+            .reverse()
+            .find((s) => s.name !== undefined || s.customImage !== undefined);
         commonState.providedShapes.push({
             name: shapeName,
             pos: openContextMenuInfo.position,
             scale: 1,
             id: shapeId,
         });
+        if (lastPoint && commonState.inlineStyles[lastPoint.id]) {
+            commonState.inlineStyles[shapeId] = { ...commonState.inlineStyles[lastPoint.id] };
+        }
         drawAndSetupShapes();
         closeMenu();
         await tick();
@@ -1270,6 +1287,38 @@
             )!;
             styleEditor!.open(lastShape, openContextMenuInfo.event.pageX, openContextMenuInfo.event.pageY);
         }, 0);
+    }
+
+    function startImportCustomImageShape(): void {
+        closeMenu();
+        customImageInput!.click();
+    }
+
+    function onCustomImageShapeSelected(e: Event): void {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.addEventListener("load", () => {
+            const shapeId = `custom-image-${commonState.shapeCount++}`;
+            const lastPoint = [...commonState.providedShapes]
+                .reverse()
+                .find((s) => s.name !== undefined || s.customImage !== undefined);
+            commonState.providedShapes.push({
+                id: shapeId,
+                pos: openContextMenuInfo.position,
+                scale: 1,
+                customImage: {
+                    name: file.name,
+                    content: reader.result as string,
+                    width: 30,
+                    height: 40,
+                },
+            });
+            drawAndSetupShapes();
+            closeMenu();
+            saveState();
+        });
+        reader.readAsDataURL(file);
     }
 
     function copySelection(): void {
@@ -1422,11 +1471,19 @@
         {/if}
     {/snippet}
     {#if menuStates.chosingPoint}
-        {#each Object.keys(shapes) as shapeName (shapeName)}
-            <div role="button" class="px-2 py-1" onclick={() => addShape(shapeName as ShapeName)}>
+        {#each Object.entries(shapes) as [shapeName, shapeSvg] (shapeName)}
+            <div
+                role="button"
+                class="px-2 py-1 d-flex align-items-center gap-2"
+                onclick={() => addShape(shapeName as ShapeName)}
+            >
+                <svg width="20" height="20" viewBox={shapeViewBoxes[shapeName]}>
+                    {@html shapeSvg}
+                </svg>
                 {shapeName}
             </div>
         {/each}
+        <div role="button" class="px-2 py-1" onclick={startImportCustomImageShape}>Custom image…</div>
     {:else if menuStates.addingLabel}
         <textarea bind:this={textInput} bind:value={typedText}> </textarea>
     {:else if menuStates.pointSelected}
@@ -1734,6 +1791,13 @@
         </div>
     </div>
 </div>
+<input
+    type="file"
+    bind:this={customImageInput}
+    accept=".png,.jpg,.svg"
+    style="display:none"
+    onchange={onCustomImageShapeSelected}
+/>
 <!-- <Modal open={showModal} onClosed={() => onModalClose()}>
     <DataTable slot="content" data={zonesData?.[currentMacroLayerTab]?.["data"]}></DataTable>
 </Modal> -->

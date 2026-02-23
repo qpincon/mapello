@@ -211,6 +211,7 @@ export interface ShapeDefinition {
     name?: ShapeName; // for symbols
     text?: string; // for labels
     fontManual?: boolean; // for labels: true if font-family was manually set by user
+    customImage?: { name: string; content: string; width: number; height: number };
 }
 
 export interface PatternDefinition {
