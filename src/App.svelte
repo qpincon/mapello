@@ -178,6 +178,12 @@
                 },
                 getElems: (el: HTMLElement) => {
                     console.log(el);
+                    if (el.closest(".tooltip-preview")) {
+                        return [
+                            [el, "Clicked"],
+                            [el.parentElement, "All tooltip"],
+                        ];
+                    }
                     if (el.closest(".elem-annotation-preview")) {
                         return [
                             [el, "Clicked"],
@@ -238,6 +244,7 @@
                 cssRuleFilter: (el: HTMLElement, cssSelector: string) => {
                     console.log(el, cssSelector);
                     if (el.closest("foreignObject")) return false;
+                    if (el.closest(".tooltip-preview") && cssSelector !== "inline") return false;
                     if (el.id === "micro-background" && cssSelector === "inline") return false;
                     if (cssSelector.includes("#freehand-drawings > g")) return false;
                     if (cssSelector.includes("#static-svg-map")) return false;
@@ -1123,7 +1130,7 @@
             annotationPreviewEl.style.cssText = tmp?.style.cssText ?? "";
         } else {
             annotationPreviewEl.style.cssText =
-                "background-color:white;padding:4px 8px;border-radius:4px;font-size:0.82rem;box-shadow:0 2px 6px rgba(0,0,0,.3);max-width:15rem;width:max-content;";
+                "background-color:white;padding:4px 8px;border-radius:4px;font-size:0.82rem;max-width:15rem;width:max-content;";
         }
     }
 

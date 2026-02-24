@@ -134,7 +134,7 @@ export const defaultTooltipStyle: Record<string, string> = {
     "border-radius": "4px",
     "font-size": "12px",
     "padding": "4px",
-    "pointer-events": "none",
+    // "pointer-events": "none",
     "z-index": "1000",
 };
 

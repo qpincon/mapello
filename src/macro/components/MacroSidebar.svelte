@@ -9,7 +9,7 @@
         htmlToElement,
         initTooltips,
     } from "../../util/common";
-    import { exportStyleSheet, reportStyle } from "../../util/dom";
+    import { exportStyleSheet, reportStyle, styleDictToCssRulesStr } from "../../util/dom";
     import { helpParams, noSatelliteParams } from "../../params";
     import { appState, commonState, macroState } from "../../state.svelte";
     import Icon from "../../components/Icon.svelte";
@@ -91,6 +91,7 @@
     $effect(() => {
         const _ = mainMenuSelection;
         initTooltips();
+        applyStylesToTemplate();
     });
 
     let computedOrderedTabs = $derived(
@@ -231,7 +232,6 @@
     const saveDebounced = debounce(saveState, 200);
     function editTooltip(e: MouseEvent): void {
         let target: HTMLElement = e.target as HTMLElement;
-        if (target.classList.contains("tooltip-preview")) target = target.firstElementChild! as HTMLElement;
         const rect = (target as HTMLElement).getBoundingClientRect();
         styleEditor!.open(target as HTMLElement, rect.right, rect.bottom);
     }
@@ -397,7 +397,7 @@
             acc += cur;
             return acc;
         }, "");
-        let borderCss = '';
+        let borderCss = "";
         commonCss = finalColorsCss + borderCss;
         // const style = exportStyleSheet("#outline");
         return macroState.baseCss + commonCss;
@@ -849,7 +849,7 @@
                                 <div
                                     id="tooltip-preview-{currentMacroLayerTab}"
                                     bind:this={htmlTooltipElem}
-                                    style="${defaultTooltipStyle}"
+                                    style={styleDictToCssRulesStr(defaultTooltipStyle)}
                                 >
                                     {@html formatUnicorn(
                                         macroState.tooltipDefs[currentMacroLayerTab].template,

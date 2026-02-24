@@ -22,7 +22,6 @@
     import { initTooltips } from "src/util/common";
     import type { SearchResult } from "src/components/Geocoding.svelte";
 
-
     let protocol = new Protocol();
     addProtocol("pmtiles", protocol.tile);
 
@@ -59,8 +58,8 @@
     export async function drawMicroTotal() {
         if (!maplibreMap) return;
         await mapLoadedPromise;
-        const translateAmount = microState.microParams.Border.borderPadding
-            + (microState.microParams.Border.borderWidth / 2);
+        const translateAmount =
+            microState.microParams.Border.borderPadding + microState.microParams.Border.borderWidth / 2;
         appState.projection = createD3ProjectionFromMapLibre(maplibreMap, translateAmount);
         appState.path = geoPath(appState.projection);
         return drawPrettyMap(
@@ -120,11 +119,11 @@
             bearing: microState.inlinePropsMicro.bearing,
             attributionControl: false,
         });
-        const translateAmount = microState.microParams.Border.borderPadding
-            + (microState.microParams.Border.borderWidth / 2);
+        const translateAmount =
+            microState.microParams.Border.borderPadding + microState.microParams.Border.borderWidth / 2;
         appState.projection = createD3ProjectionFromMapLibre(maplibreMap!, translateAmount);
         appState.path = geoPath(appState.projection);
-        maplibreMap.showTileBoundaries = true;
+        // maplibreMap.showTileBoundaries = true;
         maplibreMap.on("moveend", async (event) => {
             const center = maplibreMap!.getCenter().toArray();
             if (center[0] !== 0 && center[1] !== 0) {

@@ -228,3 +228,6 @@
 - [x] Font: chosing a font will change default font used for new labels / all labels with manually changed fonts
 - [ ] Micro: change style to have more roads visible (manhattan example)
 - [ ] Attribution: add it to macro, better styling
+- [ ] ISE: remove color picker on svg <text> / <tspan> element 
+- [ ] ISE: remove stroke linejoint
+-

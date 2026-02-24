@@ -36,7 +36,7 @@ export async function exportMacro(
         useViewBox = false,
         frameShadow = false,
     } = options;
-    console.log('options', options);
+    // console.log('options', options);
     const fo = svg.select('foreignObject').node();
     // remove foreign object from dom when exporting
     if (fo) document.body.append(fo as Node);
@@ -130,7 +130,6 @@ export async function exportMacro(
         finalDataByGroup.data[groupId] = finalData;
     });
 
-    console.log(finalDataByGroup)
     // Build tooltip code by replacing placeholders with actual values
     const annotationTooltipIds = elementAnnotations
         ? Object.entries(elementAnnotations).filter(([, v]) => v.tooltip).map(([k]) => k)
