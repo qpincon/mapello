@@ -42,6 +42,13 @@ export class SelectionOverlay {
     private boundMouseMove: (e: MouseEvent) => void;
     private boundMouseUp: (e: MouseEvent) => void;
 
+    // Performance: cache CTM inverse for the duration of a drag (viewport doesn't change during drag)
+    private cachedInverseScreenCTM: DOMMatrix | null = null;
+    // Performance: rAF handle to throttle mousemove updates to one per frame
+    private pendingRaf: number | null = null;
+    private pendingClientX: number = 0;
+    private pendingClientY: number = 0;
+
     constructor(
         svg: SVGSVGElement,
         elements: SVGElement[],
@@ -226,16 +233,20 @@ export class SelectionOverlay {
         this.onSimpleClick = callbacks.onSimpleClick;
     }
 
-    private svgPoint(e: MouseEvent): { x: number; y: number } {
+    private svgPoint(clientX: number, clientY: number): { x: number; y: number } {
         const pt = this.svg.createSVGPoint();
-        pt.x = e.clientX;
-        pt.y = e.clientY;
-        const svgPt = pt.matrixTransform(this.svg.getScreenCTM()?.inverse());
+        pt.x = clientX;
+        pt.y = clientY;
+        // Use cached inverse CTM during drag to avoid forced layout reads on every mousemove
+        const matrix = this.cachedInverseScreenCTM ?? this.svg.getScreenCTM()?.inverse();
+        const svgPt = pt.matrixTransform(matrix!);
         return { x: svgPt.x, y: svgPt.y };
     }
 
     private startDrag(e: MouseEvent, mode: "move"): void {
-        const pt = this.svgPoint(e);
+        // Cache the CTM inverse once — the SVG viewport doesn't change during a drag
+        this.cachedInverseScreenCTM = this.svg.getScreenCTM()?.inverse() ?? null;
+        const pt = this.svgPoint(e.clientX, e.clientY);
         // Save original positions for all selected elements
         const origPositions = new Map<string, { x: number; y: number }>();
         for (const el of this.elements) {
@@ -259,7 +270,8 @@ export class SelectionOverlay {
     }
 
     private startResize(e: MouseEvent, corner: Corner): void {
-        const pt = this.svgPoint(e);
+        this.cachedInverseScreenCTM = this.svg.getScreenCTM()?.inverse() ?? null;
+        const pt = this.svgPoint(e.clientX, e.clientY);
         const bbox = this.computeUnifiedBbox();
         if (!bbox) return;
 
@@ -309,14 +321,25 @@ export class SelectionOverlay {
             this.onDragConfirmed?.();
         }
 
-        const pt = this.svgPoint(e);
+        // Capture raw client coords immediately (cheap, no layout reads)
+        this.pendingClientX = e.clientX;
+        this.pendingClientY = e.clientY;
 
-        if (this.dragState.mode === "move") {
-            const dx = pt.x - this.dragState.startX;
-            const dy = pt.y - this.dragState.startY;
-            this.applyMoveVisual(dx, dy);
-        } else if (this.dragState.mode === "resize") {
-            this.applyResizeVisual(pt);
+        // Throttle visual updates to one per animation frame to avoid redundant
+        // paints when mousemove fires faster than the display refresh rate
+        if (this.pendingRaf === null) {
+            this.pendingRaf = requestAnimationFrame(() => {
+                this.pendingRaf = null;
+                if (!this.dragState) return;
+                const pt = this.svgPoint(this.pendingClientX, this.pendingClientY);
+                if (this.dragState.mode === "move") {
+                    const dx = pt.x - this.dragState.startX;
+                    const dy = pt.y - this.dragState.startY;
+                    this.applyMoveVisual(dx, dy);
+                } else if (this.dragState.mode === "resize") {
+                    this.applyResizeVisual(pt);
+                }
+            });
         }
     }
 
@@ -326,7 +349,10 @@ export class SelectionOverlay {
             if (!orig) continue;
             setTransformTranslate(el, `translate(${orig.x + dx} ${orig.y + dy})`);
         }
-        this.positionFromBbox();
+        // Move the overlay group with a single transform write instead of calling
+        // positionFromBbox(), which forces expensive getBBox()/getCTM() layout reads
+        // on every frame when the background is complex.
+        this.group.setAttribute("transform", `translate(${dx} ${dy})`);
     }
 
     private applyResizeVisual(pt: { x: number; y: number }): void {
@@ -389,9 +415,18 @@ export class SelectionOverlay {
         document.removeEventListener("mousemove", this.boundMouseMove);
         document.removeEventListener("mouseup", this.boundMouseUp);
 
+        // Cancel any pending rAF and reset drag-time caches
+        if (this.pendingRaf !== null) {
+            cancelAnimationFrame(this.pendingRaf);
+            this.pendingRaf = null;
+        }
+        this.cachedInverseScreenCTM = null;
+        // Remove the drag-time group offset so positionFromBbox() computes cleanly
+        this.group.removeAttribute("transform");
+
         if (!this.dragState) return;
 
-        const pt = this.svgPoint(e);
+        const pt = this.svgPoint(e.clientX, e.clientY);
         const state = this.dragState;
 
         if (state.mode === "move") {
@@ -594,6 +629,10 @@ export class SelectionOverlay {
     destroy(): void {
         document.removeEventListener("mousemove", this.boundMouseMove);
         document.removeEventListener("mouseup", this.boundMouseUp);
+        if (this.pendingRaf !== null) {
+            cancelAnimationFrame(this.pendingRaf);
+            this.pendingRaf = null;
+        }
         this.group.remove();
     }
 }
