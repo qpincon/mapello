@@ -32,11 +32,10 @@
         draw: (simplified?: boolean) => void;
         /** Not passed, we just need to access it from the parent*/
         maplibreMap?: Map | null;
-        viewLocked: boolean;
         onMapMoveStart?: () => void;
     }
 
-    let { styleEditor, svg, draw, maplibreMap, viewLocked = $bindable(), onMapMoveStart }: Props = $props();
+    let { styleEditor, svg, draw, maplibreMap, onMapMoveStart }: Props = $props();
 
     let mainMenuSelection = $state<string>("general");
     let additionalCss = $derived(computeCss(microState.microParams));
@@ -62,14 +61,7 @@
             microState.microParams.Border.borderPadding + microState.microParams.Border.borderWidth / 2;
         appState.projection = createD3ProjectionFromMapLibre(maplibreMap, translateAmount);
         appState.path = geoPath(appState.projection);
-        return drawPrettyMap(
-            maplibreMap,
-            svg,
-            appState.path,
-            microState.microLayerDefinitions,
-            microState.microParams,
-            viewLocked,
-        );
+        return drawPrettyMap(maplibreMap, svg, appState.path, microState.microLayerDefinitions, microState.microParams);
     }
 
     export function onStyleChanged(
@@ -150,15 +142,6 @@
             console.log(maplibreMap!.queryRenderedFeatures(event.point));
             console.log(maplibreMap!.getStyle());
         });
-
-        maplibreMap.on("contextmenu", (e) => {
-            if (!viewLocked) {
-                lockUnlock(true);
-                const clickedElem = document.elementFromPoint(e.originalEvent.clientX, e.originalEvent.clientY);
-                Object.defineProperty(e.originalEvent, "target", { writable: false, value: clickedElem });
-                svg.node()!.dispatchEvent(e.originalEvent);
-            }
-        });
         mapLoadedPromise = new Promise((resolve) => {
             maplibreMap!.once("load", resolve);
         });
@@ -171,19 +154,6 @@
 
     function computeCss(microParams: MicroParams): string {
         return "";
-    }
-
-    function lockUnlock(isLocked: boolean) {
-        viewLocked = isLocked;
-
-        const mapLibreContainer = select("#maplibre-map");
-        if (viewLocked) {
-            svg.style("pointer-events", "auto");
-            mapLibreContainer.style("pointer-events", "none");
-        } else {
-            svg.style("pointer-events", "none");
-            mapLibreContainer.style("pointer-events", "auto");
-        }
     }
 
     function handleMicroParamChange(

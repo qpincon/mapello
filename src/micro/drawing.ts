@@ -61,7 +61,6 @@ export async function drawPrettyMap(
     d3PathFunction: D3PathFunction,
     layerDefinitions: MicroPalette,
     generalParams: MicroParams,
-    isLocked: boolean
 ): Promise<void> {
     console.log('layerDefinitions=', layerDefinitions);
     select("#map-container").style("width", null).style('height', null);
@@ -153,7 +152,6 @@ export async function drawPrettyMap(
         );
     }
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, false, outerFrameRx);
-    svg.style("pointer-events", isLocked ? "auto" : "none");
     mapLibreContainer.style('opacity', 0);
     setTimeout(() => postClip(generalParams), 100);
 }

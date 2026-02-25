@@ -142,7 +142,6 @@
 
     let zoomFunc: d3.ZoomBehavior<any, any> | null = $state(null);
     let dragFunc: d3.DragBehavior<any, any, any> | null = $state(null);
-    let microLocked = $state(false);
     // let commonStyleSheetElem: HTMLStyleElement;
     onMount(async () => {
         console.log("App onmount");
@@ -286,6 +285,14 @@
         // maplibreMap.showTileBoundaries = true;
         window.addEventListener("keydown", (e) => {
             if (e.code === "Escape") {
+                if (contextualMenu!.opened) {
+                    closeMenu();
+                    return;
+                }
+                if (styleEditor!.isOpened()) {
+                    styleEditor!.close();
+                    return;
+                }
                 if (isSelectionActive()) {
                     clearSelection();
                     return;
@@ -355,19 +362,6 @@
         container.call(zoomFunc);
     }
 
-    function lockUnlock(isLocked: boolean) {
-        microLocked = isLocked;
-
-        const mapLibreContainer = select("#maplibre-map");
-        if (microLocked) {
-            svg.style("pointer-events", "auto");
-            mapLibreContainer.style("pointer-events", "none");
-        } else {
-            svg.style("pointer-events", "none");
-            mapLibreContainer.style("pointer-events", "auto");
-        }
-    }
-
     async function switchMode(newMode: Mode): Promise<void> {
         if (commonState.currentMode === newMode) return;
         commonState.currentMode = newMode;
@@ -411,6 +405,26 @@
         svg.on("click", onSvgClick);
         svg.on("dblclick", onSvgDblClick);
         svg.on("mousedown", onSvgMouseDown);
+        svg.node()?.addEventListener("wheel", (e: WheelEvent) => {
+            if (commonState.currentMode !== "micro" || isDrawingFreeHand || isDrawingPath || editingPath) return;
+            const canvas = document.querySelector("#maplibre-map canvas") as HTMLCanvasElement | null;
+            if (!canvas) return;
+            e.preventDefault();
+            canvas.dispatchEvent(new WheelEvent("wheel", {
+                bubbles: true,
+                cancelable: true,
+                clientX: e.clientX,
+                clientY: e.clientY,
+                deltaX: e.deltaX,
+                deltaY: e.deltaY,
+                deltaZ: e.deltaZ,
+                deltaMode: e.deltaMode,
+                ctrlKey: e.ctrlKey,
+                shiftKey: e.shiftKey,
+                altKey: e.altKey,
+                metaKey: e.metaKey,
+            }));
+        }, { passive: false });
 
         if (commonState.currentMode === "macro") {
             await macroSidebar!.drawMacroTotal(simplified);
@@ -458,7 +472,6 @@
     }
 
     async function applyState(state: GlobalState): Promise<void> {
-        console.trace("applyState", state);
         clearHistory();
         setRestoring(true);
         try {
@@ -639,7 +652,26 @@
         // if (commonState.currentMode !== "macro") return;
         if (e.button !== 0) return;
         const entity = identifyClickedEntity(e.target as Element) ?? identifyClickedPath(e);
-        if (!entity) return;
+        if (!entity) {
+            if (commonState.currentMode === "micro" && !isDrawingFreeHand && !isDrawingPath && !editingPath) {
+                const canvas = document.querySelector("#maplibre-map canvas") as HTMLCanvasElement | null;
+                canvas?.dispatchEvent(
+                    new MouseEvent("mousedown", {
+                        bubbles: true,
+                        cancelable: true,
+                        clientX: e.clientX,
+                        clientY: e.clientY,
+                        button: e.button,
+                        buttons: e.buttons || 1,
+                        ctrlKey: e.ctrlKey,
+                        shiftKey: e.shiftKey,
+                        altKey: e.altKey,
+                        metaKey: e.metaKey,
+                    }),
+                );
+            }
+            return;
+        }
         e.stopPropagation();
         // Labels: disambiguate click vs drag
         if (entity.type === "shape" && commonState.providedShapes[entity.index]?.text !== undefined) {
@@ -1692,7 +1724,6 @@
                         {draw}
                         {svg}
                         {styleEditor}
-                        bind:viewLocked={microLocked}
                         onMapMoveStart={() => {
                             closeMenu();
                             stopDrawFreeHand();
@@ -1716,19 +1747,6 @@
             {#if commonState.currentMode === "micro"}
                 <div class="micro-top mb-4 mx-auto d-flex align-items-center justify-content-between">
                     <Geocoding onPlaceSelected={(res) => microSidebar!.onPlaceSelected(res)}></Geocoding>
-                    <div class="d-flex mx-2 align-items-center justify-content-center">
-                        <input
-                            type="checkbox"
-                            class="btn-check"
-                            id="lock-unlock"
-                            bind:checked={microLocked}
-                            onchange={(e) => lockUnlock(microLocked)}
-                        />
-                        <label class="btn btn-outline-primary" class:active={microLocked} for="lock-unlock">
-                            <Icon svg={microLocked ? icons["lock"] : icons["unlock"]} />
-                            {microLocked ? "View locked" : "View unlocked"}
-                        </label>
-                    </div>
                 </div>
             {/if}
 

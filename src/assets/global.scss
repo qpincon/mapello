@@ -78,6 +78,7 @@ body {
 #contextmenu {
     max-width: 15rem;
     background-color: #f8f8f8;
+    z-index: 2;
 
     div[role="button"],
     .menu-link-item {
@@ -251,4 +252,5 @@ aside .nav-link.active {
     top: 0px;
     left: 1.5rem;
     background-color: white;
+    pointer-events: none;
 }
