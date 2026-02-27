@@ -26,6 +26,7 @@
     let fontUsedElsewhere = $state(false);
     let showAdvanced = $state(false);
     let minifyJs = $state(true);
+    const hasAnnotations = $derived(Object.keys(commonState.elementAnnotations ?? {}).length > 0);
     let sizeText = $state("");
     let isLargeExport = $state(false);
     let modalWidth = $state("600px");
@@ -42,7 +43,7 @@
             useViewBox,
             frameShadow,
             exportFonts: getExportFontChoice(),
-            minifyJs: mode === "macro" ? minifyJs : undefined,
+            minifyJs: (mode === "macro" || hasAnnotations) ? minifyJs : undefined,
         };
     }
 
@@ -217,7 +218,7 @@
                     </div>
                 {/if}
 
-                {#if mode === "macro"}
+                {#if mode === "macro" || (mode === "micro" && hasAnnotations)}
                     <hr />
                     <button
                         class="btn btn-sm btn-link p-0 text-decoration-none advanced-toggle"
@@ -239,18 +240,16 @@
 
                     {#if showAdvanced}
                         <div class="mt-2">
-                            {#if mode === "macro"}
-                                <div class="form-check form-switch">
-                                    <input
-                                        class="form-check-input"
-                                        type="checkbox"
-                                        role="switch"
-                                        id="export-minify"
-                                        bind:checked={minifyJs}
-                                    />
-                                    <label class="form-check-label" for="export-minify"> Minify JavaScript </label>
-                                </div>
-                            {/if}
+                            <div class="form-check form-switch">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    role="switch"
+                                    id="export-minify"
+                                    bind:checked={minifyJs}
+                                />
+                                <label class="form-check-label" for="export-minify"> Minify JavaScript </label>
+                            </div>
                         </div>
                     {/if}
                 {/if}

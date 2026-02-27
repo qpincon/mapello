@@ -155,7 +155,7 @@ function showElementAnnotationTooltip(
     map: SVGElement,
     tooltip: Tooltip,
 ): void {
-    if (tooltip.shapeId !== shapeId) {
+    if (tooltip.shapeId !== shapeId || tooltip.html !== html) {
         const elem = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
         elem.setAttribute('width', '1');
         elem.setAttribute('height', '1');
@@ -170,6 +170,7 @@ function showElementAnnotationTooltip(
         tooltip.element.replaceWith(elem);
         tooltip.element = elem;
         tooltip.shapeId = shapeId;
+        tooltip.html = html;
     }
     tooltip.element.setAttribute('x', posX.toString());
     tooltip.element.setAttribute('y', posY.toString());

@@ -783,6 +783,7 @@ export async function exportMicro(
         animate = false,
         useViewBox = false,
         frameShadow = false,
+        minifyJs = false,
     } = options;
     const width = stateMicro.microParams.General.width;
     const height = stateMicro.microParams.General.height;
@@ -799,7 +800,11 @@ export async function exportMicro(
     const { optimize } = await import('svgo/browser');
 
     const defs = svgNode.querySelector('defs')!.cloneNode(true);
-    svgNode.querySelectorAll('#micro path').forEach(el => el.removeAttribute('id'));
+    const annotationIds = new Set(Object.keys(elementAnnotations ?? {}));
+    svgNode.querySelectorAll('#micro path').forEach(el => {
+        const id = el.getAttribute('id');
+        if (id && !annotationIds.has(id)) el.removeAttribute('id');
+    });
 
     // Optimize whole SVG
     const finalSvg = optimize(svgNode.outerHTML, svgoConfig as Config).data;
@@ -814,24 +819,6 @@ export async function exportMicro(
     }
 
     const hasAnnotations = elementAnnotations && Object.keys(elementAnnotations).length > 0;
-    const annotationCode = hasAnnotations
-        ? elementAnnotationsScript.replaceAll(
-            '__ELEMENT_ANNOTATIONS__',
-            JSON.stringify(
-                Object.fromEntries(
-                    Object.entries(elementAnnotations!).map(([id, ann]) => [
-                        id, {
-                            tooltip: ann.tooltip ? xhtmlifyHtml(ann.tooltip) : undefined,
-                            popover: ann.popover ? xhtmlifyHtml(ann.popover) : undefined,
-                        }
-                    ])
-                )
-            )
-        )
-        : '';
-    const animationCode = animate
-        ? intersectionObserverScript.replaceAll('__ON_ANIMATION_END__', '')
-        : '';
 
     // Styling
     const mapId = randomString(5);
@@ -844,8 +831,37 @@ export async function exportMicro(
     svgElement.setAttribute('id', mapId);
     svgElement.querySelector('defs')!.remove();
     svgElement.append(defs);
-    svgElement.querySelectorAll('#micro > path, #buildings > g').forEach(el => el.removeAttribute('id'));
+    svgElement.querySelectorAll('#micro > path, #buildings > g').forEach(el => {
+        const id = el.getAttribute('id');
+        if (id && !annotationIds.has(id)) el.removeAttribute('id');
+    });
     changeIdAndReferences(svgElement, mapId);
+
+    // Build animation and annotation code after changeIdAndReferences so IDs are resolved correctly
+    const animationCode = animate
+        ? intersectionObserverScript.replaceAll('__ON_ANIMATION_END__', '')
+        : '';
+
+    let annotationCode = '';
+    if (hasAnnotations) {
+        const resolvedAnnotations: Record<string, { tooltip?: string; popover?: string }> = {};
+        for (const [id, ann] of Object.entries(elementAnnotations!)) {
+            // #paths elements get their IDs prefixed by changeIdAndReferences; try both
+            const resolvedId = optimizedSVG.getElementById(id) ? id : `${mapId}-${id}`;
+            if (optimizedSVG.getElementById(resolvedId)) {
+                resolvedAnnotations[resolvedId] = {
+                    tooltip: ann.tooltip ? xhtmlifyHtml(ann.tooltip) : undefined,
+                    popover: ann.popover ? xhtmlifyHtml(ann.popover) : undefined,
+                };
+            }
+        }
+        if (Object.keys(resolvedAnnotations).length > 0) {
+            annotationCode = elementAnnotationsScript.replaceAll(
+                '__ELEMENT_ANNOTATIONS__',
+                JSON.stringify(resolvedAnnotations)
+            );
+        }
+    }
 
     let fontCss = '';
     if (!pathIsBetter) {
@@ -865,11 +881,21 @@ export async function exportMicro(
     }
 
     if (animate || hasAnnotations) {
-        const js = `(function() {
+        let js = `(function() {
         const mapElement = document.currentScript.parentNode;
         ${animationCode}
         ${annotationCode}
     })()`;
+
+        if (minifyJs !== false) {
+            const terser = await import('terser');
+            const minified = await terser.minify(js, {
+                toplevel: true,
+                mangle: { eval: true }
+            });
+            js = minified.code || js;
+        }
+
         const scriptElem = document.createElementNS("http://www.w3.org/2000/svg", 'script');
         const scriptContent = document.createTextNode(js);
         scriptElem.appendChild(scriptContent);

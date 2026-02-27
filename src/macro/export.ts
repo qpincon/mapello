@@ -148,21 +148,38 @@ export async function exportMacro(
         : 'gElemsToImages();';
 
     const hasAnnotations = elementAnnotations && Object.keys(elementAnnotations).length > 0;
-    const annotationCode = hasAnnotations
-        ? elementAnnotationsScript.replaceAll(
-            '__ELEMENT_ANNOTATIONS__',
-            JSON.stringify(
-                Object.fromEntries(
-                    Object.entries(elementAnnotations!).map(([id, ann]) => [
-                        id, {
-                            tooltip: ann.tooltip ? xhtmlifyHtml(ann.tooltip) : undefined,
-                            popover: ann.popover ? xhtmlifyHtml(ann.popover) : undefined,
-                        }
-                    ])
-                )
-            )
-        )
-        : '';
+
+    // === Styling ===
+    const mapId = randomString(5);
+    const styleElem = document.createElementNS("http://www.w3.org/2000/svg", 'style');
+    const renderedCss = commonCss.replaceAll(/rgb\(.*?\)/g, rgb2hex) + additionnalCssExport;
+    const animateCss = animate ? transitionCssMacro : '';
+    const finalCss = discriminateCssForExport(renderedCss + animateCss, mapId);
+    (optimizedSVG.firstChild as Element).setAttribute('id', mapId);
+    changeIdAndReferences(optimizedSVG.firstChild as Element, mapId);
+    // === End styling ===
+
+    // Build annotation code after changeIdAndReferences so #paths element IDs are correctly resolved
+    let annotationCode = '';
+    if (hasAnnotations) {
+        const resolvedAnnotations: Record<string, { tooltip?: string; popover?: string }> = {};
+        for (const [id, ann] of Object.entries(elementAnnotations!)) {
+            // #paths elements get their IDs prefixed by changeIdAndReferences; try both
+            const resolvedId = optimizedSVG.getElementById(id) ? id : `${mapId}-${id}`;
+            if (optimizedSVG.getElementById(resolvedId)) {
+                resolvedAnnotations[resolvedId] = {
+                    tooltip: ann.tooltip ? xhtmlifyHtml(ann.tooltip) : undefined,
+                    popover: ann.popover ? xhtmlifyHtml(ann.popover) : undefined,
+                };
+            }
+        }
+        if (Object.keys(resolvedAnnotations).length > 0) {
+            annotationCode = elementAnnotationsScript.replaceAll(
+                '__ELEMENT_ANNOTATIONS__',
+                JSON.stringify(resolvedAnnotations)
+            );
+        }
+    }
 
     let finalScript = `
     (function() {
@@ -178,16 +195,6 @@ export async function exportMacro(
         ${animationCode}
     })()
         `;
-
-    // === Styling ===
-    const mapId = randomString(5);
-    const styleElem = document.createElementNS("http://www.w3.org/2000/svg", 'style');
-    const renderedCss = commonCss.replaceAll(/rgb\(.*?\)/g, rgb2hex) + additionnalCssExport;
-    const animateCss = animate ? transitionCssMacro : '';
-    const finalCss = discriminateCssForExport(renderedCss + animateCss, mapId);
-    (optimizedSVG.firstChild as Element).setAttribute('id', mapId);
-    changeIdAndReferences(optimizedSVG.firstChild as Element, mapId);
-    // === End styling ===
 
     let fontCss = '';
     if (!pathIsBetter) {

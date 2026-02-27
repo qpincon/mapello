@@ -56,6 +56,9 @@ for (var _annId in _annData) {
         var el = mapElement.getElementById(id);
         if (!el) return;
 
+        // Override pointer-events:none that may be inherited from parent groups (e.g. #points-labels)
+        el.style.pointerEvents = 'all';
+
         // Tooltip: mousemove/mouseleave
         if (ann.tooltip) {
             el.addEventListener('mousemove', function (e) {
@@ -86,8 +89,13 @@ for (var _annId in _annData) {
                 var _tmpEl = document.createElement('div');
                 _tmpEl.innerHTML = ann.popover;
                 var _outerEl = _tmpEl.firstElementChild;
-                var _bgColor = (_outerEl && _outerEl.style.backgroundColor) ? _outerEl.style.backgroundColor : 'white';
-                if (_outerEl) _outerEl.style.boxShadow = '';
+                var _bgColor = 'white';
+                if (_outerEl) {
+                    var _styleAttr = _outerEl.getAttribute('style') || '';
+                    var _bgMatch = _styleAttr.match(/background-color\s*:\s*([^;]+)/i);
+                    if (_bgMatch) _bgColor = _bgMatch[1].trim();
+                    _outerEl.setAttribute('style', _styleAttr.replace(/box-shadow\s*:[^;]*;?\s*/gi, ''));
+                }
 
                 _poFO.innerHTML = '';
                 var _poWrapper = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');

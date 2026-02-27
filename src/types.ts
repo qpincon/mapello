@@ -104,6 +104,7 @@ export type CssDict = { [cssProp: string]: string };
 export interface Tooltip {
     shapeId: string | null;
     element: SVGElement;
+    html?: string;
 }
 
 export interface TooltipDefs {
