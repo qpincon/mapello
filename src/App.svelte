@@ -365,7 +365,7 @@
     async function switchMode(newMode: Mode): Promise<void> {
         if (commonState.currentMode === newMode) return;
         commonState.currentMode = newMode;
-        console.log(cloneDeep(microState));
+        select("#map-container").html("");
         await tick();
         const mapLibreContainer = select("#maplibre-map");
         if (commonState.currentMode === "micro") {
@@ -405,26 +405,32 @@
         svg.on("click", onSvgClick);
         svg.on("dblclick", onSvgDblClick);
         svg.on("mousedown", onSvgMouseDown);
-        svg.node()?.addEventListener("wheel", (e: WheelEvent) => {
-            if (commonState.currentMode !== "micro" || isDrawingFreeHand || isDrawingPath || editingPath) return;
-            const canvas = document.querySelector("#maplibre-map canvas") as HTMLCanvasElement | null;
-            if (!canvas) return;
-            e.preventDefault();
-            canvas.dispatchEvent(new WheelEvent("wheel", {
-                bubbles: true,
-                cancelable: true,
-                clientX: e.clientX,
-                clientY: e.clientY,
-                deltaX: e.deltaX,
-                deltaY: e.deltaY,
-                deltaZ: e.deltaZ,
-                deltaMode: e.deltaMode,
-                ctrlKey: e.ctrlKey,
-                shiftKey: e.shiftKey,
-                altKey: e.altKey,
-                metaKey: e.metaKey,
-            }));
-        }, { passive: false });
+        svg.node()?.addEventListener(
+            "wheel",
+            (e: WheelEvent) => {
+                if (commonState.currentMode !== "micro" || isDrawingFreeHand || isDrawingPath || editingPath) return;
+                const canvas = document.querySelector("#maplibre-map canvas") as HTMLCanvasElement | null;
+                if (!canvas) return;
+                e.preventDefault();
+                canvas.dispatchEvent(
+                    new WheelEvent("wheel", {
+                        bubbles: true,
+                        cancelable: true,
+                        clientX: e.clientX,
+                        clientY: e.clientY,
+                        deltaX: e.deltaX,
+                        deltaY: e.deltaY,
+                        deltaZ: e.deltaZ,
+                        deltaMode: e.deltaMode,
+                        ctrlKey: e.ctrlKey,
+                        shiftKey: e.shiftKey,
+                        altKey: e.altKey,
+                        metaKey: e.metaKey,
+                    }),
+                );
+            },
+            { passive: false },
+        );
 
         if (commonState.currentMode === "macro") {
             await macroSidebar!.drawMacroTotal(simplified);

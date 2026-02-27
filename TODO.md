@@ -128,7 +128,7 @@
 - [x] Micro: Fill pattern hover
 - [x] Micro: Stop computations when moving
 - [x] Bug: Click on increment range on significant digits legend does nothing
-- [ ] Remove labels off canvas
+- [x] Remove labels off canvas
 - [x] Freehand: style group with ISE (add custom CSS rule on the fly on <g> parent)
 - [x] Freehand: Allow drag drawing
 - [x] Freehand: Allow deletion
@@ -137,8 +137,8 @@
 - [x] Micro: Use protomaps (upload tiles and configure nginx to serve it, using the pm plugin in the front)
 - [ ] Show tooltip conditionnaly
 - [x] Tooltip creation: Use WYSIWYG editor
-- [ ] Allow tooltip creation on single element - will take precedence over general one
-- [ ] Draw pin on map / any imported image (URL or uploaded as b64, must be < some size in kb)
+- [x] Allow tooltip creation on single element - will take precedence over general one
+- [x] Draw pin on map / any imported image (URL or uploaded as b64, must be < some size in kb)
 - [ ] Data export: remove empty objects
 - [x] Data import / export: Move into modal
 - [x] Data edition: allow inline edition with a lightweight grid edition sofware (lazy-loaded)
@@ -229,5 +229,8 @@
 - [ ] Micro: change style to have more roads visible (manhattan example)
 - [ ] Attribution: add it to macro, better styling
 - [ ] ISE: remove color picker on svg <text> / <tspan> element 
-- [ ] ISE: remove stroke linejoint
--
+- [ ] ISE: remove stroke linejoin
+- [ ] macro: rework layer re-ordering UI
+- [ ] Micro: make 3D building stand out of the buidling toggle
+- [x] Switch back to macro if micro not loaded -> can't do anything -> empty map-container when switching?
+- [ ] Micro: export tooltip / popover not working

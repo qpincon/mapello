@@ -22,7 +22,6 @@ interface DragState {
     anchorX?: number;
     anchorY?: number;
     origDiag?: number;
-    origBbox?: DOMRect;
     origPositions?: Map<string, { x: number; y: number }>;
 }
 
@@ -304,7 +303,6 @@ export class SelectionOverlay {
             anchorX: anchor.x,
             anchorY: anchor.y,
             origDiag: origDiag || 1,
-            origBbox: bbox,
             origPositions,
         };
 
@@ -364,7 +362,6 @@ export class SelectionOverlay {
         const newDiag = Math.sqrt((pt.x - ax) ** 2 + (pt.y - ay) ** 2);
         const scaleFactor = Math.max(0.1, newDiag / state.origDiag!);
 
-        const origBbox = state.origBbox!;
 
         for (let i = 0; i < this.elements.length; i++) {
             const el = this.elements[i];
