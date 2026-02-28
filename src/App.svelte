@@ -661,7 +661,8 @@
         if (!entity) {
             if (commonState.currentMode === "micro" && !isDrawingFreeHand && !isDrawingPath && !editingPath) {
                 const canvas = document.querySelector("#maplibre-map canvas") as HTMLCanvasElement | null;
-                canvas?.dispatchEvent(
+                if (!canvas) return;
+                canvas.dispatchEvent(
                     new MouseEvent("mousedown", {
                         bubbles: true,
                         cancelable: true,
@@ -675,6 +676,24 @@
                         metaKey: e.metaKey,
                     }),
                 );
+                function onDragEnd(ev: MouseEvent) {
+                    document.removeEventListener("mouseup", onDragEnd);
+                    canvas!.dispatchEvent(
+                        new MouseEvent("mouseup", {
+                            bubbles: true,
+                            cancelable: true,
+                            clientX: ev.clientX,
+                            clientY: ev.clientY,
+                            button: ev.button,
+                            buttons: ev.buttons,
+                            ctrlKey: ev.ctrlKey,
+                            shiftKey: ev.shiftKey,
+                            altKey: ev.altKey,
+                            metaKey: ev.metaKey,
+                        }),
+                    );
+                }
+                document.addEventListener("mouseup", onDragEnd);
             }
             return;
         }
@@ -1892,6 +1911,8 @@
     #map-container {
         margin: 0 auto;
         flex: 0 0 auto;
+        position: relative;
+        z-index: 1;
     }
 
     .drawing-tooltip {
