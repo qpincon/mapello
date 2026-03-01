@@ -98,6 +98,10 @@
         quillInstance = null;
     });
 
+    export function focus(): void {
+        quillInstance?.focus();
+    }
+
     // Update editor when value changes externally
     $effect(() => {
         if (quillInstance && value !== quillInstance.root.innerHTML) {

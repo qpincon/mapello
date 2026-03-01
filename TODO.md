@@ -228,10 +228,10 @@
 - [x] Font: chosing a font will change default font used for new labels / all labels with manually changed fonts
 - [ ] Micro: change style to have more roads visible (manhattan example)
 - [ ] Attribution: add it to macro, better styling
-- [ ] ISE: remove color picker on svg <text> / <tspan> element 
-- [ ] ISE: remove stroke linejoin
+- [x] ISE: remove color picker on svg <text> / <tspan> element 
+- [x] ISE: remove stroke linejoin
 - [ ] macro: rework layer re-ordering UI
 - [ ] Micro: make 3D building stand out of the buidling toggle
 - [x] Switch back to macro if micro not loaded -> can't do anything -> empty map-container when switching?
-- [ ] Micro: export tooltip / popover not working
+- [x] Micro: export tooltip / popover not working
 - [ ] popover / tooltip: focus the editor directly + add a close button to modal

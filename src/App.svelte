@@ -117,6 +117,7 @@
     let annotationEditingType = $state<"tooltip" | "popover">("tooltip");
     let annotationEditorContent = $state("");
     let annotationPreviewEl: HTMLElement | null = null;
+    let annotationQuillEditor: ReturnType<typeof QuillEditor> | null = $state(null);
 
     let drawingTooltip: HTMLDivElement | null = $state(null);
     let textInput: HTMLTextAreaElement | null = $state(null);
@@ -158,6 +159,7 @@
         styleEditor = mount(InlineStyleEditor, {
             target: document.body,
             props: {
+                ignoredProps: ["stroke-linejoin"],
                 onStyleChanged: (
                     target: HTMLElement,
                     eventType: "inline" | CSSStyleRule,
@@ -1189,6 +1191,7 @@
             annotationPreviewEl.style.cssText =
                 "background-color:white;padding:4px 8px;border-radius:4px;font-size:0.82rem;max-width:15rem;width:max-content;";
         }
+        annotationQuillEditor?.focus();
     }
 
     function saveAnnotation(): void {
@@ -1672,7 +1675,7 @@
     <div slot="content">
         <div class="d-flex gap-3">
             <div class="flex-grow-1" style="min-width: 0;">
-                <QuillEditor bind:value={annotationEditorContent} placeholder="" />
+                <QuillEditor bind:this={annotationQuillEditor} bind:value={annotationEditorContent} placeholder="" />
             </div>
             <div class="flex-shrink-0" style="width: 40%;">
                 <p class="text-muted small mb-1">
@@ -1687,6 +1690,9 @@
                 </div>
             </div>
         </div>
+    </div>
+    <div slot="footer">
+        <button class="btn btn-primary btn-sm" onclick={() => (annotationEditorOpen = false)}>Save</button>
     </div>
 </Modal>
 
