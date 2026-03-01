@@ -7,7 +7,7 @@ import { DOM_PARSER, findStyleSheet, fontsToCss, fontsToCssEmbed, getUsedInlineF
 import { patternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download, randomString, xhtmlifyHtml } from "../util/common";
-import { additionnalCssExport, changeIdAndReferences, exportFontChoices, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
+import { addAttribution, additionnalCssExport, changeIdAndReferences, exportFontChoices, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.js?raw';
 import { createRoundedRectangleGeoJSON } from '../util/geometry';
@@ -903,26 +903,7 @@ export async function exportMicro(
     }
 
     /** Add attribution */
-    svgElement.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-    const attributionColor = stateMicro.microLayerDefinitions["roads"]["stroke"] ?? "#aaa";
-    const createAnchor = (text: string, href: string, x: number, y: number) => {
-        const a = document.createElementNS('http://www.w3.org/2000/svg', 'a');
-        a.setAttribute('xlink:href', href);
-        a.setAttribute('target', '_blank');
-        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        t.setAttribute("x", x.toString());
-        t.setAttribute("y", y.toString());
-        t.setAttribute("text-anchor", "end");
-        t.setAttribute("fill", attributionColor);
-        t.setAttribute("font-size", "8");
-        t.setAttribute("style", "font-family: 'trebuchet ms',sans-serif;");
-        t.textContent = text;
-        a.append(t);
-        svgElement.append(a);
-    };
-
-    createAnchor('data © OpenStreetMap', 'https://www.openstreetmap.org/copyright', width - borderPadding * 2, height - borderPadding - 16);
-    createAnchor('CartoSVG', 'https://cartosvg.com', width - borderPadding * 2, height - borderPadding - 8);
+    addAttribution(svgElement, width, height, 'micro');
 
     if (useViewBox) {
         svgElement.removeAttribute('height');

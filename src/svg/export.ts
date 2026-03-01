@@ -220,6 +220,68 @@ export async function inlineFontVsPath(
 
 const urlUsingAttributes = ['marker-start', 'marker-mid', 'marker-end', 'clip-path', 'fill', 'filter', '*|href'];
 
+export function addAttribution(
+    svgElement: SVGElement | Element,
+    width: number,
+    height: number,
+    mode: 'macro' | 'micro',
+): void {
+    const margin = 8;
+    const pillWidth = 120;
+    const fontSize = 9;
+    const pillPaddingX = 10;
+    const pillPaddingY = 6;
+    const lineGap = 4;
+    const pillHeight = fontSize * 2 + lineGap + pillPaddingY * 2;
+
+    const rightX = width - margin;
+    const rectX = rightX - pillWidth;
+    const rectY = height - margin - pillHeight;
+    const textX = rightX - pillPaddingX;
+    const textY1 = rectY + pillPaddingY + fontSize;
+    const textY2 = textY1 + fontSize + lineGap;
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('id', 'attribution');
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', rectX.toString());
+    rect.setAttribute('y', rectY.toString());
+    rect.setAttribute('width', pillWidth.toString());
+    rect.setAttribute('height', pillHeight.toString());
+    rect.setAttribute('rx', '3');
+    rect.setAttribute('fill', 'white');
+    rect.setAttribute('fill-opacity', '0.7');
+    g.append(rect);
+
+    const createLinkedText = (label: string, href: string, y: number) => {
+        const a = document.createElementNS('http://www.w3.org/2000/svg', 'a');
+        a.setAttribute('href', href);
+        a.setAttribute('target', '_blank');
+        a.setAttribute('style', 'text-decoration: none');
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t.setAttribute('x', textX.toString());
+        t.setAttribute('y', y.toString());
+        t.setAttribute('text-anchor', 'end');
+        t.setAttribute('font-size', fontSize.toString());
+        t.setAttribute('font-family', 'sans-serif');
+        t.setAttribute('fill', '#333');
+        t.textContent = label;
+        a.append(t);
+        return a;
+    };
+
+    if (mode === 'macro') {
+        g.append(createLinkedText('© GeoBoundaries', 'https://www.geoboundaries.org', textY1));
+        g.append(createLinkedText('CartoSVG', 'https://cartosvg.com', textY2));
+    } else {
+        g.append(createLinkedText('© OpenStreetMap', 'https://www.openstreetmap.org/copyright', textY1));
+        g.append(createLinkedText('CartoSVG', 'https://cartosvg.com', textY2));
+    }
+
+    svgElement.append(g);
+}
+
 export function changeIdAndReferences(exportedMapElem: Element, newMapId: string): void {
     // change SVG definitions IDs
     exportedMapElem.querySelectorAll('defs > [id], #paths > [id]').forEach(elem => {

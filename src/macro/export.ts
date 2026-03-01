@@ -1,4 +1,4 @@
-import { additionnalCssExport, changeIdAndReferences, ExportFontChoice, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
+import { addAttribution, additionnalCssExport, changeIdAndReferences, ExportFontChoice, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
 import type { ElementAnnotations, ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
 import { DOM_PARSER, fontsToCss, fontsToCssEmbed, getUsedInlineFonts, reportStyle } from 'src/util/dom';
 import svgoConfig from '../svgoExport.config';
@@ -237,6 +237,8 @@ export async function exportMacro(
     const scriptContent = document.createTextNode(finalScript);
     scriptElem.appendChild(scriptContent);
     svgElement.append(scriptElem);
+
+    addAttribution(svgElement, stateMacro.macroParams.General.width, stateMacro.macroParams.General.height, 'macro');
 
     if (!downloadExport) return svgElement.outerHTML;
     download(svgElement.outerHTML, 'text/plain', 'cartosvg-export.svg');
