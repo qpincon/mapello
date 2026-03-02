@@ -10,6 +10,7 @@
         onUpdate?: (layer: MicroLayerId, key: string | string[], value: number | Color | string | boolean) => void;
         onPaletteChange?: (paletteId: string) => void;
         availablePalettes?: Record<string, MicroPaletteWithBorder>;
+        currentPaletteId?: string;
     }
 
     let {
@@ -17,12 +18,12 @@
         onUpdate = () => {},
         onPaletteChange = () => {},
         availablePalettes = {},
+        currentPaletteId = "",
     }: Props = $props();
 
     let layers: [string, any][] = $derived(
         Object.entries(layerDefinitions).filter(([layerId, _]) => layerId !== "borderParams"),
     );
-    let selectedPalette: string = $state("");
     function updated(layer: MicroLayerId, key: string | string[], value: number | Color | string | boolean) {
         console.log(layer, key, value);
         onUpdate(layer, key, value);
@@ -57,10 +58,13 @@
         <select
             id="palette-select"
             class="form-select form-select-sm me-4 col"
-            bind:value={selectedPalette}
-            onchange={(e) => paletteChanged((e.target as HTMLSelectElement).value)}
+            value={currentPaletteId}
+            onchange={(e) => {
+                const val = (e.target as HTMLSelectElement).value;
+                if (val) paletteChanged(val);
+            }}
         >
-            <option hidden selected>Chose a preset palette</option>
+            <option value="">Custom</option>
             {#each Object.keys(availablePalettes) as paletteId}
                 <option value={paletteId}> {camelCaseToSentence(paletteId)} </option>
             {/each}
