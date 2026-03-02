@@ -28,8 +28,8 @@
   #navbar {
     display: flex;
     width: 100%;
-    background-color: #ebf0f8;
-    border-bottom: 1px solid #c8d4e3;
+    background-color: #f4f7fb;
+    border-bottom: 1px solid #e0e8f0;
     min-height: 50px;
     display: flex;
     flex-direction: row-reverse;

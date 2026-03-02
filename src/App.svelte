@@ -1707,7 +1707,7 @@
 <div class="d-flex align-items-start h-100">
     <aside id="params" class="h-100">
         <div id="main-panel" class="d-flex flex-column align-items-center pt-4 h-100">
-            <div class="mode-selection btn-group" role="group">
+            <div class="mode-selection" role="group">
                 <input
                     type="radio"
                     class="btn-check"
@@ -1717,12 +1717,8 @@
                     value="macro"
                     autocomplete="off"
                 />
-                <label
-                    class="btn btn-outline-primary fs-3"
-                    for="switchMacro"
-                    class:active={commonState.currentMode === "macro"}
-                >
-                    <img src={macroImg} width="50" height="50" />
+                <label class="mode-btn" for="switchMacro" class:active={commonState.currentMode === "macro"}>
+                    <img src={macroImg} width="22" height="22" />
                     Macro
                 </label>
 
@@ -1735,13 +1731,9 @@
                     onchange={(e) => switchMode(e.currentTarget.value as Mode)}
                     value="micro"
                 />
-                <label
-                    class="btn btn-outline-primary fs-3"
-                    for="switchMicro"
-                    class:active={commonState.currentMode === "micro"}
-                >
+                <label class="mode-btn" for="switchMicro" class:active={commonState.currentMode === "micro"}>
                     Detailed
-                    <img src={microImg} width="50" height="50" />
+                    <img src={microImg} width="22" height="22" />
                 </label>
             </div>
             <div id="main-menu" class="mt-4">
@@ -1773,12 +1765,12 @@
                 </div>
                 <div class="dropdown">
                     <button
-                        class="btn btn-secondary dropdown-toggle"
+                        class="navbar-btn dropdown-toggle"
                         type="button"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
                     >
-                        <Icon fillColor="white" svg={icons["map"]} /> Project
+                        <Icon svg={icons["map"]} /> Project
                     </button>
                     <ul class="dropdown-menu">
                         <li>
@@ -1809,7 +1801,7 @@
                     </ul>
                 </div>
                 <div>
-                    <button class="btn btn-outline-success" type="button" onclick={onExportSvgClicked}>
+                    <button class="navbar-btn navbar-btn-cta" type="button" onclick={onExportSvgClicked}>
                         <Icon fillColor="none" svg={icons["download"]} /> Export
                     </button>
                 </div>
@@ -1871,28 +1863,53 @@
         overflow-y: auto;
     }
 
-    #main-panel > .btn-group {
-        .btn-check:checked + .btn {
-            background-color: #465da3;
-        }
-        .btn {
-            width: 100px;
+    #main-panel > .mode-selection {
+        display: inline-flex;
+        margin-bottom: 20px;
+        background: #dce6f5;
+        border-radius: 100px;
+        padding: 3px;
+        gap: 2px;
+
+        .mode-btn {
+            padding: 6px 18px;
+            border: none;
+            border-radius: 100px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #506784;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            transition:
+                background 0.18s ease,
+                color 0.18s ease,
+                box-shadow 0.18s ease;
+
+            img {
+                border-radius: 3px;
+                opacity: 0.6;
+                transition: opacity 0.18s;
+            }
+
+            &.active {
+                background: white;
+                color: #2a3d5c;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+                img {
+                    opacity: 1;
+                }
+            }
         }
 
-        &.mode-selection {
-            margin-bottom: 20px;
-            width: 80%;
-            .btn {
-                display: flex;
-                align-items: center;
-                justify-content: space-around;
-                img {
-                    border: 2px solid transparent;
-                    border-radius: 3px;
-                }
-                &.active img {
-                    border: 2px solid white;
-                }
+        .btn-check:checked + .mode-btn {
+            background: white;
+            color: #2a3d5c;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+            img {
+                opacity: 1;
             }
         }
     }

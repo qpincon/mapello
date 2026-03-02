@@ -25,9 +25,9 @@
     }
 </script>
 
-<div class="mx-4 dropdown">
+<div class="dropdown">
     <button
-        class="btn btn-outline-secondary dropdown-toggle"
+        class="navbar-btn dropdown-toggle"
         type="button"
         data-bs-toggle="dropdown"
         aria-expanded="false"

@@ -159,7 +159,7 @@
     }
 </script>
 
-<button class="btn btn-outline-primary d-flex align-items-center" onclick={openPicker}>
+<button class="navbar-btn" onclick={openPicker}>
     <Icon svg={icons["font"]} /> Add font
 </button>
 
