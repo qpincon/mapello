@@ -734,9 +734,9 @@
                                 title="Contour width"
                                 onChange={() => drawDebounced()}
                                 bind:value={macroState.contourParams.strokeWidth}
-                                min="0"
-                                max="5"
-                                step="0.5"
+                                min={0}
+                                max={5}
+                                step={0.5}
                             ></RangeInput>
                         </div>
                         <div class="field">
@@ -757,9 +757,9 @@
                                 title="Contour dash"
                                 onChange={() => drawDebounced()}
                                 bind:value={macroState.contourParams.strokeDash}
-                                min="0"
-                                max="20"
-                                step="0.5"
+                                min={0}
+                                max={20}
+                                step={0.5}
                             ></RangeInput>
                         </div>
                         {#if computedOrderedTabs.findIndex((x) => x === "land") === 0}
@@ -945,8 +945,8 @@
                                     title="Number of breaks"
                                     bind:value={curDataDefs.nbBreaks}
                                     onChange={autoSelectColors}
-                                    min="3"
-                                    max="9"
+                                    min={3}
+                                    max={9}
                                 ></RangeInput>
                             </div>
                         {/if}

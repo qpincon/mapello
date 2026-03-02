@@ -130,9 +130,9 @@
                                     helpText="Height in meters for buildings without height data"
                                     id={`${title}-default-building-height`}
                                     bind:value={def.defaultBuildingHeight!}
-                                    min="1"
-                                    max="10"
-                                    step="0.5"
+                                    min={1}
+                                    max={10}
+                                    step={0.5}
                                     onChange={(val) => {
                                         def.defaultBuildingHeight = val;
                                         updated(title as MicroLayerId, ["defaultBuildingHeight"], val);
@@ -197,7 +197,7 @@
                     {#if def.pattern.menuOpened}
                         <div class="wrap-params ps-2 ms-4 border-start border-1 d-flex flex-wrap">
                             <PatternPicker
-                                hatch={def.pattern.hatch ?? ''}
+                                hatch={def.pattern.hatch ?? ""}
                                 onChange={(val) => {
                                     def.pattern!.hatch = val;
                                     updated(title as MicroLayerId, ["pattern", "hatch"], val);
@@ -220,9 +220,9 @@
                                 title="Weight"
                                 id={`${def.pattern.id}-strokeWidth`}
                                 bind:value={def.pattern.strokeWidth!}
-                                min="0.2"
-                                max="5"
-                                step="0.2"
+                                min={0.2}
+                                max={5}
+                                step={0.2}
                                 onChange={(val) => {
                                     def.pattern!.strokeWidth = val;
                                     updated(title as MicroLayerId, ["pattern", "strokeWidth"], val);
@@ -233,9 +233,9 @@
                                 title="Pattern density"
                                 id={`${def.pattern.id}-scale`}
                                 bind:value={def.pattern.scale!}
-                                min="0.1"
-                                max="3"
-                                step="0.1"
+                                min={0.1}
+                                max={3}
+                                step={0.1}
                                 onChange={(val) => {
                                     def.pattern!.scale = val;
                                     updated(title as MicroLayerId, ["pattern", "scale"], val);
