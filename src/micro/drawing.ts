@@ -89,7 +89,6 @@ export async function drawPrettyMap(
         geom.properties.mapLayerId !== "buildings" || !layerDefinitions.buildings['3dBuildings']
     ) as RenderedFeaturePoly[];
     orderFeaturesByLayer(geometries2d);
-    // console.log('geometries', geometries);
 
     const borderWidth = generalParams.Border.borderWidth;
     const borderPadding = generalParams.Border.borderPadding;
@@ -135,8 +134,7 @@ export async function drawPrettyMap(
         .attr("id", d => d.properties.uuid!);
 
     const buildings = geometries.filter(geom => geom.properties.mapLayerId === "buildings") as RenderedFeaturePoly[];
-    console.log('buildings=', buildings);
-    console.log('buildings features=', featureCollection(buildings));
+    // console.log('buildings features=', featureCollection(buildings));
     if (layerDefinitions.buildings['3dBuildings']) {
 
         const { normalFeatures, groupedFeatures } = groupBuildingFeatures(buildings);
