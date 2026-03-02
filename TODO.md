@@ -234,4 +234,4 @@
 - [ ] Micro: make 3D building stand out of the buidling toggle
 - [x] Switch back to macro if micro not loaded -> can't do anything -> empty map-container when switching?
 - [x] Micro: export tooltip / popover not working
-- [ ] popover / tooltip: focus the editor directly + add a close button to modal
+- [x] popover / tooltip: focus the editor directly + add a close button to modal

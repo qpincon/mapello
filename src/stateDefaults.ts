@@ -2,7 +2,7 @@ import { initLayersState } from "./micro/drawing";
 import type { MacroParams, MicroParams } from "./params";
 import type { InlinePropsMacro, InlinePropsMicro, LegendDef, ColorDef, ContourParams, GlobalState, Color } from "./types";
 import { styleDictToCssRulesStr } from "./util/dom";
-import { peach } from './micro/microPalettes'
+import { playful } from './micro/microPalettes'
 import defaultBaseCssMacro from "./assets/pagestyleMacro.css?raw";
 const defaultMacroParams: MacroParams = {
     General: {
@@ -178,7 +178,7 @@ export const defaultState: GlobalState = {
     stateMicro: {
         microParams: defaultMicroParams,
         inlinePropsMicro: defaultInlinePropsMicro,
-        microLayerDefinitions: initLayersState(peach),
+        microLayerDefinitions: initLayersState(playful),
     },
     stateCommon: {
         lastUsedLabelProps: defaultLastUsedLabelProps,
