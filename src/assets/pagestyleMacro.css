@@ -2,7 +2,6 @@
 #canvas {
     display: block;
     height: auto;
-    contain: content;
 }
 
 text {

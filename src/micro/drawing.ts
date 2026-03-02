@@ -7,7 +7,7 @@ import { DOM_PARSER, findStyleSheet, fontsToCss, fontsToCssEmbed, getUsedInlineF
 import { patternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download, randomString, xhtmlifyHtml } from "../util/common";
-import { addAttribution, additionnalCssExport, changeIdAndReferences, exportFontChoices, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
+import { addAttribution, addFrameShadow, additionnalCssExport, changeIdAndReferences, exportFontChoices, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.js?raw';
 import { createRoundedRectangleGeoJSON } from '../util/geometry';
@@ -788,6 +788,7 @@ export async function exportMicro(
     const width = stateMicro.microParams.General.width;
     const height = stateMicro.microParams.General.height;
     const borderPadding = stateMicro.microParams.Border.borderPadding;
+    const borderRadius = stateMicro.microParams.Border.borderRadius;
     const svgNode = svg.node()! as SVGSVGElement;
     svgNode.removeAttribute('style');
 
@@ -877,7 +878,14 @@ export async function exportMicro(
     svgElement.classList.add('cartosvg');
 
     if (frameShadow) {
-        svgElement.setAttribute('filter', 'drop-shadow(2px 2px 8px rgba(0,0,0,.2))');
+        const outerFrameRx = (borderRadius / 100) * Math.min(width - borderPadding, height - borderPadding);
+        addFrameShadow(svgElement, mapId, {
+            x: 0,
+            y: 0,
+            width,
+            height,
+            rx: outerFrameRx,
+        });
     }
 
     if (animate || hasAnnotations) {

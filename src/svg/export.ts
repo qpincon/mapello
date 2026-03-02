@@ -218,6 +218,44 @@ export async function inlineFontVsPath(
     return false;
 }
 
+export function addFrameShadow(
+    svgElement: SVGElement | Element,
+    mapId: string,
+    shadowRect: { x: number; y: number; width: number; height: number; rx: number },
+): void {
+    const filterId = `${mapId}-frame-shadow`;
+
+    let defs = svgElement.querySelector('defs');
+    if (!defs) {
+        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        svgElement.prepend(defs);
+    }
+
+    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+    filter.setAttribute('id', filterId);
+
+    const feDropShadow = document.createElementNS('http://www.w3.org/2000/svg', 'feDropShadow');
+    feDropShadow.setAttribute('dx', '2');
+    feDropShadow.setAttribute('dy', '2');
+    feDropShadow.setAttribute('stdDeviation', '4');
+    feDropShadow.setAttribute('flood-color', 'black');
+    feDropShadow.setAttribute('flood-opacity', '0.2');
+    filter.append(feDropShadow);
+    defs.append(filter);
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', shadowRect.x.toString());
+    rect.setAttribute('y', shadowRect.y.toString());
+    rect.setAttribute('width', shadowRect.width.toString());
+    rect.setAttribute('height', shadowRect.height.toString());
+    rect.setAttribute('rx', shadowRect.rx.toString());
+    rect.setAttribute('fill', 'white');
+    rect.setAttribute('filter', `url(#${filterId})`);
+    svgElement.prepend(rect);
+
+    svgElement.setAttribute('overflow', 'visible');
+}
+
 const urlUsingAttributes = ['marker-start', 'marker-mid', 'marker-end', 'clip-path', 'fill', 'filter', '*|href'];
 
 export function addAttribution(

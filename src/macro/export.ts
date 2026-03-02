@@ -1,4 +1,4 @@
-import { addAttribution, additionnalCssExport, changeIdAndReferences, ExportFontChoice, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
+import { addAttribution, addFrameShadow, additionnalCssExport, changeIdAndReferences, ExportFontChoice, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
 import type { ElementAnnotations, ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
 import { DOM_PARSER, fontsToCss, fontsToCssEmbed, getUsedInlineFonts, reportStyle } from 'src/util/dom';
 import svgoConfig from '../svgoExport.config';
@@ -211,7 +211,17 @@ export async function exportMacro(
     svgElement.classList.add('cartosvg');
 
     if (frameShadow) {
-        svgElement.setAttribute('filter', 'drop-shadow(2px 2px 8px rgba(0,0,0,.2))');
+        const bw = stateMacro.macroParams.Border.borderWidth;
+        const br = stateMacro.macroParams.Border.borderRadius;
+        const w  = stateMacro.macroParams.General.width;
+        const h  = stateMacro.macroParams.General.height;
+        addFrameShadow(svgElement, mapId, {
+            x: bw / 2,
+            y: bw / 2,
+            width:  w - bw,
+            height: h - bw,
+            rx: Math.max(w, h) * (br / 100),
+        });
     }
 
     if (useViewBox) {
