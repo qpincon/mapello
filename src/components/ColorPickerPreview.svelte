@@ -15,11 +15,18 @@
 
     let { value, title, id, onChange, additionalClasses, labelAbove, popup }: Props = $props();
     let colorPicker: ColorPicker | null = $state(null);
-    let changedManually: boolean = $state(false);
+
+    function trimAlpha(v: Color): string {
+        return v?.length === 9 && v.endsWith("ff") ? v.slice(0, 7) : (v ?? "");
+    }
+
+    let displayValue = $state(trimAlpha(value));
+    $effect(() => {
+        displayValue = trimAlpha(value);
+    });
 
     function _onChange(color: Color): void {
         onChange(color);
-        changedManually = true;
     }
 </script>
 
@@ -33,7 +40,7 @@
             onclick={() => {
                 colorPicker!.open();
             }}
-            style="background-color: {value};"
+            style="background-color: {displayValue};"
         >
             <ColorPicker
                 bind:this={colorPicker}
@@ -50,7 +57,7 @@
             type="text"
             class="ms-2 form-control"
             {id}
-            bind:value
+            bind:value={displayValue}
             onchange={(e: Event) => onChange((e.target as HTMLInputElement).value as Color)}
         />
     </div>

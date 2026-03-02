@@ -29,7 +29,6 @@
     import Navbar from "./components/Navbar.svelte";
     import macroImg from "./assets/img/macro.png";
     import microImg from "./assets/img/micro.png";
-    import Instructions from "./components/Instructions.svelte";
     import Icon from "./components/Icon.svelte";
     import { exportStyleSheet, getUsedInlineFonts, fontsToCss, applyStyles } from "./util/dom";
     import { getState, saveState } from "./util/save";
@@ -131,7 +130,6 @@
     let styleEditor: InlineStyleEditor | null = $state(null);
     let contextualMenu: (HTMLDivElement & { opened?: boolean }) | null = $state(null);
     let showExportConfirm = $state(false);
-    let showInstructions = $state(false);
 
     // TODO: move in menuStates
     let editingPath = $state(false);
@@ -1766,42 +1764,14 @@
     </aside>
     <div class="w-auto d-flex flex-grow-1 flex-column align-items-center h-100">
         <Navbar>
-            <div class="d-flex justify-content-center align-items-center">
-                <span class="px-2 py-1 btn btn-outline-primary" role="button" onclick={() => (showInstructions = true)}>
-                    <Icon marginRight="0px" width="1.8rem" svg={icons["help"]} />
-                    Instructions
-                </span>
-                <Examples on:example={loadExample} />
-            </div>
-        </Navbar>
-        <div class="d-flex flex-column justify-content-center align-items-center h-100">
-            {#if commonState.currentMode === "micro"}
-                <div class="micro-top mb-4 mx-auto d-flex align-items-center justify-content-between">
-                    <Geocoding onPlaceSelected={(res) => microSidebar!.onPlaceSelected(res)}></Geocoding>
-                </div>
-            {/if}
-
-            <div id="map-content" style="position: relative;">
-                <div id="map-container" class="col mx-4"></div>
-                <div id="maplibre-map"></div>
-            </div>
-            {#if commonState.currentMode === "micro"}
-                <div class="ms-auto me-4 mt-2">
-                    Map data:
-                    <a href="https://protomaps.com/" target="_blank">Protomaps</a>
-                    <a href="https://www.openstreetmap.org/copyright" target="_blank"
-                        >&copy; OpenStreetMap contributors</a
-                    >
-                </div>
-            {/if}
-            <div class="mt-4 d-flex align-items-center justify-content-center">
-                <div class="mx-2">
+            <div class="d-flex justify-content-center align-items-center gap-2">
+                <div>
                     <FontPicker
                         onFontSelected={handleFontSelected}
                         existingFontNames={commonState.providedFonts.map((f) => f.name)}
                     />
                 </div>
-                <div class="dropdown mx-2">
+                <div class="dropdown">
                     <button
                         class="btn btn-secondary dropdown-toggle"
                         type="button"
@@ -1838,12 +1808,34 @@
                         </li>
                     </ul>
                 </div>
-                <div class="dropdown mx-2">
+                <div>
                     <button class="btn btn-outline-success" type="button" onclick={onExportSvgClicked}>
                         <Icon fillColor="none" svg={icons["download"]} /> Export
                     </button>
                 </div>
+                <Examples on:example={loadExample} />
             </div>
+        </Navbar>
+        <div class="d-flex flex-column justify-content-center align-items-center h-100">
+            {#if commonState.currentMode === "micro"}
+                <div class="micro-top mb-4 mx-auto d-flex align-items-center justify-content-between">
+                    <Geocoding onPlaceSelected={(res) => microSidebar!.onPlaceSelected(res)}></Geocoding>
+                </div>
+            {/if}
+
+            <div id="map-content" style="position: relative;">
+                <div id="map-container" class="col mx-4"></div>
+                <div id="maplibre-map"></div>
+            </div>
+            {#if commonState.currentMode === "micro"}
+                <div class="ms-auto me-4 mt-2">
+                    Map data:
+                    <a href="https://protomaps.com/" target="_blank">Protomaps</a>
+                    <a href="https://www.openstreetmap.org/copyright" target="_blank"
+                        >&copy; OpenStreetMap contributors</a
+                    >
+                </div>
+            {/if}
         </div>
     </div>
 </div>
@@ -1867,15 +1859,6 @@
     onExport={validateExport}
     onClosed={() => (showExportConfirm = false)}
 />
-
-<Modal open={showInstructions} onClosed={() => (showInstructions = false)}>
-    <div slot="header">
-        <h1>Instructions</h1>
-    </div>
-    <div slot="content">
-        <Instructions></Instructions>
-    </div>
-</Modal>
 
 <style lang="scss" scoped>
     #params {

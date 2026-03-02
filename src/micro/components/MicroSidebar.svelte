@@ -220,6 +220,7 @@
         bind:sections={microState.microParams as unknown as Record<string, Record<string, number>>}
         {paramDefs}
         {helpParams}
+        sectionLabels={{ General: "Dimensions" }}
         on:change={(e) => {
             draw();
         }}

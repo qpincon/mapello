@@ -126,4 +126,5 @@ export const helpParams: HelpParams = {
     secondGlow: glowHelpGeneral,
     innerBlur: blurHelp,
     innerStrength: strengthHelp,
+    showGraticule: "A graticule is the grid of latitude and longitude lines overlaid on the map.",
 };

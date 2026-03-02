@@ -12,9 +12,6 @@
   <a href="app.html" class="logo">
     <img src={logo} alt="Logo" height="50" width="140" />
   </a>
-  {#if activeTitle === "index.html"}
-    <a role="button" href="about.html">About </a>
-  {/if}
   <slot></slot>
 </div>
 <a
@@ -33,7 +30,7 @@
     width: 100%;
     background-color: #ebf0f8;
     border-bottom: 1px solid #c8d4e3;
-    flex-basis: 50px;
+    min-height: 50px;
     display: flex;
     flex-direction: row-reverse;
     align-items: center;

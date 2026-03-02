@@ -618,6 +618,7 @@
             {paramDefs}
             {helpParams}
             otherParams={accordionVisiblityParams}
+            sectionLabels={{ General: "Dimensions & Projection" }}
             on:change={(e) => {
                 handleChangeProp(e, drawSimplifyThenReal);
             }}

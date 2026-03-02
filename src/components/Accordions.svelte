@@ -15,9 +15,10 @@
     paramDefs: ParamDefinitions;
     helpParams: Record<string, string>;
     otherParams?: OtherParams;
+    sectionLabels?: Record<string, string>;
   }
 
-  let { sections = $bindable(), paramDefs, helpParams = {}, otherParams = {} }: Props = $props();
+  let { sections = $bindable(), paramDefs, helpParams = {}, otherParams = {}, sectionLabels = {} }: Props = $props();
 
   onMount(() => {
     const collapses = document.querySelectorAll(".collapse");
@@ -54,7 +55,7 @@
           data-bs-toggle="collapse"
           data-bs-target={`#panel-${title}-collapse`}
         >
-          <span> {camelCaseToSentence(title)} </span>
+          <span>{sectionLabels[title] ?? camelCaseToSentence(title)}</span>
           {#if title in helpParams}
             <span class="help-tooltip fs-6 float-end" data-bs-toggle="tooltip" data-bs-title={helpParams[title]}>?</span
             >

@@ -13,7 +13,6 @@ const isProduction = mode.includes('production');
 const config = {
     entry: {
         main: './src/entrypoints/index.js',
-        about: './src/entrypoints/about.js',
     },
     mode: isProduction ? 'production' : 'development',
     resolve: {
@@ -112,16 +111,6 @@ const config = {
             },
             chunks: ['main'],
             filename: 'app.html',
-            favicon: './src/assets/img/logo_transparent.webp'
-        }),
-        new HtmlWebpackPlugin({
-            template: './src/index.ejs',
-            title: 'About',
-            meta: {
-                description: 'CartoSVG aims to be a easy, beautiful and lightweight datamaps replacement.'
-            },
-            filename: 'about.html',
-            chunks: ['about'],
             favicon: './src/assets/img/logo_transparent.webp'
         }),
     ],
