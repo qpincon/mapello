@@ -265,7 +265,7 @@ export function addAttribution(
     mode: 'macro' | 'micro',
 ): void {
     const margin = 8;
-    const pillWidth = 120;
+    const pillWidth = 100;
     const fontSize = 9;
     const pillPaddingX = 10;
     const pillPaddingY = 6;
@@ -287,8 +287,10 @@ export function addAttribution(
     rect.setAttribute('y', rectY.toString());
     rect.setAttribute('width', pillWidth.toString());
     rect.setAttribute('height', pillHeight.toString());
-    rect.setAttribute('rx', '3');
+    rect.setAttribute('rx', '2');
     rect.setAttribute('fill', 'white');
+    rect.setAttribute('stroke', 'black');
+    rect.setAttribute('stroke-width', '0.2px');
     rect.setAttribute('fill-opacity', '0.7');
     g.append(rect);
 

@@ -192,6 +192,7 @@ export function createSvgAnchor(url: string): SVGAElement {
     const a = document.createElementNS('http://www.w3.org/2000/svg', 'a');
     a.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);
     a.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    a.setAttribute('target', '_blank');
     return a;
 }
 
