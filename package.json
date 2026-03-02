@@ -5,14 +5,17 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "sync": "svelte-kit sync"
   },
   "author": "Quentin Pinçon",
   "license": "AGPL-3.0-only",
   "devDependencies": {
+    "@sveltejs/kit": "^2.0.0",
+    "@sveltejs/adapter-node": "^5.0.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "@tsconfig/svelte": "^5.0.4",
     "@types/bootstrap": "^5.2.10",
@@ -32,7 +35,7 @@
     "svelte-check": "^4.1.6",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
-    "vite-plugin-node-polyfills": "^0.22.0"
+    "vite-plugin-node-polyfills": "^0.25.0"
   },
   "dependencies": {
     "@mapbox/tile-cover": "^3.0.2",

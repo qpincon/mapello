@@ -1,13 +1,7 @@
 {
-  "extends": "@tsconfig/svelte/tsconfig.json",
+  "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "useDefineForClassFields": true,
-    "baseUrl": ".",
-    "outDir": "dist/",
     "allowJs": true,
     "isolatedModules": true,
     "checkJs": true,
@@ -23,7 +17,6 @@
     "./dist/**/*",
     "src/assets/layers/**/*",
     "src/examples/**/*",
-    "src/svg/exportScripts/**/*",
-    "ele/**/*"
-  ],
+    "src/svg/exportScripts/**/*"
+  ]
 }

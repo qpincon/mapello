@@ -1,7 +1,7 @@
 <script lang="ts">
     import Icon from "./Icon.svelte";
     import htmlIcon from "../assets/img/html.svg?raw";
-    import examplesDesc from "../../examples.json";
+    import examplesDesc from "../examples.json";
     import { createEventDispatcher } from "svelte";
     import { extractFileName } from "../util/common";
 
