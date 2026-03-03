@@ -246,8 +246,11 @@
             reportStyle(tmpElem, htmlTooltipElem);
         }
         if (legendSample && macroState.colorDataDefs[currentMacroLayerTab]?.legendEnabled) {
-            const tmpElem = htmlToElement(macroState.legendDefs[currentMacroLayerTab].sampleHtml!)!;
-            reportStyle(tmpElem, legendSample);
+            const sampleHtml = macroState.legendDefs[currentMacroLayerTab]?.sampleHtml;
+            if (sampleHtml) {
+                const tmpElem = htmlToElement(sampleHtml)!;
+                reportStyle(tmpElem, legendSample);
+            }
         }
     }
 
@@ -313,7 +316,6 @@
         const existingIndex = macroState.chosenCountriesAdm.indexOf(searchedAdm);
         if (existingIndex > -1) {
             deleteCountry(searchedAdm, false);
-            return;
         }
         macroState.chosenCountriesAdm.push(newLayerName);
         macroState.orderedTabs.push(newLayerName);
@@ -868,7 +870,7 @@
                             class="form-check-input"
                             id="colorData"
                             bind:checked={curDataDefs.enabled}
-                            onchange={(e) => colorizeAndLegend(svg)}
+                            onchange={() => autoSelectColors()}
                         />
                         <label for="colorData" class="form-check-label"> Color using data </label>
                     </div>

@@ -2,10 +2,17 @@
     import type InlineStyleEditor from "inline-style-editor";
     import Accordions from "src/components/Accordions.svelte";
     import MicroLayerParams from "src/components/MicroLayerParams.svelte";
-    import { drawPrettyMap, generateCssFromState, initLayersState, resizeMaplibreMap } from "src/micro/drawing";
+    import { drawPrettyMap, generateCssFromState, initLayersState } from "src/micro/drawing";
     import { helpParams, paramDefs, type MicroParams } from "src/params";
     import { appState, microState } from "src/state.svelte";
-    import type { Color, MicroLayerId, MicroPalette, MicroPaletteWithBorder, StateMicro, SvgSelection } from "src/types";
+    import type {
+        Color,
+        MicroLayerId,
+        MicroPalette,
+        MicroPaletteWithBorder,
+        StateMicro,
+        SvgSelection,
+    } from "src/types";
     import * as _microPalettes from "../microPalettes";
     import { onMicroParamChange, replaceCssSheetContent, syncLayerStateWithCss, updateSvgPatterns } from "../change";
     import { saveState } from "src/util/save";
@@ -27,13 +34,13 @@
 
     const microPalettes = _microPalettes as Record<string, MicroPaletteWithBorder>;
 
-    const LAYER_DATA_FIELDS = ['fill', 'fills', 'stroke', 'stroke-width', 'stroke-dasharray', 'disabled', 'active', '3dBuildings', 'defaultBuildingHeight'] as const;
-    const PATTERN_DATA_FIELDS = ['hatch', 'color', 'strokeWidth', 'scale', 'backgroundColor'] as const;
+    const LAYER_DATA_FIELDS = ["fill", "fills", "stroke", "stroke-width", "stroke-dasharray"] as const;
+    const PATTERN_DATA_FIELDS = ["hatch", "color", "strokeWidth", "scale", "backgroundColor"] as const;
 
     function matchesPalette(current: MicroPalette, palette: Partial<MicroPaletteWithBorder>): boolean {
         const initialized = initLayersState(palette);
         for (const [layerId, curDef] of Object.entries(current)) {
-            if (layerId === 'borderParams') continue;
+            if (layerId === "borderParams") continue;
             const palDef = initialized[layerId as MicroLayerId];
             if (!palDef) return false;
             for (const field of LAYER_DATA_FIELDS) {
@@ -51,14 +58,20 @@
         if (palette.borderParams) {
             const b = microState.microParams.Border;
             const pb = palette.borderParams;
-            if (b.borderColor !== pb.borderColor || b.borderWidth !== pb.borderWidth ||
-                b.borderRadius !== pb.borderRadius || b.borderPadding !== pb.borderPadding) return false;
+            if (
+                b.borderColor !== pb.borderColor ||
+                b.borderWidth !== pb.borderWidth ||
+                b.borderRadius !== pb.borderRadius ||
+                b.borderPadding !== pb.borderPadding
+            )
+                return false;
         }
         return true;
     }
 
     const currentPaletteId = $derived(
-        Object.keys(microPalettes).find(id => matchesPalette(microState.microLayerDefinitions, microPalettes[id])) ?? ""
+        Object.keys(microPalettes).find((id) => matchesPalette(microState.microLayerDefinitions, microPalettes[id])) ??
+            "",
     );
 
     interface Props {
@@ -266,7 +279,7 @@
         onUpdate={handleMicroParamChange}
         availablePalettes={microPalettes}
         onPaletteChange={handleMicroPaletteChange}
-        currentPaletteId={currentPaletteId}
+        {currentPaletteId}
     ></MicroLayerParams>
 {/if}
 

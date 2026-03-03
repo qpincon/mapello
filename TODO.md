@@ -227,7 +227,7 @@
 - [ ] Macro: Live-update as much as possible without calling the full draw routine for better interactivity
 - [x] Font: chosing a font will change default font used for new labels / all labels with manually changed fonts
 - [ ] Micro: change style to have more roads visible (manhattan example)
-- [ ] Attribution: add it to macro, better styling
+- [x] Attribution: add it to macro, better styling
 - [x] ISE: remove color picker on svg <text> / <tspan> element 
 - [x] ISE: remove stroke linejoin
 - [ ] macro: rework layer re-ordering UI
@@ -235,3 +235,6 @@
 - [x] Switch back to macro if micro not loaded -> can't do anything -> empty map-container when switching?
 - [x] Micro: export tooltip / popover not working
 - [x] popover / tooltip: focus the editor directly + add a close button to modal
+- [x] macro: selecting adm2 after adm1 removes adm1 without adding adm2
+- [x] color picker tooltip makes pages bigger and must scroll when on bottom (second glow)
+- [x] macro "Color using data" default: "color on" & "Palette" empty
