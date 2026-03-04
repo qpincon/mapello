@@ -2,3 +2,5 @@ node_modules/
 dist/
 public/*.pmtiles
 .svelte-kit/
+.env
+data/

@@ -31,10 +31,15 @@
     import microImg from "./assets/img/micro.png";
     import Icon from "./components/Icon.svelte";
     import { exportStyleSheet, getUsedInlineFonts, fontsToCss, applyStyles } from "./util/dom";
-    import { getState, saveState } from "./util/save";
+    import { getState, saveState, registerServerSync } from "./util/save";
     import { undo, redo, setRestoring, clearHistory } from "./util/history";
     import { type ExportOptions } from "./svg/export";
     import ExportModal from "./components/ExportModal.svelte";
+    import AuthModal from "./components/AuthModal.svelte";
+    import ProjectDropdown from "./components/ProjectDropdown.svelte";
+    import { signOut } from "$lib/auth-client";
+    import { page } from "$app/state";
+    import { invalidateAll } from "$app/navigation";
     import { drawFreeHandShapes, FreehandDrawer } from "./svg/freeHandDraw";
     import type {
         SvgSelection,
@@ -130,6 +135,11 @@
     let styleEditor: InlineStyleEditor | null = $state(null);
     let contextualMenu: (HTMLDivElement & { opened?: boolean }) | null = $state(null);
     let showExportConfirm = $state(false);
+    let showAuthModal = $state(false);
+    let authAfterCallback: (() => void) | undefined = $state(undefined);
+    let currentProjectName = $state('Project 1');
+    let activeProjectId = $state<string | null>(null);
+    const currentUser = $derived(page.data.user ?? null);
 
     // TODO: move in menuStates
     let editingPath = $state(false);
@@ -142,8 +152,18 @@
     let zoomFunc: d3.ZoomBehavior<any, any> | null = $state(null);
     let dragFunc: d3.DragBehavior<any, any, any> | null = $state(null);
     // let commonStyleSheetElem: HTMLStyleElement;
+    const syncToServer = debounce(() => {
+        if (!activeProjectId || !currentUser) return;
+        fetch(`/api/projects/${activeProjectId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ project_json: getProjectJson() }),
+        }).catch(() => {});
+    }, 3000);
+
     onMount(async () => {
         console.log("App onmount");
+        registerServerSync(syncToServer);
         // commonStyleSheetElem = document.createElement("style");
         // commonStyleSheetElem.setAttribute("id", "style-sheet-macro");
         // document.head.appendChild(commonStyleSheetElem);
@@ -334,6 +354,14 @@
 
     function restoreStateToDefault() {
         applyState(defaultState);
+    }
+
+    async function handleReset() {
+        if (!window.confirm('Reset to default? Your current project will be erased.')) return;
+        currentProjectName = 'Project 1';
+        activeProjectId = null;
+        await applyState(defaultState);
+        if (commonState.currentMode === 'macro') macroSidebar!.applyStateAndDraw();
     }
 
     function attachListeners(): void {
@@ -1442,6 +1470,13 @@
     }
 
     let inlineFontUsed = $state(false);
+    function openExportModal() {
+        const usedFonts = getUsedInlineFonts(svg.node()!);
+        const usedProvidedFonts = commonState.providedFonts.filter((font) => usedFonts.has(font.name));
+        inlineFontUsed = usedProvidedFonts.length > 0;
+        showExportConfirm = true;
+    }
+
     function onExportSvgClicked() {
         hidePopover();
         closeMenu();
@@ -1449,10 +1484,18 @@
         cancelDrawPath();
         styleEditor?.close();
 
-        const usedFonts = getUsedInlineFonts(svg.node()!);
-        const usedProvidedFonts = commonState.providedFonts.filter((font) => usedFonts.has(font.name));
-        inlineFontUsed = usedProvidedFonts.length > 0;
-        showExportConfirm = true;
+        if (currentUser) {
+            openExportModal();
+        } else {
+            authAfterCallback = openExportModal;
+            showAuthModal = true;
+        }
+    }
+
+    function getProjectJson(): string {
+        const baseCss = exportStyleSheet("#outline")!;
+        macroState.baseCss = baseCss;
+        return JSON.stringify({ stateCommon: commonState, stateMacro: macroState, stateMicro: microState });
     }
 </script>
 
@@ -1763,49 +1806,38 @@
                         existingFontNames={commonState.providedFonts.map((f) => f.name)}
                     />
                 </div>
-                <div class="dropdown">
-                    <button
-                        class="navbar-btn dropdown-toggle"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                    >
-                        <Icon svg={icons["map"]} /> Project
+                {#if currentUser}
+                    <ProjectDropdown
+                        bind:currentProjectName
+                        bind:currentProjectId={activeProjectId}
+                        {getProjectJson}
+                        applyState={async (state) => {
+                            await applyState(state);
+                            if (commonState.currentMode === 'macro') macroSidebar!.applyStateAndDraw();
+                        }}
+                    />
+                {:else}
+                    <span class="project-name-label">{currentProjectName}</span>
+                    <button class="navbar-btn" type="button" onclick={handleReset}>
+                        Reset
                     </button>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a class="dropdown-item" href="#" onclick={() => restoreStateToDefault()}>
-                                <Icon svg={icons["reset"]} />Reset
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="#" onclick={saveProject}>
-                                <Icon fillColor="none" svg={icons["save"]} />
-                                Save project
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="#">
-                                <label role="button" for="project-import">
-                                    <Icon svg={icons["restore"]} /> Load project</label
-                                >
-                                <input
-                                    id="project-import"
-                                    class="d-none"
-                                    type="file"
-                                    accept=".cartosvg"
-                                    onchange={loadProject}
-                                />
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+                {/if}
                 <div>
                     <button class="navbar-btn navbar-btn-cta" type="button" onclick={onExportSvgClicked}>
                         <Icon fillColor="none" svg={icons["download"]} /> Export
                     </button>
                 </div>
                 <Examples on:example={loadExample} />
+                {#if currentUser}
+                    <span class="navbar-user-email">{currentUser.email}</span>
+                    <button class="navbar-btn" type="button" onclick={async () => { await signOut(); invalidateAll(); }}>
+                        Sign out
+                    </button>
+                {:else}
+                    <button class="navbar-btn" type="button" onclick={() => { authAfterCallback = undefined; showAuthModal = true; }}>
+                        Sign in
+                    </button>
+                {/if}
             </div>
         </Navbar>
         <div class="d-flex flex-column justify-content-center align-items-center h-100">
@@ -1850,6 +1882,11 @@
     computeMacroCss={() => macroSidebar!.computeCss()}
     onExport={validateExport}
     onClosed={() => (showExportConfirm = false)}
+/>
+
+<AuthModal
+    bind:open={showAuthModal}
+    afterAuth={authAfterCallback}
 />
 
 <style lang="scss" scoped>
@@ -1930,6 +1967,22 @@
         font-size: 12px;
         pointer-events: none;
         z-index: 9999;
+        white-space: nowrap;
+    }
+
+    .project-name-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #3a4a63;
+        padding: 0 4px;
+    }
+
+    .navbar-user-email {
+        font-size: 0.85rem;
+        color: #6c757d;
+        max-width: 160px;
+        overflow: hidden;
+        text-overflow: ellipsis;
         white-space: nowrap;
     }
 </style>
