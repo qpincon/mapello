@@ -3,9 +3,11 @@
     import { Dropdown } from 'bootstrap';
     import type { GlobalState } from '../types';
     import { defaultState } from '../stateDefaults';
+    import Icon from './Icon.svelte';
+    import { icons } from '../shared/icons';
 
     interface CloudProject {
-        id: string;
+        id: number;
         name: string;
         createdAt: number;
         updatedAt: number;
@@ -13,7 +15,7 @@
 
     interface Props {
         currentProjectName: string;
-        currentProjectId: string | null;
+        currentProjectId: number | null;
         getProjectJson: () => string;
         applyState: (state: GlobalState) => Promise<void>;
     }
@@ -25,12 +27,12 @@
     let projects: CloudProject[] = $state([]);
     let loading = $state(false);
     let errorMsg = $state('');
-    let renamingId = $state<string | null>(null);
+    let editingCurrentName = $state(false);
+    let currentNameInput = $state('');
+    let renamingId = $state<number | null>(null);
     let renamingValue = $state('');
-    let confirmDeleteId = $state<string | null>(null);
-    let loadingProjectId = $state<string | null>(null);
-    let newProjectMode = $state(false);
-    let newProjectName = $state('');
+    let confirmDeleteId = $state<number | null>(null);
+    let loadingProjectId = $state<number | null>(null);
     let creatingProject = $state(false);
 
     onMount(() => {
@@ -38,13 +40,23 @@
         toggleEl.addEventListener('show.bs.dropdown', fetchProjects);
     });
 
+    async function saveCurrentProject() {
+        if (!currentProjectId) return;
+        await fetch(`/api/projects/${currentProjectId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ project_json: getProjectJson() }),
+        }).catch(() => {});
+    }
+
     async function fetchProjects() {
         loading = true;
         errorMsg = '';
         try {
             const res = await fetch('/api/projects');
             if (!res.ok) throw new Error();
-            projects = await res.json();
+            const all: CloudProject[] = await res.json();
+            projects = all.filter(p => p.id !== currentProjectId);
         } catch {
             errorMsg = 'Could not load projects';
         } finally {
@@ -52,10 +64,11 @@
         }
     }
 
-    async function handleLoad(id: string) {
+    async function handleLoad(id: number) {
         loadingProjectId = id;
         errorMsg = '';
         try {
+            await saveCurrentProject();
             const res = await fetch(`/api/projects/${id}`);
             if (!res.ok) throw new Error();
             const project = await res.json();
@@ -71,7 +84,24 @@
         }
     }
 
-    async function handleRename(id: string) {
+    async function handleRenameCurrentProject() {
+        if (!currentNameInput.trim() || !currentProjectId) return;
+        const newName = currentNameInput.trim();
+        try {
+            const res = await fetch(`/api/projects/${currentProjectId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newName }),
+            });
+            if (!res.ok) throw new Error();
+            currentProjectName = newName;
+            editingCurrentName = false;
+        } catch {
+            errorMsg = 'Could not rename project';
+        }
+    }
+
+    async function handleRename(id: number) {
         if (!renamingValue.trim()) return;
         try {
             const res = await fetch(`/api/projects/${id}`, {
@@ -80,7 +110,6 @@
                 body: JSON.stringify({ name: renamingValue.trim() }),
             });
             if (!res.ok) throw new Error();
-            if (currentProjectId === id) currentProjectName = renamingValue.trim();
             renamingId = null;
             await fetchProjects();
         } catch {
@@ -88,14 +117,10 @@
         }
     }
 
-    async function handleDelete(id: string) {
+    async function handleDelete(id: number) {
         try {
             const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error();
-            if (currentProjectId === id) {
-                currentProjectId = null;
-                currentProjectName = 'Project 1';
-            }
             confirmDeleteId = null;
             await fetchProjects();
         } catch {
@@ -103,36 +128,30 @@
         }
     }
 
-    function handleNewProject() {
-        newProjectMode = true;
-        renamingId = null;
-        confirmDeleteId = null;
+    function uniqueNewProjectName(): string {
+        const taken = new Set([currentProjectName, ...projects.map(p => p.name)]);
+        if (!taken.has('New project')) return 'New project';
+        let i = 2;
+        while (taken.has(`New project - ${i}`)) i++;
+        return `New project - ${i}`;
     }
 
     async function handleCreateNewProject() {
-        if (!newProjectName.trim()) return;
         creatingProject = true;
         errorMsg = '';
         try {
-            if (currentProjectId) {
-                await fetch(`/api/projects/${currentProjectId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ project_json: getProjectJson() }),
-                });
-            }
+            await saveCurrentProject();
+            const name = uniqueNewProjectName();
             const res = await fetch('/api/projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newProjectName.trim(), project_json: JSON.stringify(defaultState) }),
+                body: JSON.stringify({ name, project_json: JSON.stringify(defaultState) }),
             });
             if (!res.ok) throw new Error();
             const created = await res.json();
             await applyState(defaultState);
             currentProjectId = created.id;
             currentProjectName = created.name;
-            newProjectName = '';
-            newProjectMode = false;
             dropdown.hide();
         } catch {
             errorMsg = 'Could not create project';
@@ -166,34 +185,44 @@
         {currentProjectName}
     </button>
     <ul class="dropdown-menu project-dropdown-menu" onclick={(e) => e.stopPropagation()}>
-        <li>
-            {#if newProjectMode}
-                <div class="d-flex gap-1 align-items-center px-2 py-1">
+
+        <!-- Current project name (editable) -->
+        <li class="px-2 py-1 border-bottom mb-1">
+            {#if editingCurrentName}
+                <div class="d-flex gap-1 align-items-center">
                     <input
                         class="form-control form-control-sm flex-grow-1"
                         type="text"
-                        placeholder="Project name…"
-                        bind:value={newProjectName}
+                        bind:value={currentNameInput}
                         onclick={(e) => e.stopPropagation()}
                         onkeydown={(e) => {
                             e.stopPropagation();
-                            if (e.key === 'Enter') handleCreateNewProject();
-                            if (e.key === 'Escape') { newProjectMode = false; newProjectName = ''; }
+                            if (e.key === 'Enter') handleRenameCurrentProject();
+                            if (e.key === 'Escape') editingCurrentName = false;
                         }}
                     />
-                    <button class="btn btn-sm btn-primary" type="button"
-                        onclick={handleCreateNewProject}
-                        disabled={creatingProject || !newProjectName.trim()}>
-                        {#if creatingProject}<span class="spinner-border spinner-border-sm"></span>{:else}Create{/if}
-                    </button>
-                    <button class="btn btn-sm btn-outline-secondary" type="button"
-                        onclick={() => { newProjectMode = false; newProjectName = ''; }}>✕</button>
+                    <button class="btn btn-sm btn-primary" type="button" onclick={handleRenameCurrentProject}>OK</button>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" onclick={() => (editingCurrentName = false)}>✕</button>
                 </div>
             {:else}
-                <button class="dropdown-item" type="button" onclick={handleNewProject}>
-                    + New project
-                </button>
+                <div class="d-flex align-items-center gap-1">
+                    <span class="current-project-label fw-semibold flex-grow-1 text-truncate">{currentProjectName}</span>
+                    <button
+                        class="btn btn-sm p-0 border-0 bg-transparent text-secondary flex-shrink-0"
+                        type="button"
+                        title="Rename"
+                        onclick={() => { editingCurrentName = true; currentNameInput = currentProjectName; }}
+                    ><Icon svg={icons['pencil']} width="0.85rem" height="0.85rem" marginRight="0" /></button>
+                </div>
             {/if}
+        </li>
+
+        <!-- New project -->
+        <li>
+            <button class="dropdown-item" type="button" onclick={handleCreateNewProject} disabled={creatingProject}>
+                {#if creatingProject}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
+                + New project
+            </button>
         </li>
         <li><hr class="dropdown-divider" /></li>
 
@@ -204,7 +233,7 @@
         {#if loading}
             <li><span class="dropdown-item-text text-muted small">Loading…</span></li>
         {:else if projects.length === 0}
-            <li><span class="dropdown-item-text text-muted small">No saved projects yet.</span></li>
+            <li><span class="dropdown-item-text text-muted small">No other projects.</span></li>
         {:else}
             {#each projects as project (project.id)}
                 <li class="project-item px-2 py-1">
@@ -234,10 +263,9 @@
                         <div class="d-flex align-items-center gap-1 w-100">
                             <button
                                 class="project-load-btn flex-grow-1 text-start"
-                                class:fw-semibold={currentProjectId === project.id}
                                 type="button"
                                 onclick={() => handleLoad(project.id)}
-                                disabled={loadingProjectId === project.id}
+                                disabled={loadingProjectId !== null}
                                 title={formatDate(project.updatedAt)}
                             >
                                 {#if loadingProjectId === project.id}
@@ -246,17 +274,17 @@
                                 {project.name}
                             </button>
                             <button
-                                class="btn btn-sm btn-link p-0 text-secondary"
+                                class="btn btn-sm p-0 border-0 bg-transparent text-secondary"
                                 type="button"
                                 title="Rename"
                                 onclick={() => startRename(project)}
-                            >✏️</button>
+                            ><Icon svg={icons['pencil']} width="0.85rem" height="0.85rem" marginRight="0" /></button>
                             <button
-                                class="btn btn-sm btn-link p-0 text-danger"
+                                class="btn btn-sm p-0 border-0 bg-transparent text-danger"
                                 type="button"
                                 title="Delete"
                                 onclick={() => { confirmDeleteId = project.id; renamingId = null; }}
-                            >🗑️</button>
+                            ><Icon svg={icons['trash']} width="0.85rem" height="0.85rem" marginRight="0" /></button>
                         </div>
                     {/if}
                 </li>
@@ -275,6 +303,10 @@
     }
     .project-dropdown-menu {
         min-width: 280px;
+    }
+    .current-project-label {
+        font-size: 0.875rem;
+        max-width: 200px;
     }
     .project-item {
         border-bottom: 1px solid #f0f0f0;

@@ -78,11 +78,9 @@ export function dragged(event: d3.D3DragEvent<SVGSVGElement, unknown, unknown>):
     }
 }
 
-export function changeAltitudeScale(autoAdjustAltitude = true): void {
-    const projName = macroState.macroParams.General.projection;
+export function updateVisibleAreaScale(): void {
     const fov = macroState.macroParams.General.fieldOfView;
-
-    if (projName === "satellite" && fov) {
+    if (macroState.macroParams.General.projection === "satellite") {
         const fovExtent = Math.tan((0.5 * fov * Math.PI) / 180);
         altMin = Math.round((1 / fovExtent) * 500);
         altMax = Math.round((1 / fovExtent) * 4000);
@@ -94,6 +92,9 @@ export function changeAltitudeScale(autoAdjustAltitude = true): void {
         // high altitude (zoomed in for standard) → 0, low altitude → 0.1
         threshScale = scalePow().domain([altMax, altMin]).range([0, 0.1]).exponent(1.0);
     }
+}
+export function changeAltitudeScale(autoAdjustAltitude = true): void {
+    updateVisibleAreaScale();
 
     const altitude = macroState.inlinePropsMacro.altitude || macroState.macroParams.General.altitude;
     macroState.visibleArea = threshScale(altitude);

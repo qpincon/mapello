@@ -4,7 +4,6 @@ import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { userProjects } from '$lib/server/schema';
 import { eq, desc } from 'drizzle-orm';
-import { randomUUID } from 'crypto';
 
 async function requireUser(request: Request) {
 	const session = await auth.api.getSession({ headers: request.headers });
@@ -34,15 +33,13 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!name || !project_json) throw error(400, 'Missing name or project_json');
 
 	const now = Date.now();
-	const id = randomUUID();
-	await db.insert(userProjects).values({
-		id,
+	const [created] = await db.insert(userProjects).values({
 		userId: user.id,
 		name,
 		projectJson: project_json,
 		createdAt: now,
 		updatedAt: now,
-	});
+	}).returning({ id: userProjects.id });
 
-	return json({ id, name, createdAt: now, updatedAt: now }, { status: 201 });
+	return json({ id: created.id, name, createdAt: now, updatedAt: now }, { status: 201 });
 };

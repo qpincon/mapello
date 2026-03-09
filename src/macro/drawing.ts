@@ -13,7 +13,7 @@ import { duplicateContourCleanFirst, postClipSimple } from "src/svg/svg";
 import { addTooltipListener } from "src/tooltip";
 import { getProjection } from "src/util/projections";
 import { macroPositionVars } from "src/stateDefaults";
-import { changeAltitudeScale } from "./interactions";
+import { changeAltitudeScale, updateVisibleAreaScale } from "./interactions";
 import { updateZonesDataFormatters } from "./formatting";
 
 export async function drawMacroBase(svg: SvgSelection, simplified = false): Promise<void> {
@@ -299,6 +299,7 @@ export async function changeProjection(): Promise<void> {
     };
     appState.projection = getProjection(projectionParams);
     appState.projectionLarger = getProjection({ ...projectionParams, larger: true });
+    updateVisibleAreaScale();
 }
 
 
@@ -319,7 +320,6 @@ export function handleChangeProp(event: CustomEvent<{ prop: string; value: unkno
     }
     if (macroPositionVars.includes(prop)) {
         if (value) {
-            // @ts-expect-error
             macroState.inlinePropsMacro[prop] = value;
         }
     }

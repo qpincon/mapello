@@ -177,9 +177,10 @@ export function resizeMaplibreMap(generalParams: MicroParams, mapLibreMap: MapLi
 
     // Check if canvas size differs from expected container size
     const canvas = mapLibreMap.getCanvas();
-    const canvasWidth = canvas.clientWidth;
-    const canvasHeight = canvas.clientHeight;
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
 
+    console.log(canvas, canvasWidth, finalWidth, canvasHeight, finalHeight)
     if (canvasWidth !== finalWidth || canvasHeight !== finalHeight) {
         // Canvas doesn't fill container - force resize by setting dimensions on canvas wrapper
         const canvasContainer = canvas.parentElement;

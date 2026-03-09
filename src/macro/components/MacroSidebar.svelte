@@ -54,7 +54,7 @@
     import dataExplanation from "../../assets/dataColor.svg";
     import { applyInlineStyles, drawMacroBase, handleChangeProp, projectAndDraw } from "../drawing";
     import { appendCountryImageNew } from "src/svg/contourMethods";
-    import { dragged, zoomed } from "../interactions";
+    import { dragged, updateVisibleAreaScale, zoomed } from "../interactions";
     import Modal from "src/components/Modal.svelte";
     import PaletteEditor from "src/components/PaletteEditor.svelte";
     import QuillEditor from "src/components/QuillEditor.svelte";
@@ -128,6 +128,7 @@
         document.head.appendChild(commonStyleSheetElem);
         commonStyleSheetElem.innerHTML = macroState.baseCss;
         initWorldData().then(() => {
+            updateVisibleAreaScale();
             draw();
         });
     });

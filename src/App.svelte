@@ -137,9 +137,25 @@
     let showExportConfirm = $state(false);
     let showAuthModal = $state(false);
     let authAfterCallback: (() => void) | undefined = $state(undefined);
-    let currentProjectName = $state('Project 1');
-    let activeProjectId = $state<string | null>(null);
+    const ACTIVE_PROJECT_KEY = "map-builder-active-project";
+    const _storedProject = (() => {
+        try {
+            return JSON.parse(localStorage.getItem(ACTIVE_PROJECT_KEY) ?? "null");
+        } catch {
+            return null;
+        }
+    })();
+    let currentProjectName = $state(_storedProject?.name ?? "Project 1");
+    let activeProjectId = $state<number | null>(typeof _storedProject?.id === 'number' ? _storedProject.id : null);
     const currentUser = $derived(page.data.user ?? null);
+
+    $effect(() => {
+        if (activeProjectId) {
+            localStorage.setItem(ACTIVE_PROJECT_KEY, JSON.stringify({ id: activeProjectId, name: currentProjectName }));
+        } else {
+            localStorage.removeItem(ACTIVE_PROJECT_KEY);
+        }
+    });
 
     // TODO: move in menuStates
     let editingPath = $state(false);
@@ -151,23 +167,102 @@
 
     let zoomFunc: d3.ZoomBehavior<any, any> | null = $state(null);
     let dragFunc: d3.DragBehavior<any, any, any> | null = $state(null);
-    // let commonStyleSheetElem: HTMLStyleElement;
-    const syncToServer = debounce(() => {
+    function syncToServer() {
         if (!activeProjectId || !currentUser) return;
         fetch(`/api/projects/${activeProjectId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ project_json: getProjectJson() }),
         }).catch(() => {});
-    }, 3000);
+    }
+
+    let showProjectLoginModal = $state(false);
+    let loginProjects = $state<{ id: number; name: string; updatedAt: number }[]>([]);
+    let loadingLoginProjectId = $state<number | null>(null);
+    let saveDraftName = $state("Project 1");
+
+    let _checkingProjects = false;
+
+    async function handleLoginProjectCheck() {
+        if (_checkingProjects) return;
+        _checkingProjects = true;
+        try {
+            const res = await fetch("/api/projects");
+            if (!res.ok) return;
+            const projects: { id: string; name: string; updatedAt: number }[] = await res.json();
+            if (projects.length === 0) {
+                const createRes = await fetch("/api/projects", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: "Project 1", project_json: getProjectJson() }),
+                });
+                if (!createRes.ok) return;
+                const created = await createRes.json();
+                activeProjectId = created.id;
+                currentProjectName = created.name;
+            } else {
+                loginProjects = projects;
+                saveDraftName = "Project 1";
+                showProjectLoginModal = true;
+            }
+        } catch {
+            /* silent */
+        } finally {
+            _checkingProjects = false;
+        }
+    }
+
+    async function handleSaveDraft() {
+        if (!saveDraftName.trim()) return;
+        try {
+            const res = await fetch("/api/projects", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: saveDraftName.trim(), project_json: getProjectJson() }),
+            });
+            if (!res.ok) return;
+            const created = await res.json();
+            activeProjectId = created.id;
+            currentProjectName = created.name;
+            showProjectLoginModal = false;
+        } catch {
+            /* silent */
+        }
+    }
+
+    async function handleSelectLoginProject(id: number) {
+        loadingLoginProjectId = id;
+        try {
+            const res = await fetch(`/api/projects/${id}`);
+            if (!res.ok) return;
+            const project = await res.json();
+            const state: GlobalState = JSON.parse(project.projectJson);
+            await applyState(state);
+            if (commonState.currentMode === "macro") macroSidebar!.applyStateAndDraw();
+            activeProjectId = id;
+            currentProjectName = project.name;
+            showProjectLoginModal = false;
+        } catch {
+            /* silent */
+        } finally {
+            loadingLoginProjectId = null;
+        }
+    }
+
+    async function handleLoginModalClosed() {
+        showProjectLoginModal = false;
+        if (!activeProjectId) await handleSaveDraft();
+    }
+
+    $effect(() => {
+        if (currentUser && !activeProjectId) {
+            handleLoginProjectCheck();
+        }
+    });
 
     onMount(async () => {
         console.log("App onmount");
         registerServerSync(syncToServer);
-        // commonStyleSheetElem = document.createElement("style");
-        // commonStyleSheetElem.setAttribute("id", "style-sheet-macro");
-        // document.head.appendChild(commonStyleSheetElem);
-        // commonStyleSheetElem.innerHTML = macroState.baseCss;
         /** Init bootstrap dropdowns */
         Array.from(document.querySelectorAll(".dropdown-toggle")).forEach((dropdownToggleEl) => {
             new Dropdown(dropdownToggleEl);
@@ -352,18 +447,6 @@
         });
     });
 
-    function restoreStateToDefault() {
-        applyState(defaultState);
-    }
-
-    async function handleReset() {
-        if (!window.confirm('Reset to default? Your current project will be erased.')) return;
-        currentProjectName = 'Project 1';
-        activeProjectId = null;
-        await applyState(defaultState);
-        if (commonState.currentMode === 'macro') macroSidebar!.applyStateAndDraw();
-    }
-
     function attachListeners(): void {
         const container = select("#map-container");
         dragFunc = drag()
@@ -391,7 +474,7 @@
     }
 
     async function switchMode(newMode: Mode): Promise<void> {
-        if (commonState.currentMode === newMode) return;
+        // if (commonState.currentMode === newMode) return;
         commonState.currentMode = newMode;
         select("#map-container").html("");
         await tick();
@@ -493,18 +576,6 @@
         isDrawing = false;
     }
 
-    function saveProject(): void {
-        const baseCss = exportStyleSheet("#outline")!;
-        // TODO: is is this useful?
-        macroState.baseCss = baseCss;
-        const state: GlobalState = {
-            stateCommon: commonState,
-            stateMacro: macroState,
-            stateMicro: microState,
-        };
-        download(JSON.stringify(state), "text/json", "project.cartosvg");
-    }
-
     async function applyState(state: GlobalState): Promise<void> {
         clearHistory();
         setRestoring(true);
@@ -513,6 +584,7 @@
             Object.assign(macroState, state.stateMacro.macroParams ? state.stateMacro : defaultState.stateMacro);
             Object.assign(microState, state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro);
             await tick();
+            switchMode(state.stateCommon.currentMode);
             changeProjection();
             draw();
             saveState();
@@ -1813,14 +1885,9 @@
                         {getProjectJson}
                         applyState={async (state) => {
                             await applyState(state);
-                            if (commonState.currentMode === 'macro') macroSidebar!.applyStateAndDraw();
+                            if (commonState.currentMode === "macro") macroSidebar!.applyStateAndDraw();
                         }}
                     />
-                {:else}
-                    <span class="project-name-label">{currentProjectName}</span>
-                    <button class="navbar-btn" type="button" onclick={handleReset}>
-                        Reset
-                    </button>
                 {/if}
                 <div>
                     <button class="navbar-btn navbar-btn-cta" type="button" onclick={onExportSvgClicked}>
@@ -1830,11 +1897,27 @@
                 <Examples on:example={loadExample} />
                 {#if currentUser}
                     <span class="navbar-user-email">{currentUser.email}</span>
-                    <button class="navbar-btn" type="button" onclick={async () => { await signOut(); invalidateAll(); }}>
+                    <button
+                        class="navbar-btn"
+                        type="button"
+                        onclick={async () => {
+                            await signOut();
+                            await invalidateAll();
+                            activeProjectId = null;
+                            currentProjectName = "Project 1";
+                        }}
+                    >
                         Sign out
                     </button>
                 {:else}
-                    <button class="navbar-btn" type="button" onclick={() => { authAfterCallback = undefined; showAuthModal = true; }}>
+                    <button
+                        class="navbar-btn"
+                        type="button"
+                        onclick={() => {
+                            authAfterCallback = undefined;
+                            showAuthModal = true;
+                        }}
+                    >
                         Sign in
                     </button>
                 {/if}
@@ -1884,10 +1967,59 @@
     onClosed={() => (showExportConfirm = false)}
 />
 
-<AuthModal
-    bind:open={showAuthModal}
-    afterAuth={authAfterCallback}
-/>
+<AuthModal bind:open={showAuthModal} afterAuth={authAfterCallback} />
+
+<Modal
+    open={showProjectLoginModal}
+    ignoreBackdrop={true}
+    keyboard={false}
+    onClosed={handleLoginModalClosed}
+    modalWidth="480px"
+>
+    <div slot="header"><h5 class="modal-title">Welcome back</h5></div>
+    <div slot="content">
+        <div class="mb-4">
+            <p class="fw-semibold mb-2">Save your current work</p>
+            <div class="d-flex gap-2">
+                <input
+                    class="form-control form-control-sm"
+                    type="text"
+                    bind:value={saveDraftName}
+                    placeholder="Project name…"
+                    onkeydown={(e) => {
+                        if (e.key === "Enter") handleSaveDraft();
+                    }}
+                />
+                <button
+                    class="btn btn-sm btn-primary text-nowrap"
+                    type="button"
+                    onclick={handleSaveDraft}
+                    disabled={!saveDraftName.trim()}>Save</button
+                >
+            </div>
+        </div>
+        <div class="text-muted small text-center mb-3">
+            — or open an existing project (current work will be discarded) —
+        </div>
+        <div class="d-flex flex-column gap-1">
+            {#each loginProjects as project (project.id)}
+                <button
+                    class="btn btn-outline-secondary text-start"
+                    type="button"
+                    disabled={loadingLoginProjectId !== null}
+                    onclick={() => handleSelectLoginProject(project.id)}
+                >
+                    {#if loadingLoginProjectId === project.id}
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    {/if}
+                    {project.name}
+                    <span class="text-muted small ms-2">{new Date(project.updatedAt).toLocaleDateString()}</span>
+                </button>
+            {/each}
+        </div>
+    </div>
+    <div slot="footer"></div>
+</Modal>
 
 <style lang="scss" scoped>
     #params {
@@ -1968,13 +2100,6 @@
         pointer-events: none;
         z-index: 9999;
         white-space: nowrap;
-    }
-
-    .project-name-label {
-        font-size: 0.9rem;
-        font-weight: 500;
-        color: #3a4a63;
-        padding: 0 4px;
     }
 
     .navbar-user-email {
