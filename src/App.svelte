@@ -10,6 +10,7 @@
     import PathEditor from "./svg/pathEditor";
     import Geocoding from "./components/Geocoding.svelte";
     import { download, initTooltips, pascalCaseToSentence, sleep } from "./util/common";
+    import { processUploadedImage } from "./util/imageProcess";
     import * as shapes from "./svg/shapeDefs";
     import * as markers from "./svg/markerDefs";
     import {
@@ -884,30 +885,32 @@
         menuStates.chosingMarker = true;
     }
 
-    function importImagePath(e: Event): void {
+    async function importImagePath(e: Event): Promise<void> {
         // @ts-expect-error
         const file = e.target.files[0];
-        const fileName = file.name;
-        const reader = new FileReader();
-        reader.addEventListener("load", () => {
-            const newImage: PathDefImage = { name: fileName, content: reader.result as string };
-            commonState.providedPaths[selectedPathIndex].image = newImage;
-            if (!commonState.providedPaths[selectedPathIndex].duration) {
-                commonState.providedPaths[selectedPathIndex].duration = 10;
-                commonState.providedPaths[selectedPathIndex].width = 20;
-                commonState.providedPaths[selectedPathIndex].height = 10;
-            }
-            drawCustomPaths(
-                commonState.providedPaths,
-                svg,
-                appState.projection!,
-                commonState.inlineStyles,
-                commonState.elementLinks ?? {},
-            );
-            applyInlineStyles();
-            saveState();
-        });
-        reader.readAsDataURL(file);
+        let content: string;
+        try {
+            content = await processUploadedImage(file);
+        } catch (err) {
+            alert((err as Error).message);
+            return;
+        }
+        const newImage: PathDefImage = { name: file.name, content };
+        commonState.providedPaths[selectedPathIndex].image = newImage;
+        if (!commonState.providedPaths[selectedPathIndex].duration) {
+            commonState.providedPaths[selectedPathIndex].duration = 10;
+            commonState.providedPaths[selectedPathIndex].width = 20;
+            commonState.providedPaths[selectedPathIndex].height = 10;
+        }
+        drawCustomPaths(
+            commonState.providedPaths,
+            svg,
+            appState.projection!,
+            commonState.inlineStyles,
+            commonState.elementLinks ?? {},
+        );
+        applyInlineStyles();
+        saveState();
     }
 
     const saveDebounced = debounce(saveState, 200);
@@ -1459,31 +1462,31 @@
         customImageInput!.click();
     }
 
-    function onCustomImageShapeSelected(e: Event): void {
+    async function onCustomImageShapeSelected(e: Event): Promise<void> {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.addEventListener("load", () => {
-            const shapeId = `custom-image-${commonState.shapeCount++}`;
-            const lastPoint = [...commonState.providedShapes]
-                .reverse()
-                .find((s) => s.name !== undefined || s.customImage !== undefined);
-            commonState.providedShapes.push({
-                id: shapeId,
-                pos: openContextMenuInfo.position,
-                scale: 1,
-                customImage: {
-                    name: file.name,
-                    content: reader.result as string,
-                    width: 30,
-                    height: 40,
-                },
-            });
-            drawAndSetupShapes();
-            closeMenu();
-            saveState();
+        let content: string;
+        try {
+            content = await processUploadedImage(file);
+        } catch (err) {
+            alert((err as Error).message);
+            return;
+        }
+        const shapeId = `custom-image-${commonState.shapeCount++}`;
+        commonState.providedShapes.push({
+            id: shapeId,
+            pos: openContextMenuInfo.position,
+            scale: 1,
+            customImage: {
+                name: file.name,
+                content,
+                width: 30,
+                height: 40,
+            },
         });
-        reader.readAsDataURL(file);
+        drawAndSetupShapes();
+        closeMenu();
+        saveState();
     }
 
     function copySelection(): void {

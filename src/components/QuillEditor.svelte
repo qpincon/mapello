@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
+    import { processUploadedImage } from "../util/imageProcess";
     import Quill from "quill";
     import QuillResizeImage from "quill-resize-image";
     import "quill/dist/quill.snow.css";
@@ -29,17 +30,19 @@
         const input = document.createElement("input");
         input.type = "file";
         input.accept = "image/png,image/jpeg,image/gif,image/webp,image/svg+xml";
-        input.onchange = () => {
+        input.onchange = async () => {
             const file = input.files?.[0];
             if (!file || !quillInstance) return;
-
-            const reader = new FileReader();
-            reader.onload = () => {
-                const range = quillInstance!.getSelection(true);
-                quillInstance!.insertEmbed(range.index, "image", reader.result as string);
-                quillInstance!.setSelection(range.index + 1);
-            };
-            reader.readAsDataURL(file);
+            let dataUrl: string;
+            try {
+                dataUrl = await processUploadedImage(file);
+            } catch (err) {
+                alert((err as Error).message);
+                return;
+            }
+            const range = quillInstance!.getSelection(true);
+            quillInstance!.insertEmbed(range.index, "image", dataUrl);
+            quillInstance!.setSelection(range.index + 1);
         };
         input.click();
     }
