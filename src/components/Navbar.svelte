@@ -1,5 +1,4 @@
 <script lang="ts">
-  import logo from "../assets/img/logo_brand.webp";
   import githubLogo from "../assets/img/github.svg?raw";
   interface Props {
     activeTitle?: string;
@@ -9,9 +8,6 @@
 </script>
 
 <div id="navbar">
-  <a href="app.html" class="logo">
-    <img src={logo} alt="Logo" height="50" width="140" />
-  </a>
   <slot></slot>
 </div>
 <a
@@ -22,9 +18,6 @@
 >
 
 <style lang="scss">
-  .logo {
-    padding: 5px;
-  }
   #navbar {
     display: flex;
     width: 100%;
@@ -32,7 +25,6 @@
     border-bottom: 1px solid #e0e8f0;
     min-height: 50px;
     display: flex;
-    flex-direction: row-reverse;
     align-items: center;
     > a {
       text-decoration: none;

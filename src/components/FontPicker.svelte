@@ -7,9 +7,10 @@
     interface Props {
         onFontSelected: (font: ProvidedFont) => void;
         existingFontNames: string[];
+        iconOnly?: boolean;
     }
 
-    let { onFontSelected, existingFontNames }: Props = $props();
+    let { onFontSelected, existingFontNames, iconOnly = false }: Props = $props();
 
     let showModal = $state(false);
     let searchQuery = $state("");
@@ -159,8 +160,8 @@
     }
 </script>
 
-<button class="navbar-btn" onclick={openPicker}>
-    <Icon svg={icons["font"]} /> Add font
+<button class="navbar-btn" onclick={openPicker} title={iconOnly ? "Add font" : undefined}>
+    <Icon svg={icons["font"]} />{#if !iconOnly} Add font{/if}
 </button>
 
 <Modal open={showModal} onClosed={closePicker} modalWidth="600px">

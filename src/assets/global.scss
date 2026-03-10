@@ -239,6 +239,11 @@ aside .nav-link.active {
     width: 90%;
 }
 
+.user-email-header {
+    font-size: 12px;
+    color: #6c757d;
+}
+
 .popup.popup_right {
     left: 30px !important;
 }
@@ -281,6 +286,19 @@ aside .nav-link.active {
         background: #2a7d6e;
         color: white;
         &:hover { background: #236859; }
+    }
+    &.navbar-avatar {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border-radius: 50%;
+        background: #3a4a63;
+        color: white;
+        font-weight: 600;
+        font-size: 13px;
+        justify-content: center;
+        &:hover { background: #2e3d55; }
+        &.dropdown-toggle::after { display: none; }
     }
 }
 .navbar-btn.dropdown-toggle::after {

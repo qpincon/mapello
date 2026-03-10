@@ -213,7 +213,13 @@
                         />
                         <label class="form-check-label" for="fontNo">
                             No
-                            <span class="text-muted small">&mdash; auto-pick smallest (paths or @font-face)</span>
+                            <span class="text-muted small">&mdash; optimize fonts for smaller footprint</span>
+                            <span
+                                class="help-tooltip fs-6"
+                                data-bs-toggle="tooltip"
+                                data-bs-title="Choose the smallest between converting the labels to &lt;path&gt; elements or loading the font-face"
+                                >?</span
+                            >
                         </label>
                     </div>
                 {/if}
@@ -275,7 +281,7 @@
         min-height: 300px;
     }
     .export-options {
-        flex: 0 0 260px;
+        flex: 0 0 285px;
     }
     .export-preview {
         flex: 1;
@@ -284,7 +290,6 @@
     }
     .preview-container {
         padding: 1.5rem;
-        margin: 1rem;
         overflow: auto;
     }
     .preview-container :global(svg) {

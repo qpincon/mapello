@@ -1874,69 +1874,74 @@
     </aside>
     <div class="w-auto d-flex flex-grow-1 flex-column align-items-center h-100">
         <Navbar>
-            <div class="d-flex justify-content-center align-items-center gap-2">
-                <div>
+            <div class="d-flex align-items-center justify-content-between w-100 px-3">
+                <!-- LEFT: project name -->
+                <div class="d-flex align-items-center gap-2">
+                    {#if currentUser}
+                        <ProjectDropdown
+                            bind:currentProjectName
+                            bind:currentProjectId={activeProjectId}
+                            {getProjectJson}
+                            applyState={async (state) => {
+                                await applyState(state);
+                                if (commonState.currentMode === "macro") macroSidebar!.applyStateAndDraw();
+                            }}
+                        />
+                    {/if}
+                </div>
+                <!-- RIGHT: tools + user -->
+                <div class="d-flex align-items-center gap-2">
                     <FontPicker
                         onFontSelected={handleFontSelected}
                         existingFontNames={commonState.providedFonts.map((f) => f.name)}
+                        iconOnly={true}
                     />
-                </div>
-                {#if currentUser}
-                    <ProjectDropdown
-                        bind:currentProjectName
-                        bind:currentProjectId={activeProjectId}
-                        {getProjectJson}
-                        applyState={async (state) => {
-                            await applyState(state);
-                            if (commonState.currentMode === "macro") macroSidebar!.applyStateAndDraw();
-                        }}
-                    />
-                {/if}
-                <div>
                     <button class="navbar-btn navbar-btn-cta" type="button" onclick={onExportSvgClicked}>
                         <Icon fillColor="none" svg={icons["download"]} /> Export
                     </button>
-                </div>
-                <Examples on:example={loadExample} />
-                {#if currentUser}
-                    <div class="dropdown">
+                    {#if currentUser}
+                        <div class="dropdown">
+                            <button
+                                class="navbar-btn navbar-avatar dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                title={currentUser.email}
+                            >
+                                {(currentUser.name ?? currentUser.email)[0].toUpperCase()}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><span class="dropdown-item-text user-email-header">{currentUser.email}</span></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <button
+                                        class="dropdown-item"
+                                        type="button"
+                                        onclick={async () => {
+                                            await signOut();
+                                            await invalidateAll();
+                                            activeProjectId = null;
+                                            currentProjectName = "Project 1";
+                                        }}
+                                    >
+                                        Sign out
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    {:else}
                         <button
-                            class="navbar-btn navbar-user-email dropdown-toggle"
+                            class="navbar-btn"
                             type="button"
-                            data-bs-toggle="dropdown"
-                            aria-expanded="false"
+                            onclick={() => {
+                                authAfterCallback = undefined;
+                                showAuthModal = true;
+                            }}
                         >
-                            {currentUser.email}
+                            Sign in
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <button
-                                    class="dropdown-item"
-                                    type="button"
-                                    onclick={async () => {
-                                        await signOut();
-                                        await invalidateAll();
-                                        activeProjectId = null;
-                                        currentProjectName = "Project 1";
-                                    }}
-                                >
-                                    Sign out
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                {:else}
-                    <button
-                        class="navbar-btn"
-                        type="button"
-                        onclick={() => {
-                            authAfterCallback = undefined;
-                            showAuthModal = true;
-                        }}
-                    >
-                        Sign in
-                    </button>
-                {/if}
+                    {/if}
+                </div>
             </div>
         </Navbar>
         <div class="d-flex flex-column justify-content-center align-items-center h-100">

@@ -165,7 +165,6 @@
         appState.path = geoPath(appState.projection);
         // maplibreMap.showTileBoundaries = true;
         maplibreMap.on("moveend", async (event) => {
-            console.trace("moveend");
             const center = maplibreMap!.getCenter().toArray();
             if (center[0] !== 0 && center[1] !== 0) {
                 microState.inlinePropsMicro = {
