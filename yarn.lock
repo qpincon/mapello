@@ -1441,9 +1441,9 @@
   dependencies:
     "@types/node" "*"
 
-"@types/opentype.js@*":
+"@types/opentype.js@^1.3.9":
   version "1.3.9"
-  resolved "https://registry.npmjs.org/@types/opentype.js/-/opentype.js-1.3.9.tgz"
+  resolved "https://registry.yarnpkg.com/@types/opentype.js/-/opentype.js-1.3.9.tgz#d0d767a4b35777b882b98773915ae94701d4ddaf"
   integrity sha512-KOGywvDPncA4/tTWV5xKNhjpsoSSAHIx3mHOhL5l3XX+c6Xu2dQnHvGs7mRNQsQRte1EqmQ0cPQQ8Z14lkv+yw==
 
 "@types/pbf@*", "@types/pbf@^3.0.5":
@@ -1462,13 +1462,6 @@
   integrity sha512-Z0pOY34GDFl3Q6hUFYf3HkTwKEE02e7QgtJppBt+beEAxnyOpJua+voGFvxINBHa06GwLFFym7gRPY2SiKIfIA==
   dependencies:
     "@types/geojson" "*"
-
-"@types/text-to-svg@^3.1.4":
-  version "3.1.4"
-  resolved "https://registry.npmjs.org/@types/text-to-svg/-/text-to-svg-3.1.4.tgz"
-  integrity sha512-nupWR3fOC2CaakVDvnEuiNpcg+XZD8ez7yJf7HCcpR1JKqPKxnUqeFH8er9txouyCbsdwXjhKKpMPtnpQZYCsQ==
-  dependencies:
-    "@types/opentype.js" "*"
 
 "@types/topojson-client@^3.1.5":
   version "3.1.5"
@@ -1804,7 +1797,7 @@ colorjs.io@^0.5.0:
   resolved "https://registry.npmjs.org/colorjs.io/-/colorjs.io-0.5.2.tgz"
   integrity sha512-twmVoizEW7ylZSN32OgKdXRmo1qg+wT5/6C3xu5b9QsWzSFAhHLn2xd8ro0diCsKfCj1RdaTP/nrcW+vAoQPIw==
 
-commander@2, commander@^2.11.0, commander@^2.20.0:
+commander@2, commander@^2.20.0:
   version "2.20.3"
   resolved "https://registry.npmjs.org/commander/-/commander-2.20.3.tgz"
   integrity sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==
@@ -3160,13 +3153,13 @@ once@^1.3.1, once@^1.4.0:
   dependencies:
     wrappy "1"
 
-opentype.js@0.11.0:
-  version "0.11.0"
-  resolved "https://registry.npmjs.org/opentype.js/-/opentype.js-0.11.0.tgz"
-  integrity sha512-Z9NkAyQi/iEKQYzCSa7/VJSqVIs33wknw8Z8po+DzuRUAqivJ+hJZ94mveg3xIeKwLreJdWTMyEO7x1K13l41Q==
+opentype.js@^1.3.4:
+  version "1.3.4"
+  resolved "https://registry.yarnpkg.com/opentype.js/-/opentype.js-1.3.4.tgz#1c0e72e46288473cc4a4c6a2dc60fd7fe6020d77"
+  integrity sha512-d2JE9RP/6uagpQAVtJoF0pJJA/fgai89Cc50Yp0EJHk+eLp6QQ7gBoblsnubRULNY132I0J1QKMJ+JTbMqz4sw==
   dependencies:
     string.prototype.codepointat "^0.2.1"
-    tiny-inflate "^1.0.2"
+    tiny-inflate "^1.0.3"
 
 os-browserify@^0.3.0:
   version "0.3.0"
@@ -4023,14 +4016,6 @@ terser@^5.16.2:
     commander "^2.20.0"
     source-map-support "~0.5.20"
 
-text-to-svg@^3.1.5:
-  version "3.1.5"
-  resolved "https://registry.npmjs.org/text-to-svg/-/text-to-svg-3.1.5.tgz"
-  integrity sha512-mbeGhMz9MAFaGaZGE8n4Mh/iQV/UkVnYJXhXFrv0eWkcNTgflhpHR2a8nr2ci3NU4FekIHJYKh0N0qdc6yUpfA==
-  dependencies:
-    commander "^2.11.0"
-    opentype.js "0.11.0"
-
 timers-browserify@^2.0.4:
   version "2.0.12"
   resolved "https://registry.npmjs.org/timers-browserify/-/timers-browserify-2.0.12.tgz"
@@ -4038,7 +4023,7 @@ timers-browserify@^2.0.4:
   dependencies:
     setimmediate "^1.0.4"
 
-tiny-inflate@^1.0.2:
+tiny-inflate@^1.0.3:
   version "1.0.3"
   resolved "https://registry.npmjs.org/tiny-inflate/-/tiny-inflate-1.0.3.tgz"
   integrity sha512-pkY1fj1cKHb2seWDy0B16HeWyczlJA9/WW3u3c4z/NiWDsO3DOU5D7nhTLE9CF0yXv/QZFY7sEJmj24dK+Rrqw==

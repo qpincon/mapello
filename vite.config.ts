@@ -6,7 +6,7 @@ import { sveltekit } from '@sveltejs/kit/vite'
 // https://vite.dev/config/
 export default defineConfig({
   optimizeDeps: {
-    exclude: ['text-to-svg', 'terser'],
+    exclude: ['terser'],
   },
   resolve: {
     alias: {
@@ -28,15 +28,5 @@ export default defineConfig({
   },
   plugins: [
     sveltekit(),
-    // to remove when this PR is merged https://github.com/shrhdk/text-to-svg/pull/76
-    // nodePolyfills({
-    //   include: ['path'],
-    //   globals: {
-    //     global: true,
-    //     Buffer: true,
-    //     process: true
-    //   },
-    //   protocolImports: true
-    // })
   ],
 })

@@ -238,3 +238,4 @@
 - [x] macro: selecting adm2 after adm1 removes adm1 without adding adm2
 - [x] color picker tooltip makes pages bigger and must scroll when on bottom (second glow)
 - [x] macro "Color using data" default: "color on" & "Palette" empty
+- [ ] macro export: linear gradient like https://bunny.net/static/storage-map-48de78a4f676dd3129102dadd7f90751.svg ?

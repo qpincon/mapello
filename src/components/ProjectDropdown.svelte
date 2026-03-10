@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import { Dropdown } from 'bootstrap';
-    import type { GlobalState } from '../types';
-    import { defaultState } from '../stateDefaults';
-    import Icon from './Icon.svelte';
-    import { icons } from '../shared/icons';
+    import { onMount } from "svelte";
+    import { Dropdown } from "bootstrap";
+    import type { GlobalState } from "../types";
+    import { defaultState } from "../stateDefaults";
+    import Icon from "./Icon.svelte";
+    import { icons } from "../shared/icons";
 
     interface CloudProject {
         id: number;
@@ -20,45 +20,50 @@
         applyState: (state: GlobalState) => Promise<void>;
     }
 
-    let { currentProjectName = $bindable(), currentProjectId = $bindable(), getProjectJson, applyState }: Props = $props();
+    let {
+        currentProjectName = $bindable(),
+        currentProjectId = $bindable(),
+        getProjectJson,
+        applyState,
+    }: Props = $props();
 
     let toggleEl: HTMLElement;
     let dropdown: Dropdown;
     let projects: CloudProject[] = $state([]);
     let loading = $state(false);
-    let errorMsg = $state('');
+    let errorMsg = $state("");
     let editingCurrentName = $state(false);
-    let currentNameInput = $state('');
+    let currentNameInput = $state("");
     let renamingId = $state<number | null>(null);
-    let renamingValue = $state('');
+    let renamingValue = $state("");
     let confirmDeleteId = $state<number | null>(null);
     let loadingProjectId = $state<number | null>(null);
     let creatingProject = $state(false);
 
     onMount(() => {
         dropdown = new Dropdown(toggleEl);
-        toggleEl.addEventListener('show.bs.dropdown', fetchProjects);
+        toggleEl.addEventListener("show.bs.dropdown", fetchProjects);
     });
 
     async function saveCurrentProject() {
         if (!currentProjectId) return;
         await fetch(`/api/projects/${currentProjectId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ project_json: getProjectJson() }),
         }).catch(() => {});
     }
 
     async function fetchProjects() {
         loading = true;
-        errorMsg = '';
+        errorMsg = "";
         try {
-            const res = await fetch('/api/projects');
+            const res = await fetch("/api/projects");
             if (!res.ok) throw new Error();
             const all: CloudProject[] = await res.json();
-            projects = all.filter(p => p.id !== currentProjectId);
+            projects = all.filter((p) => p.id !== currentProjectId);
         } catch {
-            errorMsg = 'Could not load projects';
+            errorMsg = "Could not load projects";
         } finally {
             loading = false;
         }
@@ -66,7 +71,7 @@
 
     async function handleLoad(id: number) {
         loadingProjectId = id;
-        errorMsg = '';
+        errorMsg = "";
         try {
             await saveCurrentProject();
             const res = await fetch(`/api/projects/${id}`);
@@ -78,7 +83,7 @@
             currentProjectName = project.name;
             dropdown.hide();
         } catch {
-            errorMsg = 'Could not load project';
+            errorMsg = "Could not load project";
         } finally {
             loadingProjectId = null;
         }
@@ -89,15 +94,15 @@
         const newName = currentNameInput.trim();
         try {
             const res = await fetch(`/api/projects/${currentProjectId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name: newName }),
             });
             if (!res.ok) throw new Error();
             currentProjectName = newName;
             editingCurrentName = false;
         } catch {
-            errorMsg = 'Could not rename project';
+            errorMsg = "Could not rename project";
         }
     }
 
@@ -105,46 +110,46 @@
         if (!renamingValue.trim()) return;
         try {
             const res = await fetch(`/api/projects/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name: renamingValue.trim() }),
             });
             if (!res.ok) throw new Error();
             renamingId = null;
             await fetchProjects();
         } catch {
-            errorMsg = 'Could not rename project';
+            errorMsg = "Could not rename project";
         }
     }
 
     async function handleDelete(id: number) {
         try {
-            const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
             if (!res.ok) throw new Error();
             confirmDeleteId = null;
             await fetchProjects();
         } catch {
-            errorMsg = 'Could not delete project';
+            errorMsg = "Could not delete project";
         }
     }
 
     function uniqueNewProjectName(): string {
-        const taken = new Set([currentProjectName, ...projects.map(p => p.name)]);
-        if (!taken.has('New project')) return 'New project';
+        const taken = new Set([currentProjectName, ...projects.map((p) => p.name)]);
+        if (!taken.has("Map")) return "Map";
         let i = 2;
-        while (taken.has(`New project - ${i}`)) i++;
-        return `New project - ${i}`;
+        while (taken.has(`Map ${i}`)) i++;
+        return `Map ${i}`;
     }
 
     async function handleCreateNewProject() {
         creatingProject = true;
-        errorMsg = '';
+        errorMsg = "";
         try {
             await saveCurrentProject();
             const name = uniqueNewProjectName();
-            const res = await fetch('/api/projects', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const res = await fetch("/api/projects", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name, project_json: JSON.stringify(defaultState) }),
             });
             if (!res.ok) throw new Error();
@@ -154,7 +159,7 @@
             currentProjectName = created.name;
             dropdown.hide();
         } catch {
-            errorMsg = 'Could not create project';
+            errorMsg = "Could not create project";
         } finally {
             creatingProject = false;
         }
@@ -168,7 +173,9 @@
 
     function formatDate(ts: number) {
         return new Date(ts).toLocaleDateString(undefined, {
-            year: 'numeric', month: 'short', day: 'numeric',
+            year: "numeric",
+            month: "short",
+            day: "numeric",
         });
     }
 </script>
@@ -185,7 +192,6 @@
         {currentProjectName}
     </button>
     <ul class="dropdown-menu project-dropdown-menu" onclick={(e) => e.stopPropagation()}>
-
         <!-- Current project name (editable) -->
         <li class="px-2 py-1 border-bottom mb-1">
             {#if editingCurrentName}
@@ -197,34 +203,34 @@
                         onclick={(e) => e.stopPropagation()}
                         onkeydown={(e) => {
                             e.stopPropagation();
-                            if (e.key === 'Enter') handleRenameCurrentProject();
-                            if (e.key === 'Escape') editingCurrentName = false;
+                            if (e.key === "Enter") handleRenameCurrentProject();
+                            if (e.key === "Escape") editingCurrentName = false;
                         }}
                     />
-                    <button class="btn btn-sm btn-primary" type="button" onclick={handleRenameCurrentProject}>OK</button>
-                    <button class="btn btn-sm btn-outline-secondary" type="button" onclick={() => (editingCurrentName = false)}>✕</button>
+                    <button class="btn btn-sm btn-primary" type="button" onclick={handleRenameCurrentProject}>OK</button
+                    >
+                    <button
+                        class="btn btn-sm btn-outline-secondary"
+                        type="button"
+                        onclick={() => (editingCurrentName = false)}>✕</button
+                    >
                 </div>
             {:else}
                 <div class="d-flex align-items-center gap-1">
-                    <span class="current-project-label fw-semibold flex-grow-1 text-truncate">{currentProjectName}</span>
+                    <span class="current-project-label fw-semibold flex-grow-1 text-truncate">{currentProjectName}</span
+                    >
                     <button
                         class="btn btn-sm p-0 border-0 bg-transparent text-secondary flex-shrink-0"
                         type="button"
                         title="Rename"
-                        onclick={() => { editingCurrentName = true; currentNameInput = currentProjectName; }}
-                    ><Icon svg={icons['pencil']} width="0.85rem" height="0.85rem" marginRight="0" /></button>
+                        onclick={() => {
+                            editingCurrentName = true;
+                            currentNameInput = currentProjectName;
+                        }}><Icon svg={icons["pencil"]} width="0.85rem" height="0.85rem" marginRight="0" /></button
+                    >
                 </div>
             {/if}
         </li>
-
-        <!-- New project -->
-        <li>
-            <button class="dropdown-item" type="button" onclick={handleCreateNewProject} disabled={creatingProject}>
-                {#if creatingProject}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
-                + New project
-            </button>
-        </li>
-        <li><hr class="dropdown-divider" /></li>
 
         {#if errorMsg}
             <li><span class="dropdown-item-text text-danger small">{errorMsg}</span></li>
@@ -246,18 +252,32 @@
                                 onclick={(e) => e.stopPropagation()}
                                 onkeydown={(e) => {
                                     e.stopPropagation();
-                                    if (e.key === 'Enter') handleRename(project.id);
-                                    if (e.key === 'Escape') renamingId = null;
+                                    if (e.key === "Enter") handleRename(project.id);
+                                    if (e.key === "Escape") renamingId = null;
                                 }}
                             />
-                            <button class="btn btn-sm btn-primary" type="button" onclick={() => handleRename(project.id)}>OK</button>
-                            <button class="btn btn-sm btn-outline-secondary" type="button" onclick={() => (renamingId = null)}>✕</button>
+                            <button
+                                class="btn btn-sm btn-primary"
+                                type="button"
+                                onclick={() => handleRename(project.id)}>OK</button
+                            >
+                            <button
+                                class="btn btn-sm btn-outline-secondary"
+                                type="button"
+                                onclick={() => (renamingId = null)}>✕</button
+                            >
                         </div>
                     {:else if confirmDeleteId === project.id}
                         <div class="d-flex gap-1 align-items-center w-100">
                             <span class="text-danger small flex-grow-1">Delete «{project.name}»?</span>
-                            <button class="btn btn-sm btn-danger" type="button" onclick={() => handleDelete(project.id)}>Delete</button>
-                            <button class="btn btn-sm btn-outline-secondary" type="button" onclick={() => (confirmDeleteId = null)}>✕</button>
+                            <button class="btn btn-sm btn-danger" type="button" onclick={() => handleDelete(project.id)}
+                                >Delete</button
+                            >
+                            <button
+                                class="btn btn-sm btn-outline-secondary"
+                                type="button"
+                                onclick={() => (confirmDeleteId = null)}>✕</button
+                            >
                         </div>
                     {:else}
                         <div class="d-flex align-items-center gap-1 w-100">
@@ -278,19 +298,29 @@
                                 type="button"
                                 title="Rename"
                                 onclick={() => startRename(project)}
-                            ><Icon svg={icons['pencil']} width="0.85rem" height="0.85rem" marginRight="0" /></button>
+                                ><Icon svg={icons["pencil"]} width="0.85rem" height="0.85rem" marginRight="0" /></button
+                            >
                             <button
                                 class="btn btn-sm p-0 border-0 bg-transparent text-danger"
                                 type="button"
                                 title="Delete"
-                                onclick={() => { confirmDeleteId = project.id; renamingId = null; }}
-                            ><Icon svg={icons['trash']} width="0.85rem" height="0.85rem" marginRight="0" /></button>
+                                onclick={() => {
+                                    confirmDeleteId = project.id;
+                                    renamingId = null;
+                                }}
+                                ><Icon svg={icons["trash"]} width="0.85rem" height="0.85rem" marginRight="0" /></button
+                            >
                         </div>
                     {/if}
                 </li>
             {/each}
         {/if}
-
+        <li>
+            <button class="dropdown-item" type="button" onclick={handleCreateNewProject} disabled={creatingProject}>
+                {#if creatingProject}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
+                + New project
+            </button>
+        </li>
     </ul>
 </div>
 
