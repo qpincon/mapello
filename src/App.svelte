@@ -59,6 +59,7 @@
     import { showElementPopover, hidePopover, getActivePopoverId, setupPopoverCursors } from "./popover";
     import { Dropdown } from "bootstrap";
     import { applyInlineStyles, changeProjection } from "./macro/drawing";
+    import { updateLayerSimplification } from "./macro/geometry-data";
     import MacroSidebar from "./macro/components/MacroSidebar.svelte";
     import { appState, commonState, macroState, microState } from "./state.svelte";
     import { icons } from "./shared/icons";
@@ -587,6 +588,7 @@
             await tick();
             switchMode(state.stateCommon.currentMode);
             changeProjection();
+            await updateLayerSimplification();
             draw();
             saveState();
         } finally {
