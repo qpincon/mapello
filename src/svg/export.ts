@@ -310,11 +310,11 @@ export function addAttribution(
     };
 
     if (mode === 'macro') {
-        g.append(createLinkedText('© GeoBoundaries', 'https://www.geoboundaries.org', textY1));
-        g.append(createLinkedText('CartoSVG', 'https://cartosvg.com', textY2));
+        g.append(createLinkedText('CartoSVG', 'https://cartosvg.com', textY1));
+        g.append(createLinkedText('© GeoBoundaries', 'https://www.geoboundaries.org', textY2));
     } else {
-        g.append(createLinkedText('© OpenStreetMap', 'https://www.openstreetmap.org/copyright', textY1));
-        g.append(createLinkedText('CartoSVG', 'https://cartosvg.com', textY2));
+        g.append(createLinkedText('CartoSVG', 'https://cartosvg.com', textY1));
+        g.append(createLinkedText('© OpenStreetMap', 'https://www.openstreetmap.org/copyright', textY2));
     }
 
     svgElement.append(g);

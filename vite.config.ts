@@ -1,13 +1,8 @@
 import { defineConfig } from 'vite'
 import { sveltekit } from '@sveltejs/kit/vite'
-// /!!\ version 0.23 does not work! Use 0.25+
-// import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 // https://vite.dev/config/
 export default defineConfig({
-  optimizeDeps: {
-    exclude: ['terser'],
-  },
   resolve: {
     alias: {
       src: '/src',

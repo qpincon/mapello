@@ -43,7 +43,7 @@
             useViewBox,
             frameShadow,
             exportFonts: getExportFontChoice(),
-            minifyJs: (mode === "macro" || hasAnnotations) ? minifyJs : undefined,
+            minifyJs: mode === "macro" || hasAnnotations ? minifyJs : undefined,
         };
     }
 
@@ -166,7 +166,7 @@
                         <label class="form-check-label" for="export-viewbox">Use viewBox</label>
                     </div>
                     <small class="text-muted d-block ms-4">
-                        SVG will fit its container instead of fixed width/height
+                        The map will fit its container instead of fixed width/height
                     </small>
                 </div>
 

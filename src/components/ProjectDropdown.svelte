@@ -217,17 +217,17 @@
                 </div>
             {:else}
                 <div class="d-flex align-items-center gap-1">
-                    <span class="current-project-label fw-semibold flex-grow-1 text-truncate">{currentProjectName}</span
-                    >
-                    <button
-                        class="btn btn-sm p-0 border-0 bg-transparent text-secondary flex-shrink-0"
-                        type="button"
-                        title="Rename"
-                        onclick={() => {
-                            editingCurrentName = true;
-                            currentNameInput = currentProjectName;
-                        }}><Icon svg={icons["pencil"]} width="0.85rem" height="0.85rem" marginRight="0" /></button
-                    >
+                    <span class="current-project-label fw-semibold flex-grow-1 text-truncate">{currentProjectName}</span>
+                    <div class="project-actions">
+                        <button
+                            class="icon-btn"
+                            type="button"
+                            title="Rename"
+                            onclick={() => {
+                                editingCurrentName = true;
+                                currentNameInput = currentProjectName;
+                            }}><Icon svg={icons["pencil"]} width="0.85rem" height="0.85rem" marginRight="0" /></button>
+                    </div>
                 </div>
             {/if}
         </li>
@@ -293,23 +293,14 @@
                                 {/if}
                                 {project.name}
                             </button>
-                            <button
-                                class="btn btn-sm p-0 border-0 bg-transparent text-secondary"
-                                type="button"
-                                title="Rename"
-                                onclick={() => startRename(project)}
-                                ><Icon svg={icons["pencil"]} width="0.85rem" height="0.85rem" marginRight="0" /></button
-                            >
-                            <button
-                                class="btn btn-sm p-0 border-0 bg-transparent text-danger"
-                                type="button"
-                                title="Delete"
-                                onclick={() => {
-                                    confirmDeleteId = project.id;
-                                    renamingId = null;
-                                }}
-                                ><Icon svg={icons["trash"]} width="0.85rem" height="0.85rem" marginRight="0" /></button
-                            >
+                            <div class="project-actions">
+                                <button class="icon-btn" type="button" title="Rename" onclick={() => startRename(project)}>
+                                    <Icon svg={icons["pencil"]} width="0.85rem" height="0.85rem" marginRight="0" />
+                                </button>
+                                <button class="icon-btn danger" type="button" title="Delete" onclick={() => { confirmDeleteId = project.id; renamingId = null; }}>
+                                    <Icon svg={icons["trash"]} width="0.85rem" height="0.85rem" marginRight="0" />
+                                </button>
+                            </div>
                         </div>
                     {/if}
                 </li>
@@ -359,5 +350,28 @@
     .project-load-btn:disabled {
         cursor: default;
         opacity: 0.7;
+    }
+    .project-actions {
+        display: flex;
+        gap: 2px;
+        flex-shrink: 0;
+        width: 42px;
+        justify-content: flex-end;
+    }
+    .icon-btn {
+        background: none;
+        border: none;
+        padding: 2px;
+        border-radius: 3px;
+        cursor: pointer;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+    }
+    .icon-btn:hover {
+        background: #f0f0f0;
+    }
+    .icon-btn.danger {
+        color: #dc3545;
     }
 </style>

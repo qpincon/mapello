@@ -20,7 +20,6 @@ import type { Config } from 'svgo/browser';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { postClipSimple } from 'src/svg/svg';
 import bbox from '@turf/bbox';
-import { featureCollection } from '@turf/helpers';
 import { renderBuildingsToSvgImproved } from './3d';
 import area from '@turf/area';
 import center from '@turf/center';
