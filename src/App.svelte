@@ -1896,19 +1896,32 @@
                 </div>
                 <Examples on:example={loadExample} />
                 {#if currentUser}
-                    <span class="navbar-user-email">{currentUser.email}</span>
-                    <button
-                        class="navbar-btn"
-                        type="button"
-                        onclick={async () => {
-                            await signOut();
-                            await invalidateAll();
-                            activeProjectId = null;
-                            currentProjectName = "Project 1";
-                        }}
-                    >
-                        Sign out
-                    </button>
+                    <div class="dropdown">
+                        <button
+                            class="navbar-btn navbar-user-email dropdown-toggle"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            {currentUser.email}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <button
+                                    class="dropdown-item"
+                                    type="button"
+                                    onclick={async () => {
+                                        await signOut();
+                                        await invalidateAll();
+                                        activeProjectId = null;
+                                        currentProjectName = "Project 1";
+                                    }}
+                                >
+                                    Sign out
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 {:else}
                     <button
                         class="navbar-btn"
@@ -2104,7 +2117,6 @@
 
     .navbar-user-email {
         font-size: 0.85rem;
-        color: #6c757d;
         max-width: 160px;
         overflow: hidden;
         text-overflow: ellipsis;

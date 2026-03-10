@@ -37,8 +37,11 @@
     let renamingId = $state<number | null>(null);
     let renamingValue = $state("");
     let confirmDeleteId = $state<number | null>(null);
+    let confirmReset = $state(false);
     let loadingProjectId = $state<number | null>(null);
     let creatingProject = $state(false);
+    let showNewProjectInput = $state(false);
+    let newProjectNameInput = $state("");
 
     onMount(() => {
         dropdown = new Dropdown(toggleEl);
@@ -141,22 +144,23 @@
         return `Map ${i}`;
     }
 
-    async function handleCreateNewProject() {
+    async function handleCreateNewProject(name?: string) {
+        const resolvedName = name?.trim() || uniqueNewProjectName();
         creatingProject = true;
         errorMsg = "";
         try {
             await saveCurrentProject();
-            const name = uniqueNewProjectName();
             const res = await fetch("/api/projects", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, project_json: JSON.stringify(defaultState) }),
+                body: JSON.stringify({ name: resolvedName, project_json: JSON.stringify(defaultState) }),
             });
             if (!res.ok) throw new Error();
             const created = await res.json();
             await applyState(defaultState);
             currentProjectId = created.id;
             currentProjectName = created.name;
+            showNewProjectInput = false;
             dropdown.hide();
         } catch {
             errorMsg = "Could not create project";
@@ -215,6 +219,24 @@
                         onclick={() => (editingCurrentName = false)}>✕</button
                     >
                 </div>
+            {:else if confirmReset}
+                <div class="d-flex gap-1 align-items-center">
+                    <span class="text-warning small flex-grow-1">Reset to default?</span>
+                    <button
+                        class="btn btn-sm btn-warning"
+                        type="button"
+                        onclick={async () => {
+                            await applyState(defaultState);
+                            confirmReset = false;
+                            dropdown.hide();
+                        }}
+                    >Reset</button>
+                    <button
+                        class="btn btn-sm btn-outline-secondary"
+                        type="button"
+                        onclick={() => (confirmReset = false)}>✕</button
+                    >
+                </div>
             {:else}
                 <div class="d-flex align-items-center gap-1">
                     <span class="current-project-label fw-semibold flex-grow-1 text-truncate">{currentProjectName}</span>
@@ -225,8 +247,15 @@
                             title="Rename"
                             onclick={() => {
                                 editingCurrentName = true;
+                                confirmReset = false;
                                 currentNameInput = currentProjectName;
                             }}><Icon svg={icons["pencil"]} width="0.85rem" height="0.85rem" marginRight="0" /></button>
+                        <button
+                            class="icon-btn danger"
+                            type="button"
+                            title="Reset to default"
+                            onclick={() => (confirmReset = true)}
+                        ><Icon svg={icons["reset"]} width="0.85rem" height="0.85rem" marginRight="0" /></button>
                     </div>
                 </div>
             {/if}
@@ -306,11 +335,41 @@
                 </li>
             {/each}
         {/if}
-        <li>
-            <button class="dropdown-item" type="button" onclick={handleCreateNewProject} disabled={creatingProject}>
-                {#if creatingProject}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
-                + New project
-            </button>
+        <li class="px-2 pt-1">
+            {#if showNewProjectInput}
+                <div class="d-flex gap-1 align-items-center">
+                    <input
+                        class="form-control form-control-sm flex-grow-1"
+                        type="text"
+                        placeholder={uniqueNewProjectName()}
+                        bind:value={newProjectNameInput}
+                        onclick={(e) => e.stopPropagation()}
+                        onkeydown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === "Enter") handleCreateNewProject(newProjectNameInput);
+                            if (e.key === "Escape") showNewProjectInput = false;
+                        }}
+                    />
+                    <button
+                        class="btn btn-sm btn-primary"
+                        type="button"
+                        onclick={() => handleCreateNewProject(newProjectNameInput)}
+                        disabled={creatingProject}
+                    >
+                        {#if creatingProject}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
+                        OK
+                    </button>
+                    <button
+                        class="btn btn-sm btn-outline-secondary"
+                        type="button"
+                        onclick={() => (showNewProjectInput = false)}
+                    >✕</button>
+                </div>
+            {:else}
+                <button class="dropdown-item" type="button" onclick={() => { newProjectNameInput = ""; showNewProjectInput = true; }}>
+                    + New project
+                </button>
+            {/if}
         </li>
     </ul>
 </div>
@@ -355,7 +414,7 @@
         display: flex;
         gap: 2px;
         flex-shrink: 0;
-        width: 42px;
+        width: 62px;
         justify-content: flex-end;
     }
     .icon-btn {
