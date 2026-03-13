@@ -4,6 +4,31 @@ import mapshaper from 'mapshaper';
 
 // run: bun run getAndSimplifyWorld.ts
 const assetsPath = '/home/quentin/Tests/CartoSVG/src/assets/layers';
+
+function cleanNames(dir: string) {
+    for (const file of fs.readdirSync(dir)) {
+        if (!file.endsWith('.json')) continue;
+        const filePath = `${dir}/${file}`;
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const data = JSON.parse(content);
+        let modified = false;
+        for (const objName in data.objects) {
+            for (const geom of data.objects[objName].geometries) {
+                if (geom.properties?.name) {
+                    const cleaned = geom.properties.name
+                        .replace(/[\x00-\x1f\xa0]/g, ' ')
+                        .replace(/  +/g, ' ')
+                        .trim();
+                    if (cleaned !== geom.properties.name) {
+                        geom.properties.name = cleaned;
+                        modified = true;
+                    }
+                }
+            }
+        }
+        if (modified) fs.writeFileSync(filePath, JSON.stringify(data));
+    }
+}
 async function getWorldTopojson() {
     if (fs.existsSync(assetsPath)) {
         fs.rmSync(assetsPath, { recursive: true });
@@ -22,6 +47,7 @@ async function getWorldTopojson() {
     fs.mkdirSync(`${assetsPath}/adm1`);
     await mapshaper.runCommands(`-i ${assetsPath}/adm1_simplified.geojson -split shapeGroup -o format=topojson singles quantization=100000000000 ${assetsPath}/adm1/`);
     fs.unlinkSync(`${assetsPath}/adm1_simplified.geojson`);
+    cleanNames(`${assetsPath}/adm1`);
 
     // Generate disputed_territories.json from numeric-ID layer files,
     // preserving existing region/sub-region values from the previous file
@@ -58,6 +84,7 @@ async function getWorldTopojson() {
     fs.mkdirSync(`${assetsPath}/adm2`);
     await mapshaper.runCommands(`-i ${assetsPath}/adm2_simplified.geojson -filter 'shapeType==="ADM2"' -split shapeGroup -o format=topojson singles quantization=100000000000 ${assetsPath}/adm2/`);
     fs.unlinkSync(`${assetsPath}/adm2_simplified.geojson`);
+    cleanNames(`${assetsPath}/adm2`);
 
     // Rename .topojson files to _topo.json for import compatibility
     fs.renameSync(`${assetsPath}/world_adm0_simplified.topojson`, `${assetsPath}/world_adm0_simplified_topo.json`);
