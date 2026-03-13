@@ -39,7 +39,14 @@ export function updateZonesDataFormatters(): void {
 function getBestFormatter(values: number[], locale: any): (n: number) => string {
     const loc = formatLocale(locale);
     const max = Math.max(...values);
-    if (max < 10) return loc.format(',.1~f');
     if (max < 1) return loc.format(',.2~f');
+    if (max < 10) return loc.format(',.1~f');
     return loc.format(',~d');
+}
+
+export function getLocaleDisplayName(locale: string): string {
+    try {
+        const dn = new Intl.DisplayNames([locale], { type: 'language' });
+        return dn.of(locale) ?? locale;
+    } catch { return locale; }
 }

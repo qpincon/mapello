@@ -58,7 +58,7 @@
     import Modal from "src/components/Modal.svelte";
     import PaletteEditor from "src/components/PaletteEditor.svelte";
     import QuillEditor from "src/components/QuillEditor.svelte";
-    import { resolvedLocales, updateZonesDataFormatters } from "../formatting";
+    import { getLocaleDisplayName, resolvedLocales, updateZonesDataFormatters } from "../formatting";
     import { handleInlineStyleChange } from "src/svg/svg";
 
     const scalesHelp: string = `
@@ -182,6 +182,9 @@
             }
         }
 
+        const svgLegend = document.getElementById('svg-map-legend');
+        if (svgLegend?.contains(target) && cssProp === "fill" && target.tagName === "rect") return;
+
         if (legendSample && legendSample.contains(target)) {
             /** Do nothing on legend fill rectangle as it would make the legend useless */
             if (cssProp === "fill" && target.tagName === "rect") return;
@@ -283,7 +286,7 @@
         }
         macroState.orderedTabs = newList;
         hoveringTab = -1;
-        drawMacroBase(svg);
+        drawMacroTotal();
     }
 
     function tabDragStart(event: DragEvent, i: number, prevent = false): void {
@@ -538,7 +541,6 @@
                 sampleElem,
                 tab,
                 saveDebounced,
-                applyInlineStyles,
             );
         });
         computeCss();
@@ -559,7 +561,6 @@
         if (legendSample && macroState.legendDefs[tab].sampleHtml == null) {
             macroState.legendDefs[tab].sampleHtml = legendSample.outerHTML;
         }
-        if (macroState.legendDefs[tab].title === null) macroState.legendDefs[tab].title = dataColorDef.colorColumn;
         let threshValues: number[];
         let formatter = (x: number | string) => x;
         if (dataColorDef.colorScale === "category") {
@@ -636,7 +637,7 @@
                         role="switch"
                         id="showLand"
                         bind:checked={macroState.inlinePropsMacro.showLand}
-                        onchange={() => drawMacroBase(svg)}
+                        onchange={() => drawMacroTotal()}
                     />
                     <label class="form-check-label" for="showLand"> Show land</label>
                 </div>
@@ -647,7 +648,7 @@
                         role="switch"
                         id="showCountries"
                         bind:checked={macroState.inlinePropsMacro.showCountries}
-                        onchange={() => drawMacroBase(svg)}
+                        onchange={() => drawMacroTotal()}
                     />
                     <label class="form-check-label" for="showCountries"> Show countries</label>
                 </div>
@@ -739,8 +740,8 @@
                                 onChange={() => drawDebounced()}
                                 bind:value={macroState.contourParams.strokeWidth}
                                 min={0}
-                                max={5}
-                                step={0.5}
+                                max={3}
+                                step={0.2}
                             ></RangeInput>
                         </div>
                         <div class="field">
@@ -762,7 +763,7 @@
                                 onChange={() => drawDebounced()}
                                 bind:value={macroState.contourParams.strokeDash}
                                 min={0}
-                                max={20}
+                                max={5}
                                 step={0.5}
                             ></RangeInput>
                         </div>
@@ -845,8 +846,7 @@
                                 <span
                                     class="help-tooltip"
                                     data-bs-toggle="tooltip"
-                                    data-bs-title="Click on the example to update style. Pro tip: changes made in the developer panel are also reported."
-                                    >?</span
+                                    data-bs-title="Click on the example to update style.">?</span
                                 >
                             </label>
                             <div class="tooltip-preview" onclick={(e) => editTooltip(e)}>
@@ -906,12 +906,7 @@
                                     class="form-select form-select-sm"
                                     id="choseColorColumn"
                                     bind:value={curDataDefs.colorColumn}
-                                    onchange={(e) => {
-                                        macroState.legendDefs[currentMacroLayerTab].title = (
-                                            e.target as HTMLSelectElement
-                                        ).value;
-                                        autoSelectColors();
-                                    }}
+                                    onchange={() => autoSelectColors()}
                                 >
                                     {#each availableColumns as colorColumn}
                                         <option value={colorColumn}>
@@ -1004,10 +999,8 @@
                                 </text>
                             </g>
                         </svg>
-                        <span
-                            class="help-tooltip"
-                            data-bs-toggle="tooltip"
-                            data-bs-title="Click to update style (the legend is SVG).">?</span
+                        <span class="help-tooltip" data-bs-toggle="tooltip" data-bs-title="Click to update style"
+                            >?</span
                         >
                     {/if}
                 {/if}
@@ -1021,7 +1014,7 @@
                         >
                             {#each Object.keys(resolvedLocales) as locale}
                                 <option value={locale}>
-                                    {locale}
+                                    {getLocaleDisplayName(locale)}
                                 </option>
                             {/each}
                         </select>

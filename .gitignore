@@ -4,3 +4,4 @@ public/*.pmtiles
 .svelte-kit/
 .env
 data/
+build/

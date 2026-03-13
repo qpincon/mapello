@@ -229,7 +229,8 @@ function instanciateTooltip(
     body.classList.add('body');
 
     const tooltip = document.createElement('div');
-    tooltip.innerHTML = formatUnicorn(tooltipDefs?.[groupId]?.template, (dataRow) || '');
+    const cleanTemplate = (tooltipDefs?.[groupId]?.template || '').replace(/<(b|i|u|em|strong|span)>\s*<\/\1>/gi, '');
+    tooltip.innerHTML = formatUnicorn(cleanTemplate, (dataRow) || '');
     reportStyle(htmlToElement(tooltipDefs?.[groupId]?.content || '')!, tooltip);
 
     body.innerHTML = tooltip.outerHTML;

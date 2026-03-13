@@ -1,7 +1,6 @@
 import { select } from 'd3-selection';
 import { reportStyle } from '../util/dom';
 import { setTransformTranslate, getTranslateFromTransform } from './svg';
-import { addSvgText } from './shape';
 import { drag } from 'd3-drag';
 import type { LegendColor, LegendDef, SvgGSelection } from "src/types";
 
@@ -13,7 +12,6 @@ export function drawLegend(
     sampleElem: SVGSVGElement,
     tabName: string,
     saveFunc: () => void,
-    applyStyles: () => void,
     entryWidth: number = legendDef.lineWidth
 ): SvgGSelection {
     const colors = [...legendColors];
@@ -57,9 +55,7 @@ export function drawLegend(
     }
 
     const groupId = `${tabName}-legend-group`;
-    const titleId = `${tabName}-legend-title`;
     if (!legendDef.changes[groupId]) legendDef.changes[groupId] = { dx: 0, dy: 0 };
-    if (!legendDef.changes[titleId]) legendDef.changes[titleId] = { dx: 0, dy: 0, title: legendDef.title };
     offsetX += legendDef.changes[groupId].dx;
     const offsetY = legendDef.changes[groupId].dy;
 
@@ -67,58 +63,13 @@ export function drawLegend(
         .attr('id', groupId)
         .attr('transform', `translate(${legendDef.x + offsetX} ${offsetY + (legendDef.y ? legendDef.y : 100)})`);
 
-    const legendTitle = legendGroup.append(() => addSvgText(legendDef.title, titleId).node())
-        .attr('x', 0)
-        .attr('y', 0)
-        .attr('transform', `translate(${legendDef.changes[titleId].dx} ${legendDef.changes[titleId].dy - 20})`)
-        .attr('id', titleId)
-        .style('font-size', '20px')
-        .on("click", (e) => e.stopPropagation())
-        .on('dblclick', e => {
-            const inputVal = legendDef.title;
-            const closeInput = () => {
-                legendTitle.html(addSvgText(input.value, titleId).node()!.innerHTML);
-                legendDef.title = input.value;
-                legendDef.titleChanged = true;
-                input.remove();
-                applyStyles();
-                saveFunc();
-            };
-            const input = select(document.body)
-                .append('textarea')
-                .html(inputVal)
-                .style('position', 'absolute')
-                .style('left', `${e.clientX}px`)
-                .style('top', `${e.clientY}px`)
-                .on('blur', closeInput)
-                .on('keydown', ({ key, shiftKey }) => {
-                    if (key === "Enter" && !shiftKey) {
-                        closeInput();
-                    }
-                })
-                .node() as HTMLTextAreaElement;
-
-            input.focus();
-            e.preventDefault();
-            e.stopPropagation();
-        });
-
-    let draggingElem: SVGGElement | null = null;
     legendGroup.call(drag<SVGGElement, unknown>()
         .on("drag", (e) => {
-            const id = draggingElem?.getAttribute('id')!;
-            legendDef.changes[id].dx += e.dx;
-            legendDef.changes[id].dy += e.dy;
-            const [x, y] = getTranslateFromTransform(draggingElem!)!;
-            setTransformTranslate(draggingElem!, `translate(${x + e.dx} ${y + e.dy})`);
+            legendDef.changes[groupId].dx += e.dx;
+            legendDef.changes[groupId].dy += e.dy;
+            const [x, y] = getTranslateFromTransform(legendGroup.node()!)!;
+            setTransformTranslate(legendGroup.node()!, `translate(${x + e.dx} ${y + e.dy})`);
             saveFunc();
-        })
-        .on('start', (e) => {
-            if (e.sourceEvent.target === legendTitle.node() || e.sourceEvent.target.parentNode === legendTitle.node()) {
-                draggingElem = legendTitle.node() as SVGGElement;
-            } else {
-                draggingElem = legendGroup.node() as SVGGElement;
-            }
         })
     );
 
@@ -167,7 +118,7 @@ export function drawLegend(
             maxWidth = Math.max(maxWidth, (select(this).node()! as SVGGElement).getBBox().width);
         });
         legendGroup.remove();
-        return drawLegend(legendSelection, legendDef, legendColors, isCategorical, sampleElem, tabName, saveFunc, applyStyles, maxWidth);
+        return drawLegend(legendSelection, legendDef, legendColors, isCategorical, sampleElem, tabName, saveFunc, maxWidth);
     }
 
     return legendSelection;

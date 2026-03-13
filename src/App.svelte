@@ -1324,7 +1324,11 @@
         if (!entry.tooltip && !entry.popover) {
             delete commonState.elementAnnotations![elemId];
         }
-        if (type === "popover") hidePopover();
+        if (type === "popover") {
+            hidePopover();
+            const el = document.getElementById(elemId);
+            if (el) (el as HTMLElement).style.cursor = '';
+        }
         saveState();
     }
 

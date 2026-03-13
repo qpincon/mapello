@@ -57,7 +57,8 @@
     }
 
     function isHexColor(hex: Color): boolean {
-        return typeof hex === "string" && (hex.length === 8 || hex.length === 6) && !isNaN(Number("0x" + hex));
+        const raw = typeof hex === "string" && hex.startsWith('#') ? hex.slice(1) : hex;
+        return typeof raw === "string" && (raw.length === 8 || raw.length === 6) && !isNaN(Number("0x" + raw));
     }
 
     function setValue(val: Color): void {

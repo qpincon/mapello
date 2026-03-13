@@ -164,12 +164,10 @@ export interface LegendDef {
     significantDigits?: number;
     x: number;
     y: number;
-    title: string;
     // template string
     sampleHtml?: string;
-    titleChanged?: boolean;
     labelOnLeft?: boolean;
-    changes: Record<string, { dx: number; dy: number; title?: string }>;
+    changes: Record<string, { dx: number; dy: number }>;
 }
 
 export interface ColorDef {

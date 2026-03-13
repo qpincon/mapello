@@ -93,10 +93,10 @@ export const paramDefs: ParamDefinitions = {
     innerStrength: { type: 'range', min: 0, max: 6, step: 0.1 },
     outerBlur: { type: 'range', min: 0, max: 10, step: 0.1 },
     outerStrength: { type: 'range', min: 0, max: 6, step: 0.1 },
-    graticuleStep: { type: 'range', min: 0.5, max: 10, step: 0.1 },
-    graticuleWidth: { type: 'range', min: 0.1, max: 3, step: 0.1 },
+    graticuleStep: { type: 'range', min: 2, max: 30, step: 0.5 },
+    graticuleWidth: { type: 'range', min: 0.1, max: 2, step: 0.1 },
     borderRadius: { type: 'range', min: 0, max: 50, step: 0.5 },
-    borderWidth: { type: 'range', min: 0, max: 10 },
+    borderWidth: { type: 'range', min: 0, max: 10, step: 0.2 },
     borderPadding: { type: 'range', min: 0, max: 30 },
     filter: { type: 'select', choices: ['none', 'firstGlow', 'secondGlow'] },
     projection: { type: 'select', choices: ['satellite', 'mercator', 'equalEarth', 'geoNaturalEarth', 'geoAlbersUsa', 'geoBaker'] }

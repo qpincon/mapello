@@ -18,7 +18,7 @@ import { updateZonesDataFormatters } from "./formatting";
 
 export async function drawMacroBase(svg: SvgSelection, simplified = false): Promise<void> {
     console.log("drawMacroBase", simplified);
-    if (!svg) return;
+    if (!svg || svg.empty()) return;
     const computedOrderedTabs = macroState.orderedTabs.filter((x) => {
         if (x === "countries") return macroState.inlinePropsMacro.showCountries;
         if (x === "land") return macroState.inlinePropsMacro.showLand;
@@ -180,8 +180,7 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     // });
     // const groups = svg.selectAll('svg').data(groupData).join('svg').attr('id', d => d.name);
     const groups = svg
-        // .append("svg")
-        .selectAll("g")
+        .selectAll("g.macro-layer")
         .data(groupData)
         .join("g")
         .classed("macro-layer", true)

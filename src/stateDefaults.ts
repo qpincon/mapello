@@ -93,7 +93,6 @@ export const defaultColorDef: ColorDef = {
 };
 
 export const defaultLegendDef: LegendDef = {
-    title: "",
     x: 20,
     y: defaultMacroParams.General.height - 200,
     lineWidth: 100,
@@ -135,6 +134,7 @@ export const defaultTooltipStyle: Record<string, string> = {
     "font-size": "12px",
     "padding": "4px",
     // "pointer-events": "none",
+    "box-shadow": "0 2px 6px #00000026",
     "z-index": "1000",
 };
 
