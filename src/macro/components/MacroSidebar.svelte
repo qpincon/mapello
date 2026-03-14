@@ -7,6 +7,7 @@
         getColumns,
         getNumericCols,
         htmlToElement,
+        svgToElement,
         initTooltips,
     } from "../../util/common";
     import { exportStyleSheet, reportStyle, styleDictToCssRulesStr } from "../../util/dom";
@@ -182,13 +183,19 @@
             }
         }
 
-        const svgLegend = document.getElementById('svg-map-legend');
-        if (svgLegend?.contains(target) && cssProp === "fill" && target.tagName === "rect") return;
-
         if (legendSample && legendSample.contains(target)) {
             /** Do nothing on legend fill rectangle as it would make the legend useless */
-            if (cssProp === "fill" && target.tagName === "rect") return;
+            if (cssProp === "fill" && target.tagName === "rect") {
+                target.style.removeProperty("fill");
+                return;
+            }
+            // Strip fill from rect inline style before capturing outerHTML to prevent
+            // overwriting individual legend entry colors
+            const rect = legendSample.querySelector("rect");
+            const savedRectFill = rect?.style.getPropertyValue("fill");
+            if (rect) rect.style.removeProperty("fill");
             macroState.legendDefs[currentMacroLayerTab].sampleHtml = legendSample.outerHTML;
+            if (rect && savedRectFill) rect.style.setProperty("fill", savedRectFill);
             colorizeAndLegend(svg);
         } else if (htmlTooltipElem && htmlTooltipElem.contains(target)) {
             macroState.tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem.outerHTML;
@@ -252,7 +259,7 @@
         if (legendSample && macroState.colorDataDefs[currentMacroLayerTab]?.legendEnabled) {
             const sampleHtml = macroState.legendDefs[currentMacroLayerTab]?.sampleHtml;
             if (sampleHtml) {
-                const tmpElem = htmlToElement(sampleHtml)!;
+                const tmpElem = svgToElement(sampleHtml)!;
                 reportStyle(tmpElem, legendSample);
             }
         }
@@ -532,7 +539,7 @@
                     color: legendColors[0][0],
                     text: legendColors[0][1],
                 };
-            const sampleElem = htmlToElement<SVGSVGElement>(macroState.legendDefs[tab].sampleHtml!)!;
+            const sampleElem = svgToElement<SVGGElement>(macroState.legendDefs[tab].sampleHtml!)!;
             displayedLegend[tab] = drawLegend(
                 legendSelection,
                 macroState.legendDefs[tab],
@@ -999,8 +1006,10 @@
                                 </text>
                             </g>
                         </svg>
-                        <span class="help-tooltip" data-bs-toggle="tooltip" data-bs-title="Click to update style"
-                            >?</span
+                        <span
+                            class="help-tooltip"
+                            data-bs-toggle="tooltip"
+                            data-bs-title="Click the legend entry to update its style">?</span
                         >
                     {/if}
                 {/if}

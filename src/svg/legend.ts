@@ -9,7 +9,7 @@ export function drawLegend(
     legendDef: LegendDef,
     legendColors: LegendColor[],
     isCategorical: boolean,
-    sampleElem: SVGSVGElement,
+    sampleElem: SVGGElement,
     tabName: string,
     saveFunc: () => void,
     entryWidth: number = legendDef.lineWidth
@@ -95,7 +95,6 @@ export function drawLegend(
         .attr('y', 0)
         .attr('width', legendDef.rectWidth)
         .attr('height', legendDef.rectHeight)
-        .attr('pathLength', 1)
         .attr('fill', d => d[0])
         .attr('stroke', 'black');
 

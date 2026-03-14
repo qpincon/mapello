@@ -66,6 +66,11 @@ export async function exportMacro(
     });
     // === End remove contours ==
 
+    // Set pathLength on legend rects for draw animation (stroke-dasharray: 1 / stroke-dashoffset)
+    if (animate) {
+        svgNode.querySelectorAll('#svg-map-legend rect').forEach(el => el.setAttribute('pathLength', '1'));
+    }
+
     const usedFonts = getUsedInlineFonts(svgNode);
     const usedProvidedFonts = providedFonts.filter(font => usedFonts.has(font.name));
 
