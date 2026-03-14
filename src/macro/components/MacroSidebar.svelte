@@ -7,7 +7,6 @@
         getColumns,
         getNumericCols,
         htmlToElement,
-        svgToElement,
         initTooltips,
     } from "../../util/common";
     import { exportStyleSheet, reportStyle, styleDictToCssRulesStr } from "../../util/dom";
@@ -259,7 +258,7 @@
         if (legendSample && macroState.colorDataDefs[currentMacroLayerTab]?.legendEnabled) {
             const sampleHtml = macroState.legendDefs[currentMacroLayerTab]?.sampleHtml;
             if (sampleHtml) {
-                const tmpElem = svgToElement(sampleHtml)!;
+                const tmpElem = htmlToElement(sampleHtml)!;
                 reportStyle(tmpElem, legendSample);
             }
         }
@@ -539,7 +538,7 @@
                     color: legendColors[0][0],
                     text: legendColors[0][1],
                 };
-            const sampleElem = svgToElement<SVGGElement>(macroState.legendDefs[tab].sampleHtml!)!;
+            const sampleElem = htmlToElement<SVGGElement>(macroState.legendDefs[tab].sampleHtml!)!;
             displayedLegend[tab] = drawLegend(
                 legendSelection,
                 macroState.legendDefs[tab],

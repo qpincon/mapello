@@ -40,14 +40,6 @@ export function htmlToElement<T = Element>(html: string): T | null {
     return template.content.firstChild as T;
 }
 
-export function svgToElement<T = SVGElement>(svgFragment: string): T | null {
-    if (!svgFragment) return null;
-    const doc = new DOMParser().parseFromString(
-        `<svg xmlns="http://www.w3.org/2000/svg">${svgFragment.trim()}</svg>`,
-        'image/svg+xml'
-    );
-    return doc.documentElement.firstElementChild as T;
-}
 
 export function nbDecimals(num: number): number {
     const splited = num.toString().split('.');
