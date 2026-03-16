@@ -1583,7 +1583,8 @@
         "colorColumn": "name",
         "colorPalette": "Category10",
         "nbBreaks": 5,
-        "legendEnabled": false
+        "legendEnabled": false,
+        "noDataColor": { "enabled": false, "color": "#AAAAAA" }
       },
       "Ukraine ADM1": {
         "enabled": true,
@@ -1591,7 +1592,8 @@
         "colorColumn": "population",
         "colorPalette": "Blues",
         "nbBreaks": 4,
-        "legendEnabled": true
+        "legendEnabled": true,
+        "noDataColor": { "enabled": false, "color": "#AAAAAA" }
       }
     },
     "legendDefs": {
@@ -1607,12 +1609,7 @@
         "labelOnLeft": false,
         "title": null,
         "sampleHtml": null,
-        "noData": {
-          "active": false,
-          "manual": false,
-          "text": "N/A",
-          "color": "#AAAAAA"
-        },
+        "noDataText": "N/A",
         "changes": {}
       },
       "Ukraine ADM1": {
@@ -1627,12 +1624,7 @@
         "labelOnLeft": false,
         "title": "Ukraine\npopulation",
         "sampleHtml": "<g><rect x=\"10\" y=\"10\" width=\"70\" height=\"11\" fill=\"#eff3ff\" stroke=\"black\" style=\"stroke-width: 1.5px; stroke-linejoin: round; stroke: rgb(81, 81, 81);\"></rect><text x=\"85\" y=\"15.5\" text-anchor=\"start\" dominant-baseline=\"middle\" style=\"font-size: 11px; font-family: OpenSans-Regular;\">390,000</text></g>",
-        "noData": {
-          "active": false,
-          "manual": false,
-          "text": "N/A",
-          "color": "#AAAAAA"
-        },
+        "noDataText": "N/A",
         "changes": {
           "Ukraine ADM1-legend-group": {
             "dx": 74,

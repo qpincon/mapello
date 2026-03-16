@@ -90,6 +90,10 @@ export const defaultColorDef: ColorDef = {
     colorPalette: "Pastel1",
     nbBreaks: 5,
     legendEnabled: false,
+    noDataColor: {
+        enabled: false,
+        color: "#AAAAAA",
+    },
 };
 
 export const defaultLegendDef: LegendDef = {
@@ -102,12 +106,8 @@ export const defaultLegendDef: LegendDef = {
     maxWidth: 200,
     direction: "v",
     labelOnLeft: false,
-    noData: {
-        active: false,
-        manual: false,
-        text: "N/A",
-        color: "#AAAAAA",
-    },
+    noDataInLegend: true,
+    noDataText: "N/A",
     changes: {},
 };
 

@@ -1427,7 +1427,8 @@
         "colorColumn": "region",
         "colorPalette": "Pastel1",
         "nbBreaks": 5,
-        "legendEnabled": false
+        "legendEnabled": false,
+        "noDataColor": { "enabled": true, "color": "#AAAAAA" }
       }
     },
     "legendDefs": {
@@ -1443,12 +1444,7 @@
         "labelOnLeft": false,
         "title": "region",
         "sampleHtml": null,
-        "noData": {
-          "active": true,
-          "manual": false,
-          "text": "N/A",
-          "color": "#AAAAAA"
-        },
+        "noDataText": "N/A",
         "changes": {}
       }
     },

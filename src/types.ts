@@ -150,12 +150,8 @@ export interface ZonesData {
 export type LegendColor = [Color, string];
 
 export interface LegendDef {
-    noData: {
-        active: boolean;
-        color: Color;
-        text: string;
-        manual: boolean;
-    };
+    noDataInLegend: boolean;
+    noDataText: string;
     direction: 'h' | 'v';
     maxWidth: number;
     rectWidth: number;
@@ -177,6 +173,10 @@ export interface ColorDef {
     colorPalette: AnyScaleKey | 'Custom';
     nbBreaks: 5;
     legendEnabled: false;
+    noDataColor: {
+        enabled: boolean;
+        color: Color;
+    };
 }
 
 export type ColorScale = d3.ScaleQuantile<string, number>

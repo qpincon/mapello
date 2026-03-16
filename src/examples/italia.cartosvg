@@ -1578,7 +1578,8 @@
         "colorColumn": "name",
         "colorPalette": "Category10",
         "nbBreaks": 5,
-        "legendEnabled": false
+        "legendEnabled": false,
+        "noDataColor": { "enabled": false, "color": "#AAAAAA" }
       },
       "Italy ADM1": {
         "enabled": false,
@@ -1586,7 +1587,8 @@
         "colorColumn": "name",
         "colorPalette": "Category10",
         "nbBreaks": 5,
-        "legendEnabled": false
+        "legendEnabled": false,
+        "noDataColor": { "enabled": false, "color": "#AAAAAA" }
       }
     },
     "legendDefs": {
@@ -1602,11 +1604,7 @@
         "title": null,
         "sampleHtml": null,
         "changes": {},
-        "noData": {
-          "active": false,
-          "text": "N/A",
-          "color": "#AAAAAA"
-        }
+        "noDataText": "N/A"
       },
       "Italy ADM1": {
         "x": 20,
@@ -1618,11 +1616,7 @@
         "maxWidth": 200,
         "direction": "v",
         "title": null,
-        "noData": {
-          "active": false,
-          "text": "N/A",
-          "color": "#AAAAAA"
-        },
+        "noDataText": "N/A",
         "sampleHtml": null,
         "changes": {}
       }

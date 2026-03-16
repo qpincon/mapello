@@ -2,7 +2,7 @@ import { select } from 'd3-selection';
 import { reportStyle } from '../util/dom';
 import { setTransformTranslate, getTranslateFromTransform } from './svg';
 import { drag } from 'd3-drag';
-import type { LegendColor, LegendDef, SvgGSelection } from "src/types";
+import type { Color, LegendColor, LegendDef, SvgGSelection } from "src/types";
 
 export function drawLegend(
     legendSelection: SvgGSelection,
@@ -12,11 +12,12 @@ export function drawLegend(
     sampleElem: SVGGElement,
     tabName: string,
     saveFunc: () => void,
+    noDataColor?: { enabled: boolean; color: Color },
     entryWidth: number = legendDef.lineWidth
 ): SvgGSelection {
     const colors = [...legendColors];
-    if (legendDef.noData.active) {
-        colors.unshift([legendDef.noData.color, legendDef.noData.text]);
+    if (noDataColor?.enabled && legendDef.noDataInLegend) {
+        colors.unshift([noDataColor.color, legendDef.noDataText]);
     }
 
     const labelWidths = getEntryWidths(legendSelection.node() as SVGGElement, colors.map(x => x[1]), sampleElem);
@@ -117,7 +118,7 @@ export function drawLegend(
             maxWidth = Math.max(maxWidth, (select(this).node()! as SVGGElement).getBBox().width);
         });
         legendGroup.remove();
-        return drawLegend(legendSelection, legendDef, legendColors, isCategorical, sampleElem, tabName, saveFunc, maxWidth);
+        return drawLegend(legendSelection, legendDef, legendColors, isCategorical, sampleElem, tabName, saveFunc, noDataColor, maxWidth);
     }
 
     return legendSelection;

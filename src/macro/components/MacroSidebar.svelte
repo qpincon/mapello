@@ -367,7 +367,9 @@
         const row = { ...zonesDataDef.data[0] };
         zonesDataDef.numericCols.forEach((colDef) => {
             const col = colDef.column;
-            row[col] = zonesDataDef.formatters![col](row[col] as number);
+            if (typeof zonesDataDef.formatters?.[col] === 'function') {
+                row[col] = zonesDataDef.formatters[col](row[col] as number);
+            }
         });
         return row;
     }
@@ -399,6 +401,7 @@
     const colorsCssByTab: Record<string, string> = {};
     const displayedLegend: Record<string, SvgGSelection> = {};
     const ordinalMapping: OrdinalMapping = $state({});
+    let hasNoDataForTab: Record<string, boolean> = $state({});
     let sampleLegend = $state({
         color: "black",
         text: "test",
@@ -457,7 +460,7 @@
         }
         Object.entries(macroState.colorDataDefs).forEach(([tab, dataColorDef], tabIndex) => {
             if (!macroState.zonesData[tab]) return;
-            if (!macroState.legendDefs[tab].noData.manual) macroState.legendDefs[tab].noData.active = false;
+            if (!dataColorDef.noDataColor) dataColorDef.noDataColor = { enabled: false, color: "#AAAAAA" };
             // reset present classes
             document.querySelectorAll(`g[id="${tab}"] [class*="ssc"]`).forEach((el) => {
                 [...el.classList].forEach((cls) => {
@@ -479,16 +482,18 @@
                 return;
             }
             const paletteName = dataColorDef.colorPalette;
-            // filter out undef or null data
+            // filter out undef or null data, track if any rows have no data
+            let tabHasNoData = false;
             const data = macroState.zonesData[tab].data.reduce<(string | number)[]>((acc, row) => {
                 const d = row[dataColorDef.colorColumn];
-                if (d === null || d === undefined) {
-                    if (!macroState.legendDefs[tab].noData.manual) macroState.legendDefs[tab].noData.active = true;
+                if (d === null || d === undefined || d === "") {
+                    tabHasNoData = true;
                     return acc;
                 }
                 acc.push(d);
                 return acc;
             }, []);
+            hasNoDataForTab[tab] = tabHasNoData;
             let scale: ColorScale;
             if (dataColorDef.colorScale === "category") {
                 if (dataColorDef.colorPalette === "Custom") {
@@ -512,8 +517,9 @@
                 const elem = document.querySelector(`g[id="${tab}"] [id="${key}"]`);
                 if (!elem) return;
                 let color: Color;
-                if (d === null || d === undefined) {
-                    color = macroState.legendDefs[tab].noData.color;
+                if (d === null || d === undefined || d === "") {
+                    if (!dataColorDef.noDataColor.enabled) return;
+                    color = dataColorDef.noDataColor.color;
                 } else {
                     // @ts-expect-error
                     color = scale(d) as Color;
@@ -547,6 +553,7 @@
                 sampleElem,
                 tab,
                 saveDebounced,
+                tabHasNoData ? dataColorDef.noDataColor : undefined,
             );
         });
         computeCss();
@@ -955,6 +962,34 @@
                                 ></RangeInput>
                             </div>
                         {/if}
+                        <!-- NO DATA COLOR -->
+                        {#if hasNoDataForTab[currentMacroLayerTab] && curDataDefs.noDataColor}
+                            <div class="mx-2 form-check form-switch">
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input"
+                                    id="noDataColor"
+                                    role="switch"
+                                    bind:checked={curDataDefs.noDataColor.enabled}
+                                    onchange={() => colorizeAndLegend(svg)}
+                                />
+                                <label for="noDataColor" class="form-check-label">No data color</label>
+                            </div>
+                            {#if curDataDefs.noDataColor.enabled}
+                                <div class="mx-2 mb-2">
+                                    <ColorPickerPreview
+                                        id="nodatacolorpicker"
+                                        popup="top"
+                                        title="No data color"
+                                        value={curDataDefs.noDataColor.color}
+                                        onChange={(col) => {
+                                            curDataDefs.noDataColor.color = col;
+                                            colorizeAndLegend(svg);
+                                        }}
+                                    />
+                                </div>
+                            {/if}
+                        {/if}
                         <!-- LEGEND -->
                         <div class="mx-2 form-check form-switch">
                             <input
@@ -981,6 +1016,7 @@
                             bind:definition={macroState.legendDefs[currentMacroLayerTab]}
                             on:change={(e) => colorizeAndLegend(svg)}
                             categorical={macroState.colorDataDefs[currentMacroLayerTab].colorScale === "category"}
+                            noDataActive={curDataDefs.noDataColor?.enabled && hasNoDataForTab[currentMacroLayerTab]}
                         />
                         <svg width="75%" height={macroState.legendDefs[currentMacroLayerTab].rectHeight + 20}>
                             <g bind:this={legendSample}>

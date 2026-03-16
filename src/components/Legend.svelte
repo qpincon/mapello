@@ -2,16 +2,16 @@
     import { createEventDispatcher } from "svelte";
 
     import RangeInput from "./RangeInput.svelte";
-    import ColorPickerPreview from "./ColorPickerPreview.svelte";
     import type { LegendDef } from "src/types";
     const dispatch = createEventDispatcher();
 
     interface Props {
         definition: LegendDef;
         categorical?: boolean;
+        noDataActive?: boolean;
     }
 
-    let { definition = $bindable(), categorical = false }: Props = $props();
+    let { definition = $bindable(), categorical = false, noDataActive = false }: Props = $props();
 
     // dispatch event on each change
     function sendChange(e: Event) {
@@ -101,39 +101,28 @@
             step={1}
         />
     </div>
-    <div class="form-check form-switch">
-        <input
-            type="checkbox"
-            role="switch"
-            class="form-check-input"
-            id="noDataActive"
-            bind:checked={definition.noData.active}
-            onchange={() => (definition.noData.manual = true)}
-        />
-        <label for="noDataActive" class="form-check-label"> No data in legend </label>
-    </div>
-    {#if definition.noData.active}
-        <div class="d-flex">
-            <ColorPickerPreview
-                id="nodatapicker"
-                popup="top"
-                title="No data color"
-                value={definition.noData.color}
-                onChange={(col) => {
-                    definition.noData.color = col;
-                    dispatch("change", {});
-                }}
+    {#if noDataActive}
+        <div class="form-check form-switch">
+            <input
+                type="checkbox"
+                role="switch"
+                class="form-check-input"
+                id="noDataInLegend"
+                bind:checked={definition.noDataInLegend}
             />
-            <div class="form-floating ms-3">
+            <label for="noDataInLegend" class="form-check-label">No data in legend</label>
+        </div>
+        {#if definition.noDataInLegend}
+            <div class="form-floating">
                 <input
                     type="text"
                     class="form-control"
                     id="nodatatext"
                     placeholder="N/A"
-                    bind:value={definition.noData.text}
+                    bind:value={definition.noDataText}
                 />
                 <label for="nodatatext">No data text</label>
             </div>
-        </div>
+        {/if}
     {/if}
 </form>

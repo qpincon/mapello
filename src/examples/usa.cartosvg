@@ -1767,7 +1767,8 @@
         "colorColumn": "name",
         "colorPalette": "Category10",
         "nbBreaks": 5,
-        "legendEnabled": false
+        "legendEnabled": false,
+        "noDataColor": { "enabled": false, "color": "#AAAAAA" }
       },
       "United States of America ADM1": {
         "enabled": true,
@@ -1775,7 +1776,8 @@
         "colorColumn": "party",
         "colorPalette": "Custom",
         "nbBreaks": 5,
-        "legendEnabled": true
+        "legendEnabled": true,
+        "noDataColor": { "enabled": false, "color": "#AAAAAA" }
       }
     },
     "legendDefs": {
@@ -1790,11 +1792,7 @@
         "direction": "v",
         "title": null,
         "sampleHtml": null,
-        "noData": {
-          "active": false,
-          "text": "N/A",
-          "color": "#AAAAAA"
-        },
+        "noDataText": "N/A",
         "changes": {}
       },
       "United States of America ADM1": {
@@ -1808,12 +1806,7 @@
         "direction": "v",
         "title": "Political\nparty",
         "sampleHtml": "<g><rect x=\"10\" y=\"10\" width=\"20\" height=\"15\" fill=\"#c55d5dff\" stroke=\"black\"></rect><text x=\"35\" y=\"17.5\" text-anchor=\"start\" dominant-baseline=\"middle\" style=\"font-size: 12px; stroke: rgba(255, 255, 255, 0.506); stroke-width: 0px;\">Light Republican</text></g>",
-        "noData": {
-          "active": false,
-          "text": "",
-          "color": "#aaaaaaff",
-          "manual": true
-        },
+        "noDataText": "",
         "changes": {
           "United States of America ADM1-legend-group": {
             "dx": 494,
