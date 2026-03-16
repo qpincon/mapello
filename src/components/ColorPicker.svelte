@@ -19,6 +19,7 @@
 
     let self: HTMLElement | null = $state(null);
     let pickerElem: ExtendedPicker | null = $state(null);
+    let isInternalChange = false;
 
     $effect(() => {
         if (!pickerElem && self) {
@@ -39,7 +40,7 @@
     });
 
     $effect(() => {
-        if (pickerElem && value.length && isHexColor(value)) {
+        if (pickerElem && value.length && isHexColor(value) && !isInternalChange) {
             pickerElem.setColor(value, true);
         }
     });
@@ -63,8 +64,10 @@
 
     function setValue(val: Color): void {
         if (val === value) return;
+        isInternalChange = true;
         onChange(val, value);
         value = val;
+        queueMicrotask(() => { isInternalChange = false; });
     }
 
     onDestroy(() => {
