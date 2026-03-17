@@ -282,6 +282,7 @@ export interface StateMacro {
     legendDefs: Record<string, LegendDef>;
     tooltipDefs: TooltipDefs;
     customCategoricalPalette: Color[];
+    customContinuousPalette: Color[];
     visibleArea: number;
 }
 

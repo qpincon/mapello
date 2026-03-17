@@ -111,7 +111,8 @@ export const defaultLegendDef: LegendDef = {
     changes: {},
 };
 
-export const defaultCustomCategoricalPalette: Color[] = ["#ff0000ff", "#00ff00ff", "#0000ffff"];
+export const defaultCustomCategoricalPalette: Color[] = ["#4e79a7ff", "#f28e2bff", "#e15759ff", "#76b7b2ff", "#59a14fff", "#edc948ff", "#b07aa1ff", "#9c755fff"];
+export const defaultCustomContinuousPalette: Color[] = ["#f7fbffff", "#6baed6ff", "#08306bff"];
 
 export function defaultTooltipContent(isCountry: boolean): string {
     return `<div>${isCountry ? "Country" : "Region"}: __name__</div>`;
@@ -172,6 +173,7 @@ export const defaultState: GlobalState = {
             },
         },
         customCategoricalPalette: defaultCustomCategoricalPalette,
+        customContinuousPalette: defaultCustomContinuousPalette,
         orderedTabs: ["countries", "land"],
         visibleArea: 0.02
     },

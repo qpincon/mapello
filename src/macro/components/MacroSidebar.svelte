@@ -49,7 +49,8 @@
     } from "src/util/color-scales";
     import { drawLegend } from "src/svg/legend";
     import { debounce } from "lodash-es";
-    import { extent } from "d3";
+    import { extent, quantize } from "d3";
+    import { interpolateRgbBasis } from "d3-interpolate";
 
     import dataExplanation from "../../assets/dataColor.svg";
     import { applyInlineStyles, drawMacroBase, handleChangeProp, projectAndDraw } from "../drawing";
@@ -436,10 +437,9 @@
             curDataDefs.colorScale === "category"
                 ? getColumns(macroState.zonesData[currentMacroLayerTab].data)
                 : macroState.zonesData?.[currentMacroLayerTab]?.numericCols.map((x) => x.column);
-        availablePalettes =
-            curDataDefs.colorScale === "category" ? Object.keys(CATEGORICAL_SCHEMES) : Object.keys(CONTINUOUS_SCHEMES);
-        /** Add custom palette choice */
-        if (curDataDefs.colorScale === "category") availablePalettes.push("Custom");
+        availablePalettes = ["Custom",
+            ...(curDataDefs.colorScale === "category" ? Object.keys(CATEGORICAL_SCHEMES) : Object.keys(CONTINUOUS_SCHEMES)),
+        ];
         if (!availableColumns.includes(curDataDefs.colorColumn)) {
             curDataDefs.colorColumn = availableColumns[0];
         }
@@ -501,14 +501,20 @@
                     scale = scaleOrdinal(macroState.customCategoricalPalette);
                 } else scale = scaleOrdinal(CATEGORICAL_SCHEMES[paletteName as CategoricalScaleKey]);
             } else if (dataColorDef.colorScale === "quantile") {
+                const range = dataColorDef.colorPalette === "Custom"
+                    ? quantize(interpolateRgbBasis(macroState.customContinuousPalette), dataColorDef.nbBreaks)
+                    : CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks];
                 scale = scaleQuantile<string, number>()
                     .domain(data as number[])
-                    .range(CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks]);
+                    .range(range);
             } else if (dataColorDef.colorScale === "quantize") {
+                const range = dataColorDef.colorPalette === "Custom"
+                    ? quantize(interpolateRgbBasis(macroState.customContinuousPalette), dataColorDef.nbBreaks)
+                    : CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks];
                 const dataExtent = extent(data as number[]) as [number, number];
                 scale = scaleQuantize<string, number>()
                     .domain(dataExtent)
-                    .range(CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks]);
+                    .range(range);
             }
             const usedColors: Color[] = [];
             macroState.zonesData[tab].data.forEach((row) => {
@@ -945,8 +951,8 @@
                                 <label for="choseColorPalette"> Palette </label>
                             </div>
                             {#if curDataDefs.colorPalette === "Custom"}
-                                <span class="btn btn-outline-primary" onclick={() => (showCustomPalette = true)}>
-                                    Edit palette</span
+                                <span class="btn btn-outline-primary btn-sm py-0 px-1" onclick={() => (showCustomPalette = true)}>
+                                    Edit</span
                                 >
                             {/if}
                         </div>
@@ -1084,10 +1090,16 @@
 <Modal open={showCustomPalette} onClosed={() => (showCustomPalette = false)}>
     <div slot="content">
         <PaletteEditor
-            customCategoricalPalette={macroState.customCategoricalPalette}
-            mapping={ordinalMapping[currentMacroLayerTab]}
+            palette={curDataDefs?.colorScale === "category"
+                ? macroState.customCategoricalPalette
+                : macroState.customContinuousPalette}
+            mapping={curDataDefs?.colorScale === "category"
+                ? ordinalMapping[currentMacroLayerTab]
+                : undefined}
+            mode={curDataDefs?.colorScale === "category" ? "categorical" : "continuous"}
+            nbBreaks={curDataDefs?.nbBreaks}
             onChange={draw}
-        ></PaletteEditor>
+        />
     </div>
 </Modal>
 
