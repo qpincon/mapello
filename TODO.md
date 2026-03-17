@@ -239,16 +239,17 @@
 - [x] color picker tooltip makes pages bigger and must scroll when on bottom (second glow)
 - [x] macro "Color using data" default: "color on" & "Palette" empty
 - [ ] macro export: linear gradient like https://bunny.net/static/storage-map-48de78a4f676dd3129102dadd7f90751.svg ?
-- [ ] Fix copy paste color in colorpickerpreview: picker has the wrong color location when opened
-- [ ] macro: the legend title edition should have the same behavior as a regular label edit 
-- [ ] macro: no data color not working
-- [ ] macro: disallow changing fill on legend entry using inline style editor
-- [ ] macro: when toggling on "show countries", the countries all have the same colors, the CSS is not applied. Fixed on redraw
-- [ ] macro: reordering layers breaks rendering. Seems to be the same problem as above
-- [ ] macro: map nubmer formatting locales to readable (en-US to "(English - United States of America)" for instance)
-- [ ] macro: number formatting not applied to tooltip
-- [ ] after removing popover, we need a redraw to remove cursor: pointer. It should be removed directly.
-- [ ] macro tooltip template: remove empty divs (empty <b> in the siv makes that the inlinestyleditor can't propose to edit the text properties )
-- [ ] macro tooltip: add boxshadow by default
+- [x] Fix copy paste color in colorpickerpreview: picker has the wrong color location when opened
+- [x] macro: the legend title edition should have the same behavior as a regular label edit 
+- [x] macro: no data color not working
+- [x] macro: disallow changing fill on legend entry using inline style editor
+- [x] macro: when toggling on "show countries", the countries all have the same colors, the CSS is not applied. Fixed on redraw
+- [x] macro: reordering layers breaks rendering. Seems to be the same problem as above
+- [x] macro: map nubmer formatting locales to readable (en-US to "(English - United States of America)" for instance)
+- [x] macro: number formatting not applied to tooltip
+- [x] after removing popover, we need a redraw to remove cursor: pointer. It should be removed directly.
+- [x] macro tooltip template: remove empty divs (empty <b> in the siv makes that the inlinestyleditor can't propose to edit the text properties )
+- [x] macro tooltip: add boxshadow by default
 - [ ] macro: custom palette?
 - [ ] ISE: open above when no room
+- [ ] nginx rate limiting 

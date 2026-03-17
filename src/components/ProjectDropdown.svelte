@@ -48,13 +48,27 @@
         toggleEl.addEventListener("show.bs.dropdown", fetchProjects);
     });
 
+    async function getServerErrorMessage(res: Response, fallback: string): Promise<string> {
+        try {
+            const data = await res.json();
+            return data?.message || fallback;
+        } catch {
+            return fallback;
+        }
+    }
+
     async function saveCurrentProject() {
         if (!currentProjectId) return;
-        await fetch(`/api/projects/${currentProjectId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ project_json: getProjectJson() }),
-        }).catch(() => {});
+        try {
+            const res = await fetch(`/api/projects/${currentProjectId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ project_json: getProjectJson() }),
+            });
+            if (!res.ok) {
+                errorMsg = await getServerErrorMessage(res, "Could not save project");
+            }
+        } catch {}
     }
 
     async function fetchProjects() {
@@ -155,7 +169,10 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name: resolvedName, project_json: JSON.stringify(defaultState) }),
             });
-            if (!res.ok) throw new Error();
+            if (!res.ok) {
+                errorMsg = await getServerErrorMessage(res, "Could not create project");
+                return;
+            }
             const created = await res.json();
             await applyState(defaultState);
             currentProjectId = created.id;

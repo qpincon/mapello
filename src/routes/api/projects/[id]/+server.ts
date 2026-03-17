@@ -5,6 +5,8 @@ import { db } from '$lib/server/db';
 import { userProjects } from '$lib/server/schema';
 import { eq, and } from 'drizzle-orm';
 
+const MAX_PROJECT_BYTES = 1_000;
+
 async function requireOwnership(request: Request, id: number) {
 	const session = await auth.api.getSession({ headers: request.headers });
 	if (!session?.user) throw error(401, 'Unauthorized');
@@ -32,7 +34,12 @@ export const PUT: RequestHandler = async ({ request, params }) => {
 	const body = await request.json();
 	const updates: Partial<typeof userProjects.$inferInsert> = { updatedAt: Date.now() };
 	if (body.name !== undefined) updates.name = body.name;
-	if (body.project_json !== undefined) updates.projectJson = body.project_json;
+	if (body.project_json !== undefined) {
+		if (new TextEncoder().encode(body.project_json).byteLength > MAX_PROJECT_BYTES) {
+			throw error(413, 'Project is too large to save. Please delete or resize some images and try again.');
+		}
+		updates.projectJson = body.project_json;
+	}
 
 	await db.update(userProjects).set(updates).where(eq(userProjects.id, id));
 	return json({ ok: true });

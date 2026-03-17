@@ -180,11 +180,11 @@ SQLite database at `data/cartosvg.db` managed with Drizzle ORM + better-sqlite3.
 **Tables**: `user`, `session`, `account`, `verification` (managed by better-auth), `user_projects` (custom).
 
 ### Project storage
-Logged-in users can save multiple named projects to the backend. Each project stores the full `GlobalState` JSON.
+Logged-in users can save multiple named projects to the backend. Each project stores the full `GlobalState` JSON. A 1MB size limit is enforced server-side (413 if exceeded).
 
 - `src/routes/api/projects/+server.ts`: `GET` (list), `POST` (create). All endpoints require a valid session (401 otherwise).
 - `src/routes/api/projects/[id]/+server.ts`: `GET`, `PUT` (rename/overwrite JSON), `DELETE`. Ownership is checked on every request.
-- UI: `ProjectManager.svelte` — opened from the user dropdown. Supports save, load, overwrite ("Save here"), rename, delete. Loading a project calls `applyState()` in `App.svelte`.
+- UI: `ProjectDropdown.svelte` — navbar dropdown showing current project name. Supports create, load (auto-saves current first), rename, delete, reset to default. Mounted in `App.svelte`.
 - `getProjectJson()` in `App.svelte`: builds the project JSON (same format as `saveProject()` local download).
 
 ### SvelteKit routing notes

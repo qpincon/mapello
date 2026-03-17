@@ -5,6 +5,8 @@ import { db } from '$lib/server/db';
 import { userProjects } from '$lib/server/schema';
 import { eq, desc } from 'drizzle-orm';
 
+const MAX_PROJECT_BYTES = 1_000_000;
+
 async function requireUser(request: Request) {
 	const session = await auth.api.getSession({ headers: request.headers });
 	if (!session?.user) throw error(401, 'Unauthorized');
@@ -31,6 +33,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	const body = await request.json();
 	const { name, project_json } = body;
 	if (!name || !project_json) throw error(400, 'Missing name or project_json');
+
+	if (new TextEncoder().encode(project_json).byteLength > MAX_PROJECT_BYTES) {
+		throw error(413, 'Project is too large to save. Please delete or resize some images and try again.');
+	}
 
 	const now = Date.now();
 	const [created] = await db.insert(userProjects).values({
