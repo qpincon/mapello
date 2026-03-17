@@ -32,7 +32,7 @@
     import microImg from "./assets/img/micro.png";
     import Icon from "./components/Icon.svelte";
     import { exportStyleSheet, getUsedInlineFonts, fontsToCss, applyStyles } from "./util/dom";
-    import { getState, saveState, registerServerSync } from "./util/save";
+    import { getState, saveState, registerServerSync, saveProjectToServer } from "./util/save";
     import { undo, redo, setRestoring, clearHistory } from "./util/history";
     import { type ExportOptions } from "./svg/export";
     import ExportModal from "./components/ExportModal.svelte";
@@ -169,14 +169,7 @@
 
     let zoomFunc: d3.ZoomBehavior<any, any> | null = $state(null);
     let dragFunc: d3.DragBehavior<any, any, any> | null = $state(null);
-    function syncToServer() {
-        if (!activeProjectId || !currentUser) return;
-        fetch(`/api/projects/${activeProjectId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ project_json: getProjectJson() }),
-        }).catch(() => {});
-    }
+    let serverSyncError = $state("");
 
     let showProjectLoginModal = $state(false);
     let loginProjects = $state<{ id: number; name: string; updatedAt: number }[]>([]);
@@ -264,7 +257,11 @@
 
     onMount(async () => {
         console.log("App onmount");
-        registerServerSync(syncToServer);
+        registerServerSync({
+            getProjectId: () => activeProjectId,
+            getProjectJson,
+            onError: (msg) => { serverSyncError = msg; },
+        });
         /** Init bootstrap dropdowns */
         Array.from(document.querySelectorAll(".dropdown-toggle")).forEach((dropdownToggleEl) => {
             new Dropdown(dropdownToggleEl);
@@ -1892,6 +1889,7 @@
                                 await applyState(state);
                                 if (commonState.currentMode === "macro") macroSidebar!.applyStateAndDraw();
                             }}
+                            onSaveError={(msg) => { serverSyncError = msg; }}
                         />
                     {/if}
                 </div>
@@ -1950,7 +1948,13 @@
                 </div>
             </div>
         </Navbar>
-        <div class="d-flex flex-column justify-content-center align-items-center h-100">
+        <div class="d-flex flex-column justify-content-center align-items-center h-100 position-relative">
+            {#if serverSyncError}
+                <div class="alert alert-warning mb-0 py-1 px-3 small" role="alert"
+                    style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1050; border-radius: 0 0 0.375rem 0.375rem;">
+                    {serverSyncError}
+                </div>
+            {/if}
             {#if commonState.currentMode === "micro"}
                 <div class="micro-top mb-4 mx-auto d-flex align-items-center justify-content-between">
                     <Geocoding onPlaceSelected={(res) => microSidebar!.onPlaceSelected(res)}></Geocoding>

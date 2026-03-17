@@ -2,10 +2,8 @@ import type { RequestHandler } from './$types';
 import { json, error } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { userProjects } from '$lib/server/schema';
+import { userProjects, MAX_PROJECT_BYTES } from '$lib/server/schema';
 import { eq, desc } from 'drizzle-orm';
-
-const MAX_PROJECT_BYTES = 1_000_000;
 
 async function requireUser(request: Request) {
 	const session = await auth.api.getSession({ headers: request.headers });

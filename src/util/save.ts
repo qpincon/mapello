@@ -5,20 +5,59 @@ import { recordIfChanged } from "./history";
 const LOCAL_STORAGE_KEY = "map-builder-state";
 const SERVER_SYNC_DELAY_MS = 5000;
 
-let _serverSyncCallback: (() => void) | null = null;
+type ServerSyncContext = {
+    getProjectId: () => number | null;
+    getProjectJson: () => string;
+    onError: (message: string) => void;
+};
+
+let _syncContext: ServerSyncContext | null = null;
 let _syncTimer: ReturnType<typeof setTimeout> | null = null;
 
-export function registerServerSync(cb: () => void) {
-    _serverSyncCallback = cb;
+export function registerServerSync(context: ServerSyncContext) {
+    _syncContext = context;
+}
+
+/**
+ * Save a project to the server. Returns an error message string on failure, or null on success.
+ */
+export async function saveProjectToServer(projectId: number, projectJson: string): Promise<string | null> {
+    try {
+        const res = await fetch(`/api/projects/${projectId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ project_json: projectJson }),
+        });
+        if (!res.ok) {
+            try {
+                const data = await res.json();
+                return data?.message || "Could not save project";
+            } catch {
+                return "Could not save project";
+            }
+        }
+        return null;
+    } catch {
+        return "Could not save project";
+    }
+}
+
+function syncToServer() {
+    if (!_syncContext) return;
+    const projectId = _syncContext.getProjectId();
+    if (!projectId) return;
+    saveProjectToServer(projectId, _syncContext.getProjectJson()).then((errorMsg) => {
+        _syncContext?.onError(errorMsg ?? "");
+    });
 }
 
 export function saveState() {
     const params: GlobalState = { stateCommon: commonState, stateMacro: macroState, stateMicro: microState };
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(params));
     recordIfChanged();
-    if (_serverSyncCallback) {
+    if (_syncContext) {
         if (_syncTimer) clearTimeout(_syncTimer);
-        _syncTimer = setTimeout(_serverSyncCallback, SERVER_SYNC_DELAY_MS);
+        _syncTimer = setTimeout(syncToServer, SERVER_SYNC_DELAY_MS);
     }
 }
 

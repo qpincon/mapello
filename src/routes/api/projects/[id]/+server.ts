@@ -2,10 +2,8 @@ import type { RequestHandler } from './$types';
 import { json, error } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { userProjects } from '$lib/server/schema';
+import { userProjects, MAX_PROJECT_BYTES } from '$lib/server/schema';
 import { eq, and } from 'drizzle-orm';
-
-const MAX_PROJECT_BYTES = 1_000;
 
 async function requireOwnership(request: Request, id: number) {
 	const session = await auth.api.getSession({ headers: request.headers });

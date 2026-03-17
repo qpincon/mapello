@@ -3,6 +3,7 @@
     import { Dropdown } from "bootstrap";
     import type { GlobalState } from "../types";
     import { defaultState } from "../stateDefaults";
+    import { saveProjectToServer } from "../util/save";
     import Icon from "./Icon.svelte";
     import { icons } from "../shared/icons";
 
@@ -18,6 +19,7 @@
         currentProjectId: number | null;
         getProjectJson: () => string;
         applyState: (state: GlobalState) => Promise<void>;
+        onSaveError: (message: string) => void;
     }
 
     let {
@@ -25,6 +27,7 @@
         currentProjectId = $bindable(),
         getProjectJson,
         applyState,
+        onSaveError,
     }: Props = $props();
 
     let toggleEl: HTMLElement;
@@ -59,16 +62,8 @@
 
     async function saveCurrentProject() {
         if (!currentProjectId) return;
-        try {
-            const res = await fetch(`/api/projects/${currentProjectId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ project_json: getProjectJson() }),
-            });
-            if (!res.ok) {
-                errorMsg = await getServerErrorMessage(res, "Could not save project");
-            }
-        } catch {}
+        const err = await saveProjectToServer(currentProjectId, getProjectJson());
+        if (err) onSaveError(err);
     }
 
     async function fetchProjects() {
@@ -246,8 +241,8 @@
                             await applyState(defaultState);
                             confirmReset = false;
                             dropdown.hide();
-                        }}
-                    >Reset</button>
+                        }}>Reset</button
+                    >
                     <button
                         class="btn btn-sm btn-outline-secondary"
                         type="button"
@@ -256,7 +251,8 @@
                 </div>
             {:else}
                 <div class="d-flex align-items-center gap-1">
-                    <span class="current-project-label fw-semibold flex-grow-1 text-truncate">{currentProjectName}</span>
+                    <span class="current-project-label fw-semibold flex-grow-1 text-truncate">{currentProjectName}</span
+                    >
                     <div class="project-actions">
                         <button
                             class="icon-btn"
@@ -266,13 +262,15 @@
                                 editingCurrentName = true;
                                 confirmReset = false;
                                 currentNameInput = currentProjectName;
-                            }}><Icon svg={icons["pencil"]} width="0.85rem" height="0.85rem" marginRight="0" /></button>
+                            }}><Icon svg={icons["pencil"]} width="0.85rem" height="0.85rem" marginRight="0" /></button
+                        >
                         <button
                             class="icon-btn danger"
                             type="button"
                             title="Reset to default"
                             onclick={() => (confirmReset = true)}
-                        ><Icon svg={icons["reset"]} width="0.85rem" height="0.85rem" marginRight="0" /></button>
+                            ><Icon svg={icons["reset"]} width="0.85rem" height="0.85rem" marginRight="0" /></button
+                        >
                     </div>
                 </div>
             {/if}
@@ -340,10 +338,23 @@
                                 {project.name}
                             </button>
                             <div class="project-actions">
-                                <button class="icon-btn" type="button" title="Rename" onclick={() => startRename(project)}>
+                                <button
+                                    class="icon-btn"
+                                    type="button"
+                                    title="Rename"
+                                    onclick={() => startRename(project)}
+                                >
                                     <Icon svg={icons["pencil"]} width="0.85rem" height="0.85rem" marginRight="0" />
                                 </button>
-                                <button class="icon-btn danger" type="button" title="Delete" onclick={() => { confirmDeleteId = project.id; renamingId = null; }}>
+                                <button
+                                    class="icon-btn danger"
+                                    type="button"
+                                    title="Delete"
+                                    onclick={() => {
+                                        confirmDeleteId = project.id;
+                                        renamingId = null;
+                                    }}
+                                >
                                     <Icon svg={icons["trash"]} width="0.85rem" height="0.85rem" marginRight="0" />
                                 </button>
                             </div>
@@ -379,11 +390,18 @@
                     <button
                         class="btn btn-sm btn-outline-secondary"
                         type="button"
-                        onclick={() => (showNewProjectInput = false)}
-                    >✕</button>
+                        onclick={() => (showNewProjectInput = false)}>✕</button
+                    >
                 </div>
             {:else}
-                <button class="dropdown-item" type="button" onclick={() => { newProjectNameInput = ""; showNewProjectInput = true; }}>
+                <button
+                    class="dropdown-item"
+                    type="button"
+                    onclick={() => {
+                        newProjectNameInput = "";
+                        showNewProjectInput = true;
+                    }}
+                >
                     + New project
                 </button>
             {/if}
