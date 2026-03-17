@@ -9,16 +9,7 @@ export function download(content: string, mimeType: string, filename: string): v
     a.click();
 }
 
-export function downloadURI(uri: string, filename: string): void {
-    const link = document.createElement("a");
-    link.setAttribute('download', filename);
-    link.href = uri;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-}
-
-export function capitalizeFirstLetter(str: string): string {
+function capitalizeFirstLetter(str: string): string {
     return str[0].toUpperCase() + str.slice(1);
 }
 

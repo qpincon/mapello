@@ -1,5 +1,5 @@
 // https://stackoverflow.com/a/14991797
-export function parseCSV(str: string) {
+function parseCSV(str: string) {
     const arr: unknown[][] = [];
     let quote = false;  // 'true' means we're inside a quoted field
 

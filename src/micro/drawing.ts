@@ -1,7 +1,7 @@
 import svgoConfig from '../svgoExport.config';
 import { select, type Selection } from "d3-selection";
 import { bboxContains, bboxIntersects, getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
-import { cloneDeep, debounce, kebabCase, last, random, size } from "lodash-es";
+import { cloneDeep, kebabCase, random, size } from "lodash-es";
 import { color, hsl } from "d3-color";
 import { DOM_PARSER, findStyleSheet, fontsToCss, fontsToCssEmbed, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
 import { patternGenerator } from "../svg/patternGenerator";
@@ -698,52 +698,7 @@ export function generateCssFromState(state: MicroPalette): string | null {
     return css;
 }
 
-// Returns true if we should redraw (layer deactivated for instance)
-export function onMicroParamChange(
-    layer: MicroLayerId,
-    prop: string | string[],
-    value: unknown,
-    layerState: MicroPalette
-): boolean {
-    console.log('onMicroParamChange', layer, prop, value);
-    if (prop.includes("pattern")) {
-        updateSvgPatterns(document.getElementById('static-svg-map') as unknown as SVGSVGElement, layerState);
-        replaceCssSheetContent(layerState);
-        return false;
-    }
-    if (prop.includes("active")) {
-        return true;
-    }
-
-    let ruleTxt = `#micro .${layer}`;
-    if (layer === "background") ruleTxt = "#micro-background";
-    // Change "building-0" for instance
-    if (Array.isArray(prop) && prop[0] === "fills") ruleTxt = `#micro .${layer}-${last(prop)}`;
-
-    const [sheet, rule] = findStyleSheet(ruleTxt);
-    if (!rule) return false;
-
-    if (Array.isArray(prop) && prop[0] === "fills") {
-        rule.style.setProperty("fill", value as string);
-    } else {
-        if (layerState[layer].pattern?.active) {
-            updateSvgPatterns(document.getElementById('static-svg-map') as unknown as SVGSVGElement, layerState);
-        } else {
-            rule.style.setProperty(prop as string, value as string);
-        }
-    }
-    replaceCssSheetContent(layerState);
-    return false;
-}
-
-
-export const replaceCssSheetContent = debounce((layerState: MicroPalette) => {
-    const styleSheet = document.getElementById('common-style-sheet-elem-micro') as HTMLStyleElement;
-    const microCss = generateCssFromState(layerState);
-    if (microCss) styleSheet.innerHTML = microCss;
-}, 500);
-
-export function updateSvgPatterns(svgNode: SVGElement | null, layerState: MicroPalette): void {
+function updateSvgPatterns(svgNode: SVGElement | null, layerState: MicroPalette): void {
     if (!svgNode) return;
     const patterns: PatternDefinition[] = Object.values(layerState).map((def) => {
         return {

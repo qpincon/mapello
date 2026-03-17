@@ -137,7 +137,7 @@ export const standardProjection: Record<string, ProjectionFunction> = {
     'geoBaker': geoBakerProj,
 };
 
-export function standardProj(projFunc: () => any, params: ProjectionParams): any {
+function standardProj(projFunc: () => any, params: ProjectionParams): any {
     const {
         width,
         height,
@@ -163,7 +163,7 @@ export function standardProj(projFunc: () => any, params: ProjectionParams): any
     return proj;
 }
 
-export function geoAlbersUsaProj(params: ProjectionParams): any {
+function geoAlbersUsaProj(params: ProjectionParams): any {
     const { width, height, translateX = 0, translateY = 0, altitude } = params;
 
     return geoAlbersUsa()
@@ -172,19 +172,19 @@ export function geoAlbersUsaProj(params: ProjectionParams): any {
         .precision(0.1);
 }
 
-export function geoMercatorProj(params: ProjectionParams): any {
+function geoMercatorProj(params: ProjectionParams): any {
     return standardProj(geoMercator, params);
 }
 
-export function geoEqualEarthProj(params: ProjectionParams): any {
+function geoEqualEarthProj(params: ProjectionParams): any {
     return standardProj(geoEqualEarth, params);
 }
 
-export function geoNaturalEarthProj(params: ProjectionParams): any {
+function geoNaturalEarthProj(params: ProjectionParams): any {
     return standardProj(geoNaturalEarth1, params);
 }
 
-export function geoBakerProj(params: ProjectionParams): any {
+function geoBakerProj(params: ProjectionParams): any {
     return standardProj(geoBaker, params);
 }
 

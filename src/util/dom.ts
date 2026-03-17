@@ -68,7 +68,7 @@ export function getUsedInlineFonts(svg: SVGSVGElement): Set<string> {
     return fonts;
 }
 
-export function styleSheetToText(sheet: CSSStyleSheet): string {
+function styleSheetToText(sheet: CSSStyleSheet): string {
     let styleTxt = '';
     const rules = sheet.cssRules;
     for (const r of Array.from(rules)) {

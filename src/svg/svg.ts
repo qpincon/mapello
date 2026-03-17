@@ -4,28 +4,6 @@ import { DOM_PARSER } from "../util/dom";
 import { commonState } from "src/state.svelte";
 import { select } from "d3-selection";
 
-// remove buggy paths, covering the whole svg element
-export function removeCoveringAll(groupElement: SVGGElement | null): void {
-    if (!groupElement) return;
-    const parent = groupElement.closest('svg');
-    if (!parent) return;
-    const containerRect = parent.getBoundingClientRect();
-    for (const child of Array.from(groupElement.children)) {
-        if (child.tagName !== 'path') continue;
-        const d = child.getAttribute('d');
-        // ignore empty path, and big ones (that actually draw something)
-        if (!d || d.length > 100) continue;
-        const rect = (child as SVGPathElement).getBoundingClientRect();
-        const includes = rect.x <= containerRect.x && rect.right >= containerRect.right
-            && rect.y <= containerRect.y && rect.bottom >= containerRect.bottom;
-        if (includes) {
-            console.log('removing', child);
-            child.remove();
-        }
-    }
-}
-
-
 export function postClipSimple(): void {
     const container = document.getElementById('static-svg-map')?.getBoundingClientRect()!;
     const elementsToCheck = ['path', 'rect', 'text', 'circle'];
