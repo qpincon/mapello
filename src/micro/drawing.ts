@@ -24,6 +24,7 @@ import { renderBuildingsToSvgImproved } from './3d';
 import area from '@turf/area';
 import center from '@turf/center';
 import { transitionCssMicro } from 'src/svg/transition';
+import { removeNotRenderedElements } from './remove-not-rendered-canvas';
 
 
 // Interfaces for building grouping
@@ -748,6 +749,10 @@ export async function exportMicro(
     // Remove selection overlay from export
     const selectionOverlay = svgNode.querySelector('#selection-overlay');
     if (selectionOverlay) selectionOverlay.remove();
+
+    // Remove 3D walls that are hidden behind other walls
+    const walls = [...svgNode.querySelectorAll<SVGPathElement>('.wall')];
+    if (walls.length > 0) removeNotRenderedElements(walls);
 
     const usedFonts = getUsedInlineFonts(svgNode);
     const usedProvidedFonts = providedFonts.filter(font => usedFonts.has(font.name));

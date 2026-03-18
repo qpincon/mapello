@@ -113,10 +113,6 @@
         onExport(buildOptions());
     }
 
-    function onModalOpened() {
-        updatePreview();
-    }
-
     $effect(() => {
         // Re-run preview when animate or useViewBox changes (while open)
         if (open) {
@@ -130,7 +126,7 @@
     });
 </script>
 
-<Modal {open} {onClosed} onOpened={onModalOpened} {modalWidth}>
+<Modal {open} {onClosed} {modalWidth}>
     <div slot="header">
         <h2 class="fs-3 p-2 m-0">Export options</h2>
     </div>
