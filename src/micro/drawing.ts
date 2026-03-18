@@ -149,6 +149,14 @@ export async function drawPrettyMap(
             false
         );
     }
+    // Remove building paths hidden behind others
+    const svgNode = svg.node() as SVGSVGElement;
+    const buildingsGroup = svgNode.querySelector('#buildings');
+    const buildingPaths = buildingsGroup
+        ? [...buildingsGroup.querySelectorAll<SVGPathElement>('path')]
+        : [...svgNode.querySelectorAll<SVGPathElement>('.buildings')];
+    if (buildingPaths.length > 0) removeNotRenderedElements(buildingPaths);
+
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, false, outerFrameRx);
     mapLibreContainer.style('opacity', 0);
     setTimeout(() => postClip(generalParams), 100);
@@ -749,10 +757,6 @@ export async function exportMicro(
     // Remove selection overlay from export
     const selectionOverlay = svgNode.querySelector('#selection-overlay');
     if (selectionOverlay) selectionOverlay.remove();
-
-    // Remove 3D walls that are hidden behind other walls
-    const walls = [...svgNode.querySelectorAll<SVGPathElement>('.wall')];
-    if (walls.length > 0) removeNotRenderedElements(walls);
 
     const usedFonts = getUsedInlineFonts(svgNode);
     const usedProvidedFonts = providedFonts.filter(font => usedFonts.has(font.name));
