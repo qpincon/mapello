@@ -5,6 +5,9 @@ import { getRequestEvent } from '$app/server';
 import { env } from '$env/dynamic/private';
 import { db } from './db';
 import nodemailer from 'nodemailer';
+import disposableDomains from 'disposable-email-domains';
+
+const disposableDomainSet = new Set(disposableDomains);
 
 const googleClientId = env.GOOGLE_CLIENT_ID;
 const googleClientSecret = env.GOOGLE_CLIENT_SECRET;
@@ -43,6 +46,18 @@ export const auth = betterAuth({
 				},
 			}
 			: {}),
+	},
+	databaseHooks: {
+		user: {
+			create: {
+				before: async (user) => {
+					const domain = user.email.split('@')[1]?.toLowerCase();
+					if (domain && disposableDomainSet.has(domain)) {
+						return false;
+					}
+				},
+			},
+		},
 	},
 	plugins: [sveltekitCookies(getRequestEvent)],
 });

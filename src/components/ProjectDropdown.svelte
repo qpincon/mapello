@@ -46,6 +46,10 @@
     let showNewProjectInput = $state(false);
     let newProjectNameInput = $state("");
 
+    const MAX_PROJECTS = 20;
+    let totalProjectCount = $derived(projects.length + (currentProjectId ? 1 : 0));
+    let atProjectLimit = $derived(totalProjectCount >= MAX_PROJECTS);
+
     onMount(() => {
         dropdown = new Dropdown(toggleEl);
         toggleEl.addEventListener("show.bs.dropdown", fetchProjects);
@@ -393,6 +397,8 @@
                         onclick={() => (showNewProjectInput = false)}>✕</button
                     >
                 </div>
+            {:else if atProjectLimit}
+                <span class="dropdown-item-text text-muted small">Maximum {MAX_PROJECTS} projects reached</span>
             {:else}
                 <button
                     class="dropdown-item"

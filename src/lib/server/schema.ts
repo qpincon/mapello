@@ -1,7 +1,7 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
-export const MAX_PROJECT_BYTES = 1_000_000
-	;
+export const MAX_PROJECT_BYTES = 1_000_000;
+export const MAX_PROJECTS = 20;
 
 export const userProjects = sqliteTable('user_projects', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
