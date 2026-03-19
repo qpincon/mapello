@@ -945,6 +945,17 @@
     "@types/geojson" "^7946.0.10"
     tslib "^2.8.1"
 
+"@turf/difference@^7.3.4":
+  version "7.3.4"
+  resolved "https://registry.yarnpkg.com/@turf/difference/-/difference-7.3.4.tgz#ef514f8e0141d30f27068695aaf8edd96748b19b"
+  integrity sha512-kIxizNQrYLO2rtqUIeed0tPycicrXoipy/g9d4mjv91kzBEbwpyojz9zi8U9G1ISBfCEgA7wsViQD0r+8qzxXw==
+  dependencies:
+    "@turf/helpers" "7.3.4"
+    "@turf/meta" "7.3.4"
+    "@types/geojson" "^7946.0.10"
+    polyclip-ts "^0.16.8"
+    tslib "^2.8.1"
+
 "@turf/distance@7.3.4", "@turf/distance@^7.2.0":
   version "7.3.4"
   resolved "https://registry.npmjs.org/@turf/distance/-/distance-7.3.4.tgz"

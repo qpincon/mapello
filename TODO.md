@@ -253,3 +253,8 @@
 - [ ] macro: custom palette?
 - [ ] ISE: open above when no room
 - [ ] nginx rate limiting 
+- [ ] micro: fix lines on map boundaries removed from export
+- [ ] micro: landuse_pedestrian above grass ? (la cité)
+- [ ] more patterns: https://www.svgbackgrounds.com/set/free-svg-backgrounds-and-patterns/
+- [ ] No more than 20 projects
+- [ ] Check disposable email adresses

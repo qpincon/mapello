@@ -13,6 +13,8 @@ import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.j
 import { createRoundedRectangleGeoJSON } from '../util/geometry';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanDisjoint from '@turf/boolean-disjoint';
+import difference from '@turf/difference';
+import { featureCollection } from '@turf/helpers';
 import type { Feature, Geometry, Polygon } from 'geojson';
 import type { MicroParams } from '../params';
 import { MICRO_LAYERS, type Color, type ElementAnnotations, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type StateMicro, type SvgSelection } from '../types';
@@ -44,6 +46,7 @@ function centroidDistance(c1: [number, number], c2: [number, number]): number {
 
 type D3PathFunction = (geometry: Geometry) => string | null;
 
+
 export function orderFeaturesByLayer(features: RenderedFeature[]): void {
     features.sort((a, b) => {
         // @ts-expect-error
@@ -54,6 +57,7 @@ export function orderFeaturesByLayer(features: RenderedFeature[]): void {
         return 1;
     });
 }
+const BACKGROUND_LAYERS = ['landuse_pedestrian', 'landuse_pier'];
 
 export async function drawPrettyMap(
     maplibreMap: MapLibreMap,
@@ -65,9 +69,12 @@ export async function drawPrettyMap(
     console.log('layerDefinitions=', layerDefinitions);
     select("#map-container").style("width", null).style('height', null);
     const mapLibreContainer = select('#maplibre-map');
-    const layersToQuery = MICRO_LAYERS.filter(layer => {
-        return layerDefinitions[kebabCase(layer) as MicroLayerId]?.active !== false;
-    });
+    const layersToQuery = [
+        ...MICRO_LAYERS.filter(layer => {
+            return layerDefinitions[kebabCase(layer) as MicroLayerId]?.active !== false;
+        }),
+        ...BACKGROUND_LAYERS,
+    ];
     updateSvgPatterns(svg.node() as SVGElement, layerDefinitions);
     const width = generalParams.General.width;
     const height = generalParams.General.height;
@@ -89,6 +96,26 @@ export async function drawPrettyMap(
         geom.properties.mapLayerId !== "buildings" || !layerDefinitions.buildings['3dBuildings']
     ) as RenderedFeaturePoly[];
     orderFeaturesByLayer(geometries2d);
+
+    // Separate water-cutout layers (punch holes in water instead of rendering on top)
+    const cutoutFeatures = geometries2d.filter(g => BACKGROUND_LAYERS.includes(g.properties.mapLayerId!));
+    const mainFeatures = geometries2d.filter(g => !BACKGROUND_LAYERS.includes(g.properties.mapLayerId!));
+
+    // Subtract cutout geometries from water polygons
+    if (cutoutFeatures.length > 0) {
+        for (let i = mainFeatures.length - 1; i >= 0; i--) {
+            const f = mainFeatures[i];
+            if (f.properties.mapLayerId !== 'water') continue;
+            for (const cutout of cutoutFeatures) {
+                const diff = difference(featureCollection([f as Feature<Polygon>, cutout as Feature<Polygon>]));
+                if (diff == null) {
+                    mainFeatures.splice(i, 1);
+                    break;
+                }
+                (f as Feature).geometry = diff.geometry;
+            }
+        }
+    }
 
     const borderWidth = generalParams.Border.borderWidth;
     const borderPadding = generalParams.Border.borderPadding;
@@ -113,7 +140,7 @@ export async function drawPrettyMap(
         .attr('id', 'micro')
         .attr("clip-path", "url(#clipMapBorder)")
         .selectAll('path')
-        .data(geometries2d)
+        .data(mainFeatures)
         .enter()
         .append("path")
         .attr("d", (d) => d3PathFunction(d.geometry))
@@ -123,7 +150,7 @@ export async function drawPrettyMap(
             if (layerIdKebab.includes('path') || layerIdKebab.includes('road')) classes.push('line');
             else classes.push(d.geometry.type.includes("Line") ? 'line' : 'poly');
             const state = layerDefinitions[layerIdKebab];
-            if (!state) classes.push('other');
+            if (!state) classes.push('background');
             if (state?.fills) {
                 classes.push(`${layerIdKebab}-${random(0, state.fills.length - 1)}`);
             }
@@ -614,7 +641,6 @@ function darken(c: string, quantity: number = 0.4): Color {
 export function generateCssFromState(state: MicroPalette): string | null {
     console.log('generateCssFromState');
     const [sheet, _] = findStyleSheet("#micro .line");
-    // "other" default color definitions will be overridden by mode specific '>' selector
     let css = `
     #micro .line { 
         fill: none; 
@@ -671,6 +697,7 @@ export function generateCssFromState(state: MicroPalette): string | null {
         if (size(ruleContent) > 0) {
             if (layer === "background") {
                 css += updateStyleSheetOrGenerateCss(sheet, '#micro-background', ruleContent);
+                css += updateStyleSheetOrGenerateCss(sheet, '#micro .background', ruleContent);
             } else {
                 css += updateStyleSheetOrGenerateCss(sheet, `#micro .${layer}`, ruleContent);
                 // css += updateStyleSheetOrGenerateCss(sheet, `#micro .${layer}:hover`, ruleHoverContent);

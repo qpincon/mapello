@@ -227,9 +227,9 @@ export interface PatternDefinition {
 export interface MicroLayerDefinition {
     "stroke-width"?: number;
     "stroke-dasharray"?: number;
+    active?: boolean;
     stroke?: Color;
     disabled?: boolean;
-    active?: boolean;
     menuOpened?: boolean;
     pattern?: PatternDefinition;
     fill?: Color;
@@ -239,10 +239,10 @@ export interface MicroLayerDefinition {
 }
 
 export const MICRO_LAYERS = [
+    "water",
     "grass",
     "forest",
     "sand",
-    "water",
     "roads",
     "railways",
     "paths",
@@ -251,7 +251,7 @@ export const MICRO_LAYERS = [
 
 type LayerId = typeof MICRO_LAYERS[number];
 
-export type MicroLayerId = LayerId | 'background' | 'other';
+export type MicroLayerId = LayerId | 'background';
 export type MicroPalette = {
     [layerId in MicroLayerId]: MicroLayerDefinition;
 };

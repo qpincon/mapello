@@ -228,7 +228,6 @@
             microState.microLayerDefinitions,
         );
         replaceCssSheetContent(microState.microLayerDefinitions);
-        // handleMicroParamChange('other', ['pattern'])
         draw();
         saveState();
     }
