@@ -193,11 +193,13 @@ export async function drawPrettyMap(
     const buildingPaths = buildingsGroup
         ? [...buildingsGroup.querySelectorAll<SVGPathElement>('path')]
         : [...svgNode.querySelectorAll<SVGPathElement>('.buildings')];
-    if (buildingPaths.length > 0) removeNotRenderedElements(buildingPaths);
 
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, false, outerFrameRx);
     mapLibreContainer.style('opacity', 0);
-    setTimeout(() => postClip(generalParams), 100);
+    setTimeout(() => {
+        postClip(generalParams);
+        if (buildingPaths.length > 0) removeNotRenderedElements(buildingPaths);
+    }, 100);
 }
 
 export function resizeMaplibreMap(generalParams: MicroParams, mapLibreMap: MapLibreMap): void {

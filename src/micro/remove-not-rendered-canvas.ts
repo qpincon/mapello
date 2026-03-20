@@ -61,7 +61,7 @@ function showDebugCanvas(canvas: OffscreenCanvas, svgRect: DOMRect) {
 	document.body.appendChild(visible);
 }
 
-export function removeNotRenderedElements(pathElements: SVGPathElement[], scale = 5, enableDebug = false) {
+export function removeNotRenderedElements(pathElements: SVGPathElement[], scale = 6, enableDebug = false) {
 	if (pathElements.length === 0) return 0;
 
 	const svg = pathElements[0].ownerSVGElement;
