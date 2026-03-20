@@ -103,16 +103,27 @@ export async function drawPrettyMap(
 
     // Subtract cutout geometries from water polygons
     if (cutoutFeatures.length > 0) {
+        // Pre-compute bboxes for cutout features (cheap, avoids recomputing per water polygon)
+        const cutoutBboxes = cutoutFeatures.map(c => bbox(c));
+
         for (let i = mainFeatures.length - 1; i >= 0; i--) {
             const f = mainFeatures[i];
             if (f.properties.mapLayerId !== 'water') continue;
-            for (const cutout of cutoutFeatures) {
-                const diff = difference(featureCollection([f as Feature<Polygon>, cutout as Feature<Polygon>]));
+            let waterBbox = bbox(f);
+
+            for (let j = 0; j < cutoutFeatures.length; j++) {
+                // Skip if bboxes don't intersect — no overlap possible
+                if (!bboxIntersects(waterBbox, cutoutBboxes[j])) continue;
+                // Skip if geometries are disjoint (bboxes overlap but polygons don't)
+                if (booleanDisjoint(f as Feature<Polygon>, cutoutFeatures[j] as Feature<Polygon>)) continue;
+
+                const diff = difference(featureCollection([f as Feature<Polygon>, cutoutFeatures[j] as Feature<Polygon>]));
                 if (diff == null) {
                     mainFeatures.splice(i, 1);
                     break;
                 }
                 (f as Feature).geometry = diff.geometry;
+                waterBbox = bbox(f); // Recompute after geometry changed
             }
         }
     }
