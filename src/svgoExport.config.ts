@@ -25,7 +25,6 @@ export default {
     'sortDefsChildren',
     'removeTitle',
     'removeDesc',
-    'removeOffCanvasPaths',
     {
       name: 'convertPathData',
       params: {
