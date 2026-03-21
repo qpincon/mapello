@@ -214,29 +214,26 @@ export function resizeMaplibreMap(generalParams: MicroParams, mapLibreMap: MapLi
     const finalPadding = borderPadding + (borderWidth / 2);
 
     const currentStyle = mapLibreContainer.node()?.style;
-    let styleChanged = currentStyle?.width !== `${finalWidth}px`
+    // Compare paddingTop (longhand) instead of padding (shorthand) — browsers decompose
+    // shorthand padding into longhand properties, so style.padding returns "" even after
+    // being set, causing resize() to fire every time and creating an infinite loop.
+    const styleChanged = currentStyle?.width !== `${finalWidth}px`
         || currentStyle?.height !== `${finalHeight}px`
-        || currentStyle?.padding !== `${finalPadding}px`;
+        || currentStyle?.paddingTop !== `${finalPadding}px`;
     mapLibreContainer
         .style('width', `${finalWidth}px`)
         .style('height', `${finalHeight}px`)
         .style('padding', `${finalPadding}px`);
-    if (styleChanged) mapLibreMap.resize();
-
-    // Check if canvas size differs from expected container size
-    const canvas = mapLibreMap.getCanvas();
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-
-    console.log(canvas, canvasWidth, finalWidth, canvasHeight, finalHeight)
-    if (canvasWidth !== finalWidth || canvasHeight !== finalHeight) {
-        // Canvas doesn't fill container - force resize by setting dimensions on canvas wrapper
-        const canvasContainer = canvas.parentElement;
-        if (canvasContainer) {
-            canvasContainer.style.width = `${finalWidth}px`;
-            canvasContainer.style.height = `${finalHeight}px`;
-        }
+    if (styleChanged) {
         mapLibreMap.resize();
+    } else {
+        // Even if inline styles haven't changed (e.g. after switching macro→micro),
+        // the canvas may be stale. Compare the canvas CSS size against the expected size.
+        const canvas = mapLibreMap.getCanvas();
+        const canvasRect = canvas.getBoundingClientRect();
+        if (Math.round(canvasRect.width) !== finalWidth || Math.round(canvasRect.height) !== finalHeight) {
+            mapLibreMap.resize();
+        }
     }
 }
 
