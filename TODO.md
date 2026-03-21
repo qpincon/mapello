@@ -258,3 +258,4 @@
 - [ ] more patterns: https://www.svgbackgrounds.com/set/free-svg-backgrounds-and-patterns/
 - [x] No more than 20 projects
 - [x] Check disposable email adresses
+- [ ] slider: allow editing value directly by text

@@ -135,6 +135,11 @@
     let linkInput: HTMLInputElement | null = $state(null);
     let genericSelectedId: string | null = $state(null);
     let styleEditor: InlineStyleEditor | null = $state(null);
+    // Element on which we force-added .hovered when opening the style editor from
+    // the context menu. Needed because the mouse leaves the element to reach the
+    // menu, which removes the .hovered class before the editor can discover
+    // .hovered CSS rules (e.g. .country.hovered, .adm.hovered).
+    let forceHoveredElement: Element | null = null;
     let contextualMenu: (HTMLDivElement & { opened?: boolean }) | null = $state(null);
     let showExportConfirm = $state(false);
     let showAuthModal = $state(false);
@@ -390,6 +395,15 @@
                 },
             },
         });
+        // Wrap close() to remove the .hovered class we force-added in editStyles()
+        const originalClose = styleEditor!.close.bind(styleEditor);
+        styleEditor!.close = () => {
+            if (forceHoveredElement) {
+                forceHoveredElement.classList.remove('hovered');
+                forceHoveredElement = null;
+            }
+            originalClose();
+        };
         document.body.append(contextualMenu!);
         contextualMenu!.style.display = "none";
         contextualMenu!.style.position = "absolute";
@@ -1336,7 +1350,12 @@
 
     function editStyles(): void {
         closeMenu();
-        styleEditor!.open(openContextMenuInfo.target, openContextMenuInfo.event.pageX, openContextMenuInfo.event.pageY);
+        // Re-add .hovered so the InlineStyleEditor can discover .hovered CSS rules.
+        // The class was lost when the mouse moved from the element to the context menu.
+        const target = openContextMenuInfo.target;
+        target.classList.add('hovered');
+        forceHoveredElement = target;
+        styleEditor!.open(target, openContextMenuInfo.event.pageX, openContextMenuInfo.event.pageY);
     }
     function addPoint(): void {
         menuStates.chosingPoint = true;
