@@ -87,6 +87,7 @@
         const num = Number(value);
         workingData[rowIndex][col] = value !== "" && !isNaN(num) ? num : value;
         validateAndWarn();
+        onSave(workingData);
     }
 
     function addColumn(): void {
@@ -98,6 +99,7 @@
         columns = [...columns, name];
         newColumnName = "";
         validateAndWarn();
+        onSave(workingData);
     }
 
     function removeColumn(col: string): void {
@@ -107,6 +109,7 @@
         }
         columns = columns.filter((c) => c !== col);
         validateAndWarn();
+        onSave(workingData);
     }
 
     // --- Import: split into loadFile + reconcileWithGeo ---
@@ -184,6 +187,7 @@
         workingData = filtered as ZoneDataRow[];
         columns = getColumns(workingData);
         validateAndWarn();
+        onSave(workingData);
 
         // Build dialog message for removed/added names
         const msgs: string[] = [];
@@ -245,19 +249,13 @@
         XLSX.writeFile(wb, "data.xlsx");
     }
 
-    function handleSave(): void {
-        onSave(workingData);
-        open = false;
-        onClose();
-    }
-
-    function handleCancel(): void {
+    function handleClose(): void {
         open = false;
         onClose();
     }
 </script>
 
-<Modal {open} onClosed={handleCancel} modalWidth="90%">
+<Modal {open} onClosed={handleClose} modalWidth="90%">
     <h5 slot="header">Data Manager - {layerName}</h5>
     <div slot="content">
         <!-- Toolbar -->
@@ -378,9 +376,8 @@
             </div>
         {/if}
     </div>
-    <div slot="footer" class="d-flex gap-2">
-        <button class="btn btn-secondary" onclick={handleCancel}>Cancel</button>
-        <button class="btn btn-primary" disabled={errors.length > 0} onclick={handleSave}>Save</button>
+    <div slot="footer">
+        <button class="btn btn-primary" onclick={handleClose}>OK</button>
     </div>
 </Modal>
 
