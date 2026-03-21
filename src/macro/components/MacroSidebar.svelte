@@ -182,7 +182,6 @@
                 }
             }
         }
-
         if (legendSample && legendSample.contains(target)) {
             /** Do nothing on legend fill rectangle as it would make the legend useless */
             if (cssProp === "fill" && target.tagName === "rect") {
@@ -198,6 +197,10 @@
             if (rect && savedRectFill) rect.style.setProperty("fill", savedRectFill);
             colorizeAndLegend(svg);
         } else if (htmlTooltipElem && htmlTooltipElem.contains(target)) {
+            if (cssProp === "font-family" && !htmlTooltipElem.style.fontFamily && target !== htmlTooltipElem) {
+                htmlTooltipElem.style.fontFamily = value;
+                target.style.removeProperty("font-family");
+            }
             macroState.tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem.outerHTML;
         } else if (eventType === "inline") {
             if (target.hasAttribute("id")) {
@@ -363,12 +366,18 @@
         colorizeAndLegend(svg);
     }
 
-    function getFirstDataRow(zonesDataDef: ZoneData): ZoneDataRow | null {
-        if (!macroState.zonesData) return null;
-        const row = { ...zonesDataDef.data[0] };
+    function getFirstDataRow(zonesDataDef: ZoneData, template: string): ZoneDataRow | null {
+        if (!macroState.zonesData || !zonesDataDef.data.length) return null;
+        const variables = extractTemplateVariables(template);
+        const source =
+            variables.length > 0
+                ? (zonesDataDef.data.find((r) => variables.every((v) => r[v] != null && r[v] !== "")) ??
+                  zonesDataDef.data[0])
+                : zonesDataDef.data[0];
+        const row = { ...source };
         zonesDataDef.numericCols.forEach((colDef) => {
             const col = colDef.column;
-            if (typeof zonesDataDef.formatters?.[col] === 'function') {
+            if (typeof zonesDataDef.formatters?.[col] === "function") {
                 row[col] = zonesDataDef.formatters[col](row[col] as number);
             }
         });
@@ -437,8 +446,11 @@
             curDataDefs.colorScale === "category"
                 ? getColumns(macroState.zonesData[currentMacroLayerTab].data)
                 : macroState.zonesData?.[currentMacroLayerTab]?.numericCols.map((x) => x.column);
-        availablePalettes = ["Custom",
-            ...(curDataDefs.colorScale === "category" ? Object.keys(CATEGORICAL_SCHEMES) : Object.keys(CONTINUOUS_SCHEMES)),
+        availablePalettes = [
+            "Custom",
+            ...(curDataDefs.colorScale === "category"
+                ? Object.keys(CATEGORICAL_SCHEMES)
+                : Object.keys(CONTINUOUS_SCHEMES)),
         ];
         if (!availableColumns.includes(curDataDefs.colorColumn)) {
             curDataDefs.colorColumn = availableColumns[0];
@@ -501,20 +513,20 @@
                     scale = scaleOrdinal(macroState.customCategoricalPalette);
                 } else scale = scaleOrdinal(CATEGORICAL_SCHEMES[paletteName as CategoricalScaleKey]);
             } else if (dataColorDef.colorScale === "quantile") {
-                const range = dataColorDef.colorPalette === "Custom"
-                    ? quantize(interpolateRgbBasis(macroState.customContinuousPalette), dataColorDef.nbBreaks)
-                    : CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks];
+                const range =
+                    dataColorDef.colorPalette === "Custom"
+                        ? quantize(interpolateRgbBasis(macroState.customContinuousPalette), dataColorDef.nbBreaks)
+                        : CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks];
                 scale = scaleQuantile<string, number>()
                     .domain(data as number[])
                     .range(range);
             } else if (dataColorDef.colorScale === "quantize") {
-                const range = dataColorDef.colorPalette === "Custom"
-                    ? quantize(interpolateRgbBasis(macroState.customContinuousPalette), dataColorDef.nbBreaks)
-                    : CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks];
+                const range =
+                    dataColorDef.colorPalette === "Custom"
+                        ? quantize(interpolateRgbBasis(macroState.customContinuousPalette), dataColorDef.nbBreaks)
+                        : CONTINUOUS_SCHEMES[paletteName as ContinuousScaleKey][dataColorDef.nbBreaks];
                 const dataExtent = extent(data as number[]) as [number, number];
-                scale = scaleQuantize<string, number>()
-                    .domain(dataExtent)
-                    .range(range);
+                scale = scaleQuantize<string, number>().domain(dataExtent).range(range);
             }
             const usedColors: Color[] = [];
             macroState.zonesData[tab].data.forEach((row) => {
@@ -876,7 +888,10 @@
                                 >
                                     {@html formatUnicorn(
                                         macroState.tooltipDefs[currentMacroLayerTab].template,
-                                        getFirstDataRow(macroState.zonesData[currentMacroLayerTab])!,
+                                        getFirstDataRow(
+                                            macroState.zonesData[currentMacroLayerTab],
+                                            macroState.tooltipDefs[currentMacroLayerTab].template,
+                                        )!,
                                     )}
                                 </div>
                             </div>
@@ -951,7 +966,10 @@
                                 <label for="choseColorPalette"> Palette </label>
                             </div>
                             {#if curDataDefs.colorPalette === "Custom"}
-                                <span class="btn btn-outline-primary btn-sm py-0 px-1" onclick={() => (showCustomPalette = true)}>
+                                <span
+                                    class="btn btn-outline-primary btn-sm py-0 px-1"
+                                    onclick={() => (showCustomPalette = true)}
+                                >
                                     Edit</span
                                 >
                             {/if}
@@ -1011,8 +1029,7 @@
                                 <span
                                     class="help-tooltip"
                                     data-bs-toggle="tooltip"
-                                    data-bs-title="Drag the title of the legend to move it, as well as the entries."
-                                    >?</span
+                                    data-bs-title="Drag the legend to move it around.">?</span
                                 >
                             </label>
                         </div>
@@ -1093,9 +1110,7 @@
             palette={curDataDefs?.colorScale === "category"
                 ? macroState.customCategoricalPalette
                 : macroState.customContinuousPalette}
-            mapping={curDataDefs?.colorScale === "category"
-                ? ordinalMapping[currentMacroLayerTab]
-                : undefined}
+            mapping={curDataDefs?.colorScale === "category" ? ordinalMapping[currentMacroLayerTab] : undefined}
             mode={curDataDefs?.colorScale === "category" ? "categorical" : "continuous"}
             nbBreaks={curDataDefs?.nbBreaks}
             onChange={draw}

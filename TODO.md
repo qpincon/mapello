@@ -259,3 +259,6 @@
 - [x] No more than 20 projects
 - [x] Check disposable email adresses
 - [ ] slider: allow editing value directly by text
+- [ ] Font conversion to path: only suggest of not used in tooltip / popover, alwyas import font-face otherwise
+- [ ] macro coloring: only take into account visible parts of the map
+- [ ] Show N/A in tooltip when no data for referenced column

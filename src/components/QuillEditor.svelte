@@ -13,6 +13,10 @@
     Quill.register(DivBlock, true);
     Quill.register("modules/resize", QuillResizeImage);
 
+    // Use inline style="text-align: ..." instead of class="ql-align-..."
+    const AlignStyle = Quill.import("attributors/style/align") as any;
+    Quill.register(AlignStyle, true);
+
     interface Props {
         value: string;
         onchange?: () => void;
@@ -52,7 +56,7 @@
             theme: "snow",
             modules: {
                 toolbar: {
-                    container: [["bold", "italic", "underline"], ["image", "link"], ["clean"]],
+                    container: [["bold", "italic", "underline"], [{ align: [] }], ["image", "link"], ["clean"]],
                     handlers: {
                         image: imageHandler,
                     },
@@ -79,6 +83,9 @@
                 const btn = toolbar.querySelector(`.ql-${format}`);
                 if (btn) btn.setAttribute("title", label);
             }
+            // Alignment dropdown tooltip
+            const alignBtn = toolbar.querySelector(".ql-align");
+            if (alignBtn) alignBtn.setAttribute("title", "Text alignment");
         }
 
         // Set initial content

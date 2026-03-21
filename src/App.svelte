@@ -284,6 +284,14 @@
                     value: string,
                 ) => {
                     if (annotationEditingElemId !== null) {
+                        if (cssProp === "fontFamily" && annotationPreviewEl) {
+                            const container = annotationPreviewEl.firstElementChild as HTMLElement | null;
+                            if (container && !container.style.fontFamily && target !== container) {
+                                container.style.fontFamily = value;
+                                target.style.removeProperty("font-family");
+                                return;
+                            }
+                        }
                         (target.style as any)[cssProp] = value;
                         return;
                     }
@@ -431,11 +439,15 @@
                 stopDrawFreeHand();
             } else if (e.ctrlKey && e.code === "KeyC") {
                 if (isSelectionActive()) {
+                    const tag = (e.target as HTMLElement)?.tagName;
+                    if (tag === "INPUT" || tag === "TEXTAREA") return;
                     e.preventDefault();
                     copySelected();
                 }
             } else if (e.ctrlKey && e.code === "KeyV") {
                 if (selectionState.clipboard) {
+                    const tag = (e.target as HTMLElement)?.tagName;
+                    if (tag === "INPUT" || tag === "TEXTAREA") return;
                     e.preventDefault();
                     pasteFromClipboard(() => redrawEntities());
                 }
