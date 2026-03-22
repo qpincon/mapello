@@ -460,6 +460,22 @@
         if (svg) colorizeAndLegend(svg);
     }
 
+    function isZoneVisible(tab: string, zoneName: string): boolean {
+        const elem = document.querySelector(`g[id="${tab}"] [id="${zoneName}"]`) as SVGPathElement | null;
+        if (!elem) return false;
+        const d = elem.getAttribute("d");
+        if (!d) return false;
+        try {
+            const bbox = elem.getBBox();
+            if (bbox.width === 0 && bbox.height === 0) return false;
+            const svgWidth = macroState.macroParams.General.width;
+            const svgHeight = macroState.macroParams.General.height;
+            return bbox.x + bbox.width > 0 && bbox.y + bbox.height > 0 && bbox.x < svgWidth && bbox.y < svgHeight;
+        } catch {
+            return false;
+        }
+    }
+
     async function colorizeAndLegend(svg: SvgSelection): Promise<void> {
         console.log("colorizeAndLegend");
         await tick();
@@ -494,17 +510,25 @@
                 return;
             }
             const paletteName = dataColorDef.colorPalette;
-            // filter out undef or null data, track if any rows have no data
+            // build set of visible zone names for this tab
+            const visibleZoneNames = new Set<string>();
+            macroState.zonesData[tab].data.forEach((row) => {
+                if (isZoneVisible(tab, row.name)) visibleZoneNames.add(row.name);
+            });
+            // collect data from visible zones only (with allData fallback)
             let tabHasNoData = false;
-            const data = macroState.zonesData[tab].data.reduce<(string | number)[]>((acc, row) => {
+            const allData: (string | number)[] = [];
+            const visibleData: (string | number)[] = [];
+            macroState.zonesData[tab].data.forEach((row) => {
                 const d = row[dataColorDef.colorColumn];
                 if (d === null || d === undefined || d === "") {
                     tabHasNoData = true;
-                    return acc;
+                    return;
                 }
-                acc.push(d);
-                return acc;
-            }, []);
+                allData.push(d);
+                if (visibleZoneNames.has(row.name)) visibleData.push(d);
+            });
+            const data = visibleData.length > 0 ? visibleData : allData;
             hasNoDataForTab[tab] = tabHasNoData;
             let scale: ColorScale;
             if (dataColorDef.colorScale === "category") {
