@@ -1,4 +1,4 @@
-import { formatUnicorn } from './util/common';
+import { extractTemplateVariables, formatUnicorn } from './util/common';
 import type { ElementAnnotations, Tooltip, TooltipDefs, ZonesData } from './types';
 
 export function addTooltipListener(
@@ -132,7 +132,7 @@ function onMouseMove(
             return;
         }
         const tt = instanciateTooltip(data, groupId, tooltipDefs);
-        if (!tt) return;
+        if (!tt) return hideTooltip(tooltip);
         tooltip.element.replaceWith(tt);
         tooltip.element = tt;
         tooltip.shapeId = shapeId;
@@ -227,6 +227,11 @@ function instanciateTooltip(
     const cleanTemplate = (tooltipDefs?.[groupId]?.template || '')
         .replace(/<(b|i|u|em|strong|span)>\s*<\/\1>/gi, '')
         .replace(/<div><br\s*\/?><\/div>/gi, '');
+
+    // If all referenced variables are null/empty/zero, don't show tooltip
+    const vars = extractTemplateVariables(cleanTemplate).filter(v => v !== 'name');
+    if (vars.length > 0 && vars.every(v => !dataRow[v] && dataRow[v] !== false)) return;
+
     tooltip.innerHTML = formatUnicorn(cleanTemplate, (dataRow) || '');
 
     // Apply container styles + runtime properties

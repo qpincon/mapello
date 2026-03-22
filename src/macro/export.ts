@@ -116,13 +116,17 @@ export async function exportMacro(
         // so they survive eval('`' + str + '`') in the exported tooltip script
         functionStr = functionStr.replace(/\$(?!\{(?:data\.|shapeId))/g, "&#36;");
         finalDataByGroup.tooltips[groupId] = functionStr;
-        console.log(functionStr);
 
         const zonesDataDup = JSON.parse(JSON.stringify(stateMacro.zonesData[groupId].data));
         stateMacro.zonesData[groupId].numericCols.forEach(colDef => {
             const col = colDef.column;
             zonesDataDup.forEach((row: any) => {
-                row[col] = stateMacro.zonesData[groupId].formatters![col](row[col]);
+                // Preserve null/empty as empty string so tooltip can detect missing data
+                if (row[col] == null || row[col] === '') {
+                    row[col] = '';
+                } else {
+                    row[col] = stateMacro.zonesData[groupId].formatters![col](row[col]);
+                }
             });
         });
 

@@ -11,8 +11,16 @@ tooltip.element = constructTooltip({}, '', '');
 mapElement.append(tooltip.element);
 tooltip.element.style.display = 'none';
 
-function constructTooltip(data, templateStr, shapeId) {
-    if (!data) return;
+function constructTooltip(rawData, templateStr, shapeId) {
+    if (!rawData) return;
+    // Check if all data values are empty/zero — if so, don't show tooltip
+    const dataKeys = Object.keys(rawData);
+    if (dataKeys.length > 0 && dataKeys.every(k => !rawData[k] && rawData[k] !== false)) return;
+    // Replace undefined/null/empty values with N/A for display
+    const data = {};
+    for (const k in rawData) {
+        data[k] = (!rawData[k] && rawData[k] !== false && rawData[k] !== 0) ? 'N/A' : rawData[k];
+    }
     const elem = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
     elem.setAttribute('width', 1);
     elem.setAttribute('height', 1);
@@ -73,6 +81,7 @@ function onMouseMove(e) {
         const data = dataByGroup.data[groupId][shapeId];
         if (!data) return hideTooltip();
         const tt = constructTooltip(data, dataByGroup.tooltips[groupId], shapeId);
+        if (!tt) return hideTooltip();
         tooltip.element.replaceWith(tt);
         tooltip.element = tt;
         tooltip.shapeId = shapeId;

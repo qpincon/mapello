@@ -166,12 +166,16 @@ export function discriminateCssForExport(cssToTransform: string, mapId: string):
     return transformed;
 }
 
-export function formatUnicorn(str: string, args: Record<string, string | number>): string {
+export function formatUnicorn(str: string, args: Record<string, string | number>, naFallback = "N/A"): string {
     if (args) {
         for (const key in args) {
-            str = str.replace(new RegExp("__" + key + "__", "gi"), String(args[key]));
+            const val = args[key];
+            const display = (val == null || val === "") ? naFallback : String(val);
+            str = str.replace(new RegExp("__" + key + "__", "gi"), display);
         }
     }
+    // Replace any remaining unreplaced variables with N/A
+    str = str.replace(/__(\w+)__/g, naFallback);
     return str;
 }
 

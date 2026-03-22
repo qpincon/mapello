@@ -261,6 +261,6 @@
 - [ ] slider: allow editing value directly by text
 - [ ] Font conversion to path: only suggest of not used in tooltip / popover, alwyas import font-face otherwise
 - [x] macro coloring: only take into account visible parts of the map
-- [ ] Show N/A in tooltip when no data for referenced column
+- [x] Show N/A in tooltip when no data for referenced column
 - [x] Macro tooltip: cannot edit default border / background color
 - [x] Macro tooltip: do not break all formatting. Only edit style in editor direclty ??
