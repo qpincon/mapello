@@ -264,3 +264,4 @@
 - [x] Show N/A in tooltip when no data for referenced column
 - [x] Macro tooltip: cannot edit default border / background color
 - [x] Macro tooltip: do not break all formatting. Only edit style in editor direclty ??
+- [ ] Export: possibility to add attribution

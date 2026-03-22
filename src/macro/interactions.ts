@@ -4,8 +4,9 @@ import { appState, macroState } from "src/state.svelte";
 let altMin = 100;
 let altMax = 10000;
 const MAX_SIMPLIFICATION = 0.08;
+const SIMPLIFICATION_EXPONENT = 2.5;
 // simplification threshold: maps altitude to visibleArea
-let threshScale = scalePow().domain([altMax, altMin]).range([0, MAX_SIMPLIFICATION]).exponent(1.0);
+let threshScale = scalePow().domain([altMax, altMin]).range([0, MAX_SIMPLIFICATION]).exponent(SIMPLIFICATION_EXPONENT);
 
 export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
     const src = event.sourceEvent;
@@ -86,12 +87,12 @@ export function updateVisibleAreaScale(): void {
         altMin = Math.round((1 / fovExtent) * 500);
         altMax = Math.round((1 / fovExtent) * 4000);
         // low altitude (zoomed in) → 0, high altitude (zoomed out) → MAX_SIMPLIFICATION
-        threshScale = scalePow().domain([altMin, altMax]).range([0, MAX_SIMPLIFICATION]).exponent(1.0);
+        threshScale = scalePow().domain([altMin, altMax]).range([0, MAX_SIMPLIFICATION]).exponent(SIMPLIFICATION_EXPONENT);
     } else {
         altMin = 90;
         altMax = 2000;
         // high altitude (zoomed in for standard) → 0, low altitude → MAX_SIMPLIFICATION
-        threshScale = scalePow().domain([altMax, altMin]).range([0, MAX_SIMPLIFICATION]).exponent(1.0);
+        threshScale = scalePow().domain([altMax, altMin]).range([0, MAX_SIMPLIFICATION]).exponent(SIMPLIFICATION_EXPONENT);
     }
 }
 export function changeAltitudeScale(autoAdjustAltitude = true): void {
