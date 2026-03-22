@@ -3,13 +3,12 @@
     import Accordions from "../../components/Accordions.svelte";
     import {
         extractTemplateVariables,
-        formatUnicorn,
         getColumns,
         getNumericCols,
         htmlToElement,
         initTooltips,
     } from "../../util/common";
-    import { exportStyleSheet, reportStyle, styleDictToCssRulesStr } from "../../util/dom";
+    import { exportStyleSheet, reportStyle } from "../../util/dom";
     import { helpParams, noSatelliteParams } from "../../params";
     import { appState, commonState, macroState } from "../../state.svelte";
     import Icon from "../../components/Icon.svelte";
@@ -33,7 +32,6 @@
     import { paramDefs } from "../../params";
 
     import { saveState } from "src/util/save";
-    import { defaultTooltipStyle } from "src/stateDefaults";
     import DataManager from "./DataManager.svelte";
     import type InlineStyleEditor from "inline-style-editor";
     import Legend from "src/components/Legend.svelte";
@@ -85,14 +83,13 @@
     let availableColumns = $state<string[]>([]);
     let availablePalettes = $state<string[]>([]);
     let showCustomPalette = $state<boolean>(false);
-    let htmlTooltipElem = $state<HTMLElement | null>(null);
     let legendSample: SVGGElement | null = $state(null);
     let commonStyleSheetElem: HTMLStyleElement;
 
     $effect(() => {
         const _ = mainMenuSelection;
         initTooltips();
-        applyStylesToTemplate();
+        applyStylesToLegend();
     });
 
     let computedOrderedTabs = $derived(
@@ -196,12 +193,6 @@
             macroState.legendDefs[currentMacroLayerTab].sampleHtml = legendSample.outerHTML;
             if (rect && savedRectFill) rect.style.setProperty("fill", savedRectFill);
             colorizeAndLegend(svg);
-        } else if (htmlTooltipElem && htmlTooltipElem.contains(target)) {
-            if (cssProp === "font-family" && !htmlTooltipElem.style.fontFamily && target !== htmlTooltipElem) {
-                htmlTooltipElem.style.fontFamily = value;
-                target.style.removeProperty("font-family");
-            }
-            macroState.tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem.outerHTML;
         } else if (eventType === "inline") {
             if (target.hasAttribute("id")) {
                 handleInlineStyleChange(elemId, target, cssProp, value);
@@ -244,21 +235,12 @@
     }
 
     const saveDebounced = debounce(saveState, 200);
-    function editTooltip(e: MouseEvent): void {
-        let target: HTMLElement = e.target as HTMLElement;
-        const rect = (target as HTMLElement).getBoundingClientRect();
-        styleEditor!.open(target as HTMLElement, rect.right, rect.bottom);
-    }
 
     function openEditor(e: MouseEvent): void {
         styleEditor!.open(e.target as HTMLElement, e.pageX, e.pageY);
     }
 
-    function applyStylesToTemplate(): void {
-        if (htmlTooltipElem && macroState.tooltipDefs[currentMacroLayerTab]?.enabled) {
-            const tmpElem = htmlToElement(macroState.tooltipDefs[currentMacroLayerTab].content!)!;
-            reportStyle(tmpElem, htmlTooltipElem);
-        }
+    function applyStylesToLegend(): void {
         if (legendSample && macroState.colorDataDefs[currentMacroLayerTab]?.legendEnabled) {
             const sampleHtml = macroState.legendDefs[currentMacroLayerTab]?.sampleHtml;
             if (sampleHtml) {
@@ -273,7 +255,7 @@
         currentTemplateHasNumeric = templateHasNumeric(currentMacroLayerTab) === true;
         await tick();
         initTooltips();
-        applyStylesToTemplate();
+        applyStylesToLegend();
         autoSelectColors();
     }
 
@@ -366,23 +348,7 @@
         colorizeAndLegend(svg);
     }
 
-    function getFirstDataRow(zonesDataDef: ZoneData, template: string): ZoneDataRow | null {
-        if (!macroState.zonesData || !zonesDataDef.data.length) return null;
-        const variables = extractTemplateVariables(template);
-        const source =
-            variables.length > 0
-                ? (zonesDataDef.data.find((r) => variables.every((v) => r[v] != null && r[v] !== "")) ??
-                  zonesDataDef.data[0])
-                : zonesDataDef.data[0];
-        const row = { ...source };
-        zonesDataDef.numericCols.forEach((colDef) => {
-            const col = colDef.column;
-            if (typeof zonesDataDef.formatters?.[col] === "function") {
-                row[col] = zonesDataDef.formatters[col](row[col] as number);
-            }
-        });
-        return row;
-    }
+
 
     function onTemplateChange(): void {
         const template = macroState.tooltipDefs[currentMacroLayerTab].template;
@@ -396,12 +362,10 @@
             if (missingVars.length > 0) {
                 templateErrorMessages[currentMacroLayerTab] = `Unknown variable(s): ${missingVars.join(", ")}`;
             } else {
-                // macroState.tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem!.outerHTML;
                 currentTemplateHasNumeric = templateHasNumeric(currentMacroLayerTab);
                 templateErrorMessages[currentMacroLayerTab] = null;
             }
         } else {
-            // macroState.tooltipDefs[currentMacroLayerTab].content = htmlTooltipElem!.outerHTML;
             currentTemplateHasNumeric = templateHasNumeric(currentMacroLayerTab);
             templateErrorMessages[currentMacroLayerTab] = null;
         }
@@ -600,7 +564,7 @@
         });
         computeCss();
         applyInlineStyles();
-        applyStylesToTemplate();
+        applyStylesToLegend();
     }
 
     function getLegendColors(
@@ -868,7 +832,7 @@
                                 setTimeout(() => {
                                     initTooltips();
                                     saveState();
-                                    applyStylesToTemplate();
+                                    applyStylesToLegend();
                                 }, 0)}
                         />
                         <label for="showTooltip" class="form-check-label"> Show tooltip on hover </label>
@@ -886,39 +850,16 @@
                             </label>
                             <QuillEditor
                                 bind:value={macroState.tooltipDefs[currentMacroLayerTab].template}
+                                bind:containerStyle={macroState.tooltipDefs[currentMacroLayerTab].containerStyle}
                                 onchange={onTemplateChange}
                                 hasError={!!templateErrorMessages[currentMacroLayerTab]}
+                                fonts={commonState.providedFonts.map(f => f.name)}
                             />
                             {#if templateErrorMessages[currentMacroLayerTab]}
                                 <div class="invalid-feedback d-block">
                                     {templateErrorMessages[currentMacroLayerTab]}
                                 </div>
                             {/if}
-                        </div>
-                        <div class="mx-2 d-flex align-items-center">
-                            <label for="tooltip-preview-{currentMacroLayerTab}">
-                                Example tooltip:
-                                <span
-                                    class="help-tooltip"
-                                    data-bs-toggle="tooltip"
-                                    data-bs-title="Click on the example to update style.">?</span
-                                >
-                            </label>
-                            <div class="tooltip-preview" onclick={(e) => editTooltip(e)}>
-                                <div
-                                    id="tooltip-preview-{currentMacroLayerTab}"
-                                    bind:this={htmlTooltipElem}
-                                    style={styleDictToCssRulesStr(defaultTooltipStyle)}
-                                >
-                                    {@html formatUnicorn(
-                                        macroState.tooltipDefs[currentMacroLayerTab].template,
-                                        getFirstDataRow(
-                                            macroState.zonesData[currentMacroLayerTab],
-                                            macroState.tooltipDefs[currentMacroLayerTab].template,
-                                        )!,
-                                    )}
-                                </div>
-                            </div>
                         </div>
                     {/if}
                     <!-- COLORING -->
@@ -1175,7 +1116,4 @@
         background-color: white;
     }
 
-    .tooltip-preview {
-        padding: 5px;
-    }
 </style>

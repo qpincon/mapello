@@ -1,5 +1,4 @@
-import { reportStyle } from './util/dom';
-import { formatUnicorn, htmlToElement } from './util/common';
+import { formatUnicorn } from './util/common';
 import type { ElementAnnotations, Tooltip, TooltipDefs, ZonesData } from './types';
 
 export function addTooltipListener(
@@ -225,9 +224,23 @@ function instanciateTooltip(
     body.classList.add('body');
 
     const tooltip = document.createElement('div');
-    const cleanTemplate = (tooltipDefs?.[groupId]?.template || '').replace(/<(b|i|u|em|strong|span)>\s*<\/\1>/gi, '');
+    const cleanTemplate = (tooltipDefs?.[groupId]?.template || '')
+        .replace(/<(b|i|u|em|strong|span)>\s*<\/\1>/gi, '')
+        .replace(/<div><br\s*\/?><\/div>/gi, '');
     tooltip.innerHTML = formatUnicorn(cleanTemplate, (dataRow) || '');
-    reportStyle(htmlToElement(tooltipDefs?.[groupId]?.content || '')!, tooltip);
+
+    // Apply container styles + runtime properties
+    const cs = tooltipDefs?.[groupId]?.containerStyle;
+    if (cs) {
+        for (const [prop, val] of Object.entries(cs)) {
+            tooltip.style.setProperty(prop, val as string);
+        }
+    }
+    tooltip.style.setProperty('will-change', 'opacity');
+    tooltip.style.setProperty('z-index', '1000');
+    tooltip.style.setProperty('width', 'max-content');
+    tooltip.style.setProperty('max-width', '15rem');
+    tooltip.style.setProperty('line-height', '1.42');
 
     body.innerHTML = tooltip.outerHTML;
     elem.append(body);

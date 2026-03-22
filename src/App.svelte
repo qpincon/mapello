@@ -1825,7 +1825,7 @@
     <div slot="content">
         <div class="d-flex gap-3">
             <div class="flex-grow-1" style="min-width: 0;">
-                <QuillEditor bind:this={annotationQuillEditor} bind:value={annotationEditorContent} placeholder="" />
+                <QuillEditor bind:this={annotationQuillEditor} bind:value={annotationEditorContent} placeholder="" fonts={commonState.providedFonts.map(f => f.name)} />
             </div>
             <div class="flex-shrink-0" style="width: 40%;">
                 <p class="text-muted small mb-1">

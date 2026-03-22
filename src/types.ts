@@ -111,7 +111,7 @@ export interface TooltipDefs {
     [groupId: string]: {
         enabled: boolean;
         template: string;
-        content?: string;
+        containerStyle: Record<string, string>;
         locale: string;
     };
 }

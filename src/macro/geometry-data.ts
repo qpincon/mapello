@@ -6,7 +6,7 @@ import { presimplify, simplify } from "topojson-simplify";
 import * as topojson from "topojson-client";
 import type { Feature, FeatureCollection, Polygon } from "geojson";
 import { splitMultiPolygons } from "src/util/geojson";
-import { defaultColorDef, defaultLegendDef, defaultTooltipContent, defaultTooltipFull } from "src/stateDefaults";
+import { defaultColorDef, defaultLegendDef, defaultTooltipContent, defaultTooltipStyle } from "src/stateDefaults";
 import type { ZoneDataRow } from "src/types";
 import { featureCollection, polygon } from "@turf/helpers";
 
@@ -114,7 +114,7 @@ export async function initializeAdms(): Promise<void> {
             const contentTemplate = defaultTooltipContent(false);
             macroState.tooltipDefs[countryAdm] = {
                 template: contentTemplate,
-                content: defaultTooltipFull(contentTemplate),
+                containerStyle: { ...defaultTooltipStyle },
                 enabled: false,
                 locale: "en-US",
             };

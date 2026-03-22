@@ -1,7 +1,6 @@
 import { initLayersState } from "./micro/drawing";
 import type { MacroParams, MicroParams } from "./params";
 import type { InlinePropsMacro, InlinePropsMicro, LegendDef, ColorDef, ContourParams, GlobalState, Color } from "./types";
-import { styleDictToCssRulesStr } from "./util/dom";
 import { playful } from './micro/microPalettes'
 import defaultBaseCssMacro from "./assets/pagestyleMacro.css?raw";
 const defaultMacroParams: MacroParams = {
@@ -118,25 +117,15 @@ export function defaultTooltipContent(isCountry: boolean): string {
     return `<div>${isCountry ? "Country" : "Region"}: __name__</div>`;
 }
 
-export function defaultTooltipFull(template: string): string {
-    return `<div id="tooltip-preview" style="${styleDictToCssRulesStr(defaultTooltipStyle)}">
-    ${template}
-</div>`;
-}
-
+/** Visual-only container styles for tooltips. Runtime properties (z-index, will-change, width, max-width) are applied in tooltip.ts / export.ts */
 export const defaultTooltipStyle: Record<string, string> = {
     "color": "black",
-    "will-change": "opacity",
     "background-color": "#FFFFFF",
     "border": "1px solid black",
-    "max-width": "15rem",
-    "width": "max-content",
     "border-radius": "4px",
     "font-size": "12px",
     "padding": "4px",
-    // "pointer-events": "none",
     "box-shadow": "0 2px 6px #00000026",
-    "z-index": "1000",
 };
 
 export const defaultInlineStyles: Record<string, any> = {};
@@ -167,7 +156,7 @@ export const defaultState: GlobalState = {
         tooltipDefs: {
             countries: {
                 template: defaultTooltipContent(true),
-                content: defaultTooltipFull(defaultTooltipContent(true)),
+                containerStyle: { ...defaultTooltipStyle },
                 enabled: false,
                 locale: "en-US",
             },

@@ -1,6 +1,6 @@
 import { addAttribution, addFrameShadow, additionnalCssExport, changeIdAndReferences, ExportFontChoice, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
 import type { ElementAnnotations, ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
-import { DOM_PARSER, fontsToCss, fontsToCssEmbed, getUsedInlineFonts, reportStyle } from 'src/util/dom';
+import { DOM_PARSER, fontsToCss, fontsToCssEmbed, getUsedInlineFonts } from 'src/util/dom';
 import svgoConfig from '../svgoExport.config';
 import type { Config } from 'svgo/browser';
 import { discriminateCssForExport, download, htmlToElement, indexBy, pick, randomString, xhtmlifyHtml } from 'src/util/common';
@@ -112,7 +112,11 @@ export async function exportMacro(
 
         let functionStr = ttTemplate.replaceAll(/__(\w+)__/gi, '${data.$1}');
         functionStr = functionStr.replace('data.name', 'shapeId');
+        // Escape literal $ that aren't part of ${data.} or ${shapeId} template expressions,
+        // so they survive eval('`' + str + '`') in the exported tooltip script
+        functionStr = functionStr.replace(/\$(?!\{(?:data\.|shapeId))/g, "&#36;");
         finalDataByGroup.tooltips[groupId] = functionStr;
+        console.log(functionStr);
 
         const zonesDataDup = JSON.parse(JSON.stringify(stateMacro.zonesData[groupId].data));
         stateMacro.zonesData[groupId].numericCols.forEach(colDef => {
@@ -218,12 +222,12 @@ export async function exportMacro(
     if (frameShadow) {
         const bw = stateMacro.macroParams.Border.borderWidth;
         const br = stateMacro.macroParams.Border.borderRadius;
-        const w  = stateMacro.macroParams.General.width;
-        const h  = stateMacro.macroParams.General.height;
+        const w = stateMacro.macroParams.General.width;
+        const h = stateMacro.macroParams.General.height;
         addFrameShadow(svgElement, mapId, {
             x: bw / 2,
             y: bw / 2,
-            width:  w - bw,
+            width: w - bw,
             height: h - bw,
             rx: Math.max(w, h) * (br / 100),
         });
@@ -260,9 +264,9 @@ export async function exportMacro(
 }
 
 export function getFinalTooltipTemplate(groupId: string, tooltipDefs: TooltipDefs): string {
-    const finalReference = htmlToElement(tooltipDefs[groupId].content!)!;
-    const finalTemplate = finalReference.cloneNode(true) as Element;
-    finalTemplate.innerHTML = tooltipDefs[groupId].template;
-    reportStyle(finalReference, finalTemplate);
-    return finalTemplate.outerHTML;
+    const cs = tooltipDefs[groupId].containerStyle || {};
+    const runtimeProps = { "will-change": "opacity", "z-index": "1000", "width": "max-content", "max-width": "15rem", "line-height": "1.42" };
+    const all = { ...cs, ...runtimeProps };
+    const styleStr = Object.entries(all).map(([k, v]) => `${k}: ${v}`).join("; ");
+    return `<div style="${styleStr}">${tooltipDefs[groupId].template}</div>`;
 }
