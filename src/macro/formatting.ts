@@ -39,8 +39,10 @@ export function updateZonesDataFormatters(): void {
 function getBestFormatter(values: number[], locale: any): (n: number) => string {
     const loc = formatLocale(locale);
     const max = Math.max(...values);
+    const hasDecimals = values.some(v => v % 1 !== 0);
     if (max < 1) return loc.format(',.2~f');
     if (max < 10) return loc.format(',.1~f');
+    if (hasDecimals) return loc.format(',.2~f');
     return loc.format(',~d');
 }
 

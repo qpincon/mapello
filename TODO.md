@@ -171,7 +171,7 @@
   - [x] Export type declarations
   - [x] Svelte 5
 
-- [ ] Bugfix: handle input wrong color in color picker text
+- [x] Bugfix: handle input wrong color in color picker text
 
 - [ ] Separate (lazy-load) micro and macro
 - [x] Migrate to svelte 5
@@ -250,11 +250,11 @@
 - [x] after removing popover, we need a redraw to remove cursor: pointer. It should be removed directly.
 - [x] macro tooltip template: remove empty divs (empty <b> in the siv makes that the inlinestyleditor can't propose to edit the text properties )
 - [x] macro tooltip: add boxshadow by default
-- [ ] macro: custom palette?
+- [x] macro: custom palette?
 - [ ] ISE: open above when no room
 - [ ] nginx rate limiting 
-- [ ] micro: fix lines on map boundaries removed from export
-- [ ] micro: landuse_pedestrian above grass ? (la cité)
+- [x] micro: fix lines on map boundaries removed from export
+- [x] micro: landuse_pedestrian above grass ? (la cité)
 - [ ] more patterns: https://www.svgbackgrounds.com/set/free-svg-backgrounds-and-patterns/
 - [x] No more than 20 projects
 - [x] Check disposable email adresses
@@ -265,3 +265,4 @@
 - [x] Macro tooltip: cannot edit default border / background color
 - [x] Macro tooltip: do not break all formatting. Only edit style in editor direclty ??
 - [ ] Export: possibility to add attribution
+- [x] Macro: number formatting inside tooltip

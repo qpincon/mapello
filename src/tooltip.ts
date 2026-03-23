@@ -1,5 +1,5 @@
 import { extractTemplateVariables, formatUnicorn } from './util/common';
-import type { ElementAnnotations, Tooltip, TooltipDefs, ZonesData } from './types';
+import type { ElementAnnotations, FormatterObject, Tooltip, TooltipDefs, ZonesData } from './types';
 
 export function addTooltipListener(
     map: SVGSVGElement,
@@ -131,7 +131,7 @@ function onMouseMove(
             tooltip.element.style.opacity = '0';
             return;
         }
-        const tt = instanciateTooltip(data, groupId, tooltipDefs);
+        const tt = instanciateTooltip(data, groupId, tooltipDefs, zonesData[groupId]?.formatters);
         if (!tt) return hideTooltip(tooltip);
         tooltip.element.replaceWith(tt);
         tooltip.element = tt;
@@ -211,7 +211,8 @@ export function addElementAnnotationListener(
 function instanciateTooltip(
     dataRow: Record<string, any>,
     groupId: string,
-    tooltipDefs: TooltipDefs
+    tooltipDefs: TooltipDefs,
+    formatters?: FormatterObject,
 ): SVGElement | undefined {
     if (!dataRow) return;
 
@@ -232,7 +233,15 @@ function instanciateTooltip(
     const vars = extractTemplateVariables(cleanTemplate).filter(v => v !== 'name');
     if (vars.length > 0 && vars.every(v => !dataRow[v] && dataRow[v] !== false)) return;
 
-    tooltip.innerHTML = formatUnicorn(cleanTemplate, (dataRow) || '');
+    const formattedRow = { ...dataRow };
+    if (formatters) {
+        for (const [col, fmt] of Object.entries(formatters)) {
+            if (col in formattedRow && typeof formattedRow[col] === 'number') {
+                formattedRow[col] = fmt(formattedRow[col]);
+            }
+        }
+    }
+    tooltip.innerHTML = formatUnicorn(cleanTemplate, (formattedRow) || {});
 
     // Apply container styles + runtime properties
     const cs = tooltipDefs?.[groupId]?.containerStyle;
