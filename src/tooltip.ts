@@ -220,6 +220,7 @@ function instanciateTooltip(
     elem.setAttribute('width', '1');
     elem.setAttribute('height', '1');
     elem.style.overflow = 'visible';
+    elem.style.pointerEvents = 'none';
 
     const body = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
     body.classList.add('body');

@@ -176,14 +176,18 @@ export class SelectionOverlay {
         this.handles.get("sw")!.setAttribute("y", String(by + bh - HALF_HANDLE));
     }
 
+    // Sets up mouse event handlers on the overlay group.
+    // Both click and mousedown are stopped from propagating to the SVG's handlers
+    // (onSvgClick / onSvgMouseDown) to prevent unintended deselection or re-selection.
+    // Drag/resize is handled entirely within the overlay; for simple clicks (no drag),
+    // the onSimpleClick callback is invoked (used e.g. to toggle popovers).
     private attachListeners(): void {
-        // Stop click events on the overlay from reaching the SVG click handler
-        // (which would call clearSelection because the target is the overlay, not a selectable entity)
+        // Prevent clicks on the overlay from reaching onSvgClick (which would clearSelection)
         this.group.addEventListener("click", (e) => {
             e.stopPropagation();
         });
 
-        // Forward contextmenu events to the element beneath the overlay
+        // Forward contextmenu to the element beneath, so right-click menus work through the overlay
         this.group.addEventListener("contextmenu", (e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -227,6 +231,9 @@ export class SelectionOverlay {
         this.startDrag(e, "move");
     }
 
+    // onDragConfirmed: called when a drag actually starts (movement > threshold).
+    // onSimpleClick: called on mouseup without drag — used by labels to enter edit mode
+    // and by non-label entities to toggle popovers.
     public setCallbacks(callbacks: { onDragConfirmed?: () => void; onSimpleClick?: () => void }): void {
         this.onDragConfirmed = callbacks.onDragConfirmed;
         this.onSimpleClick = callbacks.onSimpleClick;

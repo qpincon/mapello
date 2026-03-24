@@ -91,14 +91,13 @@
         try {
             await saveCurrentProject();
             const res = await fetch(`/api/projects/${id}`);
-            if (!res.ok) throw new Error();
             const project = await res.json();
             const state: GlobalState = JSON.parse(project.projectJson);
             await applyState(state);
             currentProjectId = id;
             currentProjectName = project.name;
             dropdown.hide();
-        } catch {
+        } catch (e) {
             errorMsg = "Could not load project";
         } finally {
             loadingProjectId = null;

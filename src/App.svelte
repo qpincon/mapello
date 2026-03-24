@@ -117,12 +117,14 @@
         addingAnnotation: false,
     });
 
-    // Annotation editor state
+    // Annotation editor state — uses the same QuillEditor with containerStyle as macro tooltips.
+    // Content is the inner HTML, containerStyle is the outer <div>'s CSS properties.
+    // On save, both are merged into a single `<div style="...">content</div>` string.
     let annotationEditorOpen = $state(false);
     let annotationEditingElemId = $state<string | null>(null);
     let annotationEditingType = $state<"tooltip" | "popover">("tooltip");
     let annotationEditorContent = $state("");
-    let annotationPreviewEl: HTMLElement | null = null;
+    let annotationContainerStyle = $state<Record<string, string>>({});
     let annotationQuillEditor: ReturnType<typeof QuillEditor> | null = $state(null);
 
     let drawingTooltip: HTMLDivElement | null = $state(null);
@@ -153,7 +155,7 @@
         }
     })();
     let currentProjectName = $state(_storedProject?.name ?? "Project 1");
-    let activeProjectId = $state<number | null>(typeof _storedProject?.id === 'number' ? _storedProject.id : null);
+    let activeProjectId = $state<number | null>(typeof _storedProject?.id === "number" ? _storedProject.id : null);
     const currentUser = $derived(page.data.user ?? null);
 
     $effect(() => {
@@ -265,7 +267,9 @@
         registerServerSync({
             getProjectId: () => activeProjectId,
             getProjectJson,
-            onError: (msg) => { serverSyncError = msg; },
+            onError: (msg) => {
+                serverSyncError = msg;
+            },
         });
         /** Init bootstrap dropdowns */
         Array.from(document.querySelectorAll(".dropdown-toggle")).forEach((dropdownToggleEl) => {
@@ -283,18 +287,6 @@
                     cssProp: string,
                     value: string,
                 ) => {
-                    if (annotationEditingElemId !== null) {
-                        if (cssProp === "fontFamily" && annotationPreviewEl) {
-                            const container = annotationPreviewEl.firstElementChild as HTMLElement | null;
-                            if (container && !container.style.fontFamily && target !== container) {
-                                container.style.fontFamily = value;
-                                target.style.removeProperty("font-family");
-                                return;
-                            }
-                        }
-                        (target.style as any)[cssProp] = value;
-                        return;
-                    }
                     if (commonState.currentMode === "macro") {
                         macroSidebar!.onStyleChanged(target, eventType, cssProp, value);
                     } else if (commonState.currentMode === "micro") {
@@ -308,12 +300,6 @@
                         return [
                             [el, "Clicked"],
                             [el.parentElement, "All tooltip"],
-                        ];
-                    }
-                    if (el.closest(".elem-annotation-preview")) {
-                        return [
-                            [el, "Clicked"],
-                            [el.parentElement, "All annotation"],
                         ];
                     }
                     if (el.parentElement?.classList.contains("freehand")) {
@@ -407,7 +393,7 @@
         const originalClose = styleEditor!.close.bind(styleEditor);
         styleEditor!.close = () => {
             if (forceHoveredElement) {
-                forceHoveredElement.classList.remove('hovered');
+                forceHoveredElement.classList.remove("hovered");
                 forceHoveredElement = null;
             }
             originalClose();
@@ -721,6 +707,10 @@
         if (shouldOpenMenu) showMenu(e, target);
     }
 
+    // Handles left-click on the SVG map. Checks (in order): link clicks, open menus/editors,
+    // popover annotations on non-selectable elements (e.g. map regions), then selection.
+    // Note: for selectable entities (shapes/paths/freehand), onSvgMouseDown runs first and
+    // calls stopPropagation, so this handler only fires for non-selectable elements.
     function onSvgClick(e: MouseEvent): void {
         if ((e.target as Element).closest("a")) e.preventDefault();
         if (contextualMenu!.opened) {
@@ -733,7 +723,8 @@
         }
         if (!iseOnClickEnabled) return;
 
-        // Check for popover annotation on clicked element
+        // Walk up from clicked element to find the nearest element with an id,
+        // then check if it has a popover annotation
         let clickedId: string | null = null;
         let el: Element | null = e.target as Element;
         const svgRoot = document.getElementById("static-svg-map");
@@ -762,6 +753,7 @@
         }
     }
 
+    // Double-click opens InlineStyleEditor on the targeted entity, or the Quill text editor if empty space.
     function onSvgDblClick(e: MouseEvent): void {
         if (!iseOnClickEnabled) return;
         let entity = identifyClickedEntity(e.target as Element) ?? identifyClickedPath(e);
@@ -779,7 +771,10 @@
         openEditor(e);
     }
 
-    // Select-and-drag: intercept mousedown before d3 drag; labels get click-vs-drag disambiguation
+    // Intercepts mousedown on selectable entities before D3's drag handler.
+    // For labels: disambiguates click (enter edit) vs drag (move).
+    // For non-labels: immediately selects + starts overlay drag.
+    // Calls stopPropagation so onSvgClick won't also fire for selectable entities.
     function onSvgMouseDown(e: MouseEvent): void {
         // if (commonState.currentMode !== "macro") return;
         if (e.button !== 0) return;
@@ -855,8 +850,19 @@
             document.addEventListener("mouseup", onUp);
             return;
         }
-        // Non-labels: select + drag
+        // Non-labels: select and begin drag tracking.
+        // Since stopPropagation prevents onSvgClick from firing, popover display for
+        // selectable entities is handled here via the overlay's onSimpleClick callback
+        // (fires on mouseup without drag movement).
         toggleSelection(entity, e.shiftKey);
+        if (commonState.elementAnnotations?.[entity.id]?.popover) {
+            const eid = entity.id;
+            getOverlay()?.setCallbacks({
+                onSimpleClick: () => {
+                    showElementPopover(eid, svg.node() as SVGSVGElement, commonState.elementAnnotations ?? {});
+                },
+            });
+        }
         getOverlay()?.beginDrag(e);
     }
 
@@ -1289,6 +1295,8 @@
         genericSelectedId = null;
     }
 
+    // Opens the annotation editor modal. Parses existing stored HTML (format: `<div style="...">content</div>`)
+    // into separate content + containerStyle for the QuillEditor.
     function beginAddAnnotation(elemId: string, type: "tooltip" | "popover"): void {
         annotationEditingElemId = elemId;
         annotationEditingType = type;
@@ -1298,33 +1306,41 @@
             const tmp = new DOMParser().parseFromString(existingHtml, "text/html").body
                 .firstElementChild as HTMLElement | null;
             annotationEditorContent = tmp?.innerHTML ?? existingHtml;
+            // Parse existing inline styles into containerStyle dict
+            const style: Record<string, string> = {};
+            if (tmp?.style) {
+                for (let i = 0; i < tmp.style.length; i++) {
+                    const prop = tmp.style[i];
+                    style[prop] = tmp.style.getPropertyValue(prop);
+                }
+            }
+            annotationContainerStyle = Object.keys(style).length > 0 ? style : {
+                "background-color": "white", padding: "4px 8px", "border-radius": "4px",
+                "font-size": "0.82rem", "max-width": "15rem", width: "max-content",
+            };
         } else {
             annotationEditorContent = "";
+            annotationContainerStyle = {
+                "background-color": "white", padding: "4px 8px", "border-radius": "4px",
+                "font-size": "0.82rem", "max-width": "15rem", width: "max-content",
+            };
         }
         annotationEditorOpen = true;
         closeMenu();
     }
 
     function initAnnotationEditor(): void {
-        if (!annotationPreviewEl) return;
-        const existing = annotationEditingElemId ? commonState.elementAnnotations?.[annotationEditingElemId] : null;
-        const existingHtml = annotationEditingType === "tooltip" ? existing?.tooltip : existing?.popover;
-        if (existingHtml) {
-            const tmp = new DOMParser().parseFromString(existingHtml, "text/html").body
-                .firstElementChild as HTMLElement | null;
-            annotationPreviewEl.style.cssText = tmp?.style.cssText ?? "";
-        } else {
-            annotationPreviewEl.style.cssText =
-                "background-color:white;padding:4px 8px;border-radius:4px;font-size:0.82rem;max-width:15rem;width:max-content;";
-        }
         annotationQuillEditor?.focus();
     }
 
+    // Merges QuillEditor content + containerStyle back into a single styled HTML string for storage.
     function saveAnnotation(): void {
         if (!annotationEditingElemId) return;
         if (!commonState.elementAnnotations) commonState.elementAnnotations = {};
-        const styleStr = annotationPreviewEl?.style.cssText ?? "";
-        const innerHtml = annotationPreviewEl?.innerHTML ?? annotationEditorContent;
+        const styleStr = Object.entries(annotationContainerStyle)
+            .map(([prop, val]) => `${prop}: ${val}`)
+            .join("; ");
+        const innerHtml = annotationEditorContent;
         const html = `<div style="${styleStr}">${innerHtml}</div>`;
         const entry = commonState.elementAnnotations[annotationEditingElemId] ?? {};
         if (annotationEditingType === "tooltip") {
@@ -1340,6 +1356,7 @@
         saveState();
     }
 
+    // Removes a tooltip or popover annotation. Cleans up the element entry if both are gone.
     function removeAnnotation(elemId: string, type: "tooltip" | "popover"): void {
         const entry = commonState.elementAnnotations?.[elemId];
         if (!entry) return;
@@ -1350,14 +1367,9 @@
         if (type === "popover") {
             hidePopover();
             const el = document.getElementById(elemId);
-            if (el) (el as HTMLElement).style.cursor = '';
+            if (el) (el as HTMLElement).style.cursor = "";
         }
         saveState();
-    }
-
-    function openAnnotationStyleEditor(e: MouseEvent): void {
-        if (!annotationPreviewEl) return;
-        styleEditor!.open(e.target as HTMLElement, e.pageX, e.pageY);
     }
 
     function editStyles(): void {
@@ -1365,7 +1377,7 @@
         // Re-add .hovered so the InlineStyleEditor can discover .hovered CSS rules.
         // The class was lost when the mouse moved from the element to the context menu.
         const target = openContextMenuInfo.target;
-        target.classList.add('hovered');
+        target.classList.add("hovered");
         forceHoveredElement = target;
         styleEditor!.open(target, openContextMenuInfo.event.pageX, openContextMenuInfo.event.pageY);
     }
@@ -1823,23 +1835,13 @@
         {annotationEditingType === "tooltip" ? "Tooltip" : "Popover"} for <code>{annotationEditingElemId}</code>
     </div>
     <div slot="content">
-        <div class="d-flex gap-3">
-            <div class="flex-grow-1" style="min-width: 0;">
-                <QuillEditor bind:this={annotationQuillEditor} bind:value={annotationEditorContent} placeholder="" fonts={commonState.providedFonts.map(f => f.name)} />
-            </div>
-            <div class="flex-shrink-0" style="width: 40%;">
-                <p class="text-muted small mb-1">
-                    Preview <span class="text-muted" style="font-size: 0.7rem;">(click to style)</span>
-                </p>
-                <div
-                    class="elem-annotation-preview"
-                    bind:this={annotationPreviewEl}
-                    onclick={openAnnotationStyleEditor}
-                >
-                    {@html annotationEditorContent}
-                </div>
-            </div>
-        </div>
+        <QuillEditor
+            bind:this={annotationQuillEditor}
+            bind:value={annotationEditorContent}
+            bind:containerStyle={annotationContainerStyle}
+            placeholder=""
+            fonts={commonState.providedFonts.map((f) => f.name)}
+        />
     </div>
     <div slot="footer">
         <button class="btn btn-primary btn-sm" onclick={() => (annotationEditorOpen = false)}>Save</button>
@@ -1920,7 +1922,9 @@
                                 await applyState(state);
                                 if (commonState.currentMode === "macro") macroSidebar!.applyStateAndDraw();
                             }}
-                            onSaveError={(msg) => { serverSyncError = msg; }}
+                            onSaveError={(msg) => {
+                                serverSyncError = msg;
+                            }}
                         />
                     {/if}
                 </div>
@@ -1981,8 +1985,11 @@
         </Navbar>
         <div class="d-flex flex-column justify-content-center align-items-center h-100 position-relative">
             {#if serverSyncError}
-                <div class="alert alert-warning mb-0 py-1 px-3 small" role="alert"
-                    style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1050; border-radius: 0 0 0.375rem 0.375rem;">
+                <div
+                    class="alert alert-warning mb-0 py-1 px-3 small"
+                    role="alert"
+                    style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1050; border-radius: 0 0 0.375rem 0.375rem;"
+                >
                     {serverSyncError}
                 </div>
             {/if}

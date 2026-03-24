@@ -1,8 +1,13 @@
 import { addAttribution, addFrameShadow, additionnalCssExport, changeIdAndReferences, ExportFontChoice, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
 import type { ElementAnnotations, ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
 import { DOM_PARSER, fontsToCss, fontsToCssEmbed, getUsedInlineFonts } from 'src/util/dom';
-import svgoConfig from '../svgoExport.config';
+import svgoConfigBase from '../svgoExport.config';
 import type { Config } from 'svgo/browser';
+
+const svgoConfig = {
+    ...svgoConfigBase,
+    plugins: [...svgoConfigBase.plugins, 'removeOffCanvasPaths'],
+};
 import { discriminateCssForExport, download, htmlToElement, indexBy, pick, randomString, xhtmlifyHtml } from 'src/util/common';
 import { encodeSVGDataImageStr, imageFromSpecialGElemStr } from 'src/svg/contourMethods';
 import { transitionCssMacro } from 'src/svg/transition';
