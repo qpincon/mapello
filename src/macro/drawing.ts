@@ -334,9 +334,21 @@ export function handleChangeProp(event: CustomEvent<{ prop: string; value: unkno
         macroState.inlinePropsMacro.translateX = 0;
         macroState.inlinePropsMacro.translateY = 0;
     }
-    if (prop === "height" && value) {
+    if ((prop === "width" || prop === "height") && value) {
+        const w = prop === "width" ? value as number : macroState.macroParams.General.width;
+        const h = prop === "height" ? value as number : macroState.macroParams.General.height;
+        const margin = 10;
         Object.keys(macroState.legendDefs).forEach((tab) => {
-            macroState.legendDefs[tab].y = (value as number) - 100;
+            const def = macroState.legendDefs[tab];
+            if (def.x > w - margin) def.x = Math.max(margin, w - margin);
+            if (def.y > h - margin) def.y = Math.max(margin, h - margin);
+            for (const groupId of Object.keys(def.changes)) {
+                const c = def.changes[groupId];
+                if (def.x + c.dx > w - margin) c.dx = w - margin - def.x;
+                if (def.x + c.dx < margin) c.dx = margin - def.x;
+                if (def.y + c.dy > h - margin) c.dy = h - margin - def.y;
+                if (def.y + c.dy < margin) c.dy = margin - def.y;
+            }
         });
     }
     changeProjection();
