@@ -97,6 +97,7 @@ for (var _annId in _annData) {
                     _outerEl.setAttribute('style', _styleAttr.replace(/box-shadow\s*:[^;]*;?\s*/gi, ''));
                 }
 
+                _poFO.style.display = 'none';
                 _poFO.innerHTML = '';
                 var _poWrapper = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
                 _poWrapper.style.cssText = 'display:inline-block;width:max-content;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));';
@@ -107,9 +108,11 @@ for (var _annId in _annData) {
                 _poWrapper.appendChild(_poContent);
                 _poWrapper.appendChild(_poArrow);
                 _poFO.appendChild(_poWrapper);
-                _poFO.style.display = 'block';
                 _openPopoverId = id;
-                setTimeout(function () { _positionPopoverAnn(el, _poArrow, _bgColor); }, 0);
+                setTimeout(function () {
+                    _positionPopoverAnn(el, _poArrow, _bgColor);
+                    _poFO.style.display = 'block';
+                }, 0);
             });
         }
     })(_annId, _annData[_annId]);

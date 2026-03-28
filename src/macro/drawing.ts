@@ -69,6 +69,12 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     mapLibreContainer.style("display", "none");
     container.style("display", "block");
     drawMacro(svg, graticule, groupData, computedOrderedTabs);
+
+    // Re-raise annotation groups so they render on top of the recreated macro layers
+    svg.select('#points-labels').raise();
+    svg.select('#paths').raise();
+    svg.select('#freehand-drawings').raise();
+
     appendBgPattern(svg, "noise", macroState.macroParams.Background.seaColor, macroState.macroParams.Background.backgroundNoise);
 
     select("#outline").style("fill", "url(#noise)");

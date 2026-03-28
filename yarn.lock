@@ -2766,10 +2766,10 @@ ini@~1.3.0:
   resolved "https://registry.npmjs.org/ini/-/ini-1.3.8.tgz"
   integrity sha512-JV/yugV2uzW5iMRSiZAyDtQd+nxtUnjeLt0acNdw98kKLrvuRVyB80tsREOE7yvGVgalhZ6RNXCmEHkUKBKxew==
 
-inline-style-editor@1.5.7:
-  version "1.5.7"
-  resolved "https://registry.yarnpkg.com/inline-style-editor/-/inline-style-editor-1.5.7.tgz#248b37c556ed8414a267c5dc404be868fdf9e7b9"
-  integrity sha512-jOQhdTe9TUy6YoDojmVTnfVaoUKLNUc+6KhxO7JA+fofsV6PGR53oWFaOuYAnpV/LAyHOYvBAtKl6p9eTYNVdQ==
+inline-style-editor@1.5.8:
+  version "1.5.8"
+  resolved "https://registry.yarnpkg.com/inline-style-editor/-/inline-style-editor-1.5.8.tgz#6f167dbea3a8b7c1a3fc82df48ff970ffdf60558"
+  integrity sha512-d3u9t0DEEeUMFKnhO+e71yvkpkzUCVGNO4plJHo0QyFYPJJz0xaX52say8AsAgX2rimdtVgegTjBVTWgvB8qeg==
   dependencies:
     d3-contour "^4.0.0"
     parse-svg-path "^0.1.2"

@@ -60,6 +60,7 @@ export function showElementPopover(
     fo.setAttribute('width', '1');
     fo.setAttribute('height', '1');
     fo.style.overflow = 'visible';
+    fo.style.opacity = '0';
     svgEl.appendChild(fo);
     _fo = fo;
 
@@ -99,6 +100,7 @@ export function showElementPopover(
 
         _fo.setAttribute('x', x.toString());
         _fo.setAttribute('y', y.toString());
+        _fo.style.opacity = '1';
 
         // Arrow: CSS triangle centered on the element's centerX, clamped inside the popover
         const arrowLeft = Math.max(8, Math.min(Math.round(centerX - x - 8), w - 24));
