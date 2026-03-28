@@ -66,6 +66,7 @@ export function addTooltipListener(
 function hideTooltip(tooltip: Tooltip): void {
     tooltip.element.style.display = 'none';
     tooltip.element.style.opacity = '0';
+    tooltip.shapeId = null;
 }
 
 function onMouseMove(
@@ -114,10 +115,12 @@ function onMouseMove(
     if (!(groupId in zonesData)) {
         hideTooltip(tooltip);
     } else if (shapeId && tooltip.shapeId === shapeId) {
-        tooltip.element.setAttribute('x', posX.toString());
-        tooltip.element.setAttribute('y', posY.toString());
-        tooltip.element.style.display = 'block';
-        tooltip.element.style.opacity = '1';
+        if (!tooltip.measuring) {
+            tooltip.element.setAttribute('x', posX.toString());
+            tooltip.element.setAttribute('y', posY.toString());
+            tooltip.element.style.display = 'block';
+            tooltip.element.style.opacity = '1';
+        }
     } else {
         const data = { ...zonesData[groupId].data.find(row => row.name === shapeId) };
         if (!data) {
@@ -132,7 +135,20 @@ function onMouseMove(
         tooltip.shapeId = shapeId;
         tooltip.element.setAttribute('x', posX.toString());
         tooltip.element.setAttribute('y', posY.toString());
-        tooltip.element.style.opacity = '1';
+        tooltip.element.style.opacity = '0';
+        tooltip.measuring = true;
+        requestAnimationFrame(() => {
+            console.log(tooltip)
+            tooltip.measuring = false;
+            const newBounds = (tooltip.element.firstChild?.firstChild as HTMLElement)?.getBoundingClientRect();
+            if (newBounds && newBounds.width > 0) {
+                if (mapBounds.right - newBounds.width < e.clientX + 10) posX -= newBounds.width + 20;
+                if (mapBounds.bottom - newBounds.height < e.clientY + 10) posY -= newBounds.height + 20;
+                tooltip.element.setAttribute('x', posX.toString());
+                tooltip.element.setAttribute('y', posY.toString());
+            }
+            tooltip.element.style.opacity = '1';
+        });
     }
 }
 

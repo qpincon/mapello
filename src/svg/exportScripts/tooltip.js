@@ -36,6 +36,7 @@ function constructTooltip(rawData, templateStr, shapeId) {
 function hideTooltip() {
     tooltip.element.style.display = 'none';
     tooltip.element.style.opacity = 0;
+    tooltip.shapeId = null;
 }
 
 function onMouseMove(e) {
@@ -73,10 +74,12 @@ function onMouseMove(e) {
     }
 
     if (tooltip.shapeId === shapeId) {
-        tooltip.element.setAttribute('x', posX);
-        tooltip.element.setAttribute('y', posY);
-        tooltip.element.style.display = 'block';
-        tooltip.element.style.opacity = 1;
+        if (!tooltip.measuring) {
+            tooltip.element.setAttribute('x', posX);
+            tooltip.element.setAttribute('y', posY);
+            tooltip.element.style.display = 'block';
+            tooltip.element.style.opacity = 1;
+        }
     } else {
         const data = dataByGroup.data[groupId][shapeId];
         if (!data) return hideTooltip();
@@ -88,6 +91,18 @@ function onMouseMove(e) {
         tooltip.element.setAttribute('x', posX);
         tooltip.element.setAttribute('y', posY);
         tooltip.element.style.display = 'block';
-        tooltip.element.style.opacity = 1;
+        tooltip.element.style.opacity = 0;
+        tooltip.measuring = true;
+        requestAnimationFrame(function () {
+            tooltip.measuring = false;
+            var nb = tooltip.element.firstChild?.firstChild?.getBoundingClientRect?.();
+            if (nb && nb.width > 0) {
+                if (mapBounds.right - nb.width < e.clientX + 10) posX = (e.clientX - mapBounds.left - nb.width - 20) * scaleX;
+                if (mapBounds.bottom - nb.height < e.clientY + 10) posY = (e.clientY - mapBounds.top - nb.height - 20) * scaleY;
+                tooltip.element.setAttribute('x', posX);
+                tooltip.element.setAttribute('y', posY);
+            }
+            tooltip.element.style.opacity = 1;
+        });
     }
 }

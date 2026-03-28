@@ -18,10 +18,14 @@ function _positionTooltipAnn(e) {
     var b = mapElement.getBoundingClientRect();
     var posX = e.clientX - b.left + 12;
     var posY = e.clientY - b.top + 12;
-    // Fix right-edge clipping
     var ttContent = _ttFO.firstChild;
-    if (ttContent && ttContent.offsetWidth > 0 && b.right - ttContent.offsetWidth < e.clientX + 12) {
-        posX -= ttContent.offsetWidth + 24;
+    if (ttContent && ttContent.offsetWidth > 0) {
+        if (b.right - ttContent.offsetWidth < e.clientX + 12) {
+            posX -= ttContent.offsetWidth + 24;
+        }
+        if (b.bottom - ttContent.offsetHeight < e.clientY + 12) {
+            posY -= ttContent.offsetHeight + 24;
+        }
     }
     _ttFO.setAttribute('x', posX.toString());
     _ttFO.setAttribute('y', posY.toString());

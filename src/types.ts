@@ -105,6 +105,7 @@ export interface Tooltip {
     shapeId: string | null;
     element: SVGElement;
     html?: string;
+    measuring?: boolean;
 }
 
 export interface TooltipDefs {
