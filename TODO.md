@@ -252,6 +252,7 @@
 - [x] macro tooltip: add boxshadow by default
 - [x] macro: custom palette?
 - [ ] ISE: open above when no room
+- [ ] ISE: italic text
 - [ ] nginx rate limiting 
 - [x] micro: fix lines on map boundaries removed from export
 - [x] micro: landuse_pedestrian above grass ? (la cité)
@@ -268,3 +269,6 @@
 - [x] Macro: number formatting inside tooltip
 - [x] Popover: the arrow should have the same color as the content background color
 - [x] Popover in editor: open it before selectionOverlay
+- [ ] Frame shadow: add padding to SVG for it to display properly
+- [ ] non-latin characters conversion to svg path
+- [x] ISE: show elements highlight even for hover

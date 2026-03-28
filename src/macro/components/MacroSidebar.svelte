@@ -136,6 +136,7 @@
     });
 
     export function applyStateAndDraw(simplified = false) {
+        commonStyleSheetElem.innerHTML = macroState.baseCss;
         projectAndDraw(svg, simplified);
     }
 

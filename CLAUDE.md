@@ -97,7 +97,7 @@ For each layer (except land, which is just visual and has no data), the user can
 With the data that is bound, the user can show a tooltip when a region is hovered, and colorize the map according to the data.
 
 #### Tooltips
-If the user enables tooltip for a layer, a tooltip will display when a region of this layer is hovered. The logic is handled in `src/tooltip.ts`. What is displayed in the tooltip will depend on what is in a dedicated template (inside `macroState.tooltipDefs.<layer>.template`). This template is using HTML, and a variable name in the data bound to the layer between brackets means to display this variable (for instance `<span>Country: {name}</span>` will display `Country: France` when France is hovered). The template is editable for the user.
+If the user enables tooltip for a layer, a tooltip will display when a region of this layer is hovered. The logic is handled in `src/tooltip.ts`. What is displayed in the tooltip will depend on what is in a dedicated template (inside `macroState.tooltipDefs.<layer>.template`). This template is using HTML, and a variable name in the data bound to the layer between 2 underscores means to display this variable (for instance `<span>Country: __name__</span>` will display `Country: France` when France is hovered). The template is editable for the user.
 
 Using `InlineStyleEditor`, the user can edit the template style by clicking on a tooltip example in the sidebar. The style changes will be stored in `macroState.tooltipDefs.<layer>.content` and applied on the actual tooltip on hover.
 

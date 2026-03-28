@@ -158,6 +158,8 @@ function standardProj(projFunc: () => any, params: ProjectionParams): any {
 
     if (larger) {
         proj = proj.postclip(geoClipRectangle(-offCanvasWithBorder, -offCanvasWithBorder, width + offCanvasWithBorder, height + offCanvasWithBorder));
+    } else {
+        proj = proj.postclip(geoClipRectangle(0, 0, width, height));
     }
 
     return proj;

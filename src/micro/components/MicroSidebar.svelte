@@ -197,6 +197,7 @@
     }
 
     onDestroy(() => {
+        styleSheetElem.remove();
         maplibreMap?.remove();
     });
 

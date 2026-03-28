@@ -164,6 +164,6 @@
         min-width: 10rem;
     }
     .modal-content {
-        overflow-x: scroll;
+        overflow: visible;
     }
 </style>

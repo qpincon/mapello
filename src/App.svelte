@@ -17,12 +17,11 @@
         setTransformScale,
         closestDistance,
         type DistanceQueryResult,
-        pathStringFromParsed,
         createSvgAnchor,
+        postClipSimple,
     } from "./svg/svg";
     import { drawShapes } from "./svg/shape";
     import iso3Data from "./assets/data/iso3_filtered.json";
-    import Examples from "./components/Examples.svelte";
     import { freeHandDrawPath, cancelFreeHandDrawPath } from "./svg/freeHandPath";
     import Modal from "./components/Modal.svelte";
     import LabelEditor from "./components/LabelEditor.svelte";
@@ -584,6 +583,9 @@
                 addElementAnnotationListener(svg.node() as SVGSVGElement, commonState.elementAnnotations ?? {});
             }, 600);
         }
+        if (!simplified) {
+            setTimeout(() => postClipSimple(), 100);
+        }
         isDrawing = false;
     }
 
@@ -845,7 +847,11 @@
                     const svgText = document.getElementById(savedEntity.id) as SVGTextElement | null;
                     if (svgText) labelEditor?.enter(savedEntity.id, savedEntity.index, svgText);
                     if (commonState.elementAnnotations?.[savedEntity.id]?.popover) {
-                        showElementPopover(savedEntity.id, svg.node() as SVGSVGElement, commonState.elementAnnotations ?? {});
+                        showElementPopover(
+                            savedEntity.id,
+                            svg.node() as SVGSVGElement,
+                            commonState.elementAnnotations ?? {},
+                        );
                     }
                 }
             }
@@ -1307,15 +1313,26 @@
                     style[prop] = tmp.style.getPropertyValue(prop);
                 }
             }
-            annotationContainerStyle = Object.keys(style).length > 0 ? style : {
-                "background-color": "white", padding: "4px 8px", "border-radius": "4px",
-                "font-size": "0.82rem", "max-width": "15rem", width: "max-content",
-            };
+            annotationContainerStyle =
+                Object.keys(style).length > 0
+                    ? style
+                    : {
+                          "background-color": "white",
+                          padding: "4px 8px",
+                          "border-radius": "4px",
+                          "font-size": "0.82rem",
+                          "max-width": "15rem",
+                          width: "max-content",
+                      };
         } else {
             annotationEditorContent = "";
             annotationContainerStyle = {
-                "background-color": "white", padding: "4px 8px", "border-radius": "4px",
-                "font-size": "0.82rem", "max-width": "15rem", width: "max-content",
+                "background-color": "white",
+                padding: "4px 8px",
+                "border-radius": "4px",
+                "font-size": "0.82rem",
+                "max-width": "15rem",
+                width: "max-content",
             };
         }
         annotationEditorOpen = true;
@@ -2138,15 +2155,6 @@
                 img {
                     opacity: 1;
                 }
-            }
-        }
-
-        .btn-check:checked + .mode-btn {
-            background: white;
-            color: #2a3d5c;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
-            img {
-                opacity: 1;
             }
         }
     }
