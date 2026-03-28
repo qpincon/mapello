@@ -1,12 +1,23 @@
-import { scalePow } from "d3";
 import { appState, macroState } from "src/state.svelte";
 
 let altMin = 100;
 let altMax = 10000;
-const MAX_SIMPLIFICATION = 0.08;
-const SIMPLIFICATION_EXPONENT = 2.5;
-// simplification threshold: maps altitude to visibleArea
-let threshScale = scalePow().domain([altMax, altMin]).range([0, MAX_SIMPLIFICATION]).exponent(SIMPLIFICATION_EXPONENT);
+
+// Exponential simplification: area = minArea * (maxArea/minArea) ^ (t^curve)
+// t goes from 0 (fully zoomed in) to 1 (fully zoomed out), clamped
+function makeSimplificationScale(
+    zoomedInValue: number, zoomedOutValue: number,
+    minArea: number, maxArea: number, curve: number,
+) {
+    const range = zoomedOutValue - zoomedInValue;
+    const ratio = maxArea / minArea;
+    return (value: number) => {
+        const t = Math.max(0, Math.min(1, (value - zoomedInValue) / range));
+        return minArea * Math.pow(ratio, Math.pow(t, curve));
+    };
+}
+
+let threshScale = makeSimplificationScale(altMax, altMin, 0.001, 0.03, 0.78);
 
 export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
     const src = event.sourceEvent;
@@ -86,13 +97,14 @@ export function updateVisibleAreaScale(): void {
         const fovExtent = Math.tan((0.5 * fov * Math.PI) / 180);
         altMin = Math.round((1 / fovExtent) * 500);
         altMax = Math.round((1 / fovExtent) * 4000);
-        // low altitude (zoomed in) → 0, high altitude (zoomed out) → MAX_SIMPLIFICATION
-        threshScale = scalePow().domain([altMin, altMax]).range([0, MAX_SIMPLIFICATION]).exponent(SIMPLIFICATION_EXPONENT);
+        // low altitude (zoomed in) → small area, high altitude (zoomed out) → large area
+        threshScale = makeSimplificationScale(altMin, altMax, 0.001, 0.08, 0.78);
     } else {
         altMin = 90;
         altMax = 2000;
-        // high altitude (zoomed in for standard) → 0, low altitude → MAX_SIMPLIFICATION
-        threshScale = scalePow().domain([altMax, altMin]).range([0, MAX_SIMPLIFICATION]).exponent(SIMPLIFICATION_EXPONENT);
+        // high scale (zoomed in) → small area, low scale (zoomed out) → large area
+        // Simplification maxes out at scale 300, below that stays at 0.03
+        threshScale = makeSimplificationScale(altMax, 300, 0.001, 0.03, 0.78);
     }
 }
 export function changeAltitudeScale(autoAdjustAltitude = true): void {

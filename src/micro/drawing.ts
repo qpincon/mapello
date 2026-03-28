@@ -665,12 +665,12 @@ export function generateCssFromState(state: MicroPalette): string | null {
         fill: none;
         stroke-width: 2px;
     }
-    #freehand-drawings>.freehand {
+    #freehand-drawings .freehand {
         paint-order: stroke;
         fill: ${state['roads']?.stroke ?? '#6D4C41'};
     }
 
-    #freehand-drawings>g>path {
+    #freehand-drawings g path {
         fill: inherit;
     }
     `;

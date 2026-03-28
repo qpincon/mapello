@@ -176,9 +176,14 @@ export class FreehandDrawer {
 
 
 export function drawFreeHandShapes(svg: SvgSelection, providedFreeHand: ParsedPath[][], elementLinks: { [elemId: string]: string } = {}) {
-    const container = svg.append("g")
-        .attr('id', 'freehand-drawings')
-        .attr("clip-path", "url(#clipMapBorder)");
+    let container = svg.select<SVGGElement>('#freehand-drawings');
+    if (container.empty()) {
+        container = svg.append("g")
+            .attr('id', 'freehand-drawings')
+            .attr("clip-path", "url(#clipMapBorder)");
+    } else {
+        container.html('');
+    }
     providedFreeHand.forEach((drawingGroup, i) => {
         const groupId = `freehand-${i}`;
         const gDrawing = container.append("g").classed("freehand", true).attr('id', groupId);

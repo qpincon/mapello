@@ -69,6 +69,7 @@ export function showElementPopover(
 
     const content = document.createElement('div');
     content.innerHTML = tmpDiv.innerHTML;
+    content.querySelectorAll('img').forEach(img => { img.style.maxWidth = '100%'; img.style.height = 'auto'; });
 
     const arrow = document.createElement('div');
 

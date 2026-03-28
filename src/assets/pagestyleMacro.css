@@ -64,11 +64,11 @@ foreignObject>body {
     margin: 0;
 }
 
-#freehand-drawings>.freehand {
+#freehand-drawings .freehand {
     paint-order: stroke;
     fill: #7c490ea0;
 }
 
-#freehand-drawings>g>path {
+#freehand-drawings g path {
     fill: inherit;
 }

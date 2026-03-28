@@ -407,7 +407,7 @@
         // maplibreMap.showTileBoundaries = true;
         window.addEventListener("keydown", (e) => {
             if (e.code === "Escape") {
-                if (contextualMenu!.opened) {
+                if (contextualMenu?.opened) {
                     closeMenu();
                     return;
                 }
@@ -713,7 +713,7 @@
     // calls stopPropagation, so this handler only fires for non-selectable elements.
     function onSvgClick(e: MouseEvent): void {
         if ((e.target as Element).closest("a")) e.preventDefault();
-        if (contextualMenu!.opened) {
+        if (contextualMenu?.opened) {
             closeMenu();
             return;
         }
@@ -844,6 +844,9 @@
                     setupLabelOverlayCallbacks(savedEntity.id, savedEntity.index);
                     const svgText = document.getElementById(savedEntity.id) as SVGTextElement | null;
                     if (svgText) labelEditor?.enter(savedEntity.id, savedEntity.index, svgText);
+                    if (commonState.elementAnnotations?.[savedEntity.id]?.popover) {
+                        showElementPopover(savedEntity.id, svg.node() as SVGSVGElement, commonState.elementAnnotations ?? {});
+                    }
                 }
             }
             document.addEventListener("mousemove", onMove);
@@ -899,8 +902,6 @@
     function deleteFreehand(): void {
         closeMenu();
         commonState.providedFreeHand.splice(selectedFreehandIndex, 1);
-        const existing = document.getElementById("freehand-drawings");
-        if (existing) existing.remove();
         drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
         applyStyles(commonState.inlineStyles);
         saveState();
@@ -996,8 +997,6 @@
             commonState.inlineStyles,
             commonState.elementLinks ?? {},
         );
-        const existing = document.getElementById("freehand-drawings");
-        if (existing) existing.remove();
         drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
         applyStyles(commonState.inlineStyles);
     }
@@ -1179,10 +1178,8 @@
             console.log(parsed);
         });
         if (unprojected.length) commonState.providedFreeHand.push(unprojected);
-        // Remove the drawer's temporary group and existing freehand container before re-rendering
+        // Remove the drawer's temporary group before re-rendering
         newGroup.remove();
-        const existing = document.getElementById("freehand-drawings");
-        if (existing) existing.remove();
         drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
         saveState();
     }
@@ -1246,8 +1243,6 @@
             commonState.inlineStyles,
             commonState.elementLinks ?? {},
         );
-        const existing = document.getElementById("freehand-drawings");
-        if (existing) existing.remove();
         drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
         applyInlineStyles();
         applyGenericLinks();
@@ -1271,8 +1266,6 @@
                 commonState.inlineStyles,
                 commonState.elementLinks,
             );
-            const existing = document.getElementById("freehand-drawings");
-            if (existing) existing.remove();
             drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks);
             applyInlineStyles();
             applyGenericLinks();
@@ -1416,9 +1409,15 @@
         getOverlay()?.setCallbacks({
             onDragConfirmed: () => labelEditor?.exit(),
             onSimpleClick: () => {
-                if (labelEditor?.isEditing()) return; // already in edit mode
+                if (labelEditor?.isEditing()) {
+                    labelEditor.exit();
+                    return;
+                }
                 const svgText = document.getElementById(labelId) as SVGTextElement | null;
                 if (svgText) labelEditor?.enter(labelId, labelIndex, svgText);
+                if (commonState.elementAnnotations?.[labelId]?.popover) {
+                    showElementPopover(labelId, svg.node() as SVGSVGElement, commonState.elementAnnotations ?? {});
+                }
             },
         });
     }
@@ -1559,7 +1558,7 @@
             delete commonState.inlineStyles[pointId];
         }
         commonState.providedShapes = commonState.providedShapes.filter((def) => def.id !== pointId);
-        drawAndSetupShapes();
+        redrawEntities();
         closeMenu();
     }
 

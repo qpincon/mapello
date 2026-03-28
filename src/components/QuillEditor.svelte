@@ -238,6 +238,7 @@
         editor.style.cssText = "";
         for (const [prop, val] of Object.entries(containerStyle)) {
             if (prop === "z-index" || prop === "will-change") continue; // skip non-visual runtime props
+            if (prop === "max-width" || prop === "width") continue; // skip sizing constraints — they apply to the rendered output, not the editor
             editor.style.setProperty(prop, val);
         }
         // Ensure min-height is preserved
@@ -380,6 +381,29 @@
             applyContainerStyleToEditor();
         }
 
+        // Intercept image drop so files go through processUploadedImage.
+        // Use capture phase on the container so we fire before Quill's own drop handler.
+        editorContainer.addEventListener("drop", (e: DragEvent) => {
+            const files = e.dataTransfer?.files;
+            if (!files || !files.length) return;
+            const imageFile = Array.from(files).find((f) => f.type.startsWith("image/"));
+            if (!imageFile) return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            (async () => {
+                let dataUrl: string;
+                try {
+                    dataUrl = await processUploadedImage(imageFile);
+                } catch (err) {
+                    alert((err as Error).message);
+                    return;
+                }
+                const range = quillInstance!.getSelection(true);
+                quillInstance!.insertEmbed(range.index, "image", dataUrl);
+                quillInstance!.setSelection(range.index + 1);
+            })();
+        }, true);
+
         // Listen for text changes
         quillInstance.on("text-change", () => {
             if (isInternalUpdate) return;
@@ -459,6 +483,11 @@
 
     .quill-wrapper :global(.ql-editor) {
         min-height: 120px;
+    }
+
+    .quill-wrapper :global(.ql-editor img) {
+        max-width: 100%;
+        height: auto;
     }
 
     .quill-wrapper :global(.ql-toolbar) {
