@@ -10,6 +10,7 @@ export function addTooltipListener(
     const tooltip: Tooltip = { shapeId: null, element: document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') };
     map.append(tooltip.element);
     tooltip.element.style.display = 'none';
+    tooltip.element.style.pointerEvents = 'none';
 
     let hoveredPath: SVGPathElement | null = null;
     let zOrderElem: SVGElement | null = null;
@@ -101,20 +102,13 @@ function onMouseMove(
 
     if (!tooltipDefs?.[groupId]?.enabled) return hideTooltip(tooltip);
 
-    let tooltipVisibleOpacity = 1;
-
-    if (ttBounds?.width > 0) {
+    if (ttBounds && ttBounds.width > 0) {
         if (mapBounds.right - ttBounds.width < e.clientX + 10) {
             posX -= ttBounds.width + 20;
         }
         if (mapBounds.bottom - ttBounds.height < e.clientY + 10) {
             posY -= ttBounds.height + 20;
         }
-    } else if (groupId in zonesData) {
-        tooltipVisibleOpacity = 0;
-        setTimeout(() => {
-            onMouseMove(e, map, tooltipDefs, zonesData, tooltip, elementAnnotations);
-        }, 0);
     }
 
     if (!(groupId in zonesData)) {
@@ -123,7 +117,7 @@ function onMouseMove(
         tooltip.element.setAttribute('x', posX.toString());
         tooltip.element.setAttribute('y', posY.toString());
         tooltip.element.style.display = 'block';
-        tooltip.element.style.opacity = tooltipVisibleOpacity.toString();
+        tooltip.element.style.opacity = '1';
     } else {
         const data = { ...zonesData[groupId].data.find(row => row.name === shapeId) };
         if (!data) {
@@ -138,7 +132,7 @@ function onMouseMove(
         tooltip.shapeId = shapeId;
         tooltip.element.setAttribute('x', posX.toString());
         tooltip.element.setAttribute('y', posY.toString());
-        tooltip.element.style.opacity = tooltipVisibleOpacity.toString();
+        tooltip.element.style.opacity = '1';
     }
 }
 
@@ -158,7 +152,7 @@ function showElementAnnotationTooltip(
         elem.style.pointerEvents = 'none';
 
         const body = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-        body.style.cssText = 'display:inline-block;width:max-content;';
+        body.style.cssText = 'display:inline-block;width:max-content;pointer-events:none;';
         body.innerHTML = html;
         elem.append(body);
 
@@ -180,6 +174,7 @@ export function addElementAnnotationListener(
     const tooltip: Tooltip = { shapeId: null, element: document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') };
     map.append(tooltip.element);
     tooltip.element.style.display = 'none';
+    tooltip.element.style.pointerEvents = 'none';
 
     map.addEventListener('mouseleave', () => hideTooltip(tooltip));
     map.addEventListener('mousemove', (e: MouseEvent) => {
@@ -224,6 +219,7 @@ function instanciateTooltip(
 
     const body = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
     body.classList.add('body');
+    body.style.pointerEvents = 'none';
 
     const tooltip = document.createElement('div');
     const cleanTemplate = (tooltipDefs?.[groupId]?.template || '')
