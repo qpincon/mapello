@@ -90,44 +90,36 @@ function onMouseMove(
         shapeElem = (shapeElem.querySelector('[id]') as SVGElement) ?? shapeElem;
     }
     const shapeId = shapeElem.getAttribute('id');
-    const mapBounds = map.getBoundingClientRect();
-    const ttBounds = (tooltip.element.firstChild?.firstChild as HTMLElement)?.getBoundingClientRect();
-    let posX = e.clientX - mapBounds.left + 10;
-    let posY = e.clientY - mapBounds.top + 10;
 
     // Element-level annotation takes precedence over macro tooltip
     const ann = elementAnnotations?.[shapeId ?? ''];
     if (ann?.tooltip) {
-        return showElementAnnotationTooltip(ann.tooltip, shapeId!, posX, posY, map, tooltip);
+        const mapBounds = map.getBoundingClientRect();
+        return showElementAnnotationTooltip(ann.tooltip, shapeId!, e.clientX - mapBounds.left + 10, e.clientY - mapBounds.top + 10, map, tooltip);
     }
 
-    if (!tooltipDefs?.[groupId]?.enabled) return hideTooltip(tooltip);
+    if (!tooltipDefs?.[groupId]?.enabled || !(groupId in zonesData)) return hideTooltip(tooltip);
 
-    if (ttBounds && ttBounds.width > 0) {
-        if (mapBounds.right - ttBounds.width < e.clientX + 10) {
-            posX -= ttBounds.width + 20;
-        }
-        if (mapBounds.bottom - ttBounds.height < e.clientY + 10) {
-            posY -= ttBounds.height + 20;
-        }
-    }
+    const mapBounds = map.getBoundingClientRect();
+    let posX = e.clientX - mapBounds.left + 10;
+    let posY = e.clientY - mapBounds.top + 10;
 
-    if (!(groupId in zonesData)) {
-        hideTooltip(tooltip);
-    } else if (shapeId && tooltip.shapeId === shapeId) {
-        if (!tooltip.measuring) {
-            tooltip.element.setAttribute('x', posX.toString());
-            tooltip.element.setAttribute('y', posY.toString());
-            tooltip.element.style.display = 'block';
-            tooltip.element.style.opacity = '1';
+    if (shapeId && tooltip.shapeId === shapeId) {
+        // Reposition — tooltip is visible, bounds are available for edge correction
+        if (tooltip.measuring) return;
+        const ttBounds = (tooltip.element.firstChild?.firstChild as HTMLElement)?.getBoundingClientRect();
+        if (ttBounds && ttBounds.width > 0) {
+            if (mapBounds.right - ttBounds.width < e.clientX + 10) posX -= ttBounds.width + 20;
+            if (mapBounds.bottom - ttBounds.height < e.clientY + 10) posY -= ttBounds.height + 20;
         }
+        tooltip.element.setAttribute('x', posX.toString());
+        tooltip.element.setAttribute('y', posY.toString());
+        tooltip.element.style.display = 'block';
+        tooltip.element.style.opacity = '1';
     } else {
+        // New tooltip — create hidden, measure via rAF, then reveal at correct position
         const data = { ...zonesData[groupId].data.find(row => row.name === shapeId) };
-        if (!data) {
-            tooltip.element.style.display = 'none';
-            tooltip.element.style.opacity = '0';
-            return;
-        }
+        if (!data) return hideTooltip(tooltip);
         const tt = instanciateTooltip(data, groupId, tooltipDefs, zonesData[groupId]?.formatters);
         if (!tt) return hideTooltip(tooltip);
         tooltip.element.replaceWith(tt);
@@ -138,7 +130,6 @@ function onMouseMove(
         tooltip.element.style.opacity = '0';
         tooltip.measuring = true;
         requestAnimationFrame(() => {
-            console.log(tooltip)
             tooltip.measuring = false;
             const newBounds = (tooltip.element.firstChild?.firstChild as HTMLElement)?.getBoundingClientRect();
             if (newBounds && newBounds.width > 0) {
