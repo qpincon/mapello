@@ -783,6 +783,7 @@ export async function exportMicro(
         useViewBox = false,
         frameShadow = false,
         minifyJs = false,
+        customAttributions,
     } = options;
     const width = stateMicro.microParams.General.width;
     const height = stateMicro.microParams.General.height;
@@ -910,7 +911,7 @@ export async function exportMicro(
     }
 
     /** Add attribution */
-    addAttribution(svgElement, width, height, 'micro');
+    addAttribution(svgElement, width, height, 'micro', customAttributions);
 
     if (useViewBox) {
         svgElement.removeAttribute('height');

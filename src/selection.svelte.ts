@@ -179,9 +179,16 @@ function onTransformCommit(
             if (!shapeDef) continue;
             const projected = projection(shapeDef.pos)!;
             const newPixel: [number, number] = [projected[0] + dx, projected[1] + dy];
-            shapeDef.pos = projection.invert!(newPixel)!;
-            if (scale != null) {
-                shapeDef.scale *= scale;
+            const newScale = scale != null ? shapeDef.scale * scale : shapeDef.scale;
+            commonState.providedShapes[entity.index] = {
+                ...shapeDef,
+                pos: projection.invert!(newPixel)!,
+                scale: newScale,
+            };
+            // Keep inline style scale in sync (used by InlineStyleEditor)
+            const inlineStyle = commonState.inlineStyles[shapeDef.id];
+            if (inlineStyle && 'scale' in inlineStyle) {
+                inlineStyle.scale = String(newScale);
             }
         } else if (entity.type === "path") {
             const pathDef = commonState.providedPaths[entity.index];

@@ -165,14 +165,13 @@
             const res = await fetch("/api/projects", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: resolvedName, project_json: JSON.stringify(defaultState) }),
+                body: JSON.stringify({ name: resolvedName, project_json: getProjectJson() }),
             });
             if (!res.ok) {
                 errorMsg = await getServerErrorMessage(res, "Could not create project");
                 return;
             }
             const created = await res.json();
-            await applyState(defaultState);
             currentProjectId = created.id;
             currentProjectName = created.name;
             showNewProjectInput = false;
@@ -416,7 +415,7 @@
 
 <style>
     .project-dropdown-toggle {
-        max-width: 180px;
+        max-width: 220px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

@@ -12,7 +12,7 @@ export const transitionCssMacro = `
     fill-opacity: 0 !important;
     stroke-dashoffset: 1;
 }
-#static-svg-map.animate text, #static-svg-map.animate image, #static-svg-map.animate #points-labels, #static-svg-map.animate #path-images, #static-svg-map.animate #graticule #static-svg-map.animate #attribution {
+#static-svg-map.animate text, #static-svg-map.animate image, #static-svg-map.animate #points-labels, #static-svg-map.animate #path-images, #static-svg-map.animate #graticule, #static-svg-map.animate #attribution {
     opacity: 0 !important;
 }
 #static-svg-map.animate #frame{

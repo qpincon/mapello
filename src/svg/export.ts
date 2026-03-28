@@ -13,12 +13,18 @@ export enum ExportFontChoice {
     embedFontFace = "4",
 }
 
+export interface CustomAttribution {
+    text: string;
+    link?: string;
+}
+
 export interface ExportOptions {
     exportFonts?: ExportFontChoice;
     minifyJs?: boolean;
     animate?: boolean;
     useViewBox?: boolean;
     frameShadow?: boolean;
+    customAttributions?: CustomAttribution[];
 }
 
 interface Position {
@@ -261,21 +267,41 @@ export function addAttribution(
     width: number,
     height: number,
     mode: 'macro' | 'micro',
+    customAttributions?: CustomAttribution[],
 ): void {
     const margin = 8;
-    const pillWidth = 100;
     const fontSize = 9;
     const pillPaddingX = 10;
     const pillPaddingY = 6;
     const lineGap = 4;
-    const pillHeight = fontSize * 2 + lineGap + pillPaddingY * 2;
 
+    // Build list of attribution lines
+    const lines: { label: string; href?: string }[] = [
+        { label: 'CartoSVG', href: 'https://cartosvg.com' },
+    ];
+    if (mode === 'macro') {
+        lines.push({ label: '© GeoBoundaries', href: 'https://www.geoboundaries.org' });
+    } else {
+        lines.push({ label: '© OpenStreetMap', href: 'https://www.openstreetmap.org/copyright' });
+    }
+    if (customAttributions) {
+        for (const attr of customAttributions) {
+            const text = attr.text.trim();
+            if (text) lines.push({ label: text, href: attr.link?.trim() || undefined });
+        }
+    }
+
+    const lineCount = lines.length;
+    const pillHeight = fontSize * lineCount + lineGap * (lineCount - 1) + pillPaddingY * 2;
+
+    // Approximate text width: ~0.6 * fontSize per character for sans-serif
+    const charWidth = fontSize * 0.6;
+    const maxTextWidth = Math.max(...lines.map((l) => l.label.length * charWidth));
+    const pillWidth = Math.ceil(maxTextWidth + pillPaddingX * 2);
     const rightX = width - margin;
     const rectX = rightX - pillWidth;
     const rectY = height - margin - pillHeight;
     const textX = rightX - pillPaddingX;
-    const textY1 = rectY + pillPaddingY + fontSize;
-    const textY2 = textY1 + fontSize + lineGap;
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.setAttribute('id', 'attribution');
@@ -292,11 +318,7 @@ export function addAttribution(
     rect.setAttribute('fill-opacity', '0.7');
     g.append(rect);
 
-    const createLinkedText = (label: string, href: string, y: number) => {
-        const a = document.createElementNS('http://www.w3.org/2000/svg', 'a');
-        a.setAttribute('href', href);
-        a.setAttribute('target', '_blank');
-        a.setAttribute('style', 'text-decoration: none');
+    const createTextElem = (label: string, y: number) => {
         const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         t.setAttribute('x', textX.toString());
         t.setAttribute('y', y.toString());
@@ -305,17 +327,22 @@ export function addAttribution(
         t.setAttribute('font-family', 'sans-serif');
         t.setAttribute('fill', '#333');
         t.textContent = label;
-        a.append(t);
-        return a;
+        return t;
     };
 
-    if (mode === 'macro') {
-        g.append(createLinkedText('CartoSVG', 'https://cartosvg.com', textY1));
-        g.append(createLinkedText('© GeoBoundaries', 'https://www.geoboundaries.org', textY2));
-    } else {
-        g.append(createLinkedText('CartoSVG', 'https://cartosvg.com', textY1));
-        g.append(createLinkedText('© OpenStreetMap', 'https://www.openstreetmap.org/copyright', textY2));
-    }
+    lines.forEach((line, i) => {
+        const y = rectY + pillPaddingY + fontSize + i * (fontSize + lineGap);
+        if (line.href) {
+            const a = document.createElementNS('http://www.w3.org/2000/svg', 'a');
+            a.setAttribute('href', line.href);
+            a.setAttribute('target', '_blank');
+            a.setAttribute('style', 'text-decoration: none');
+            a.append(createTextElem(line.label, y));
+            g.append(a);
+        } else {
+            g.append(createTextElem(line.label, y));
+        }
+    });
 
     svgElement.append(g);
 }

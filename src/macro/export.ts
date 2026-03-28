@@ -40,6 +40,7 @@ export async function exportMacro(
         animate = false,
         useViewBox = false,
         frameShadow = false,
+        customAttributions,
     } = options;
     // console.log('options', options);
     const fo = svg.select('foreignObject').node();
@@ -266,7 +267,7 @@ export async function exportMacro(
     scriptElem.appendChild(scriptContent);
     svgElement.append(scriptElem);
 
-    addAttribution(svgElement, stateMacro.macroParams.General.width, stateMacro.macroParams.General.height, 'macro');
+    addAttribution(svgElement, stateMacro.macroParams.General.width, stateMacro.macroParams.General.height, 'macro', customAttributions);
 
     if (!downloadExport) return svgElement.outerHTML;
     download(svgElement.outerHTML, 'text/plain', 'cartosvg-export.svg');
