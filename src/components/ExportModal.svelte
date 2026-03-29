@@ -28,6 +28,19 @@
     let minifyJs = $state(true);
     let customAttributions = $state<CustomAttribution[]>([]);
     const hasAnnotations = $derived(Object.keys(commonState.elementAnnotations ?? {}).length > 0);
+    const fontUsedInAnnotations = $derived.by(() => {
+        const annotations = commonState.elementAnnotations;
+        if (!annotations) return false;
+        const fontNames = commonState.providedFonts.map((f) => f.name);
+        if (fontNames.length === 0) return false;
+        for (const ann of Object.values(annotations)) {
+            const html = (ann.tooltip || "") + (ann.popover || "");
+            for (const name of fontNames) {
+                if (html.includes(name)) return true;
+            }
+        }
+        return false;
+    });
     let sizeText = $state("");
     let isLargeExport = $state(false);
     let modalWidth = $state("600px");
@@ -35,7 +48,9 @@
 
     function getExportFontChoice(): ExportFontChoice {
         if (!inlineFontUsed) return ExportFontChoice.convertToPath;
-        return fontUsedElsewhere ? ExportFontChoice.noExport : ExportFontChoice.smallest;
+        if (fontUsedElsewhere) return ExportFontChoice.noExport;
+        if (fontUsedInAnnotations) return ExportFontChoice.embedFontFace;
+        return ExportFontChoice.smallest;
     }
 
     function buildOptions(): ExportOptions {
@@ -215,13 +230,17 @@
                         />
                         <label class="form-check-label" for="fontNo">
                             No
-                            <span class="text-muted small">&mdash; optimize fonts for smaller footprint</span>
-                            <span
-                                class="help-tooltip fs-6"
-                                data-bs-toggle="tooltip"
-                                data-bs-title="Choose the smallest between converting the labels to &lt;path&gt; elements or loading the font-face"
-                                >?</span
-                            >
+                            {#if fontUsedInAnnotations}
+                                <span class="text-muted small">&mdash; load fonts from the SVG</span>
+                                <span
+                                    class="help-tooltip fs-6"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-title="The font is used in tooltips or popovers, so it will be loaded via @font-face for proper annotation rendering"
+                                    >?</span
+                                >
+                            {:else}
+                                <span class="text-muted small">&mdash; optimize fonts for smaller footprint</span>
+                            {/if}
                         </label>
                     </div>
                 {/if}
@@ -279,15 +298,15 @@
                                     type="button"
                                     class="btn btn-sm btn-outline-danger remove-attr-btn"
                                     onclick={() => customAttributions.splice(i, 1)}
-                                    title="Remove"
-                                >&times;</button>
+                                    title="Remove">&times;</button
+                                >
                             </div>
                         {/each}
                         <button
                             type="button"
                             class="btn btn-sm btn-outline-secondary"
-                            onclick={() => customAttributions.push({ text: "", link: "" })}
-                        >+ Add attribution</button>
+                            onclick={() => customAttributions.push({ text: "", link: "" })}>+ Add attribution</button
+                        >
                     </div>
                 {/if}
             </div>

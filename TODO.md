@@ -260,7 +260,7 @@
 - [x] No more than 20 projects
 - [x] Check disposable email adresses
 - [ ] slider: allow editing value directly by text
-- [ ] Font conversion to path: only suggest of not used in tooltip / popover, alwyas import font-face otherwise
+- [x] Font conversion to path: only suggest of not used in tooltip / popover, alwyas import font-face otherwise
 - [x] macro coloring: only take into account visible parts of the map
 - [x] Show N/A in tooltip when no data for referenced column
 - [x] Macro tooltip: cannot edit default border / background color
@@ -269,6 +269,6 @@
 - [x] Macro: number formatting inside tooltip
 - [x] Popover: the arrow should have the same color as the content background color
 - [x] Popover in editor: open it before selectionOverlay
-- [ ] Frame shadow: add padding to SVG for it to display properly
-- [ ] non-latin characters conversion to svg path
+- [x] Frame shadow: add padding to SVG for it to display properly
+- [x] non-latin characters conversion to svg path
 - [x] ISE: show elements highlight even for hover
