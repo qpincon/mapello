@@ -24,6 +24,12 @@ export const transitionCssMacro = `
 #static-svg-map.animate .country, #static-svg-map.animate .adm, #static-svg-map.animate #svg-map-legend * {
     animation: dash 3s ease 1s forwards;
 }
+#static-svg-map.animate.no-frame #land path, #static-svg-map.animate.no-frame #paths path, #static-svg-map.animate.no-frame .country-img path {
+    animation: dash 3s ease 0s forwards;
+}
+#static-svg-map.animate.no-frame .country, #static-svg-map.animate.no-frame .adm, #static-svg-map.animate.no-frame #svg-map-legend * {
+    animation: dash 3s ease 0.5s forwards;
+}
 
 @keyframes dash {
     from {
@@ -69,6 +75,15 @@ export const transitionCssMicro = `
     fill-opacity: 0 !important;
     stroke-dashoffset: 1;
     animation: dash 2.5s ease 0.5s forwards;
+}
+#static-svg-map.animate.no-frame #micro .poly {
+    animation: dash 2.5s ease 0s forwards;
+}
+#static-svg-map.animate.no-frame #micro .line, #static-svg-map.animate.no-frame #paths path {
+    animation: dash 2s ease 1s forwards;
+}
+#static-svg-map.animate.no-frame #buildings .roof {
+    animation: dash 2.5s ease 0s forwards;
 }
 #static-svg-map.animate-transition #buildings .wall {
     transition-property: opacity;
