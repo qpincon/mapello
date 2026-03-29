@@ -136,6 +136,8 @@
     });
 
     export function applyStateAndDraw(simplified = false) {
+        for (const key of Object.keys(colorsCssByTab)) delete colorsCssByTab[key];
+        for (const key of Object.keys(displayedLegend)) delete displayedLegend[key];
         commonStyleSheetElem.innerHTML = macroState.baseCss;
         projectAndDraw(svg, simplified);
     }
