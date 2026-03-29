@@ -1,6 +1,6 @@
 import { addAttribution, addFrameShadow, additionnalCssExport, changeIdAndReferences, ExportFontChoice, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
 import type { ElementAnnotations, ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
-import { DOM_PARSER, fontsToCss, fontsToCssEmbed, getUsedInlineFonts } from 'src/util/dom';
+import { DOM_PARSER, fontsToCssMultiSubset, fontsToCssEmbedMultiSubset, getUsedInlineFonts } from 'src/util/dom';
 import svgoConfigBase from '../svgoExport.config';
 import type { Config } from 'svgo/browser';
 
@@ -171,7 +171,10 @@ export async function exportMacro(
     // === Styling ===
     const mapId = randomString(5);
     const styleElem = document.createElementNS("http://www.w3.org/2000/svg", 'style');
-    const renderedCss = commonCss.replaceAll(/rgb\(.*?\)/g, rgb2hex) + additionnalCssExport;
+    let renderedCss = commonCss.replaceAll(/rgb\(.*?\)/g, rgb2hex) + additionnalCssExport;
+    if (frameShadow) {
+        renderedCss = renderedCss.replace(/contain\s*:\s*content\s*;?/g, '');
+    }
     const animateCss = animate ? transitionCssMacro : '';
     const finalCss = discriminateCssForExport(renderedCss + animateCss, mapId);
     (optimizedSVG.firstChild as Element).setAttribute('id', mapId);
@@ -217,10 +220,11 @@ export async function exportMacro(
 
     let fontCss = '';
     if (!pathIsBetter) {
+        const svgTextContent = (optimizedSVG.firstChild as SVGElement)?.textContent || '';
         if (exportFonts === ExportFontChoice.embedFontFace || exportFonts === ExportFontChoice.smallest) {
-            fontCss = fontsToCss(usedProvidedFonts);
+            fontCss = await fontsToCssMultiSubset(usedProvidedFonts, svgTextContent);
         } else {
-            fontCss = await fontsToCssEmbed(usedProvidedFonts);
+            fontCss = await fontsToCssEmbedMultiSubset(usedProvidedFonts, svgTextContent);
         }
     }
     styleElem.innerHTML = finalCss + fontCss;

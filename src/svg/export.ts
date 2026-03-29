@@ -1,8 +1,10 @@
 import svgoConfigText from '../svgoExportText.config';
 
-import { reportStyleElem, DOM_PARSER, fetchFontAsDataUrl } from '../util/dom';
+import { reportStyleElem, DOM_PARSER, fetchFontSubsetAsDataUrl, getAvailableSubsets } from '../util/dom';
 import type { Config } from 'svgo/browser';
 import type { ProvidedFont } from 'src/types';
+import { detectRequiredSubsets, segmentTextBySubset } from '../util/unicode-subsets';
+import type TextToSVGClass from '../util/text-to-svg';
 
 
 export enum ExportFontChoice {
@@ -155,6 +157,100 @@ export function getTextPosition(textElem: Element, defaultStyles: CSSStyleDeclar
     return { x, y };
 }
 
+function loadTextToSVG(TextToSVG: typeof TextToSVGClass, dataUrl: string): Promise<InstanceType<typeof TextToSVGClass>> {
+    return new Promise((resolve, reject) => {
+        TextToSVG.load(dataUrl, (err: any, instance: any) => {
+            if (err || !instance) return reject(err ?? new Error('Font load failed'));
+            resolve(instance);
+        });
+    });
+}
+
+/**
+ * Generates a path `d` attribute for text that may span multiple font subsets.
+ * For each segment of consecutive characters in the same subset, uses the matching
+ * TextToSVG instance to generate the path, tracking x-position across segments.
+ */
+function generateMultiSubsetPath(
+    text: string,
+    subsetFonts: Map<string, InstanceType<typeof TextToSVGClass>>,
+    defSubset: string,
+    baseOptions: { x: number; y: number; fontSize: number; anchor: string },
+    SVGO: typeof import('svgo/browser'),
+): string {
+    // If only one subset font is loaded, use it directly (common case / fast path)
+    if (subsetFonts.size === 1) {
+        const tts = subsetFonts.values().next().value!;
+        return optimizePath(tts.getD(text, baseOptions), SVGO);
+    }
+
+    const segments = segmentTextBySubset(text, defSubset);
+
+    // Determine initial x offset based on anchor
+    // For multi-subset, we need to handle anchoring manually for center/right
+    const anchorMatch = baseOptions.anchor.match(/left|center|right/i);
+    const hAnchor = anchorMatch ? anchorMatch[0].toLowerCase() : 'left';
+
+    // Calculate total width for non-left anchoring
+    let totalWidth = 0;
+    if (hAnchor !== 'left') {
+        for (const seg of segments) {
+            const tts = subsetFonts.get(seg.subset) ?? findFallbackFont(subsetFonts, defSubset);
+            if (tts) totalWidth += tts.getWidth(seg.text, { fontSize: baseOptions.fontSize });
+        }
+    }
+
+    let startX = baseOptions.x;
+    if (hAnchor === 'center') startX -= totalWidth / 2;
+    else if (hAnchor === 'right') startX -= totalWidth;
+
+    let combinedD = '';
+    let currentX = startX;
+
+    for (const seg of segments) {
+        const tts = subsetFonts.get(seg.subset) ?? findFallbackFont(subsetFonts, defSubset);
+        if (!tts) continue;
+
+        // Use 'left baseline' for segments since we handle anchoring manually
+        const segOptions = {
+            x: currentX,
+            y: baseOptions.y,
+            fontSize: baseOptions.fontSize,
+            anchor: `left ${baseOptions.anchor.match(/baseline|top|middle|bottom/i)?.[0] || 'baseline'}`,
+        };
+
+        const d = tts.getD(seg.text, segOptions);
+        if (d) {
+            const optimized = optimizePath(d, SVGO);
+            if (optimized) combinedD += (combinedD ? ' ' : '') + optimized;
+        }
+
+        currentX += tts.getWidth(seg.text, { fontSize: baseOptions.fontSize });
+    }
+
+    return combinedD;
+}
+
+function findFallbackFont(
+    subsetFonts: Map<string, InstanceType<typeof TextToSVGClass>>,
+    defSubset: string,
+): InstanceType<typeof TextToSVGClass> | undefined {
+    return subsetFonts.get(defSubset) ?? subsetFonts.values().next().value;
+}
+
+function optimizePath(d: string, SVGO: typeof import('svgo/browser')): string {
+    if (!d) return '';
+    const tmpSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const tmpPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    tmpPath.setAttribute('d', d);
+    tmpSvg.append(tmpPath);
+    const optimized = DOM_PARSER.parseFromString(
+        SVGO.optimize(tmpSvg.outerHTML, svgoConfigText as Config).data,
+        'image/svg+xml',
+    );
+    return optimized.querySelector('path')?.getAttribute('d') || '';
+}
+
 export async function inlineFontVsPath(
     svgElem: SVGElement,
     providedFonts: ProvidedFont[],
@@ -166,51 +262,78 @@ export async function inlineFontVsPath(
     const SVGO = await import('svgo/browser');
     const { default: TextToSVG } = await import('src/util/text-to-svg');
     const defaultStyles = getComputedStyle(document.body);
+    const texts = getTextElems(svgElem);
 
-    await Promise.all(providedFonts.map(async ({ name, slug, weight, style, defSubset }) => {
-        const content = await fetchFontAsDataUrl({ name, slug, weight, style, defSubset });
+    await Promise.all(providedFonts.map(async (font) => {
+        const { name, defSubset } = font;
         transformedTexts[name] = {};
-        const base64Part = content.substring(content.indexOf(',') + 1);
-        nbFontChars += Math.ceil(base64Part.length * 3 / 4);
-        const texts = getTextElems(svgElem);
 
-        return new Promise<void>(resolve => {
-            TextToSVG.load(content, function (err: any, textToSVG: any) {
-                // console.log(content, err, textToSVG);
-                texts.forEach(textElem => {
-                    if (textElem.tagName === 'text' && (textElem.firstChild as Element)?.tagName === 'tspan') return;
+        // Collect all text content using this font to detect needed subsets
+        const fontTexts: { elem: Element; text: string }[] = [];
+        let allTextContent = '';
+        texts.forEach(textElem => {
+            const fontFamily = getInlineStyle(textElem, defaultStyles, 'font-family');
+            if (fontFamily === name) {
+                const text = textElem.textContent?.trim() || '';
+                fontTexts.push({ elem: textElem, text });
+                allTextContent += text;
+            }
+        });
 
-                    const fontFamily = getInlineStyle(textElem, defaultStyles, 'font-family');
-                    if (fontFamily === name) {
-                        const text = textElem.textContent?.trim() || '';
-                        const anchor = anchorToAnchor[textElem.getAttribute('text-anchor') || ''] || 'left';
-                        const baseline = domBaselineToBaseline[textElem.getAttribute('dominant-baseline') || ''] || 'baseline';
-                        const fontSize = parseFloat(getInlineStyle(textElem, defaultStyles, 'font-size'));
-                        const { x, y } = getTextPosition(textElem, defaultStyles);
+        if (fontTexts.length === 0) return;
 
-                        const options = {
-                            x: x,
-                            y: y,
-                            fontSize: fontSize,
-                            anchor: `${anchor} ${baseline}`
-                        };
+        // Detect which subsets are needed and which are available
+        const requiredSubsets = detectRequiredSubsets(allTextContent);
+        const availableSubsets = await getAvailableSubsets(font);
 
-                        let path = textToSVG.getD(text, options);
-                        const tmpSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                        const tmpPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        tmpPath.setAttribute('d', path);
-                        tmpSvg.append(tmpPath);
+        // Find subsets to load: intersection of required and available,
+        // plus any subset without unicode-range (catch-all, like "japanese" for Noto Sans JP)
+        const subsetsToLoad = new Set<string>();
+        for (const s of availableSubsets) {
+            if (requiredSubsets.has(s.name) || !s.unicodeRange) {
+                subsetsToLoad.add(s.name);
+            }
+        }
+        // If nothing matched, at least load defSubset
+        if (subsetsToLoad.size === 0) subsetsToLoad.add(defSubset);
 
-                        const optimized = DOM_PARSER.parseFromString(SVGO.optimize(tmpSvg.outerHTML, svgoConfigText as Config).data, 'image/svg+xml');
-                        path = optimized.querySelector('path')?.getAttribute('d');
-                        if (!path) return;
+        // Fetch all needed subset font files in parallel and load into TextToSVG
+        const subsetFonts = new Map<string, InstanceType<typeof TextToSVGClass>>();
+        await Promise.all([...subsetsToLoad].map(async subset => {
+            const dataUrl = await fetchFontSubsetAsDataUrl(font, subset);
+            if (!dataUrl) return;
 
-                        transformedTexts[name][text] = path;
-                        nbPathChars += path.length;
-                    }
-                });
-                resolve();
-            });
+            // Count font bytes for size comparison
+            const base64Part = dataUrl.substring(dataUrl.indexOf(',') + 1);
+            nbFontChars += Math.ceil(base64Part.length * 3 / 4);
+
+            const tts = await loadTextToSVG(TextToSVG, dataUrl);
+            subsetFonts.set(subset, tts);
+        }));
+
+        if (subsetFonts.size === 0) return;
+
+        // Generate paths for each text element
+        fontTexts.forEach(({ elem: textElem, text }) => {
+            if (!text) return;
+
+            const anchor = anchorToAnchor[textElem.getAttribute('text-anchor') || ''] || 'left';
+            const baseline = domBaselineToBaseline[textElem.getAttribute('dominant-baseline') || ''] || 'baseline';
+            const fontSize = parseFloat(getInlineStyle(textElem, defaultStyles, 'font-size'));
+            const { x, y } = getTextPosition(textElem, defaultStyles);
+
+            const options = {
+                x,
+                y,
+                fontSize,
+                anchor: `${anchor} ${baseline}`,
+            };
+
+            const path = generateMultiSubsetPath(text, subsetFonts, defSubset, options, SVGO);
+            if (!path) return;
+
+            transformedTexts[name][text] = path;
+            nbPathChars += path.length;
         });
     }));
 

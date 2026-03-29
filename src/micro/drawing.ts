@@ -3,7 +3,7 @@ import { select, type Selection } from "d3-selection";
 import { bboxContains, bboxIntersects, getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
 import { cloneDeep, kebabCase, random, size } from "lodash-es";
 import { color, hsl } from "d3-color";
-import { DOM_PARSER, findStyleSheet, fontsToCss, fontsToCssEmbed, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
+import { DOM_PARSER, findStyleSheet, fontsToCssMultiSubset, fontsToCssEmbedMultiSubset, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
 import { patternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download, randomString, xhtmlifyHtml } from "../util/common";
@@ -866,10 +866,11 @@ export async function exportMicro(
 
     let fontCss = '';
     if (!pathIsBetter) {
+        const svgTextContent = (optimizedSVG.firstChild as SVGElement)?.textContent || '';
         if (exportFonts === exportFontChoices.embedFontFace || exportFonts === exportFontChoices.smallest) {
-            fontCss = fontsToCss(usedProvidedFonts);
+            fontCss = await fontsToCssMultiSubset(usedProvidedFonts, svgTextContent);
         } else {
-            fontCss = await fontsToCssEmbed(usedProvidedFonts);
+            fontCss = await fontsToCssEmbedMultiSubset(usedProvidedFonts, svgTextContent);
         }
     }
     styleElem.innerHTML = finalCss + fontCss;
