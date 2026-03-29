@@ -14,17 +14,34 @@ _poFO.setAttribute('height', '1');
 _poFO.style.cssText = 'overflow:visible;display:none';
 mapElement.append(_poFO);
 
+function _screenToSvg(sx, sy) {
+    var ctm = mapElement.getScreenCTM();
+    if (!ctm) return { x: sx, y: sy };
+    var inv = ctm.inverse();
+    return { x: inv.a * sx + inv.c * sy + inv.e, y: inv.b * sx + inv.d * sy + inv.f };
+}
+
+function _getSvgSize() {
+    var vb = (mapElement.getAttribute('viewBox') || '').split(/[\s,]+/);
+    if (vb.length >= 4) return { w: parseFloat(vb[2]), h: parseFloat(vb[3]) };
+    return { w: parseFloat(mapElement.getAttribute('width')) || mapElement.clientWidth, h: parseFloat(mapElement.getAttribute('height')) || mapElement.clientHeight };
+}
+
 function _positionTooltipAnn(e) {
-    var b = mapElement.getBoundingClientRect();
-    var posX = e.clientX - b.left + 12;
-    var posY = e.clientY - b.top + 12;
+    var ctm = mapElement.getScreenCTM();
+    var scale = ctm ? 1 / ctm.a : 1;
+    var offset = 12 * scale;
+    var pt = _screenToSvg(e.clientX, e.clientY);
+    var posX = pt.x + offset;
+    var posY = pt.y + offset;
     var ttContent = _ttFO.firstChild;
     if (ttContent && ttContent.offsetWidth > 0) {
-        if (b.right - ttContent.offsetWidth < e.clientX + 12) {
-            posX -= ttContent.offsetWidth + 24;
+        var svgSize = _getSvgSize();
+        if (posX + ttContent.offsetWidth > svgSize.w) {
+            posX = pt.x - ttContent.offsetWidth - offset;
         }
-        if (b.bottom - ttContent.offsetHeight < e.clientY + 12) {
-            posY -= ttContent.offsetHeight + 24;
+        if (posY + ttContent.offsetHeight > svgSize.h) {
+            posY = pt.y - ttContent.offsetHeight - offset;
         }
     }
     _ttFO.setAttribute('x', posX.toString());
@@ -32,11 +49,11 @@ function _positionTooltipAnn(e) {
 }
 
 function _positionPopoverAnn(el, arrowEl, bgColor) {
-    var sb = mapElement.getBoundingClientRect();
     var eb = el.getBoundingClientRect();
-    var centerX = eb.left + eb.width / 2 - sb.left;
-    var centerY = eb.top + eb.height / 2 - sb.top;
-    var svgW = parseFloat(mapElement.getAttribute('width') || mapElement.clientWidth);
+    var center = _screenToSvg(eb.left + eb.width / 2, eb.top + eb.height / 2);
+    var centerX = center.x;
+    var centerY = center.y;
+    var svgW = _getSvgSize().w;
     var contentEl = _poFO.firstChild;
     var annWidth = (contentEl && contentEl.offsetWidth) ? contentEl.offsetWidth : 280;
     var annH = (contentEl && contentEl.offsetHeight) ? contentEl.offsetHeight : 120;
@@ -86,6 +103,7 @@ for (var _annId in _annData) {
                 e.stopPropagation();
                 if (_openPopoverId === id) {
                     _poFO.style.display = 'none';
+                    _poFO.style.opacity = '';
                     _openPopoverId = '';
                     return;
                 }
@@ -113,10 +131,14 @@ for (var _annId in _annData) {
                 _poWrapper.appendChild(_poArrow);
                 _poFO.appendChild(_poWrapper);
                 _openPopoverId = id;
-                setTimeout(function () {
+                // Use opacity:0 (not display:none) so the content is laid out and
+                // offsetWidth/offsetHeight return real values for positioning
+                _poFO.style.display = 'block';
+                _poFO.style.opacity = '0';
+                requestAnimationFrame(function () {
                     _positionPopoverAnn(el, _poArrow, _bgColor);
-                    _poFO.style.display = 'block';
-                }, 0);
+                    _poFO.style.opacity = '1';
+                });
             });
         }
     })(_annId, _annData[_annId]);
@@ -124,5 +146,6 @@ for (var _annId in _annData) {
 
 mapElement.addEventListener('click', function () {
     _poFO.style.display = 'none';
+    _poFO.style.opacity = '';
     _openPopoverId = '';
 });
