@@ -370,6 +370,9 @@
                 },
                 inlineDeletable: () => false,
                 getCssRuleName: (ruleName: string, el: HTMLElement) => {
+                    if (ruleName.includes("#paths > path")) return "All curves";
+                    if (ruleName.includes(".text")) return "All texts";
+                    if (ruleName.includes(".shape")) return "All shapes";
                     if (ruleName.includes("#freehand-drawings > .freehand")) return "All freehand";
                     let isHover = ruleName.includes(":hover") || ruleName.includes(".hovered");
                     let finalStr = "";

@@ -673,6 +673,12 @@ export function generateCssFromState(state: MicroPalette): string | null {
     #freehand-drawings g path {
         fill: inherit;
     }
+    .shape {
+        fill: black;
+    }
+    .text {
+        paint-order: stroke;
+    }
     `;
 
     for (const [layer, layerDef] of Object.entries(state)) {

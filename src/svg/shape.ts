@@ -28,8 +28,10 @@ export function drawShapes(
             // Bottom-middle at (0,0): shift left by half width, shift up by full height
             svgShape.setAttribute("x", String(-width / 2));
             svgShape.setAttribute("y", String(-height));
+            svgShape.classList.add("shape");
         } else if (shapeDef.name) {
             svgShape = createSvgFromPart(shapes[shapeDef.name]);
+            svgShape.classList.add("shape");
         }
         // shape is a label
         else if (shapeDef.text) {
@@ -61,6 +63,7 @@ export function drawShapes(
 export function addSvgText(text: string, id: string) {
     const parts: string[] = text.split('\n');
     const textElem = create('svg:text')
+        .attr('class', 'text')
         .style('stroke-width', 0)
         .attr('id', id);
 

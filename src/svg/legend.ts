@@ -100,6 +100,7 @@ export function drawLegend(
         .attr('stroke', 'black');
 
     legendEntries.append('text')
+        .attr('class', 'text')
         .attr('text-anchor', !isCategorical && horizontal ? 'middle' : 'start')
         .attr('dominant-baseline', textBaseline)
         .attr('x', (_, i) => getX(i, false))
