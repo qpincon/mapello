@@ -51,6 +51,13 @@ export function orderFeaturesByLayer(features: RenderedFeature[]): void {
     features.sort((a, b) => {
         const rankA = a.properties['sort_rank'] ?? 0;
         const rankB = b.properties['sort_rank'] ?? 0;
+        if (rankA === rankB) {
+            // @ts-expect-error
+            const layerIdA = MICRO_LAYERS.indexOf(a.properties.mapLayerId!);
+            // @ts-expect-error
+            const layerIdB = MICRO_LAYERS.indexOf(b.properties.mapLayerId!);
+            return layerIdA - layerIdB;
+        }
         return rankA - rankB;
     });
 }
@@ -196,7 +203,7 @@ export async function drawPrettyMap(
     setTimeout(() => {
         postClip(generalParams);
         if (buildingPaths.length > 0) removeNotRenderedElements(buildingPaths);
-    }, 100);
+    }, 200);
 }
 
 export function resizeMaplibreMap(generalParams: MicroParams, mapLibreMap: MapLibreMap): void {

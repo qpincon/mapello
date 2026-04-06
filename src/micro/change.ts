@@ -88,7 +88,7 @@ export function syncLayerStateWithCss(
 }
 
 export const replaceCssSheetContent = debounce((layerState: MicroPalette) => {
-    const styleSheet = document.getElementById('common-style-sheet-elem-micro') as HTMLStyleElement;
+    const styleSheet = document.getElementById('style-sheet-micro') as HTMLStyleElement;
     const microCss = generateCssFromState(layerState);
     if (microCss) styleSheet.innerHTML = microCss;
 }, 500);

@@ -601,6 +601,10 @@
             Object.assign(microState, state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro);
             await tick();
             switchMode(state.stateCommon.currentMode);
+            if (state.stateCommon.currentMode === "micro") {
+                microSidebar?.applyLayerStyles();
+                microSidebar?.applyMapPosition();
+            }
             changeProjection();
             await updateLayerSimplification();
             draw();

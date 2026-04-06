@@ -199,7 +199,7 @@
                         {/if}
                     </div>
                     {#if def.pattern.menuOpened}
-                        <div class="wrap-params ps-2 ms-4 border-start border-1 d-flex flex-wrap">
+                        <div class="wrap-params ps-2 pe-4 ms-4 border-start border-1 d-flex flex-wrap">
                             <PatternPicker
                                 hatch={def.pattern.hatch ?? ""}
                                 onChange={(val) => {

@@ -167,7 +167,7 @@
                     </div>
                     <small class="text-muted d-block ms-4"> The map will animate when entering the viewport </small>
                     {#if isLargeExport}
-                        <small class="perf-warning d-block ms-4"> Large file — may impact page performance </small>
+                        <small class="perf-warning d-block ms-4"> Large file — will impact page performance </small>
                     {/if}
                 </div>
 

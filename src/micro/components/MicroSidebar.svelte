@@ -127,6 +127,24 @@
         saveState();
     }
 
+    export function applyLayerStyles(): void {
+        // Clear first so findStyleSheet returns null → generateCssFromState returns
+        // the full CSS string instead of updating in-place and returning ''.
+        styleSheetElem.innerHTML = '';
+        const microCss = generateCssFromState(microState.microLayerDefinitions);
+        if (microCss != null) styleSheetElem.innerHTML = microCss;
+    }
+
+    export function applyMapPosition(): void {
+        console.log(microState.inlinePropsMicro.center);
+        maplibreMap?.jumpTo({
+            center: microState.inlinePropsMicro.center,
+            zoom: microState.inlinePropsMicro.zoom,
+            pitch: microState.inlinePropsMicro.pitch,
+            bearing: microState.inlinePropsMicro.bearing,
+        });
+    }
+
     export function onPlaceSelected(result: SearchResult): void {
         maplibreMap!.jumpTo({
             center: [parseFloat(result.lon), parseFloat(result.lat)],
