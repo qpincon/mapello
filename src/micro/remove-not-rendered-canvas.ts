@@ -56,9 +56,10 @@ function showDebugCanvas(canvas: OffscreenCanvas, svgRect: DOMRect) {
 	visible.setAttribute("data-debug-canvas", "");
 	visible.width = canvas.width;
 	visible.height = canvas.height;
-	visible.style.cssText = `position:fixed;left:${svgRect.left}px;top:${svgRect.top}px;width:${svgRect.width}px;height:${svgRect.height}px;z-index:999999;pointer-events:none;opacity:0.7;`;
+	visible.style.cssText = `position:fixed;left:${svgRect.left}px;top:${svgRect.top}px;width:${svgRect.width}px;height:${svgRect.height}px;z-index:999999;pointer-events:none;opacity:.3;`;
 	visible.getContext("2d")!.drawImage(canvas, 0, 0);
 	document.body.appendChild(visible);
+	console.log(visible);
 }
 
 export function removeNotRenderedElements(pathElements: SVGPathElement[], scale = 6, enableDebug = false) {
@@ -78,9 +79,20 @@ export function removeNotRenderedElements(pathElements: SVGPathElement[], scale 
 	const originX = svgRect.left;
 	const originY = svgRect.top;
 
+	// Pre-identify quads (the only elements that can be removed)
+	// Non-quads (roofs, polygons) are never removed, and painting them on the canvas
+	// would falsely occlude walls beneath them (e.g. a cylinder roof covering front walls).
+	const isQuad = new Uint8Array(pathElements.length);
+	for (let idx = 0; idx < pathElements.length; idx++) {
+		const d = pathElements[idx].getAttribute("d");
+		if (d && fillCoords(d) === 4) isQuad[idx] = 1;
+	}
+
 	// Assign a random color to each wall and draw in DOM order (painter's algorithm)
 	const colors = new Uint8Array(pathElements.length * 3);
 	for (let idx = 0; idx < pathElements.length; idx++) {
+		if (!isQuad[idx]) continue; // skip non-quads (roofs etc.)
+
 		const [r, g, b] = randomColor();
 		colors[idx * 3] = r;
 		colors[idx * 3 + 1] = g;
@@ -130,7 +142,8 @@ export function removeNotRenderedElements(pathElements: SVGPathElement[], scale 
 			continue;
 		}
 
-		if (fillCoords(d) !== 4) continue; // not a quad, keep it
+		if (!isQuad[idx]) continue; // not a quad, keep it
+		fillCoords(d); // re-populate shared coords buffer for this quad
 
 		const ctm = el.getScreenCTM();
 		if (!ctm) {
