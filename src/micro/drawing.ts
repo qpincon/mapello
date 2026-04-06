@@ -49,12 +49,9 @@ type D3PathFunction = (geometry: Geometry) => string | null;
 
 export function orderFeaturesByLayer(features: RenderedFeature[]): void {
     features.sort((a, b) => {
-        // @ts-expect-error
-        const layerIdA = MICRO_LAYERS.indexOf(a.properties.mapLayerId!);
-        // @ts-expect-error
-        const layerIdB = MICRO_LAYERS.indexOf(b.properties.mapLayerId!);
-        if (layerIdA < layerIdB) return -1;
-        return 1;
+        const rankA = a.properties['sort_rank'] ?? 0;
+        const rankB = b.properties['sort_rank'] ?? 0;
+        return rankA - rankB;
     });
 }
 const BACKGROUND_LAYERS = ['landuse_pedestrian', 'landuse_pier'];
