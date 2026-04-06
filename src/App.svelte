@@ -1844,7 +1844,6 @@
     modalWidth="55%"
     onOpened={initAnnotationEditor}
     onClosed={() => {
-        saveAnnotation();
         annotationEditorOpen = false;
         annotationEditingElemId = null;
         styleEditor?.close();
@@ -1863,7 +1862,7 @@
         />
     </div>
     <div slot="footer">
-        <button class="btn btn-primary btn-sm" onclick={() => (annotationEditorOpen = false)}>Save</button>
+        <button class="btn btn-primary btn-sm" onclick={() => { saveAnnotation(); annotationEditorOpen = false; }}>Save</button>
     </div>
 </Modal>
 

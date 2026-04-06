@@ -265,7 +265,7 @@
 - [x] Show N/A in tooltip when no data for referenced column
 - [x] Macro tooltip: cannot edit default border / background color
 - [x] Macro tooltip: do not break all formatting. Only edit style in editor direclty ??
-- [ ] Export: possibility to add attribution
+- [x] Export: possibility to add attribution
 - [x] Macro: number formatting inside tooltip
 - [x] Popover: the arrow should have the same color as the content background color
 - [x] Popover in editor: open it before selectionOverlay
