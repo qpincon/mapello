@@ -1,36 +1,7 @@
-import parsePath from "parse-svg-path";
-
-const INSET_FACTOR = 0.85;
-const coords = new Float64Array(8);
-
-function fillCoords(d: string): number {
-	const segments = parsePath(d);
-	let n = 0;
-	let curX = 0,
-		curY = 0;
-	for (let i = 0, len = segments.length; i < len; i++) {
-		const seg = segments[i];
-		const cmd = seg[0];
-		if (cmd === "M" || cmd === "L") {
-			curX = seg[1];
-			curY = seg[2];
-			if (n < 4) {
-				coords[n * 2] = curX;
-				coords[n * 2 + 1] = curY;
-			}
-			n++;
-		} else if (cmd === "m" || cmd === "l") {
-			curX += seg[1];
-			curY += seg[2];
-			if (n < 4) {
-				coords[n * 2] = curX;
-				coords[n * 2 + 1] = curY;
-			}
-			n++;
-		}
-	}
-	return n;
-}
+// Minimum number of canvas pixels an element must occupy to be considered visible.
+// This filters out fully-occluded quads (0 pixels) and anti-aliased edge slivers
+// while keeping any meaningfully visible wall.
+const PIXEL_THRESHOLD = 10;
 
 function randomColor(): [number, number, number] {
 	// Avoid 0 (background) and stay away from edges to reduce anti-aliasing collisions
@@ -40,14 +11,15 @@ function randomColor(): [number, number, number] {
 	return [r, g, b];
 }
 
-function pixelMatchesColor(
-	data: Uint8ClampedArray,
-	offset: number,
-	r: number,
-	g: number,
-	b: number,
-): boolean {
-	return data[offset] === r && data[offset + 1] === g && data[offset + 2] === b;
+function countMAndL(d: string): number {
+	// Count M/L/m/l commands to determine if this is a quad (exactly 4 vertices).
+	// Avoids pulling in parse-svg-path for a simple count.
+	let n = 0;
+	for (let i = 0; i < d.length; i++) {
+		const c = d[i];
+		if (c === 'M' || c === 'L' || c === 'm' || c === 'l') n++;
+	}
+	return n;
 }
 
 function showDebugCanvas(canvas: OffscreenCanvas, svgRect: DOMRect) {
@@ -59,7 +31,6 @@ function showDebugCanvas(canvas: OffscreenCanvas, svgRect: DOMRect) {
 	visible.style.cssText = `position:fixed;left:${svgRect.left}px;top:${svgRect.top}px;width:${svgRect.width}px;height:${svgRect.height}px;z-index:999999;pointer-events:none;opacity:.3;`;
 	visible.getContext("2d")!.drawImage(canvas, 0, 0);
 	document.body.appendChild(visible);
-	console.log(visible);
 }
 
 export function removeNotRenderedElements(pathElements: SVGPathElement[], scale = 6, enableDebug = false) {
@@ -79,20 +50,11 @@ export function removeNotRenderedElements(pathElements: SVGPathElement[], scale 
 	const originX = svgRect.left;
 	const originY = svgRect.top;
 
-	// Pre-identify quads (the only elements that can be removed)
-	// Non-quads (roofs, polygons) are never removed, and painting them on the canvas
-	// would falsely occlude walls beneath them (e.g. a cylinder roof covering front walls).
-	const isQuad = new Uint8Array(pathElements.length);
-	for (let idx = 0; idx < pathElements.length; idx++) {
-		const d = pathElements[idx].getAttribute("d");
-		if (d && fillCoords(d) === 4) isQuad[idx] = 1;
-	}
-
-	// Assign a random color to each wall and draw in DOM order (painter's algorithm)
+	// Assign a random color to each element and paint in DOM order (painter's algorithm).
+	// Elements painted later overwrite earlier ones, so an occluded element's color
+	// will have zero (or very few) pixels remaining after all elements are drawn.
 	const colors = new Uint8Array(pathElements.length * 3);
 	for (let idx = 0; idx < pathElements.length; idx++) {
-		if (!isQuad[idx]) continue; // skip non-quads (roofs etc.)
-
 		const [r, g, b] = randomColor();
 		colors[idx * 3] = r;
 		colors[idx * 3 + 1] = g;
@@ -118,14 +80,22 @@ export function removeNotRenderedElements(pathElements: SVGPathElement[], scale 
 		ctx.fill(new Path2D(d));
 	}
 
+	// Count how many canvas pixels each color occupies in a single pass.
+	// Key: r << 16 | g << 8 | b  (fits in a 24-bit integer).
+	ctx.setTransform(1, 0, 0, 1, 0, 0);
+	const pixels = ctx.getImageData(0, 0, w, h).data;
+	const colorCounts = new Map<number, number>();
+	for (let i = 0; i < pixels.length; i += 4) {
+		if (pixels[i + 3] === 0) continue; // skip transparent background
+		const key = (pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2];
+		colorCounts.set(key, (colorCounts.get(key) ?? 0) + 1);
+	}
+
 	if (enableDebug) showDebugCanvas(canvas, svgRect);
 
-	// Read all pixels once
-	ctx.setTransform(1, 0, 0, 1, 0, 0);
-	const imageData = ctx.getImageData(0, 0, w, h);
-	const pixels = imageData.data;
-
-	// Check visibility for each wall
+	// Remove quads whose color has fewer than PIXEL_THRESHOLD pixels on the canvas,
+	// meaning they are fully (or almost fully) occluded by elements drawn on top.
+	// Non-quads (roofs, polygons with more or fewer than 4 vertices) are always kept.
 	const toRemove: SVGPathElement[] = [];
 
 	for (let idx = 0; idx < pathElements.length; idx++) {
@@ -142,51 +112,19 @@ export function removeNotRenderedElements(pathElements: SVGPathElement[], scale 
 			continue;
 		}
 
-		if (!isQuad[idx]) continue; // not a quad, keep it
-		fillCoords(d); // re-populate shared coords buffer for this quad
+		if (countMAndL(d) !== 4) continue; // not a quad, keep it
 
-		const ctm = el.getScreenCTM();
-		if (!ctm) {
-			toRemove.push(el);
-			continue;
-		}
+		const key = (colors[idx * 3] << 16) | (colors[idx * 3 + 1] << 8) | colors[idx * 3 + 2];
+		const count = colorCounts.get(key) ?? 0;
 
-		const cx = (coords[0] + coords[2] + coords[4] + coords[6]) / 4;
-		const cy = (coords[1] + coords[3] + coords[5] + coords[7]) / 4;
-
-		let visible = false;
-		for (let i = 0; i < 5; i++) {
-			let sx: number, sy: number;
-			if (i < 4) {
-				sx = cx + (coords[i * 2] - cx) * INSET_FACTOR;
-				sy = cy + (coords[i * 2 + 1] - cy) * INSET_FACTOR;
-			} else {
-				sx = cx;
-				sy = cy;
-			}
-
-			// Transform to canvas coords (scaled)
-			const canvasX = Math.round((ctm.a * sx + ctm.c * sy + ctm.e - originX) * scale);
-			const canvasY = Math.round((ctm.b * sx + ctm.d * sy + ctm.f - originY) * scale);
-
-			if (canvasX < 0 || canvasX >= w || canvasY < 0 || canvasY >= h) continue;
-
-			const offset = (canvasY * w + canvasX) * 4;
-			if (pixelMatchesColor(pixels, offset, colors[idx * 3], colors[idx * 3 + 1], colors[idx * 3 + 2])) {
-				visible = true;
-				break;
-			}
-		}
-
-		if (!visible) {
+		if (count < PIXEL_THRESHOLD) {
+			if (enableDebug) console.log(`removing quad idx=${idx}, color=[${colors[idx * 3]},${colors[idx * 3 + 1]},${colors[idx * 3 + 2]}], pixels=${count}`);
 			toRemove.push(el);
 		}
 	}
 
 	console.log(`removing ${toRemove.length} not rendered elements`);
-	for (const el of toRemove) {
-		el.remove();
-	}
+	for (const el of toRemove) el.remove();
 	console.timeEnd('Remove not rendered elements');
 	return toRemove.length;
 }
