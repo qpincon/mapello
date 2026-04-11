@@ -123,7 +123,7 @@ function appendImageAnimated(selection: D3Selection<SVGGElement>, pathDef: PathD
         .append('animateMotion')
         .attr('dur', `${pathDef.duration}s`)
         .attr('repeatCount', 'indefinite')
-        .attr('rotate', 'auto')
+        .attr('rotate', pathDef.imageRotate === false ? '0' : 'auto')
         .attr('keyPoints', '0.001;0.1;0.9;0.999;0.9;0.1;0.001')
         .attr('keyTimes', '0;0.1;0.4;0.5;0.6;0.9;1')
         .attr('calcMode', 'linear')

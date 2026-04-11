@@ -169,11 +169,11 @@ function getSelectedElements(): SVGElement[] {
 }
 
 function onTransformCommit(
-    deltas: { entity: SelectedEntity; dx: number; dy: number; scale?: number }[],
+    deltas: { entity: SelectedEntity; dx: number; dy: number; scale?: number; rotation?: number }[],
 ): void {
     const projection = appState.projection!;
 
-    for (const { entity, dx, dy, scale } of deltas) {
+    for (const { entity, dx, dy, scale, rotation } of deltas) {
         if (entity.type === "shape") {
             const shapeDef = commonState.providedShapes[entity.index];
             if (!shapeDef) continue;
@@ -184,11 +184,16 @@ function onTransformCommit(
                 ...shapeDef,
                 pos: projection.invert!(newPixel)!,
                 scale: newScale,
+                rotation: rotation !== undefined ? rotation : shapeDef.rotation,
             };
             // Keep inline style scale in sync (used by InlineStyleEditor)
             const inlineStyle = commonState.inlineStyles[shapeDef.id];
             if (inlineStyle && 'scale' in inlineStyle) {
                 inlineStyle.scale = String(newScale);
+            }
+            // Keep inline style rotation in sync
+            if (rotation !== undefined && inlineStyle && 'rotation' in inlineStyle) {
+                inlineStyle.rotation = String(rotation);
             }
         } else if (entity.type === "path") {
             const pathDef = commonState.providedPaths[entity.index];

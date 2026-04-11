@@ -42,6 +42,9 @@ export function drawShapes(
         }
 
         let transform: string = `translate(${projectedPos[0]} ${projectedPos[1]})`;
+        if (shapeDef.rotation) {
+            transform += ` rotate(${shapeDef.rotation})`;
+        }
         if (shapeDef.scale && shapeDef.scale !== 1) {
             transform += ` scale(${shapeDef.scale})`;
         }
@@ -64,7 +67,6 @@ export function addSvgText(text: string, id: string) {
     const parts: string[] = text.split('\n');
     const textElem = create('svg:text')
         .attr('class', 'text')
-        .style('stroke-width', 0)
         .attr('id', id);
 
     const countPrefixSpace = (str: string): number => {

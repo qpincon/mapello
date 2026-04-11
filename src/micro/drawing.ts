@@ -682,6 +682,7 @@ export function generateCssFromState(state: MicroPalette): string | null {
     }
     .text {
         paint-order: stroke;
+        stroke-width: 0px;
     }
     `;
 

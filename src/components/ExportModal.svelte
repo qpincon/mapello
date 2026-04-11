@@ -65,7 +65,7 @@
         };
     }
 
-    async function updatePreview() {
+    async function updatePreview(isOpening = false) {
         const validAttributions = customAttributions.filter((a) => a.text.trim());
         const options: ExportOptions = {
             animate,
@@ -103,6 +103,7 @@
 
         const rawBytes = new TextEncoder().encode(svgString).byteLength;
         isLargeExport = rawBytes > 500 * 1024;
+        if (isLargeExport && isOpening) animate = false;
         const rawKB = (rawBytes / 1024).toFixed(1);
         const blob = new Blob([svgString]);
         const cs = new CompressionStream("gzip");
@@ -133,16 +134,21 @@
         onExport(buildOptions());
     }
 
+    let wasOpen = false;
     $effect(() => {
         // Re-run preview when options change (while open)
         if (open) {
+            const isOpening = !wasOpen;
+            wasOpen = true;
             // Access reactive values to track them
             animate;
             useViewBox;
             frameShadow;
             minifyJs;
             JSON.stringify(customAttributions);
-            updatePreview();
+            updatePreview(isOpening);
+        } else {
+            wasOpen = false;
         }
     });
 </script>

@@ -1,5 +1,5 @@
 import type { InlineStyles, ProvidedFont } from "src/types";
-import { setTransformScale } from "../svg/svg";
+import { setTransformScale, setTransformRotation } from "../svg/svg";
 import { detectRequiredSubsets } from "./unicode-subsets";
 
 export const DOM_PARSER = new DOMParser();
@@ -221,6 +221,8 @@ export function applyStyles(inlineStyles: InlineStyles): void {
         Object.entries(style).forEach(([cssProp, cssValue]) => {
             if (cssProp === 'scale') {
                 setTransformScale(elem, `scale(${cssValue})`);
+            } else if (cssProp === 'rotation') {
+                setTransformRotation(elem, `rotate(${cssValue})`);
             } else if (cssProp === 'bringtofront') {
                 elem.parentNode?.appendChild(elem);
             } else if (cssProp === 'stroke-width' && cssValue === null) {

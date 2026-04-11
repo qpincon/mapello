@@ -135,9 +135,14 @@
         commonStyleSheetElem.remove();
     });
 
+    export function resetTabSelection(): void {
+        currentMacroLayerTab = "land";
+    }
+
     export function applyStateAndDraw(simplified = false) {
         for (const key of Object.keys(colorsCssByTab)) delete colorsCssByTab[key];
         for (const key of Object.keys(displayedLegend)) delete displayedLegend[key];
+        currentMacroLayerTab = macroState.orderedTabs[0] ?? "land";
         commonStyleSheetElem.innerHTML = macroState.baseCss;
         projectAndDraw(svg, simplified);
     }
@@ -1039,7 +1044,7 @@
                         >
                     {/if}
                 {/if}
-                {#if currentIsColorByNumeric || currentTemplateHasNumeric}
+                {#if (currentIsColorByNumeric || currentTemplateHasNumeric) && macroState.tooltipDefs[currentMacroLayerTab]}
                     <div class="mt-1 form-floating">
                         <select
                             class="form-select form-select-sm"

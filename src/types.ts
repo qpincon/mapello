@@ -196,6 +196,7 @@ export type MarkerName = keyof typeof markers;
 
 export interface PathDef {
     image?: PathDefImage;
+    imageRotate?: boolean; // whether the image rotates following path curvature (default true)
     marker?: MarkerName;
     d: any; // Parsed path data structure
     height?: number;
@@ -208,6 +209,7 @@ export interface ShapeDefinition {
     id: string;
     pos: Coords;
     scale: number;
+    rotation?: number; // degrees, for labels only
     name?: ShapeName; // for symbols
     text?: string; // for labels
     fontManual?: boolean; // for labels: true if font-family was manually set by user

@@ -56,21 +56,40 @@ export interface DistanceQueryResult {
 
 export function closestDistance(point: Point, pathElem: SVGPathElement): DistanceQueryResult {
     const pathLength = pathElem.getTotalLength();
-    const delta = 10;
-    const nbSample = Math.ceil(pathLength / delta);
+    if (pathLength === 0) return { advancement: 0 };
+
+    // Coarse pass: ~100 samples across the full path
+    const coarseStep = Math.max(1, pathLength / 100);
     let minDist = Number.MAX_SAFE_INTEGER;
-    let minDistPoint: DOMPoint | undefined;
-    let advancement = 0;
-    for (let i = 0; i < nbSample; i++) {
-        const pathPoint = pathElem.getPointAtLength(i * delta);
+    let bestT = 0;
+    let bestPoint: DOMPoint | undefined;
+
+    for (let t = 0; t <= pathLength; t += coarseStep) {
+        const pathPoint = pathElem.getPointAtLength(t);
         const dist = distance(pathPoint, point);
         if (dist < minDist) {
             minDist = dist;
-            minDistPoint = pathPoint;
-            advancement = (i * delta) / pathLength;
+            bestT = t;
+            bestPoint = pathPoint;
         }
     }
-    return { distance: minDist, point: minDistPoint!, advancement };
+
+    // Fine pass: ~40 samples around the best coarse result
+    const fineStep = Math.max(0.5, coarseStep / 20);
+    const fineStart = Math.max(0, bestT - coarseStep);
+    const fineEnd = Math.min(pathLength, bestT + coarseStep);
+
+    for (let t = fineStart; t <= fineEnd; t += fineStep) {
+        const pathPoint = pathElem.getPointAtLength(t);
+        const dist = distance(pathPoint, point);
+        if (dist < minDist) {
+            minDist = dist;
+            bestT = t;
+            bestPoint = pathPoint;
+        }
+    }
+
+    return { distance: minDist, point: bestPoint!, advancement: bestT / pathLength };
 }
 
 export function setTransformScale(el: SVGElement, scaleStr: string): void {
@@ -102,6 +121,31 @@ export function setTransformTranslate(el: SVGElement, translateStr: string): voi
     } else {
         const newAttr = existingTransform.replace(/translate\(.*?\)/, translateStr);
         el.setAttribute("transform", newAttr);
+    }
+}
+
+export function getRotationFromTransform(el: SVGElement): number {
+    const transform = el.getAttribute('transform');
+    if (!transform) return 0;
+    const match = transform.match(/rotate\(([\-0-9.]+)\)/);
+    return match ? parseFloat(match[1]) : 0;
+}
+
+export function setTransformRotation(el: SVGElement, rotateStr: string): void {
+    const existingTransform = el.getAttribute('transform');
+    if (!existingTransform) {
+        el.setAttribute("transform", rotateStr);
+    } else if (!existingTransform.includes('rotate')) {
+        // Insert after translate, before scale
+        const scaleIdx = existingTransform.indexOf('scale(');
+        if (scaleIdx !== -1) {
+            el.setAttribute("transform",
+                existingTransform.slice(0, scaleIdx).trimEnd() + ' ' + rotateStr + ' ' + existingTransform.slice(scaleIdx));
+        } else {
+            el.setAttribute("transform", `${existingTransform} ${rotateStr}`);
+        }
+    } else {
+        el.setAttribute("transform", existingTransform.replace(/rotate\(.*?\)/, rotateStr));
     }
 }
 

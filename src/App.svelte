@@ -15,6 +15,7 @@
     import * as markers from "./svg/markerDefs";
     import {
         setTransformScale,
+        setTransformRotation,
         closestDistance,
         type DistanceQueryResult,
         createSvgAnchor,
@@ -351,6 +352,23 @@
                             setTransformScale(el, scaleStr);
                         },
                     },
+                    rotation: {
+                        type: "slider",
+                        min: -180,
+                        max: 180,
+                        step: 1,
+                        getter: (el: HTMLElement) => {
+                            if (el.closest("#points-labels") == null) return null;
+                            if (el.tagName.toLowerCase() !== "text") return null;
+                            const transform = el.getAttribute("transform");
+                            if (!transform) return 0;
+                            const match = transform.match(/rotate\(([\-0-9.]+)\)/);
+                            return match ? parseFloat(match[1]) : 0;
+                        },
+                        setter: (el: SVGElement, val: number) => {
+                            setTransformRotation(el, `rotate(${val})`);
+                        },
+                    },
                 },
                 cssRuleFilter: (el: HTMLElement, cssSelector: string) => {
                     console.log(el, cssSelector);
@@ -427,21 +445,21 @@
                 stopDrawFreeHand();
             } else if (e.ctrlKey && e.code === "KeyC") {
                 if (isSelectionActive()) {
-                    const tag = (e.target as HTMLElement)?.tagName;
-                    if (tag === "INPUT" || tag === "TEXTAREA") return;
+                    const target = e.target as HTMLElement;
+                    if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
                     e.preventDefault();
                     copySelected();
                 }
             } else if (e.ctrlKey && e.code === "KeyV") {
                 if (selectionState.clipboard) {
-                    const tag = (e.target as HTMLElement)?.tagName;
-                    if (tag === "INPUT" || tag === "TEXTAREA") return;
+                    const target = e.target as HTMLElement;
+                    if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
                     e.preventDefault();
                     pasteFromClipboard(() => redrawEntities());
                 }
             } else if (e.ctrlKey && e.key.toLowerCase() === "z") {
-                const tag = (e.target as HTMLElement)?.tagName;
-                if (tag === "INPUT" || tag === "TEXTAREA") return;
+                const target = e.target as HTMLElement;
+                if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
                 e.preventDefault();
                 if (e.shiftKey) {
                     performRedo();
@@ -595,6 +613,7 @@
     async function applyState(state: GlobalState): Promise<void> {
         clearHistory();
         setRestoring(true);
+        macroSidebar?.resetTabSelection();
         try {
             Object.assign(commonState, state.stateCommon);
             Object.assign(macroState, state.stateMacro.macroParams ? state.stateMacro : defaultState.stateMacro);
@@ -922,11 +941,13 @@
 
     function addImageToPath(e: Event): void {
         menuStates.pathSelected = false;
+        menuStates.chosingMarker = false;
         menuStates.addingImageToPath = true;
     }
 
     function choseMarker(e: Event): void {
         menuStates.pathSelected = false;
+        menuStates.addingImageToPath = false;
         menuStates.chosingMarker = true;
     }
 
@@ -1824,6 +1845,21 @@
                     onchange={changePathImageHeight}
                 />
             </div>
+        </div>
+        <div class="mx-2 form-check form-switch">
+            <input
+                type="checkbox"
+                role="switch"
+                class="form-check-input"
+                id="image-rotate-path"
+                checked={commonState.providedPaths[selectedPathIndex].imageRotate !== false}
+                onchange={(e) => {
+                    commonState.providedPaths[selectedPathIndex].imageRotate = (e.target as HTMLInputElement).checked;
+                    drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks ?? {});
+                    saveState();
+                }}
+            />
+            <label class="form-check-label" for="image-rotate-path">Rotate with curve</label>
         </div>
     {:else}
         <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>

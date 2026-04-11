@@ -91,6 +91,24 @@
     let textColorValue = $state<Color>("#000000ff");
     let textBgValue = $state<Color>("#ffffffff");
 
+    function cssColorToHex(color: string, fallback = "#ffffffff"): Color {
+        if (!color) return fallback as Color;
+        if (color.startsWith("#")) {
+            return (color.length === 7 ? color + "ff" : color) as Color;
+        }
+        const match = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/);
+        if (match) {
+            const r = parseInt(match[1]).toString(16).padStart(2, "0");
+            const g = parseInt(match[2]).toString(16).padStart(2, "0");
+            const b = parseInt(match[3]).toString(16).padStart(2, "0");
+            const a = match[4] !== undefined
+                ? Math.round(parseFloat(match[4]) * 255).toString(16).padStart(2, "0")
+                : "ff";
+            return `#${r}${g}${b}${a}` as Color;
+        }
+        return fallback as Color;
+    }
+
     function extractColorFromBorder(border?: string): Color {
         if (!border) return "#000000ff" as Color;
         const match = border.match(/#[0-9a-fA-F]{3,8}/i);
@@ -128,9 +146,9 @@
     // --- Container style toolbar handlers ---
     function containerBgHandler(): void {
         if (!containerStyle) return;
-        containerBgColor = (containerStyle["background-color"]
-            ? (containerStyle["background-color"].length === 7 ? containerStyle["background-color"] + "ff" : containerStyle["background-color"])
-            : "#ffffffff") as Color;
+        const newColor = cssColorToHex(containerStyle["background-color"], "#ffffffff");
+        containerBgColor = newColor;
+        containerBgPicker?.setColor(newColor);
         containerBgPicker?.open();
     }
 
@@ -143,7 +161,9 @@
 
     function containerBorderHandler(): void {
         if (!containerStyle) return;
-        containerBorderColor = extractColorFromBorder(containerStyle["border"]);
+        const newColor = extractColorFromBorder(containerStyle["border"]);
+        containerBorderColor = newColor;
+        containerBorderPicker?.setColor(newColor);
         containerBorderPicker?.open();
     }
 
@@ -198,7 +218,7 @@
     function blockPaddingHandler(): void {
         if (!quillInstance) return;
         const format = quillInstance.getFormat();
-        const current = format.blockPadding as string || "";
+        const current = (format.blockPadding as string) || "";
         const presets = ["", "2px", "4px", "8px", "12px"];
         const idx = presets.indexOf(current);
         const next = presets[(idx + 1) % presets.length];
@@ -209,8 +229,9 @@
     function textColorHandler(): void {
         if (!quillInstance) return;
         const format = quillInstance.getFormat();
-        const current = (format.color as string) || "#000000";
-        textColorValue = (current.length === 7 ? current + "ff" : current) as Color;
+        const newColor = cssColorToHex((format.color as string) || "#000000", "#000000ff");
+        textColorValue = newColor;
+        textColorPicker?.setColor(newColor);
         textColorPicker?.open();
     }
 
@@ -221,8 +242,9 @@
     function textBgHandler(): void {
         if (!quillInstance) return;
         const format = quillInstance.getFormat();
-        const current = (format.background as string) || "#ffffff";
-        textBgValue = (current.length === 7 ? current + "ff" : current) as Color;
+        const newColor = cssColorToHex((format.background as string) || "#ffffff", "#ffffffff");
+        textBgValue = newColor;
+        textBgPicker?.setColor(newColor);
         textBgPicker?.open();
     }
 
@@ -383,26 +405,30 @@
 
         // Intercept image drop so files go through processUploadedImage.
         // Use capture phase on the container so we fire before Quill's own drop handler.
-        editorContainer.addEventListener("drop", (e: DragEvent) => {
-            const files = e.dataTransfer?.files;
-            if (!files || !files.length) return;
-            const imageFile = Array.from(files).find((f) => f.type.startsWith("image/"));
-            if (!imageFile) return;
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            (async () => {
-                let dataUrl: string;
-                try {
-                    dataUrl = await processUploadedImage(imageFile);
-                } catch (err) {
-                    alert((err as Error).message);
-                    return;
-                }
-                const range = quillInstance!.getSelection(true);
-                quillInstance!.insertEmbed(range.index, "image", dataUrl);
-                quillInstance!.setSelection(range.index + 1);
-            })();
-        }, true);
+        editorContainer.addEventListener(
+            "drop",
+            (e: DragEvent) => {
+                const files = e.dataTransfer?.files;
+                if (!files || !files.length) return;
+                const imageFile = Array.from(files).find((f) => f.type.startsWith("image/"));
+                if (!imageFile) return;
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                (async () => {
+                    let dataUrl: string;
+                    try {
+                        dataUrl = await processUploadedImage(imageFile);
+                    } catch (err) {
+                        alert((err as Error).message);
+                        return;
+                    }
+                    const range = quillInstance!.getSelection(true);
+                    quillInstance!.insertEmbed(range.index, "image", dataUrl);
+                    quillInstance!.setSelection(range.index + 1);
+                })();
+            },
+            true,
+        );
 
         // Listen for text changes
         quillInstance.on("text-change", () => {
@@ -448,7 +474,11 @@
         <ColorPicker bind:this={textBgPicker} value={textBgValue} onChange={onTextBgChange} />
         {#if containerStyle}
             <ColorPicker bind:this={containerBgPicker} value={containerBgColor} onChange={onContainerBgChange} />
-            <ColorPicker bind:this={containerBorderPicker} value={containerBorderColor} onChange={onContainerBorderChange} />
+            <ColorPicker
+                bind:this={containerBorderPicker}
+                value={containerBorderColor}
+                onChange={onContainerBorderChange}
+            />
             <ColorPicker bind:this={blockBorderPicker} value={blockBorderColor} onChange={onBlockBorderChange} />
             <ColorPicker bind:this={borderBottomPicker} value={borderBottomColor} onChange={onBorderBottomChange} />
         {/if}

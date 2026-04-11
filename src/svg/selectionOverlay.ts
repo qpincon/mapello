@@ -1,5 +1,5 @@
 import type { SelectedEntity } from "../selection.svelte";
-import { getTranslateFromTransform, setTransformTranslate, pathStringFromParsed } from "./svg";
+import { getTranslateFromTransform, setTransformTranslate, setTransformRotation, getRotationFromTransform, pathStringFromParsed } from "./svg";
 import { appState, commonState } from "../state.svelte";
 import { saveState } from "../util/save";
 
@@ -10,11 +10,11 @@ const STROKE_COLOR = "#528af4";
 
 type Corner = "nw" | "ne" | "se" | "sw";
 type TransformCommitFn = (
-    deltas: { entity: SelectedEntity; dx: number; dy: number; scale?: number }[],
+    deltas: { entity: SelectedEntity; dx: number; dy: number; scale?: number; rotation?: number }[],
 ) => void;
 
 interface DragState {
-    mode: "move" | "resize";
+    mode: "move" | "resize" | "rotate";
     startX: number;
     startY: number;
     started?: boolean;
@@ -23,6 +23,10 @@ interface DragState {
     anchorY?: number;
     origDiag?: number;
     origPositions?: Map<string, { x: number; y: number }>;
+    startAngle?: number;
+    centerX?: number;
+    centerY?: number;
+    origRotation?: number;
 }
 
 export class SelectionOverlay {
@@ -36,6 +40,9 @@ export class SelectionOverlay {
     private dragState: DragState | null = null;
     private onDragConfirmed?: () => void;
     private onSimpleClick?: () => void;
+    private rotateHandle: SVGCircleElement | null = null;
+    private rotateLine: SVGLineElement | null = null;
+    private isTextSelection: boolean = false;
 
     // Bound handlers for cleanup
     private boundMouseMove: (e: MouseEvent) => void;
@@ -91,6 +98,28 @@ export class SelectionOverlay {
             handle.setAttribute("cursor", cursor);
             this.group.appendChild(handle);
             this.handles.set(corner, handle);
+        }
+
+        // Rotation handle: only for a single selected text/label element
+        this.isTextSelection = (
+            entities.length === 1 &&
+            entities[0].type === "shape" &&
+            commonState.providedShapes[entities[0].index]?.text !== undefined
+        );
+
+        if (this.isTextSelection) {
+            this.rotateLine = document.createElementNS(SVG_NS, "line");
+            this.rotateLine.setAttribute("stroke", STROKE_COLOR);
+            this.rotateLine.setAttribute("stroke-width", "1.5");
+            this.group.appendChild(this.rotateLine);
+
+            this.rotateHandle = document.createElementNS(SVG_NS, "circle");
+            this.rotateHandle.setAttribute("r", String(HALF_HANDLE));
+            this.rotateHandle.setAttribute("fill", "white");
+            this.rotateHandle.setAttribute("stroke", STROKE_COLOR);
+            this.rotateHandle.setAttribute("stroke-width", "1.5");
+            this.rotateHandle.setAttribute("cursor", "grab");
+            this.group.appendChild(this.rotateHandle);
         }
 
         this.svg.appendChild(this.group);
@@ -174,6 +203,18 @@ export class SelectionOverlay {
 
         this.handles.get("sw")!.setAttribute("x", String(bx - HALF_HANDLE));
         this.handles.get("sw")!.setAttribute("y", String(by + bh - HALF_HANDLE));
+
+        if (this.rotateHandle && this.rotateLine) {
+            const STEM_LENGTH = 20;
+            const topCenterX = bx + bw / 2;
+            const topCenterY = by;
+            this.rotateLine.setAttribute("x1", String(topCenterX));
+            this.rotateLine.setAttribute("y1", String(topCenterY));
+            this.rotateLine.setAttribute("x2", String(topCenterX));
+            this.rotateLine.setAttribute("y2", String(topCenterY - STEM_LENGTH));
+            this.rotateHandle.setAttribute("cx", String(topCenterX));
+            this.rotateHandle.setAttribute("cy", String(topCenterY - STEM_LENGTH));
+        }
     }
 
     // Sets up mouse event handlers on the overlay group.
@@ -223,6 +264,14 @@ export class SelectionOverlay {
                 e.stopPropagation();
                 e.preventDefault();
                 this.startResize(e, corner);
+            });
+        }
+
+        if (this.rotateHandle) {
+            this.rotateHandle.addEventListener("mousedown", (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                this.startRotate(e);
             });
         }
     }
@@ -317,6 +366,32 @@ export class SelectionOverlay {
         document.addEventListener("mouseup", this.boundMouseUp);
     }
 
+    private startRotate(e: MouseEvent): void {
+        this.cachedInverseScreenCTM = this.svg.getScreenCTM()?.inverse() ?? null;
+        const pt = this.svgPoint(e.clientX, e.clientY);
+        const bbox = this.computeUnifiedBbox();
+        if (!bbox) return;
+
+        const centerX = bbox.x + bbox.width / 2;
+        const centerY = bbox.y + bbox.height / 2;
+        const startAngle = Math.atan2(pt.y - centerY, pt.x - centerX);
+        const entity = this.entities[0];
+        const origRotation = commonState.providedShapes[entity.index]?.rotation ?? 0;
+
+        this.dragState = {
+            mode: "rotate",
+            startX: pt.x,
+            startY: pt.y,
+            startAngle,
+            centerX,
+            centerY,
+            origRotation,
+        };
+
+        document.addEventListener("mousemove", this.boundMouseMove);
+        document.addEventListener("mouseup", this.boundMouseUp);
+    }
+
     private onMouseMove(e: MouseEvent): void {
         if (!this.dragState) return;
 
@@ -343,6 +418,8 @@ export class SelectionOverlay {
                     this.applyMoveVisual(dx, dy);
                 } else if (this.dragState.mode === "resize") {
                     this.applyResizeVisual(pt);
+                } else if (this.dragState.mode === "rotate") {
+                    this.applyRotateVisual(pt);
                 }
             });
         }
@@ -415,6 +492,17 @@ export class SelectionOverlay {
         this.positionFromBbox();
     }
 
+    private applyRotateVisual(pt: { x: number; y: number }): void {
+        const state = this.dragState!;
+        const currentAngle = Math.atan2(pt.y - state.centerY!, pt.x - state.centerX!);
+        const deltaAngleDeg = (currentAngle - state.startAngle!) * (180 / Math.PI);
+        const newRotation = state.origRotation! + deltaAngleDeg;
+        for (const el of this.elements) {
+            setTransformRotation(el, `rotate(${newRotation})`);
+        }
+        this.positionFromBbox();
+    }
+
     private onMouseUp(e: MouseEvent): void {
         document.removeEventListener("mousemove", this.boundMouseMove);
         document.removeEventListener("mouseup", this.boundMouseUp);
@@ -457,6 +545,30 @@ export class SelectionOverlay {
             }));
             this.onCommit(deltas);
             this.reRenderPathElements();
+            this.positionFromBbox();
+        } else if (state.mode === "rotate") {
+            const currentAngle = Math.atan2(pt.y - state.centerY!, pt.x - state.centerX!);
+            const deltaAngleDeg = (currentAngle - state.startAngle!) * (180 / Math.PI);
+
+            if (Math.abs(deltaAngleDeg) < 0.5) {
+                // Restore original rotation
+                for (const el of this.elements) {
+                    setTransformRotation(el, `rotate(${state.origRotation!})`);
+                }
+                this.dragState = null;
+                this.suppressNextClick();
+                this.positionFromBbox();
+                return;
+            }
+
+            const finalRotation = state.origRotation! + deltaAngleDeg;
+            const deltas = this.entities.map((entity) => ({
+                entity,
+                dx: 0,
+                dy: 0,
+                rotation: finalRotation,
+            }));
+            this.onCommit(deltas);
             this.positionFromBbox();
         } else if (state.mode === "resize") {
             const ax = state.anchorX!;

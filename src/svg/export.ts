@@ -109,7 +109,7 @@ export function replaceTextsWithPaths(svgElem: SVGElement, transformedTexts: Tra
         const pathElem = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         pathElem.setAttribute('d', transformed);
         reportStyleElem(textElem, pathElem);
-
+        pathElem.classList.add('text');
         if (textElem.tagName === 'tspan') {
             textElem.parentNode?.parentNode?.appendChild(pathElem);
             if (textElem.parentNode) {
