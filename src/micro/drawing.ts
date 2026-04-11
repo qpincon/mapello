@@ -800,11 +800,6 @@ export async function exportMicro(
     const borderPadding = stateMicro.microParams.Border.borderPadding;
     const borderRadius = stateMicro.microParams.Border.borderRadius;
     const svgNode = svg.node()! as SVGSVGElement;
-    svgNode.removeAttribute('style');
-
-    // Remove selection overlay from export
-    const selectionOverlay = svgNode.querySelector('#selection-overlay');
-    if (selectionOverlay) selectionOverlay.remove();
 
     const usedFonts = getUsedInlineFonts(svgNode);
     const usedProvidedFonts = providedFonts.filter(font => usedFonts.has(font.name));
@@ -812,13 +807,33 @@ export async function exportMicro(
 
     const defs = svgNode.querySelector('defs')!.cloneNode(true);
     const annotationIds = new Set(Object.keys(elementAnnotations ?? {}));
+
+    // Temporarily mutate the SVG to produce a clean outerHTML for SVGO,
+    // then restore everything so the live editor is unaffected.
+    const savedStyle = svgNode.getAttribute('style');
+    svgNode.removeAttribute('style');
+
+    const selectionOverlay = svgNode.querySelector('#selection-overlay');
+    const overlayParent = selectionOverlay?.parentNode ?? null;
+    const overlayNextSibling = selectionOverlay?.nextSibling ?? null;
+    selectionOverlay?.remove();
+
+    const strippedIds: Array<{ el: Element; id: string }> = [];
     svgNode.querySelectorAll('#micro path').forEach(el => {
         const id = el.getAttribute('id');
-        if (id && !annotationIds.has(id)) el.removeAttribute('id');
+        if (id && !annotationIds.has(id)) {
+            strippedIds.push({ el, id });
+            el.removeAttribute('id');
+        }
     });
 
     // Optimize whole SVG
     const finalSvg = optimize(svgNode.outerHTML, svgoConfig as Config).data;
+
+    // Restore live SVG to its original state
+    if (savedStyle !== null) svgNode.setAttribute('style', savedStyle);
+    if (selectionOverlay && overlayParent) overlayParent.insertBefore(selectionOverlay, overlayNextSibling);
+    strippedIds.forEach(({ el, id }) => el.setAttribute('id', id));
     const optimizedSVG = DOM_PARSER.parseFromString(finalSvg, 'image/svg+xml');
     let pathIsBetter = false;
 

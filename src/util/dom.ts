@@ -193,7 +193,12 @@ function styleSheetToText(sheet: CSSStyleSheet): string {
 export function findStyleSheet(selectorToFind: string): [CSSStyleSheet | null, CSSStyleRule | null] {
     const sheets = document.styleSheets;
     for (const sheet of Array.from(sheets)) {
-        const rules = (sheet as CSSStyleSheet).cssRules;
+        let rules: CSSRuleList;
+        try {
+            rules = (sheet as CSSStyleSheet).cssRules;
+        } catch {
+            continue; // cross-origin stylesheet, skip
+        }
         for (const rule of Array.from(rules)) {
             const selectorText = (rule as CSSStyleRule).selectorText;
             if (selectorText === selectorToFind) {

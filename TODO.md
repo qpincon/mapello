@@ -272,3 +272,4 @@
 - [x] Frame shadow: add padding to SVG for it to display properly
 - [x] non-latin characters conversion to svg path
 - [x] ISE: show elements highlight even for hover
+- [x] adding tooltip happens on all elements

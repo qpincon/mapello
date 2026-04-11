@@ -1699,27 +1699,23 @@
         {:else}
             <div role="button" class="px-2 py-1" onclick={() => beginAddAnnotation(elemId, "tooltip")}>Add tooltip</div>
         {/if}
-        {#if !commonState.elementLinks?.[elemId]}
-            {#if ann?.popover}
-                <div class="px-2 pt-1 menu-ann-preview">
-                    <small class="text-muted d-block text-truncate">{@html ann.popover}</small>
-                </div>
-                <div class="menu-ann-item d-flex align-items-center px-2 py-1">
-                    <span role="button" class="flex-grow-1" onclick={() => beginAddAnnotation(elemId, "popover")}
-                        >Edit popover</span
-                    >
-                    <span
-                        role="button"
-                        class="ms-2 text-danger menu-ann-remove"
-                        title="Remove popover"
-                        onclick={() => removeAnnotation(elemId, "popover")}>×</span
-                    >
-                </div>
-            {:else}
-                <div role="button" class="px-2 py-1" onclick={() => beginAddAnnotation(elemId, "popover")}>
-                    Add popover
-                </div>
-            {/if}
+        {#if ann?.popover}
+            <div class="px-2 pt-1 menu-ann-preview">
+                <small class="text-muted d-block text-truncate">{@html ann.popover}</small>
+            </div>
+            <div class="menu-ann-item d-flex align-items-center px-2 py-1">
+                <span role="button" class="flex-grow-1" onclick={() => beginAddAnnotation(elemId, "popover")}
+                    >Edit popover</span
+                >
+                <span
+                    role="button"
+                    class="ms-2 text-danger menu-ann-remove"
+                    title="Remove popover"
+                    onclick={() => removeAnnotation(elemId, "popover")}>×</span
+                >
+            </div>
+        {:else}
+            <div role="button" class="px-2 py-1" onclick={() => beginAddAnnotation(elemId, "popover")}>Add popover</div>
         {/if}
     {/snippet}
     {#if menuStates.chosingPoint}
@@ -1866,7 +1862,13 @@
         />
     </div>
     <div slot="footer">
-        <button class="btn btn-primary btn-sm" onclick={() => { saveAnnotation(); annotationEditorOpen = false; }}>Save</button>
+        <button
+            class="btn btn-primary btn-sm"
+            onclick={() => {
+                saveAnnotation();
+                annotationEditorOpen = false;
+            }}>Save</button
+        >
     </div>
 </Modal>
 
