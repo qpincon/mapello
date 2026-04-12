@@ -170,6 +170,7 @@ export const defaultState: GlobalState = {
         microParams: defaultMicroParams,
         inlinePropsMicro: defaultInlinePropsMicro,
         microLayerDefinitions: initLayersState(playful),
+        baseCss: '',
     },
     stateCommon: {
         lastUsedLabelProps: defaultLastUsedLabelProps,

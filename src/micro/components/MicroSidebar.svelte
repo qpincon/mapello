@@ -16,6 +16,7 @@
     import * as _microPalettes from "../microPalettes";
     import { onMicroParamChange, replaceCssSheetContent, syncLayerStateWithCss, updateSvgPatterns } from "../change";
     import { saveState } from "src/util/save";
+    import { exportStyleSheet } from "src/util/dom";
     import { addProtocol, Map, type StyleSpecification } from "maplibre-gl";
     import { cancelStitch } from "src/util/geometryStitch";
     import { select, selectAll } from "d3-selection";
@@ -124,15 +125,22 @@
         }
         const layerDefChanged = syncLayerStateWithCss(eventType, cssProp, value, microState.microLayerDefinitions);
         if (layerDefChanged) microState.microLayerDefinitions = microState.microLayerDefinitions;
+        microState.baseCss = exportStyleSheet("#micro .line") ?? '';
         saveState();
     }
 
     export function applyLayerStyles(): void {
-        // Clear first so findStyleSheet returns null → generateCssFromState returns
-        // the full CSS string instead of updating in-place and returning ''.
-        styleSheetElem.innerHTML = '';
-        const microCss = generateCssFromState(microState.microLayerDefinitions);
-        if (microCss != null) styleSheetElem.innerHTML = microCss;
+        if (microState.baseCss) {
+            // Restore persisted stylesheet (preserves common class changes like .text, .shape),
+            // then update micro-layer rules in-place from state.
+            styleSheetElem.innerHTML = microState.baseCss;
+            generateCssFromState(microState.microLayerDefinitions);
+        } else {
+            styleSheetElem.innerHTML = '';
+            const microCss = generateCssFromState(microState.microLayerDefinitions);
+            if (microCss != null) styleSheetElem.innerHTML = microCss;
+        }
+        microState.baseCss = exportStyleSheet("#micro .line") ?? '';
     }
 
     export function applyMapPosition(): void {
@@ -155,11 +163,16 @@
     }
 
     onMount(() => {
-        const microCss = generateCssFromState(microState.microLayerDefinitions);
         styleSheetElem = document.createElement("style");
         styleSheetElem.setAttribute("id", "style-sheet-micro");
         document.head.appendChild(styleSheetElem);
-        if (microCss != null) styleSheetElem.innerHTML = microCss;
+        if (microState.baseCss) {
+            styleSheetElem.innerHTML = microState.baseCss;
+            generateCssFromState(microState.microLayerDefinitions);
+        } else {
+            const microCss = generateCssFromState(microState.microLayerDefinitions);
+            if (microCss != null) styleSheetElem.innerHTML = microCss;
+        }
         // else console.error("Problem: the generated style sheet is null");
 
         createMaplibreMap();

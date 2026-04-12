@@ -293,6 +293,7 @@ export interface StateMicro {
     microParams: MicroParams;
     inlinePropsMicro: InlinePropsMicro;
     microLayerDefinitions: MicroPalette;
+    baseCss: string;
 }
 
 export interface StateCommon {

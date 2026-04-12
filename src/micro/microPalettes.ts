@@ -54,27 +54,6 @@ export const ink: Partial<MicroPaletteWithBorder> = {
 };
 
 
-// --- Pastel: dreamy lavender & mint ---
-export const lavender: Partial<MicroPaletteWithBorder> = {
-    borderParams: {
-        borderColor: "#b090d8", borderWidth: 2, borderRadius: 50, borderPadding: 20,
-    },
-    background: {
-        fill: "#f8f5ff", disabled: true, active: true,
-        pattern: { hatch: 'o', color: '#e0d5f5', strokeWidth: 0.4, scale: 1.0 }
-    },
-    buildings: { fills: ["#c8a8e8", "#b890d8", "#a878c8"], stroke: "#9060b8", active: true, defaultBuildingHeight: 4 },
-    water: {
-        fill: "#b8d4f8", stroke: "#88a8e8", active: true,
-        pattern: { hatch: 'v', color: '#88a8e8', strokeWidth: 0.6, scale: 0.9 }
-    },
-    sand: { fill: "#faf0d8", stroke: "#e0d0a0", active: true },
-    grass: { fill: "#ccf0d8", stroke: "#88c8a0", active: true },
-    forest: { fill: "#a0ddb0", stroke: "#50a868", active: true },
-    roads: { stroke: "#c0a0e0", active: true },
-    railways: { stroke: "#a888d0", active: true },
-    paths: { stroke: "#d0b8f0", active: true },
-};
 
 // --- Professional: engineering blueprint ---
 export const blueprint: Partial<MicroPaletteWithBorder> = {
@@ -97,28 +76,6 @@ export const blueprint: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#7aaae0", active: true },
     railways: { stroke: "#5484c0", active: true },
     paths: { stroke: "#4070a8", active: true },
-};
-
-// --- Playful bright: tropical citrus ---
-export const citrus: Partial<MicroPaletteWithBorder> = {
-    borderParams: {
-        borderColor: "#ff8c00", borderWidth: 3, borderRadius: 7, borderPadding: 20,
-    },
-    background: { fill: "#fff9e8", disabled: true, active: true },
-    buildings: { fills: ["#ff5733", "#ff8c00", "#ffc300"], stroke: "#cc3300", active: true, defaultBuildingHeight: 5 },
-    water: {
-        fill: "#00b4d8", stroke: "#0096c7", active: true,
-        pattern: { hatch: '.', color: '#0096c7', strokeWidth: 2.4, scale: 1.0 }
-    },
-    sand: { fill: "#ffe5a0", stroke: "#f0c050", active: true },
-    grass: { fill: "#7de07d", stroke: "#20b020", active: true },
-    forest: {
-        fill: "#20a840", stroke: "#108030", active: true,
-        pattern: { hatch: 'o', color: '#108030', strokeWidth: 0.6, scale: 1.0 }
-    },
-    roads: { stroke: "#ff7733", active: true },
-    railways: { stroke: "#cc2200", active: true },
-    paths: { stroke: "#ff8c00", active: true },
 };
 
 // --- Raw concrete brutalism ---
@@ -388,32 +345,26 @@ export const cherry: Partial<MicroPaletteWithBorder> = {
     paths: { stroke: "#d86098", active: true },
 };
 
-// --- Ancient overgrown forgotten city ---
-export const moss: Partial<MicroPaletteWithBorder> = {
+// --- Spring pastels: peach, mint, lavender ---
+export const blossom: Partial<MicroPaletteWithBorder> = {
     borderParams: {
-        borderColor: "#3a6028", borderWidth: 3, borderRadius: 10, borderPadding: 20,
+        borderColor: "#d0a0c0", borderWidth: 2, borderRadius: 24, borderPadding: 20,
     },
     background: {
-        fill: "#0c1408", disabled: true, active: true,
-        pattern: { hatch: 'b', color: '#182008', strokeWidth: 0.6, scale: 1.4 }
+        fill: "#faf5f0", disabled: true, active: true,
+        pattern: { hatch: '.', color: '#eddde8', strokeWidth: 2.0, scale: 1.2 }
     },
-    buildings: { fills: ["#1e3018", "#283a20", "#162808"], stroke: "#0a1806", active: true, defaultBuildingHeight: 5 },
+    buildings: { fills: ["#f0b0a0", "#a8e0c8", "#c8b0e8"], stroke: "#b08080", active: true, defaultBuildingHeight: 4 },
     water: {
-        fill: "#082c16", stroke: "#0c4020", active: true,
-        pattern: { hatch: 's', color: '#106028', strokeWidth: 0.7, scale: 0.9 }
+        fill: "#b8d8f0", stroke: "#88b8e4", active: true,
+        pattern: { hatch: 'v', color: '#88b8e4', strokeWidth: 0.6, scale: 0.9 }
     },
-    sand: { fill: "#1c1a08", stroke: "#2a2808", active: true },
-    grass: {
-        fill: "#243a18", stroke: "#385828", active: true,
-        pattern: { hatch: '/', color: '#385828', strokeWidth: 0.5, scale: 1.1 }
-    },
-    forest: {
-        fill: "#162808", stroke: "#284818", active: true,
-        pattern: { hatch: 'o', color: '#386830', strokeWidth: 0.7, scale: 1.0 }
-    },
-    roads: { stroke: "#4a6c38", active: true },
-    railways: { stroke: "#304820", active: true },
-    paths: { stroke: "#5a8040", active: true },
+    sand: { fill: "#f8eece", stroke: "#d8cc98", active: true },
+    grass: { fill: "#c8ecd4", stroke: "#84c09a", active: true },
+    forest: { fill: "#8ec8a2", stroke: "#50a068", active: true },
+    roads: { stroke: "#d0a8c0", active: true },
+    railways: { stroke: "#b888a8", active: true },
+    paths: { stroke: "#e0c0d8", active: true },
 };
 
 // --- True black + near-white buildings, maximum contrast ---
@@ -438,30 +389,6 @@ export const obsidian: Partial<MicroPaletteWithBorder> = {
     paths: { stroke: "#a0a0a0", active: true },
 };
 
-// --- Deep wine/burgundy + warm champagne buildings ---
-export const merlot: Partial<MicroPaletteWithBorder> = {
-    borderParams: {
-        borderColor: "#6a1830", borderWidth: 3, borderRadius: 10, borderPadding: 20,
-    },
-    background: {
-        fill: "#2d0a18", disabled: true, active: true,
-        pattern: { hatch: '\\', color: '#3d1428', strokeWidth: 0.5, scale: 1.2 }
-    },
-    buildings: { fills: ["#e8d090", "#d4b870", "#f0e0a8"], stroke: "#a89050", active: true, defaultBuildingHeight: 6 },
-    water: {
-        fill: "#06030e", stroke: "#100820", active: true,
-        pattern: { hatch: '-', color: '#180a28', strokeWidth: 0.6, scale: 1.1 }
-    },
-    sand: { fill: "#1c100a", stroke: "#2c1c10", active: true },
-    grass: { fill: "#0e0a08", stroke: "#181008", active: true },
-    forest: {
-        fill: "#080608", stroke: "#141008", active: true,
-        pattern: { hatch: 's', color: '#201010', strokeWidth: 0.6, scale: 0.9 }
-    },
-    roads: { stroke: "#c8a060", active: true },
-    railways: { stroke: "#906830", active: true },
-    paths: { stroke: "#d8b870", active: true },
-};
 
 // --- Deep jade teal + warm ivory buildings ---
 export const jade: Partial<MicroPaletteWithBorder> = {
@@ -488,49 +415,128 @@ export const jade: Partial<MicroPaletteWithBorder> = {
     paths: { stroke: "#88d0b8", active: true },
 };
 
-// --- Pure white + vivid cobalt blue buildings ---
-export const chalk: Partial<MicroPaletteWithBorder> = {
+// --- Vivid festive primaries: cobalt, amber, scarlet ---
+export const carnival: Partial<MicroPaletteWithBorder> = {
     borderParams: {
-        borderColor: "#1a4fc4", borderWidth: 3, borderRadius: 7, borderPadding: 20,
+        borderColor: "#e02828", borderWidth: 3, borderRadius: 7, borderPadding: 20,
     },
-    background: { fill: "#ffffff", disabled: true, active: true },
-    buildings: { fills: ["#1a4fc4", "#0d38a0", "#2660e0"], stroke: "#082080", active: true, defaultBuildingHeight: 6 },
+    background: { fill: "#fdfae8", disabled: true, active: true },
+    buildings: { fills: ["#1a6cd8", "#f5a000", "#e82828"], stroke: "#111111", active: true, defaultBuildingHeight: 5 },
     water: {
-        fill: "#c8e4f8", stroke: "#90c0f0", active: true,
-        pattern: { hatch: 'v', color: '#90c0f0', strokeWidth: 0.7, scale: 0.9 }
+        fill: "#0090c0", stroke: "#006a90", active: true,
+        pattern: { hatch: '~', color: '#006a90', strokeWidth: 0.8, scale: 1.0 }
     },
-    sand: { fill: "#f8f0d8", stroke: "#e0d8b0", active: true },
-    grass: { fill: "#d8f0d8", stroke: "#a0d8a8", active: true },
+    sand: {
+        fill: "#f0d058", stroke: "#c8a818", active: true,
+        pattern: { hatch: '.', color: '#c8a818', strokeWidth: 2.2, scale: 1.3 }
+    },
+    grass: { fill: "#28c048", stroke: "#108828", active: true },
     forest: {
-        fill: "#a8d8b0", stroke: "#60b070", active: true,
-        pattern: { hatch: '-', color: '#60b070', strokeWidth: 0.5, scale: 1.1 }
+        fill: "#0a7028", stroke: "#084c18", active: true,
+        pattern: { hatch: 'o', color: '#084c18', strokeWidth: 0.6, scale: 1.0 }
     },
-    roads: { stroke: "#e84040", active: true },
-    railways: { stroke: "#c02020", active: true },
-    paths: { stroke: "#f06060", active: true },
+    roads: { stroke: "#282828", active: true },
+    railways: { stroke: "#101010", active: true },
+    paths: { stroke: "#484848", active: true },
 };
 
-// --- Deep violet + electric lime buildings ---
-export const grape: Partial<MicroPaletteWithBorder> = {
+// --- Art Deco glamour: emerald, gold, sapphire on charcoal ---
+export const gatsby: Partial<MicroPaletteWithBorder> = {
     borderParams: {
-        borderColor: "#5020a0", borderWidth: 2, borderRadius: 10, borderPadding: 20,
+        borderColor: "#d4af37", borderWidth: 2, borderRadius: 3, borderPadding: 20,
     },
     background: {
-        fill: "#130a28", disabled: true, active: true,
-        pattern: { hatch: 'o', color: '#201040', strokeWidth: 0.5, scale: 1.0 }
+        fill: "#0c0c16", disabled: true, active: true,
+        pattern: { hatch: '+', color: '#141420', strokeWidth: 0.3, scale: 1.0 }
     },
-    buildings: { fills: ["#7ee030", "#5ec010", "#a0f050"], stroke: "#408010", active: true, defaultBuildingHeight: 7 },
+    buildings: { fills: ["#0e8c5a", "#d4af37", "#1e3c80"], stroke: "#082818", active: true, defaultBuildingHeight: 7 },
     water: {
-        fill: "#0a0618", stroke: "#12082c", active: true,
-        pattern: { hatch: '+', color: '#200c40', strokeWidth: 0.4, scale: 0.9 }
+        fill: "#060818", stroke: "#0c1030", active: true,
+        pattern: { hatch: '~', color: '#0c1030', strokeWidth: 0.8, scale: 1.0 }
     },
-    sand: { fill: "#140e06", stroke: "#201808", active: true },
-    grass: { fill: "#0c1808", stroke: "#182808", active: true },
+    sand: { fill: "#141008", stroke: "#201a10", active: true },
+    grass: { fill: "#0a1a10", stroke: "#142818", active: true },
     forest: {
-        fill: "#080e04", stroke: "#102008", active: true,
-        pattern: { hatch: 't', color: '#203818', strokeWidth: 0.6, scale: 0.9 }
+        fill: "#061008", stroke: "#0c1810", active: true,
+        pattern: { hatch: '/', color: '#0e2010', strokeWidth: 0.5, scale: 1.1 }
     },
-    roads: { stroke: "#c050f0", active: true },
-    railways: { stroke: "#8030c0", active: true },
-    paths: { stroke: "#a040e0", active: true },
+    roads: { stroke: "#b09030", active: true },
+    railways: { stroke: "#806020", active: true },
+    paths: { stroke: "#c8a840", active: true },
 };
+
+// --- Japanese woodblock print: vermilion, indigo, ochre on washi ---
+export const ukiyo: Partial<MicroPaletteWithBorder> = {
+    borderParams: {
+        borderColor: "#c04030", borderWidth: 3, borderRadius: 5, borderPadding: 18,
+    },
+    background: {
+        fill: "#e8d8b8", disabled: true, active: true,
+        pattern: { hatch: '/', color: '#d0c098', strokeWidth: 0.4, scale: 1.2 }
+    },
+    buildings: { fills: ["#c04030", "#1a3868", "#c89030"], stroke: "#181018", active: true, defaultBuildingHeight: 5 },
+    water: {
+        fill: "#7ca8a8", stroke: "#5a8890", active: true,
+        pattern: { hatch: '~', color: '#5a8890', strokeWidth: 0.8, scale: 1.0 }
+    },
+    sand: {
+        fill: "#d8c898", stroke: "#b0a070", active: true,
+        pattern: { hatch: '.', color: '#b0a070', strokeWidth: 2.2, scale: 1.3 }
+    },
+    grass: { fill: "#88a868", stroke: "#5a7840", active: true },
+    forest: {
+        fill: "#4c7848", stroke: "#2e5830", active: true,
+        pattern: { hatch: 't', color: '#2e5830', strokeWidth: 0.7, scale: 0.9 }
+    },
+    roads: { stroke: "#1a2848", active: true },
+    railways: { stroke: "#101838", active: true },
+    paths: { stroke: "#704828", active: true },
+};
+
+// --- 1980s Miami Vice: hot pink, electric teal, coral on cream ---
+export const miami: Partial<MicroPaletteWithBorder> = {
+    borderParams: {
+        borderColor: "#f0306c", borderWidth: 3, borderRadius: 20, borderPadding: 18,
+    },
+    background: { fill: "#fef5ee", disabled: true, active: true },
+    buildings: { fills: ["#f0306c", "#00c0b8", "#f06840"], stroke: "#1c1a38", active: true, defaultBuildingHeight: 5 },
+    water: {
+        fill: "#00b0d0", stroke: "#0088a8", active: true,
+        pattern: { hatch: '~', color: '#0088a8', strokeWidth: 0.8, scale: 1.0 }
+    },
+    sand: { fill: "#f8e8a8", stroke: "#d8c060", active: true },
+    grass: { fill: "#30c858", stroke: "#18a038", active: true },
+    forest: {
+        fill: "#18a038", stroke: "#0c7028", active: true,
+        pattern: { hatch: 'o', color: '#0c7028', strokeWidth: 0.6, scale: 1.0 }
+    },
+    roads: { stroke: "#1c1a38", active: true },
+    railways: { stroke: "#100e28", active: true },
+    paths: { stroke: "#302858", active: true },
+};
+
+// --- Autumn foliage: amber, burnt orange, burgundy on dark earth ---
+export const autumn: Partial<MicroPaletteWithBorder> = {
+    borderParams: {
+        borderColor: "#e07810", borderWidth: 3, borderRadius: 10, borderPadding: 20,
+    },
+    background: {
+        fill: "#18100a", disabled: true, active: true,
+        pattern: { hatch: 'b', color: '#221808', strokeWidth: 0.6, scale: 1.4 }
+    },
+    buildings: { fills: ["#e87810", "#c84018", "#8c2030"], stroke: "#180808", active: true, defaultBuildingHeight: 5 },
+    water: {
+        fill: "#2a3848", stroke: "#1c2838", active: true,
+        pattern: { hatch: '-', color: '#1c2838', strokeWidth: 0.7, scale: 1.1 }
+    },
+    sand: { fill: "#281a0c", stroke: "#382410", active: true },
+    grass: { fill: "#4a5020", stroke: "#384018", active: true },
+    forest: {
+        fill: "#2a4020", stroke: "#1c3018", active: true,
+        pattern: { hatch: '\\', color: '#283818', strokeWidth: 0.5, scale: 1.1 }
+    },
+    roads: { stroke: "#382010", active: true },
+    railways: { stroke: "#241408", active: true },
+    paths: { stroke: "#805020", active: true },
+};
+
