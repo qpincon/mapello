@@ -1,5 +1,5 @@
 <svelte:head>
-  <title>CartoSVG</title>
+  <title>Mapello — Editor</title>
 </svelte:head>
 <script>
   import App from 'src/App.svelte';

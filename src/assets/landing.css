@@ -1,0 +1,56 @@
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+body { line-height: 1.6; }
+img, svg { display: block; max-width: 100%; }
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; border: none; background: none; font: inherit; }
+
+/* Design tokens */
+:root {
+  --color-dark: #0f172a;
+  --color-dark-lighter: #1e293b;
+  --color-dark-card: #162032;
+  --color-surface: #f8fafc;
+  --color-white: #ffffff;
+  --color-accent: #2a7d6e;
+  --color-accent-hover: #236859;
+  --color-secondary: #506784;
+  --color-text-on-dark: #e2e8f0;
+  --color-text-on-dark-muted: #94a3b8;
+  --color-text-on-light: #1e293b;
+  --color-text-muted: #64748b;
+  --color-border-subtle: #e2e8f0;
+  --color-border-dark: rgba(255,255,255,0.08);
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 50px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-glow: 0 0 40px rgba(42, 125, 110, 0.25);
+  --transition: 0.25s ease;
+}
+
+/* Scroll-reveal base state — must live here so it's applied at first paint,
+   before Svelte component <style> tags are injected. */
+.animate {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+/* Shared layout utility */
+.l-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Font */
+body {
+  font-family: var(--font-body);
+  color: var(--color-text-on-light);
+}

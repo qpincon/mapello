@@ -819,6 +819,11 @@ export async function exportMicro(
     const overlayNextSibling = selectionOverlay?.nextSibling ?? null;
     selectionOverlay?.remove();
 
+    // Remove ALL foreignObjects before SVGO (element-annotation tooltip, open popover).
+    // Each may contain HTML5 content with void elements (<br>, <img>) that break SVGO's XML parser.
+    const fos = Array.from(svgNode.querySelectorAll('foreignObject'));
+    fos.forEach(fo => document.body.append(fo));
+
     const strippedIds: Array<{ el: Element; id: string }> = [];
     svgNode.querySelectorAll('#micro path').forEach(el => {
         const id = el.getAttribute('id');
@@ -834,6 +839,7 @@ export async function exportMicro(
     // Restore live SVG to its original state
     if (savedStyle !== null) svgNode.setAttribute('style', savedStyle);
     if (selectionOverlay && overlayParent) overlayParent.insertBefore(selectionOverlay, overlayNextSibling);
+    fos.forEach(fo => svgNode.append(fo));
     strippedIds.forEach(({ el, id }) => el.setAttribute('id', id));
     const optimizedSVG = DOM_PARSER.parseFromString(finalSvg, 'image/svg+xml');
     let pathIsBetter = false;

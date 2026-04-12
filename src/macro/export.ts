@@ -43,10 +43,12 @@ export async function exportMacro(
         customAttributions,
     } = options;
     // console.log('options', options);
-    const fo = svg.select('foreignObject').node();
-    // remove foreign object from dom when exporting
-    if (fo) document.body.append(fo as Node);
     const svgNode = svg.node()!;
+    // Remove ALL foreignObjects from the SVG before SVGO.
+    // There can be multiple: macro tooltip, element-annotation tooltip, and/or an open popover.
+    // Each may contain HTML5 content with void elements (<br>, <img>) that break SVGO's XML parser.
+    const fos = Array.from(svgNode.querySelectorAll('foreignObject'));
+    fos.forEach(fo => document.body.append(fo));
 
     // Remove selection overlay from export
     const selectionOverlay = svgNode.querySelector('#selection-overlay');
@@ -85,8 +87,8 @@ export async function exportMacro(
     // Optimize whole SVG
     const finalSvg = SVGO.optimize(svgNode.outerHTML, svgoConfig as Config).data;
 
-    // === re-insert tooltip and contours ===
-    if (fo) svg.node()!.append(fo as Node);
+    // === re-insert foreignObjects and contours ===
+    fos.forEach(fo => svgNode.append(fo));
     contoursWithParents.forEach(([el, parent]) => {
         parent.insertBefore(el, parent.firstChild);
     });
