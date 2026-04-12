@@ -36,7 +36,7 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 
 /* Scroll-reveal base state — must live here so it's applied at first paint,
    before Svelte component <style> tags are injected. */
-.animate {
+.lp-reveal {
   opacity: 0;
   transform: translateY(24px);
 }

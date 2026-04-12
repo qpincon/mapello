@@ -117,19 +117,29 @@
     },
     {
       id: "ukraine",
-      title: "Ukraine — Displaced People",
+      title: "Ukraine — Population by Region",
       description:
-        "A bubble map showing the number of people displaced by the war, by region. Proportional circles make the human scale of the crisis immediately visible.",
-      highlights: ["Bubble map", "Humanitarian data", "Regional breakdown"],
+        "Population across Ukraine's regions shown as proportional circles — a clean bubble map where size tells the story at a glance. One of the most readable ways to compare demographics across a large country.",
+      highlights: ["Bubble map", "Population data", "Regional breakdown"],
       src: "/showcase/macro/ukraine.svg",
       aspectRatio: "1 / 1",
       gradient: "linear-gradient(135deg, #1a2535 0%, #1e3a5a 50%, #1a3050 100%)",
     },
     {
-      id: "we-work",
-      title: "WeWork Locations",
+      id: "italia",
+      title: "Italy — Cities & Regions",
       description:
-        "A world map with color-coded pins for every WeWork office — active, planned, and closed. The kind of bespoke map that would cost thousands at a design agency.",
+        "A stylized map of the Italian peninsula with labeled cities — Roma, Milano, Venezia, Napoli and more. Clean typography and a warm earthy palette make it the kind of reference map you'd want to frame.",
+      highlights: ["City labels", "Country focus", "Warm palette"],
+      src: "/showcase/macro/italia.svg",
+      aspectRatio: "600 / 660",
+      gradient: "linear-gradient(160deg, #f3efec 0%, #e8dfc8 50%, #d4c8a8 100%)",
+    },
+    {
+      id: "we-work",
+      title: "Where We Work",
+      description:
+        "A world map with color-coded dots showing a company's offices around the world — active, planned, and former locations. Exactly the kind of custom map you'd want in an annual report or investor deck.",
       highlights: ["Point data", "Custom markers", "Clean world map"],
       src: "/showcase/macro/we-work.svg",
       aspectRatio: "710 / 520",
@@ -154,7 +164,7 @@
   }
 
   onMount(() => {
-    const els = document.querySelectorAll<HTMLElement>(".animate");
+    const els = document.querySelectorAll<HTMLElement>(".lp-reveal");
     const io = new IntersectionObserver(
       (entries) =>
         entries.forEach((e) => {
@@ -185,18 +195,19 @@
   <div class="hero-bg-glow"></div>
   <div class="l-container hero-inner">
     <div class="hero-text">
-      <div class="hero-badge animate">
+      <div class="hero-wordmark lp-reveal">Mapello</div>
+      <h1 class="hero-headline lp-reveal">
+        The map tool<br /><em>I always wanted.</em>
+      </h1>
+      <p class="hero-sub lp-reveal">
+        Built because every other option was either too technical or produced mediocre-looking output.
+        Design your map, export a single self-contained SVG, paste it into any website — interactive and lightweight, no extra code needed.
+      </p>
+      <div class="hero-badge lp-reveal">
         <span class="badge-dot"></span>
         3 free exports — no account needed
       </div>
-      <h1 class="hero-headline animate">
-        Make maps that<br /><em>people actually want</em><br />to look at
-      </h1>
-      <p class="hero-sub animate">
-        Mapello lets you design beautiful, interactive maps and export them as a single file you can drop into any
-        website — no coding, no subscriptions to get started.
-      </p>
-      <div class="hero-actions animate">
+      <div class="hero-actions lp-reveal">
         <a href="/app" class="btn-primary">Start designing</a>
         <a href="#showcase" class="btn-ghost">See examples</a>
       </div>
@@ -208,28 +219,28 @@
 <section class="values">
   <div class="l-container">
     <div class="values-grid">
-      <div class="animate">
+      <div class="lp-reveal">
         <ValueCard
           icon={ICONS.paste}
           title="One file, works everywhere"
           description="Your map exports as a single file. Paste it into your website, your blog, your presentation — it just works. No plugins, no accounts, no dependencies."
         />
       </div>
-      <div class="animate">
+      <div class="lp-reveal">
         <ValueCard
           icon={ICONS.sparkle}
           title="Looks great out of the box"
           description="Thoughtful defaults, curated color palettes, and subtle effects mean your map looks polished before you've changed a single setting."
         />
       </div>
-      <div class="animate">
+      <div class="lp-reveal">
         <ValueCard
           icon={ICONS.compress}
           title="Fast to load, forever"
           description="Exported maps are aggressively optimized. They stay lightweight as your page grows, and never slow your site down."
         />
       </div>
-      <div class="animate">
+      <div class="lp-reveal">
         <ValueCard
           icon={ICONS.data}
           title="Your spreadsheet becomes a map"
@@ -243,7 +254,7 @@
 <!-- ════════════════════════════ MICRO SHOWCASE ══════════════════════════════════════ -->
 <section id="showcase" class="showcase showcase-dark">
   <div class="l-container">
-    <div class="section-header animate">
+    <div class="section-header lp-reveal">
       <span class="section-tag">City maps</span>
       <h2>Street-level maps that stop the scroll</h2>
       <p>
@@ -252,7 +263,7 @@
       </p>
     </div>
 
-    <div class="theater animate">
+    <div class="theater lp-reveal">
       <div class="theater-stage">
         <div class="theater-display">
           {#key microKey}
@@ -296,7 +307,7 @@
 <!-- ═══════════════════════════════ MACRO SHOWCASE ════════════════════════════════════ -->
 <section class="showcase showcase-light">
   <div class="l-container">
-    <div class="section-header animate">
+    <div class="section-header lp-reveal">
       <span class="section-tag">World maps</span>
       <h2>Turn your data into a map in minutes</h2>
       <p>
@@ -305,7 +316,7 @@
       </p>
     </div>
 
-    <div class="theater animate">
+    <div class="theater lp-reveal">
       <div class="theater-stage">
         <div class="theater-display">
           {#key macroKey}
@@ -349,12 +360,12 @@
 <!-- ══════════════════════════════ FEATURE DEEP-DIVE ════════════════════════════════ -->
 <section class="features">
   <div class="l-container">
-    <div class="section-header animate" style="margin-bottom: 4rem;">
+    <div class="section-header lp-reveal" style="margin-bottom: 4rem;">
       <span class="section-tag">How it works</span>
       <h2>Designed for people, not developers</h2>
     </div>
     <div class="features-list">
-      <div class="animate">
+      <div class="lp-reveal">
         <FeatureRow
           tag="Any angle, any region"
           title="See the world the way you want to show it"
@@ -362,7 +373,7 @@
           placeholderGradient="radial-gradient(ellipse at 50% 40%, #1d3557 0%, #0d1f3c 70%, #060c1a 100%)"
         />
       </div>
-      <div class="animate">
+      <div class="lp-reveal">
         <FeatureRow
           reversed
           tag="Spreadsheet → colored map"
@@ -371,7 +382,7 @@
           placeholderGradient="linear-gradient(160deg, #1e3a5f 0%, #2a5780 60%, #1a3050 100%)"
         />
       </div>
-      <div class="animate">
+      <div class="lp-reveal">
         <FeatureRow
           tag="Annotate freely"
           title="Add context that makes maps memorable"
@@ -379,7 +390,7 @@
           placeholderGradient="linear-gradient(135deg, #2c2a4a 0%, #3d3870 50%, #2a2640 100%)"
         />
       </div>
-      <div class="animate">
+      <div class="lp-reveal">
         <FeatureRow
           reversed
           tag="One file, anywhere"
@@ -395,7 +406,7 @@
 <!-- ══════════════════════════════════ STATS STRIP ═══════════════════════════════════ -->
 <section class="stats">
   <div class="l-container">
-    <div class="stats-grid animate">
+    <div class="stats-grid lp-reveal">
       <div class="stat">
         <span class="stat-value">3 free</span>
         <span class="stat-label">exports to get started</span>
@@ -417,7 +428,7 @@
 <!-- ═══════════════════════════════════ PRICING ══════════════════════════════════════ -->
 <section class="pricing">
   <div class="l-container">
-    <div class="section-header animate">
+    <div class="section-header lp-reveal">
       <span class="section-tag">Pricing</span>
       <h2>Start free. Pay when you're ready.</h2>
       <p>
@@ -426,7 +437,7 @@
       </p>
     </div>
 
-    <div class="pricing-grid animate">
+    <div class="pricing-grid lp-reveal">
       <!-- Free -->
       <div class="pricing-card pricing-free">
         <div class="pricing-card-head">
@@ -576,7 +587,7 @@
 <!-- ════════════════════════════════ FINAL CTA ═══════════════════════════════════════ -->
 <section class="cta">
   <div class="cta-glow"></div>
-  <div class="l-container cta-inner animate">
+  <div class="l-container cta-inner lp-reveal">
     <h2>Your first 3 maps are on us.</h2>
     <p>No account, no credit card. Open the editor and start designing right now.</p>
     <a href="/app" class="btn-primary btn-large">Start designing</a>
@@ -631,11 +642,11 @@
   }
 
   /* ── Scroll animation ── */
-  :global(.animate) {
+  :global(.lp-reveal) {
     animation: scrollReveal 0.65s ease both;
     animation-play-state: paused;
   }
-  :global(.animate.visible) {
+  :global(.lp-reveal.visible) {
     animation-play-state: running;
   }
   @keyframes scrollReveal {
@@ -736,13 +747,12 @@
 
   /* ── Hero ── */
   .hero {
-    min-height: 100vh;
     background-color: var(--color-dark);
     background-image: radial-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px);
     background-size: 28px 28px;
     display: flex;
     align-items: center;
-    padding: 5rem 0 4rem;
+    padding: 7rem 0 6rem;
   }
   .hero-bg-glow {
     position: absolute;
@@ -764,7 +774,15 @@
     flex-direction: column;
     align-items: center;
     gap: 1.5rem;
-    max-width: 720px;
+    max-width: 680px;
+  }
+  .hero-wordmark {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: -0.5rem;
   }
   .hero-badge {
     display: inline-flex;
@@ -788,11 +806,12 @@
     box-shadow: 0 0 6px var(--color-accent);
   }
   .hero-headline {
-    font-size: clamp(2.2rem, 4.5vw, 3.6rem);
+    font-size: clamp(2.4rem, 4.5vw, 3.8rem);
     font-weight: 800;
     line-height: 1.1;
     letter-spacing: -0.02em;
     color: var(--color-text-on-dark);
+    margin-bottom: -0.25rem;
   }
   .hero-headline em {
     font-style: normal;
@@ -802,10 +821,10 @@
     background-clip: text;
   }
   .hero-sub {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     color: var(--color-text-on-dark-muted);
     line-height: 1.75;
-    max-width: 520px;
+    max-width: 560px;
   }
   .hero-actions {
     display: flex;
@@ -833,6 +852,11 @@
   .showcase {
     padding: 5.5rem 0;
   }
+  /* Wider container for showcase sections so maps breathe */
+  .showcase :global(.l-container) {
+    max-width: 1440px;
+    padding: 0 2rem;
+  }
   .showcase-dark {
     background: #111111;
   }
@@ -851,7 +875,7 @@
 
   .theater-stage {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 3fr 2fr;
     gap: 3rem;
     align-items: center;
     margin-bottom: 2rem;

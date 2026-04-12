@@ -33,9 +33,11 @@
 
 @keyframes dash {
     from {
+      stroke-opacity: 1;
       stroke-dashoffset: 1;
     }
     to {
+      stroke-opacity: 1;
       stroke-dashoffset: 0;
     }
 }

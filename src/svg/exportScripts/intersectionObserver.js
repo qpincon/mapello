@@ -16,21 +16,21 @@ function intersectionCallback(entries) {
         const frame = mapElement.querySelector('#frame');
         const hasVisibleFrame = frame && parseFloat(frame.getAttribute('stroke-width') || '0') > 0;
         if (!hasVisibleFrame) mapElement.classList.add('no-frame');
-        mapElement.classList.add('animate');
+        mapElement.classList.add('mapanimate');
         mapElement.querySelectorAll('path, #frame').forEach(pathElem => {
             pathElem.setAttribute('pathLength', 1);
         });
         setTimeout(() => {
-            mapElement.classList.add('animate-transition');
+            mapElement.classList.add('mapanimate-transition');
         }, 1000);
         frame.addEventListener('animationend', () => {
-            mapElement.classList.remove('animate');
+            mapElement.classList.remove('mapanimate');
             __ON_ANIMATION_END__
             mapElement.querySelectorAll('path[pathLength]').forEach(el => {
                 el.removeAttribute('pathLength');
             });
             setTimeout(() => {
-                mapElement.classList.remove('animate-transition');
+                mapElement.classList.remove('mapanimate-transition');
             }, 1000);
         });
     }, 500);
