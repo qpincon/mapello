@@ -1681,23 +1681,21 @@
 
 <div id="contextmenu" class="border rounded" bind:this={contextualMenu} class:hidden={!contextualMenu?.opened}>
     {#snippet linkMenuItem(elemId: string)}
-        {#if !commonState.elementAnnotations?.[elemId]?.popover}
-            {#if commonState.elementLinks?.[elemId]}
-                <div class="px-2 pt-1 menu-link-url">
-                    <small class="text-muted text-truncate d-block">{commonState.elementLinks[elemId]}</small>
-                </div>
-                <div class="menu-link-item d-flex align-items-center px-2 py-1">
-                    <span role="button" class="flex-grow-1" onclick={() => beginAddLink(elemId)}>Edit link</span>
-                    <span
-                        role="button"
-                        class="ms-2 text-danger menu-link-remove"
-                        title="Remove link"
-                        onclick={() => removeLink(elemId)}>×</span
-                    >
-                </div>
-            {:else}
-                <div role="button" class="px-2 py-1" onclick={() => beginAddLink(elemId)}>Add link</div>
-            {/if}
+        {#if commonState.elementLinks?.[elemId]}
+            <div class="px-2 pt-1 menu-link-url">
+                <small class="text-muted text-truncate d-block">{commonState.elementLinks[elemId]}</small>
+            </div>
+            <div class="menu-link-item d-flex align-items-center px-2 py-1">
+                <span role="button" class="flex-grow-1" onclick={() => beginAddLink(elemId)}>Edit link</span>
+                <span
+                    role="button"
+                    class="ms-2 text-danger menu-link-remove"
+                    title="Remove link"
+                    onclick={() => removeLink(elemId)}>×</span
+                >
+            </div>
+        {:else}
+            <div role="button" class="px-2 py-1" onclick={() => beginAddLink(elemId)}>Add link</div>
         {/if}
     {/snippet}
     {#snippet annotationMenuItem(elemId: string)}
