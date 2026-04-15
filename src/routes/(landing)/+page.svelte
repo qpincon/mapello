@@ -16,18 +16,27 @@
       id: "naarden",
       title: "Naarden, Netherlands",
       description:
-        "A perfectly preserved star-shaped fortress from the 1600s — its geometry is so precise it looks drawn with a compass. Great for showing how Mapello handles complex shapes with elegance.",
-      highlights: ["Star fort geometry", "Street-level detail", "Water & ramparts"],
+        "A perfectly preserved star-shaped fortress from the 1600s — its geometry is so precise it looks drawn with a compass. \nTry clicking the cathedral!",
+      highlights: ["Positron palette", "Link on building"],
       src: "/showcase/micro/naarden.svg",
       aspectRatio: "1 / 1",
       gradient: "linear-gradient(135deg, #2d4a35 0%, #3d6645 50%, #4a7a52 100%)",
     },
     {
+      id: "manhattan",
+      title: "Lower Manhattan, 3D",
+      description: "The densest skyline on Earth, rendered with 3D building extrusion.",
+      highlights: ["Obsidian palette", "3D buildings"],
+      src: "/showcase/micro/manhattan.svg",
+      aspectRatio: "1 / 1",
+      gradient: "linear-gradient(135deg, #0a1525 0%, #152035 50%, #1e2d4a 100%)",
+    },
+    {
       id: "bern",
       title: "Bern Old Town, Switzerland",
       description:
-        "A medieval city wrapped in a tight river loop — the Aare curves 270° around it. The result is a map that looks like a work of art even before any styling is applied.",
-      highlights: ["River peninsula", "Historic streets", "Dense urban fabric"],
+        "A medieval city wrapped in a tight river loop — the Aare curves 270° around it.\nClick on the cathedral to have information about it in a popover - created in the editor.",
+      highlights: ["Warm palette", "Popover", "Image along curve"],
       src: "/showcase/micro/bern.svg",
       aspectRatio: "1 / 1",
       gradient: "linear-gradient(135deg, #1a2a3a 0%, #2a3d55 50%, #3a5070 100%)",
@@ -36,28 +45,19 @@
       id: "sagrada",
       title: "Sagrada Família, Barcelona",
       description:
-        "Gaudí's unfinished basilica sits at the heart of Eixample's perfect octagonal city grid. Two kinds of order — organic cathedral and geometric city — in one frame.",
-      highlights: ["Iconic architecture", "Octagonal grid", "Parks & streets"],
+        "Gaudí's basilica sits at the heart of Eixample's perfect octagonal city grid.\nClick on the label or the basilica to have more info.",
+      highlights: ["Gatsby palette", "Popover", "3D buildings"],
       src: "/showcase/micro/sagrada.svg",
       aspectRatio: "1 / 1",
       gradient: "linear-gradient(135deg, #3a2a1a 0%, #5a4a2a 50%, #7a6a3a 100%)",
     },
-    {
-      id: "manhattan",
-      title: "Lower Manhattan, 3D",
-      description:
-        "The densest skyline on Earth, rendered with 3D building extrusion. The Financial District creates a dramatic forest of towers — the kind of view that makes people stop scrolling.",
-      highlights: ["3D buildings", "Skyline density", "Street canyons"],
-      src: "/showcase/micro/manhattan.svg",
-      aspectRatio: "1 / 1",
-      gradient: "linear-gradient(135deg, #0a1525 0%, #152035 50%, #1e2d4a 100%)",
-    },
+
     {
       id: "macau",
       title: "Macau Peninsula",
       description:
-        "Asia's Las Vegas, squeezed onto a tiny peninsula — casino towers next to Portuguese colonial streets. An extreme contrast of scales and eras, all readable on one map.",
-      highlights: ["Mixed density", "Waterfront", "Urban contrast"],
+        "Asia's Las Vegas, squeezed onto a tiny peninsula — casino towers next to Portuguese colonial streets.",
+      highlights: ["Playful palette", "Custom labels", "Custom markers"],
       src: "/showcase/micro/macau.svg",
       aspectRatio: "1 / 1",
       gradient: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
@@ -66,8 +66,8 @@
       id: "central-park",
       title: "Central Park, New York",
       description:
-        "840 acres of parkland carved out of Manhattan's grid — the sharp edge where the city meets nature. One of the most iconic contrasts in urban geography.",
-      highlights: ["Park vs. grid", "Water features", "Path network"],
+        "840 acres of parkland carved out of Manhattan's grid — the sharp edge where the city meets nature.\nHover the park buildings to show the mapello built-in tooltip.",
+      highlights: ["Poster palette", "Tooltip", "Custom labels"],
       src: "/showcase/micro/central-park.svg",
       aspectRatio: "1 / 1",
       gradient: "linear-gradient(135deg, #1a2e1a 0%, #2a4a2a 50%, #3a5c3a 100%)",
@@ -80,7 +80,7 @@
       title: "Europe — GDP per Capita",
       description:
         "A globe centered on Europe, where each country is shaded by wealth per person. Hover any country to see the exact figure. Built from IMF data in minutes.",
-      highlights: ["Globe view", "Color by data", "Hover tooltips"],
+      highlights: ["Globe view", "Continuous choropleth", "Hover tooltips"],
       src: "/showcase/macro/gdp.svg",
       aspectRatio: "1 / 1",
       gradient: "radial-gradient(ellipse at 50% 40%, #1d3557 0%, #0d1f3c 50%, #080f1e 100%)",
@@ -89,8 +89,8 @@
       id: "france",
       title: "French Wine Regions",
       description:
-        "Each French region colored by its dominant wine style, with curved arrows tracing famous wine routes. A hand-drawn circle highlights Bordeaux — the kind of touch that makes a map feel crafted, not generated.",
-      highlights: ["Regional coloring", "Custom annotations", "Freehand drawing"],
+        "Each French region colored by its dominant wine style. Click the cities for more information in popovers.",
+      highlights: ["Mercator", "Categorical choropleth", "Hover tooltips"],
       src: "/showcase/macro/france.svg",
       aspectRatio: "650 / 590",
       gradient: "linear-gradient(160deg, #f5f0e8 0%, #d4c4a0 50%, #c9b28a 100%)",
@@ -108,9 +108,8 @@
     {
       id: "usa",
       title: "US Political Map",
-      description:
-        "A clean choropleth of voting patterns by county, using a red-to-blue gradient. The kind of map you see in election coverage — made in Mapello.",
-      highlights: ["Choropleth coloring", "County level", "Custom palette"],
+      description: "A clean choropleth of voting patterns by county, using a red-to-blue gradient.",
+      highlights: ["Categorical choropleth", "Custom palette"],
       src: "/showcase/macro/usa.svg",
       aspectRatio: "650 / 380",
       gradient: "linear-gradient(135deg, #1a1a3a 0%, #2a2a5a 50%, #1a2a6a 100%)",
@@ -118,9 +117,8 @@
     {
       id: "ukraine",
       title: "Ukraine — Population by Region",
-      description:
-        "Population across Ukraine's regions shown as proportional circles — a clean bubble map where size tells the story at a glance. One of the most readable ways to compare demographics across a large country.",
-      highlights: ["Bubble map", "Population data", "Regional breakdown"],
+      description: "Population across Ukraine's regions.",
+      highlights: ["Continuous choropleth", "Graticule", "Background noise"],
       src: "/showcase/macro/ukraine.svg",
       aspectRatio: "1 / 1",
       gradient: "linear-gradient(135deg, #1a2535 0%, #1e3a5a 50%, #1a3050 100%)",
@@ -129,8 +127,8 @@
       id: "italia",
       title: "Italy — Cities & Regions",
       description:
-        "A stylized map of the Italian peninsula with labeled cities — Roma, Milano, Venezia, Napoli and more. Clean typography and a warm earthy palette make it the kind of reference map you'd want to frame.",
-      highlights: ["City labels", "Country focus", "Warm palette"],
+        "A stylized map of the Italian peninsula with labeled cities — Roma, Milano, Venezia, Napoli and more. Clean typography and a warm earthy palette.",
+      highlights: ["City labels", "Land glow", "Image along curve"],
       src: "/showcase/macro/italia.svg",
       aspectRatio: "600 / 660",
       gradient: "linear-gradient(160deg, #f3efec 0%, #e8dfc8 50%, #d4c8a8 100%)",
@@ -138,9 +136,8 @@
     {
       id: "we-work",
       title: "Where We Work",
-      description:
-        "A world map with color-coded dots showing a company's offices around the world — active, planned, and former locations. Exactly the kind of custom map you'd want in an annual report or investor deck.",
-      highlights: ["Point data", "Custom markers", "Clean world map"],
+      description: "A world map with color-coded dots showing a company's offices around the world.",
+      highlights: ["Categorical choropleth", "Custom markers and labels"],
       src: "/showcase/macro/we-work.svg",
       aspectRatio: "710 / 520",
       gradient: "linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #3a2a1a 100%)",
@@ -188,28 +185,44 @@
   <meta property="og:type" content="website" />
   <link rel="preconnect" href="https://fonts.bunny.net" />
   <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.bunny.net/css?family=cormorant-garamond:400,400i,600,600i&display=swap" rel="stylesheet" />
 </svelte:head>
 
 <!-- ═══════════════════════════════════════ HERO ═══════════════════════════════════════ -->
 <section class="hero">
-  <div class="hero-bg-glow"></div>
+  <svg class="hero-globe" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <clipPath id="globe-clip"><circle cx="300" cy="300" r="284" /></clipPath>
+    </defs>
+    <circle cx="300" cy="300" r="284" stroke="white" stroke-width="0.8" />
+    <g clip-path="url(#globe-clip)" stroke="white">
+      <ellipse cx="300" cy="300" rx="284" ry="76" stroke-width="0.7" />
+      <ellipse cx="300" cy="216" rx="246" ry="66" stroke-width="0.6" />
+      <ellipse cx="300" cy="384" rx="246" ry="66" stroke-width="0.6" />
+      <ellipse cx="300" cy="144" rx="142" ry="38" stroke-width="0.5" />
+      <ellipse cx="300" cy="456" rx="142" ry="38" stroke-width="0.5" />
+      <line x1="300" y1="16" x2="300" y2="584" stroke-width="0.6" />
+      <ellipse cx="300" cy="300" rx="142" ry="284" stroke-width="0.6" />
+      <ellipse cx="300" cy="300" rx="246" ry="284" stroke-width="0.6" />
+    </g>
+  </svg>
   <div class="l-container hero-inner">
     <div class="hero-text">
-      <div class="hero-wordmark lp-reveal">Mapello</div>
+      <div class="hero-eyebrow lp-reveal">
+        <span class="eyebrow-rule"></span>
+        <span>Mapello</span>
+        <span class="eyebrow-rule"></span>
+      </div>
       <h1 class="hero-headline lp-reveal">
         The map tool<br /><em>I always wanted.</em>
       </h1>
       <p class="hero-sub lp-reveal">
-        Built because every other option was either too technical or produced mediocre-looking output.
-        Design your map, export a single self-contained SVG, paste it into any website — interactive and lightweight, no extra code needed.
+        Too technical or too ugly — that was always the trade-off. Export a single self-contained SVG, paste it
+        anywhere. Interactive, lightweight, no code.
       </p>
-      <div class="hero-badge lp-reveal">
-        <span class="badge-dot"></span>
-        3 free exports — no account needed
-      </div>
       <div class="hero-actions lp-reveal">
         <a href="/app" class="btn-primary">Start designing</a>
-        <a href="#showcase" class="btn-ghost">See examples</a>
+        <a href="#showcase" class="btn-text-link">See examples</a>
       </div>
     </div>
   </div>
@@ -397,6 +410,14 @@
           title="Paste it in. That's literally it."
           description="The exported map is a single, self-contained file. Copy it, paste it into your site's HTML, and it appears — interactive tooltips and all. No extra scripts, no CDN, no configuration."
           placeholderGradient="linear-gradient(135deg, #0f2a1a 0%, #1a4a2e 50%, #0d2018 100%)"
+        />
+      </div>
+      <div class="lp-reveal">
+        <FeatureRow
+          tag="No lock-in, ever"
+          title="Your maps are yours. Forever."
+          description="There is no Mapello inside your exported file — just SVG. It runs on its own, in any browser, with no dependency on our servers. Cancel your account tomorrow and every map you've ever exported keeps working, unchanged, forever."
+          placeholderGradient="linear-gradient(135deg, #100e08 0%, #261e10 50%, #100e08 100%)"
         />
       </div>
     </div>
@@ -681,22 +702,20 @@
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    padding: 0.8rem 1.75rem;
+    padding: 0.75rem 1.75rem;
     background: var(--color-accent);
     color: white;
-    font-weight: 600;
-    font-size: 0.95rem;
-    border-radius: var(--radius-pill);
+    font-weight: 500;
+    font-size: 0.88rem;
+    letter-spacing: 0.03em;
+    border-radius: 6px;
     transition:
       background var(--transition),
-      transform var(--transition),
-      box-shadow var(--transition);
-    box-shadow: 0 4px 16px rgba(42, 125, 110, 0.35);
+      transform var(--transition);
   }
   .btn-primary:hover {
     background: var(--color-accent-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(42, 125, 110, 0.45);
+    transform: translateY(-1px);
   }
   .btn-large {
     padding: 1rem 2.5rem;
@@ -725,6 +744,27 @@
     background: rgba(255, 255, 255, 0.06);
   }
 
+  .btn-text-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: rgba(255, 255, 255, 0.38);
+    transition: color var(--transition);
+  }
+  .btn-text-link::after {
+    content: "→";
+    transition: transform var(--transition);
+  }
+  .btn-text-link:hover {
+    color: rgba(255, 255, 255, 0.65);
+  }
+  .btn-text-link:hover::after {
+    transform: translateX(3px);
+  }
+
   .btn-outline {
     display: inline-flex;
     align-items: center;
@@ -747,20 +787,29 @@
 
   /* ── Hero ── */
   .hero {
-    background-color: var(--color-dark);
-    background-image: radial-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px);
-    background-size: 28px 28px;
+    background: #060b12;
     display: flex;
     align-items: center;
-    padding: 7rem 0 6rem;
+    padding: 9rem 0 8rem;
   }
-  .hero-bg-glow {
+  .hero::before {
+    content: "";
     position: absolute;
-    top: -20%;
-    right: -10%;
-    width: 60%;
-    height: 80%;
-    background: radial-gradient(ellipse, rgba(42, 125, 110, 0.12) 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    height: 90%;
+    background: radial-gradient(ellipse, rgba(42, 125, 110, 0.06) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .hero-globe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(88vw, 620px);
+    opacity: 0.045;
     pointer-events: none;
   }
   .hero-inner {
@@ -768,68 +817,61 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
+    position: relative;
   }
   .hero-text {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
-    max-width: 680px;
+    gap: 1.75rem;
+    max-width: 700px;
   }
-  .hero-wordmark {
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--color-accent);
-    margin-bottom: -0.5rem;
-  }
-  .hero-badge {
-    display: inline-flex;
+  .hero-eyebrow {
+    display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    color: var(--color-text-on-dark-muted);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0.35rem 0.85rem;
-    border-radius: var(--radius-pill);
-    width: fit-content;
-    background: rgba(255, 255, 255, 0.04);
+    gap: 1rem;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.3);
+    margin-bottom: -0.75rem;
   }
-  .badge-dot {
-    width: 6px;
-    height: 6px;
-    background: var(--color-accent);
-    border-radius: 50%;
-    box-shadow: 0 0 6px var(--color-accent);
+  .eyebrow-rule {
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
   }
   .hero-headline {
-    font-size: clamp(2.4rem, 4.5vw, 3.8rem);
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-    color: var(--color-text-on-dark);
-    margin-bottom: -0.25rem;
+    font-family: "Cormorant Garamond", "Palatino Linotype", "Palatino", Georgia, serif;
+    font-size: clamp(3.2rem, 5.8vw, 5.4rem);
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: rgba(255, 255, 255, 0.82);
   }
   .hero-headline em {
-    font-style: normal;
-    background: linear-gradient(120deg, #2a7d6e, #4ab8a3, #7dd3c0);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-style: italic;
+    font-weight: 600;
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    -webkit-text-fill-color: #fff;
+    color: #fff;
   }
   .hero-sub {
-    font-size: 1.1rem;
-    color: var(--color-text-on-dark-muted);
-    line-height: 1.75;
-    max-width: 560px;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.4);
+    line-height: 1.85;
+    max-width: 520px;
   }
   .hero-actions {
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
+    justify-content: center;
   }
   /* ── Values ── */
   .values {
@@ -917,6 +959,7 @@
   .theater-desc {
     font-size: 0.95rem;
     line-height: 1.75;
+    white-space: pre-line;
   }
   .showcase-dark .theater-desc {
     color: var(--color-text-on-dark-muted);
