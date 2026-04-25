@@ -4,7 +4,7 @@ import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { env } from '$env/dynamic/private';
 import { db } from './db';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import disposableDomains from 'disposable-email-domains';
 
 const disposableDomainSet = new Set(disposableDomains);
@@ -12,14 +12,7 @@ const disposableDomainSet = new Set(disposableDomains);
 const googleClientId = env.GOOGLE_CLIENT_ID;
 const googleClientSecret = env.GOOGLE_CLIENT_SECRET;
 
-const transporter = nodemailer.createTransport({
-	host: env.SMTP_HOST ?? 'localhost',
-	port: Number(env.SMTP_PORT ?? 1025),
-	secure: env.SMTP_SECURE === 'true',
-	...(env.SMTP_USER
-		? { auth: { user: env.SMTP_USER, pass: env.SMTP_PASS } }
-		: {}),
-});
+const resend = new Resend(env.RESEND_API_KEY);
 
 export const auth = betterAuth({
 	secret: env.BETTER_AUTH_SECRET ?? 'dev-secret-change-in-production',
@@ -28,10 +21,10 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true,
 		sendResetPassword: async ({ user, url }) => {
-			await transporter.sendMail({
-				from: env.SMTP_FROM ?? 'CartoSVG <noreply@localhost>',
+			await resend.emails.send({
+				from: 'Mapello <noreply@mapello.net>',
 				to: user.email,
-				subject: 'Reset your CartoSVG password',
+				subject: 'Reset your Mapello password',
 				text: `Click the link below to reset your password:\n\n${url}\n\nThis link expires in 1 hour.`,
 				html: `<p>Click the link below to reset your password:</p><p><a href="${url}">${url}</a></p><p>This link expires in 1 hour.</p>`,
 			});
