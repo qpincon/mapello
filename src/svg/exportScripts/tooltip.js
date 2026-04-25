@@ -11,6 +11,7 @@ tooltip.element = constructTooltip({}, '', '');
 mapElement.append(tooltip.element);
 tooltip.element.style.display = 'none';
 
+
 function constructTooltip(rawData, templateStr, shapeId) {
     if (!rawData) return;
     // Check if all data values are empty/zero — if so, don't show tooltip
@@ -56,22 +57,29 @@ function onMouseMove(e) {
     var shapeId = shapeElem.getAttribute?.('id') ?? null;
     if (!shapeId || _annotationIds.has(shapeId)) return hideTooltip();
 
-    var mapBounds = mapElement.querySelector('#frame').getBoundingClientRect();
-    var scaleX = width / mapBounds.width;
-    var scaleY = height / mapBounds.height;
-    var posX = (e.clientX - mapBounds.left + 10) * scaleX;
-    var posY = (e.clientY - mapBounds.top + 10) * scaleY;
+    var ctm = mapElement.getScreenCTM();
+    var sx = ctm ? ctm.a : 1;
+    var sy = ctm ? ctm.d : 1;
+    var invSx = 1 / sx;
+    var invSy = 1 / sy;
+    var svgLeft = ctm ? ctm.e : 0;
+    var svgTop = ctm ? ctm.f : 0;
+    var svgRight = svgLeft + width * sx;
+    var svgBottom = svgTop + height * sy;
+    var posX = e.clientX - svgLeft + 10; // screen pixels
+    var posY = e.clientY - svgTop + 10;
 
     if (tooltip.shapeId === shapeId) {
         // Reposition — tooltip is visible, bounds are available for edge correction
         if (tooltip.measuring) return;
         var ttBounds = tooltip.element.firstChild?.firstChild?.getBoundingClientRect?.();
         if (ttBounds && ttBounds.width > 0) {
-            if (mapBounds.right - ttBounds.width < e.clientX + 10) posX = (e.clientX - mapBounds.left - ttBounds.width - 20) * scaleX;
-            if (mapBounds.bottom - ttBounds.height < e.clientY + 10) posY = (e.clientY - mapBounds.top - ttBounds.height - 20) * scaleY;
+            if (svgRight - ttBounds.width < e.clientX + 10) posX -= ttBounds.width + 20;
+            if (svgBottom - ttBounds.height < e.clientY + 10) posY -= ttBounds.height + 20;
         }
         tooltip.element.setAttribute('x', posX);
         tooltip.element.setAttribute('y', posY);
+        tooltip.element.setAttribute('transform', 'scale(' + invSx + ',' + invSy + ')');
         tooltip.element.style.display = 'block';
         tooltip.element.style.opacity = 1;
     } else {
@@ -85,6 +93,7 @@ function onMouseMove(e) {
         tooltip.shapeId = shapeId;
         tooltip.element.setAttribute('x', posX);
         tooltip.element.setAttribute('y', posY);
+        tooltip.element.setAttribute('transform', 'scale(' + invSx + ',' + invSy + ')');
         tooltip.element.style.display = 'block';
         tooltip.element.style.opacity = 0;
         tooltip.measuring = true;
@@ -92,8 +101,8 @@ function onMouseMove(e) {
             tooltip.measuring = false;
             var nb = tooltip.element.firstChild?.firstChild?.getBoundingClientRect?.();
             if (nb && nb.width > 0) {
-                if (mapBounds.right - nb.width < e.clientX + 10) posX = (e.clientX - mapBounds.left - nb.width - 20) * scaleX;
-                if (mapBounds.bottom - nb.height < e.clientY + 10) posY = (e.clientY - mapBounds.top - nb.height - 20) * scaleY;
+                if (svgRight - nb.width < e.clientX + 10) posX -= nb.width + 20;
+                if (svgBottom - nb.height < e.clientY + 10) posY -= nb.height + 20;
                 tooltip.element.setAttribute('x', posX);
                 tooltip.element.setAttribute('y', posY);
             }

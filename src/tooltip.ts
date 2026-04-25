@@ -1,6 +1,11 @@
 import { extractTemplateVariables, formatUnicorn } from './util/common';
 import type { ElementAnnotations, FormatterObject, Tooltip, TooltipDefs, ZonesData } from './types';
 
+function getMapScale(map: SVGElement): { sx: number; sy: number } {
+    const ctm = (map as SVGSVGElement).getScreenCTM();
+    return { sx: ctm?.a ?? 1, sy: ctm?.d ?? 1 };
+}
+
 export function addTooltipListener(
     map: SVGSVGElement,
     tooltipDefs: TooltipDefs,
@@ -95,7 +100,7 @@ function onMouseMove(
     const ann = elementAnnotations?.[shapeId ?? ''];
     if (ann?.tooltip) {
         const mapBounds = map.getBoundingClientRect();
-        return showElementAnnotationTooltip(ann.tooltip, shapeId!, e.clientX - mapBounds.left + 10, e.clientY - mapBounds.top + 10, map, tooltip);
+        return showElementAnnotationTooltip(ann.tooltip, shapeId!, e.clientX, e.clientY, mapBounds, map, tooltip);
     }
 
     if (!tooltipDefs?.[groupId]?.enabled || !(groupId in zonesData)) return hideTooltip(tooltip);
@@ -103,6 +108,7 @@ function onMouseMove(
     const mapBounds = map.getBoundingClientRect();
     let posX = e.clientX - mapBounds.left + 10;
     let posY = e.clientY - mapBounds.top + 10;
+    const { sx, sy } = getMapScale(map);
 
     if (shapeId && tooltip.shapeId === shapeId) {
         // Reposition — tooltip is visible, bounds are available for edge correction
@@ -112,8 +118,9 @@ function onMouseMove(
             if (mapBounds.right - ttBounds.width < e.clientX + 10) posX -= ttBounds.width + 20;
             if (mapBounds.bottom - ttBounds.height < e.clientY + 10) posY -= ttBounds.height + 20;
         }
-        tooltip.element.setAttribute('x', posX.toString());
-        tooltip.element.setAttribute('y', posY.toString());
+        tooltip.element.setAttribute('x', (posX / sx).toString());
+        tooltip.element.setAttribute('y', (posY / sy).toString());
+        tooltip.element.setAttribute('transform', `scale(${1 / sx},${1 / sy})`);
         tooltip.element.style.display = 'block';
         tooltip.element.style.opacity = '1';
     } else {
@@ -125,8 +132,9 @@ function onMouseMove(
         tooltip.element.replaceWith(tt);
         tooltip.element = tt;
         tooltip.shapeId = shapeId;
-        tooltip.element.setAttribute('x', posX.toString());
-        tooltip.element.setAttribute('y', posY.toString());
+        tooltip.element.setAttribute('x', (posX / sx).toString());
+        tooltip.element.setAttribute('y', (posY / sy).toString());
+        tooltip.element.setAttribute('transform', `scale(${1 / sx},${1 / sy})`);
         tooltip.element.style.opacity = '0';
         tooltip.measuring = true;
         requestAnimationFrame(() => {
@@ -135,8 +143,8 @@ function onMouseMove(
             if (newBounds && newBounds.width > 0) {
                 if (mapBounds.right - newBounds.width < e.clientX + 10) posX -= newBounds.width + 20;
                 if (mapBounds.bottom - newBounds.height < e.clientY + 10) posY -= newBounds.height + 20;
-                tooltip.element.setAttribute('x', posX.toString());
-                tooltip.element.setAttribute('y', posY.toString());
+                tooltip.element.setAttribute('x', (posX / sx).toString());
+                tooltip.element.setAttribute('y', (posY / sy).toString());
             }
             tooltip.element.style.opacity = '1';
         });
@@ -146,11 +154,17 @@ function onMouseMove(
 function showElementAnnotationTooltip(
     html: string,
     shapeId: string,
-    posX: number,
-    posY: number,
+    clientX: number,
+    clientY: number,
+    mapBounds: DOMRect,
     map: SVGElement,
     tooltip: Tooltip,
 ): void {
+    const offset = 10;
+    let posX = clientX - mapBounds.left + offset;
+    let posY = clientY - mapBounds.top + offset;
+    const { sx, sy } = getMapScale(map);
+
     if (tooltip.shapeId !== shapeId || tooltip.html !== html) {
         const elem = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
         elem.setAttribute('width', '1');
@@ -168,11 +182,36 @@ function showElementAnnotationTooltip(
         tooltip.element = elem;
         tooltip.shapeId = shapeId;
         tooltip.html = html;
+        tooltip.element.setAttribute('x', (posX / sx).toString());
+        tooltip.element.setAttribute('y', (posY / sy).toString());
+        tooltip.element.setAttribute('transform', `scale(${1 / sx},${1 / sy})`);
+        tooltip.element.style.display = 'block';
+        tooltip.element.style.opacity = '0';
+        tooltip.measuring = true;
+        requestAnimationFrame(() => {
+            tooltip.measuring = false;
+            const ttBounds = (tooltip.element.firstChild as HTMLElement)?.getBoundingClientRect();
+            if (ttBounds && ttBounds.width > 0) {
+                if (mapBounds.right - ttBounds.width < clientX + offset) posX -= ttBounds.width + offset * 2;
+                if (mapBounds.bottom - ttBounds.height < clientY + offset) posY -= ttBounds.height + offset * 2;
+                tooltip.element.setAttribute('x', (posX / sx).toString());
+                tooltip.element.setAttribute('y', (posY / sy).toString());
+            }
+            tooltip.element.style.opacity = '1';
+        });
+    } else {
+        if (tooltip.measuring) return;
+        const ttBounds = (tooltip.element.firstChild as HTMLElement)?.getBoundingClientRect();
+        if (ttBounds && ttBounds.width > 0) {
+            if (mapBounds.right - ttBounds.width < clientX + offset) posX -= ttBounds.width + offset * 2;
+            if (mapBounds.bottom - ttBounds.height < clientY + offset) posY -= ttBounds.height + offset * 2;
+        }
+        tooltip.element.setAttribute('x', (posX / sx).toString());
+        tooltip.element.setAttribute('y', (posY / sy).toString());
+        tooltip.element.setAttribute('transform', `scale(${1 / sx},${1 / sy})`);
+        tooltip.element.style.display = 'block';
+        tooltip.element.style.opacity = '1';
     }
-    tooltip.element.setAttribute('x', posX.toString());
-    tooltip.element.setAttribute('y', posY.toString());
-    tooltip.element.style.display = 'block';
-    tooltip.element.style.opacity = '1';
 }
 
 export function addElementAnnotationListener(
@@ -198,16 +237,7 @@ export function addElementAnnotationListener(
         if (!ann?.tooltip) return hideTooltip(tooltip);
 
         const mapBounds = map.getBoundingClientRect();
-        let posX = e.clientX - mapBounds.left + 12;
-        const posY = e.clientY - mapBounds.top + 12;
-
-        // Fix right-edge clipping: shift tooltip to the left if it would overflow
-        const ttBounds = (tooltip.element.firstChild?.firstChild as HTMLElement)?.getBoundingClientRect();
-        if (ttBounds?.width > 0 && mapBounds.right - ttBounds.width < e.clientX + 12) {
-            posX -= ttBounds.width + 24;
-        }
-
-        showElementAnnotationTooltip(ann.tooltip, shapeId, posX, posY, map, tooltip);
+        showElementAnnotationTooltip(ann.tooltip, shapeId, e.clientX, e.clientY, mapBounds, map, tooltip);
     });
 }
 
