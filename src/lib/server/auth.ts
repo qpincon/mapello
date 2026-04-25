@@ -39,6 +39,14 @@ export const auth = betterAuth({
 				},
 			}
 			: {}),
+		...(env.FACEBOOK_CLIENT_ID && env.FACEBOOK_CLIENT_SECRET
+			? {
+				facebook: {
+					clientId: env.FACEBOOK_CLIENT_ID,
+					clientSecret: env.FACEBOOK_CLIENT_SECRET,
+				},
+			}
+			: {}),
 	},
 	databaseHooks: {
 		user: {

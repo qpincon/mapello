@@ -68,6 +68,16 @@
         }
     }
 
+    async function handleFacebookSignIn() {
+        loading = true;
+        try {
+            await signIn.social({ provider: 'facebook', callbackURL: '/app' });
+        } catch {
+            errorMsg = 'Facebook sign-in failed';
+            loading = false;
+        }
+    }
+
     async function handleForgotPassword(e: Event) {
         e.preventDefault();
         errorMsg = '';
@@ -159,13 +169,25 @@
                 onclick={handleGoogleSignIn}
                 disabled={loading}
             >
-            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-                <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2v6h7.7c4.5-4.2 7.1-10.3 7.1-17.2z"/>
-                <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.3 0-11.6-4.2-13.5-9.9H2.6v6.2C6.5 42.7 14.7 48 24 48z"/>
-                <path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.7-2.9-.7-4.6s.3-3.2.7-4.6v-6.2H2.6C1 16.5 0 20.1 0 24s1 7.5 2.6 10.8l7.9-6.2z"/>
-                <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.9 2.4 30.5 0 24 0 14.7 0 6.5 5.3 2.6 13.2l7.9 6.2C12.4 13.7 17.7 9.5 24 9.5z"/>
-            </svg>
+                <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                    <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2v6h7.7c4.5-4.2 7.1-10.3 7.1-17.2z"/>
+                    <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.3 0-11.6-4.2-13.5-9.9H2.6v6.2C6.5 42.7 14.7 48 24 48z"/>
+                    <path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.7-2.9-.7-4.6s.3-3.2.7-4.6v-6.2H2.6C1 16.5 0 20.1 0 24s1 7.5 2.6 10.8l7.9-6.2z"/>
+                    <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.9 2.4 30.5 0 24 0 14.7 0 6.5 5.3 2.6 13.2l7.9 6.2C12.4 13.7 17.7 9.5 24 9.5z"/>
+                </svg>
                 Continue with Google
+            </button>
+
+            <button
+                class="btn btn-facebook w-100 d-flex align-items-center justify-content-center gap-2 mt-2"
+                type="button"
+                onclick={handleFacebookSignIn}
+                disabled={loading}
+            >
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                    <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.532-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+                </svg>
+                Continue with Facebook
             </button>
         {:else}
             {#if forgotSent}
@@ -242,4 +264,14 @@
     }
     .divider::before { left: 0; }
     .divider::after { right: 0; }
+    .btn-facebook {
+        background-color: #1877F2;
+        border-color: #1877F2;
+        color: #fff;
+    }
+    .btn-facebook:hover:not(:disabled) {
+        background-color: #166fe5;
+        border-color: #166fe5;
+        color: #fff;
+    }
 </style>
