@@ -37,6 +37,7 @@
     import { type ExportOptions } from "./svg/export";
     import ExportModal from "./components/ExportModal.svelte";
     import AuthModal from "./components/AuthModal.svelte";
+    import UpgradeModal from "./components/UpgradeModal.svelte";
     import ProjectDropdown from "./components/ProjectDropdown.svelte";
     import { signOut } from "$lib/auth-client";
     import { page } from "$app/state";
@@ -146,6 +147,7 @@
     let showExportConfirm = $state(false);
     let showAuthModal = $state(false);
     let authAfterCallback: (() => void) | undefined = $state(undefined);
+    let showUpgradeModal = $state(false);
     const ACTIVE_PROJECT_KEY = "map-builder-active-project";
     const _storedProject = (() => {
         try {
@@ -1985,6 +1987,7 @@
                             onSaveError={(msg) => {
                                 serverSyncError = msg;
                             }}
+                            onUpgrade={() => (showUpgradeModal = true)}
                         />
                     {/if}
                 </div>
@@ -2094,9 +2097,12 @@
     computeMacroCss={() => macroSidebar!.computeCss()}
     onExport={validateExport}
     onClosed={() => (showExportConfirm = false)}
+    onUpgrade={() => { showExportConfirm = false; showUpgradeModal = true; }}
+    exportsRemaining={page.data.exportsRemaining ?? null}
 />
 
 <AuthModal bind:open={showAuthModal} afterAuth={authAfterCallback} />
+<UpgradeModal open={showUpgradeModal} onClosed={() => (showUpgradeModal = false)} />
 
 <Modal
     open={showProjectLoginModal}

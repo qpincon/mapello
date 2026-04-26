@@ -16,9 +16,20 @@
         computeMacroCss: () => string;
         onExport: (options: ExportOptions) => void;
         onClosed: () => void;
+        onUpgrade: () => void;
+        /** null = Pro / unlimited; number = free quota left */
+        exportsRemaining: number | null;
     }
 
-    let { open = $bindable(), mode, svgNode, inlineFontUsed, computeMacroCss, onExport, onClosed }: Props = $props();
+    let { open = $bindable(), mode, svgNode, inlineFontUsed, computeMacroCss, onExport, onClosed, onUpgrade, exportsRemaining }: Props = $props();
+
+    let localRemaining = $state(exportsRemaining);
+    let exportLoading = $state(false);
+
+    $effect(() => {
+        // Sync localRemaining when the prop changes (e.g. after invalidateAll)
+        localRemaining = exportsRemaining;
+    });
 
     let animate = $state(false);
     let useViewBox = $state(false);
@@ -130,8 +141,21 @@
         modalWidth = `${Math.max(600, Math.min(needed, maxWidth))}px`;
     }
 
-    function onExportClicked() {
-        onExport(buildOptions());
+    async function onExportClicked() {
+        exportLoading = true;
+        try {
+            const res = await fetch("/api/billing/consume-export", { method: "POST" });
+            if (res.status === 403) {
+                localRemaining = 0;
+                return;
+            }
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.remaining !== -1) localRemaining = data.remaining;
+            onExport(buildOptions());
+        } finally {
+            exportLoading = false;
+        }
     }
 
     let wasOpen = false;
@@ -325,8 +349,18 @@
             </div>
         </div>
     </div>
-    <div slot="footer" class="d-flex justify-content-end">
-        <button type="button" class="btn btn-success" onclick={onExportClicked}>Export</button>
+    <div slot="footer" class="footer-row">
+        {#if localRemaining === 0}
+            <span class="quota-msg">You've used all your free exports.</span>
+            <button type="button" class="btn btn-primary" onclick={onUpgrade}>Upgrade to Pro</button>
+        {:else}
+            {#if localRemaining !== null}
+                <span class="quota-msg">{localRemaining} free export{localRemaining === 1 ? "" : "s"} remaining</span>
+            {/if}
+            <button type="button" class="btn btn-success" onclick={onExportClicked} disabled={exportLoading}>
+                {exportLoading ? "Exporting…" : "Export"}
+            </button>
+        {/if}
     </div>
 </Modal>
 
@@ -386,5 +420,19 @@
     .remove-attr-btn {
         padding: 0.1rem 0.4rem;
         line-height: 1;
+    }
+    .footer-row {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        width: 100%;
+    }
+    .quota-msg {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    .quota-msg a {
+        color: #0d6efd;
     }
 </style>

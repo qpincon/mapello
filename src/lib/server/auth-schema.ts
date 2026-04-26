@@ -16,6 +16,9 @@ export const user = sqliteTable("user", {
     .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+  // billing columns
+  paddleCustomerId: text("paddle_customer_id").unique(),
+  exportCount: integer("export_count").notNull().default(0),
 });
 
 export const session = sqliteTable(

@@ -39,6 +39,8 @@
   },
   "dependencies": {
     "@mapbox/tile-cover": "^3.0.2",
+    "@paddle/paddle-js": "^1.6.4",
+    "@paddle/paddle-node-sdk": "^3.8.0",
     "@popperjs/core": "^2.11.8",
     "@protomaps/basemaps": "^5.5.1",
     "@turf/area": "^7.2.0",

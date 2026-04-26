@@ -9,6 +9,7 @@ export default defineConfig({
     }
   },
   server: {
+    allowedHosts: true,
     watch: {
       ignored: ["**/src/assets/layers/**"]
     }

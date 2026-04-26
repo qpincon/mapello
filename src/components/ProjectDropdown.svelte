@@ -6,6 +6,7 @@
     import { saveProjectToServer } from "../util/save";
     import Icon from "./Icon.svelte";
     import { icons } from "../shared/icons";
+    import { page } from "$app/state";
 
     interface CloudProject {
         id: number;
@@ -20,6 +21,7 @@
         getProjectJson: () => string;
         applyState: (state: GlobalState) => Promise<void>;
         onSaveError: (message: string) => void;
+        onUpgrade: () => void;
     }
 
     let {
@@ -28,6 +30,7 @@
         getProjectJson,
         applyState,
         onSaveError,
+        onUpgrade,
     }: Props = $props();
 
     let toggleEl: HTMLElement;
@@ -195,6 +198,24 @@
             month: "short",
             day: "numeric",
         });
+    }
+
+    let portalLoading = $state(false);
+    const isPro = $derived(!!page.data.subscription);
+    const exportsRemaining = $derived(page.data.exportsRemaining);
+
+    async function openBillingPortal() {
+        portalLoading = true;
+        try {
+            const res = await fetch("/api/billing/portal", { method: "POST" });
+            if (!res.ok) throw new Error();
+            const { url } = await res.json();
+            window.open(url, "_blank");
+        } catch {
+            errorMsg = "Could not open billing portal.";
+        } finally {
+            portalLoading = false;
+        }
     }
 </script>
 
@@ -410,6 +431,30 @@
                 </button>
             {/if}
         </li>
+
+        <!-- Billing status footer -->
+        {#if page.data.user}
+            <li class="billing-footer">
+                {#if isPro}
+                    <span class="plan-badge pro">Pro</span>
+                    <button
+                        class="billing-link"
+                        type="button"
+                        onclick={openBillingPortal}
+                        disabled={portalLoading}
+                    >
+                        {portalLoading ? "Opening…" : "Manage billing"}
+                    </button>
+                {:else}
+                    <span class="exports-left">
+                        {exportsRemaining ?? 0} free export{exportsRemaining === 1 ? "" : "s"} left
+                    </span>
+                    <button class="billing-link upgrade-link" type="button" onclick={() => { dropdown.hide(); onUpgrade(); }}>
+                        Upgrade
+                    </button>
+                {/if}
+            </li>
+        {/if}
     </ul>
 </div>
 
@@ -471,5 +516,47 @@
     }
     .icon-btn.danger {
         color: #dc3545;
+    }
+    .billing-footer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-top: 1px solid #e9ecef;
+        margin-top: 4px;
+        font-size: 0.8rem;
+    }
+    .plan-badge {
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .plan-badge.pro {
+        background: #0d6efd;
+        color: white;
+    }
+    .exports-left {
+        color: #6c757d;
+        flex-grow: 1;
+    }
+    .billing-link {
+        background: none;
+        border: none;
+        color: #0d6efd;
+        padding: 0;
+        cursor: pointer;
+        font-size: 0.8rem;
+        text-decoration: none;
+    }
+    .billing-link:hover {
+        text-decoration: underline;
+    }
+    .billing-link:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    .upgrade-link {
+        font-weight: 600;
     }
 </style>

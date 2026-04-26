@@ -10,6 +10,8 @@ declare global {
 			user: User | null;
 			session: Session | null;
 			isSuperUser: boolean;
+			subscription: import('$lib/server/subscription-schema').Subscription | null;
+			exportsRemaining: number | null;
 		}
 	}
 }
