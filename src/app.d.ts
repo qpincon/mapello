@@ -9,6 +9,7 @@ declare global {
 		interface PageData {
 			user: User | null;
 			session: Session | null;
+			isSuperUser: boolean;
 		}
 	}
 }

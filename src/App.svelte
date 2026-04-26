@@ -157,6 +157,7 @@
     let currentProjectName = $state(_storedProject?.name ?? "Project 1");
     let activeProjectId = $state<number | null>(typeof _storedProject?.id === "number" ? _storedProject.id : null);
     const currentUser = $derived(page.data.user ?? null);
+    const isSuperUser = $derived(page.data.isSuperUser ?? false);
 
     $effect(() => {
         if (activeProjectId) {
@@ -1608,6 +1609,7 @@
     }
 
     function validateExport(options: ExportOptions): void {
+        const exportOptions = { ...options, skipAttribution: isSuperUser };
         if (commonState.currentMode === "macro") {
             const totalCss = macroSidebar!.computeCss();
             exportMacro(
@@ -1616,7 +1618,7 @@
                 commonState.providedFonts,
                 true,
                 totalCss,
-                options,
+                exportOptions,
                 commonState.elementAnnotations,
             );
         } else {
@@ -1626,7 +1628,7 @@
                 microState,
                 commonState.providedFonts,
                 microCss,
-                options,
+                exportOptions,
                 true,
                 commonState.elementAnnotations,
             );

@@ -27,6 +27,7 @@ export interface ExportOptions {
     useViewBox?: boolean;
     frameShadow?: boolean;
     customAttributions?: CustomAttribution[];
+    skipAttribution?: boolean;
 }
 
 interface Position {

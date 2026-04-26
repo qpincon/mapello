@@ -142,6 +142,17 @@
                 Back to sign in
             </button>
         {:else if mode !== 'forgot'}
+            <div class="value-banner mb-3">
+                <div class="value-item">
+                    <span class="value-icon">&#10003;</span>
+                    <span><strong>3 free exports</strong> — no credit card required</span>
+                </div>
+                <div class="value-item">
+                    <span class="value-icon">&#10003;</span>
+                    <span>Save and manage <strong>multiple projects</strong></span>
+                </div>
+            </div>
+
             <div class="mode-tabs mb-3">
                 <button
                     class="tab-btn"
@@ -269,6 +280,27 @@
 </Modal>
 
 <style>
+    .value-banner {
+        background: #f0f7ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        padding: 0.65rem 0.85rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+    .value-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.88rem;
+        color: #1e3a5f;
+    }
+    .value-icon {
+        color: #2563eb;
+        font-weight: bold;
+        flex-shrink: 0;
+    }
     .mode-tabs {
         display: flex;
         border-bottom: 1px solid #dee2e6;

@@ -41,6 +41,7 @@ export async function exportMacro(
         useViewBox = false,
         frameShadow = false,
         customAttributions,
+        skipAttribution = false,
     } = options;
     // console.log('options', options);
     const svgNode = svg.node()!;
@@ -280,7 +281,7 @@ export async function exportMacro(
     scriptElem.appendChild(scriptContent);
     svgElement.append(scriptElem);
 
-    addAttribution(svgElement, w, h, 'macro', customAttributions);
+    if (!skipAttribution) addAttribution(svgElement, w, h, 'macro', customAttributions);
 
     if (!downloadExport) return svgElement.outerHTML;
     download(svgElement.outerHTML, 'text/plain', 'cartosvg-export.svg');

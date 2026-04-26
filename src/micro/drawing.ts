@@ -795,6 +795,7 @@ export async function exportMicro(
         frameShadow = false,
         minifyJs = false,
         customAttributions,
+        skipAttribution = false,
     } = options;
     const width = stateMicro.microParams.General.width;
     const height = stateMicro.microParams.General.height;
@@ -952,8 +953,7 @@ export async function exportMicro(
         svgElement.append(scriptElem);
     }
 
-    /** Add attribution */
-    addAttribution(svgElement, width, height, 'micro', customAttributions);
+    if (!skipAttribution) addAttribution(svgElement, width, height, 'micro', customAttributions);
 
     if (useViewBox) {
         if (!shadowPadded) {
