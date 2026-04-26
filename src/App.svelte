@@ -1987,7 +1987,6 @@
                             onSaveError={(msg) => {
                                 serverSyncError = msg;
                             }}
-                            onUpgrade={() => (showUpgradeModal = true)}
                         />
                     {/if}
                 </div>
@@ -2015,6 +2014,18 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><span class="dropdown-item-text user-email-header">{currentUser.email}</span></li>
                                 <li><hr class="dropdown-divider" /></li>
+                                {#if page.data.subscription}
+                                    <li><span class="dropdown-item-text"><span class="nav-pro-badge">Pro</span></span></li>
+                                {:else}
+                                    <li><span class="dropdown-item-text nav-exports-left">{page.data.exportsRemaining ?? 0} free export{page.data.exportsRemaining === 1 ? "" : "s"} remaining</span></li>
+                                    <li>
+                                        <button class="dropdown-item" type="button" onclick={() => (showUpgradeModal = true)}>
+                                            Upgrade to Pro
+                                        </button>
+                                    </li>
+                                {/if}
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" href="/account" target="_blank">Account</a></li>
                                 <li>
                                     <button
                                         class="dropdown-item"
