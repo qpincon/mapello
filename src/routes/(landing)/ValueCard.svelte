@@ -1,66 +1,69 @@
 <script lang="ts">
   interface Props {
-    icon: string; // SVG path d attribute
+    number: string;
     title: string;
     description: string;
   }
-  let { icon, title, description }: Props = $props();
+  let { number, title, description }: Props = $props();
 </script>
 
-<div class="card">
-  <div class="card-icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-      {@html icon}
-    </svg>
+<div class="principle">
+  <span class="principle-number">{number}</span>
+  <div class="principle-body">
+    <h3 class="principle-title">{title}</h3>
+    <p class="principle-desc">{description}</p>
   </div>
-  <h3 class="card-title">{title}</h3>
-  <p class="card-desc">{description}</p>
 </div>
 
 <style>
-  .card {
-    height: 100%;
-    padding: 1.75rem 1.5rem;
-    border-radius: var(--radius-md);
-    background: var(--color-white);
-    border: 1px solid var(--color-border-subtle);
-    box-shadow: var(--shadow-sm);
-    transition: transform var(--transition), box-shadow var(--transition);
+  .principle {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr;
+    gap: 1.5rem;
+    padding: 1.6rem 0;
+    border-top: 1px solid rgba(160, 120, 60, 0.2);
+    align-items: start;
+    transition: transform var(--transition);
   }
 
-  .card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
+  .principle:hover {
+    transform: translateX(4px);
   }
 
-  .card-icon {
-    width: 2.75rem;
-    height: 2.75rem;
-    background: rgba(42, 125, 110, 0.1);
-    border-radius: var(--radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
+  .principle-number {
+    font-family: var(--font-serif);
+    font-size: 2.4rem;
+    font-weight: 400;
+    color: var(--color-gold);
+    line-height: 1;
+    padding-top: 0.15rem;
+    letter-spacing: -0.02em;
+    opacity: 0.8;
   }
 
-  .card-icon svg {
-    width: 1.4rem;
-    height: 1.4rem;
-    color: var(--color-accent);
-  }
-
-  .card-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--color-text-on-light);
+  .principle-title {
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-parchment-text);
     margin-bottom: 0.4rem;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
   }
 
-  .card-desc {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    line-height: 1.6;
+  .principle-desc {
+    font-size: 0.88rem;
+    color: var(--color-parchment-muted);
+    line-height: 1.7;
+  }
+
+  @media (max-width: 500px) {
+    .principle {
+      grid-template-columns: 3.5rem 1fr;
+      gap: 1rem;
+    }
+    .principle-number {
+      font-size: 1.9rem;
+    }
   }
 </style>

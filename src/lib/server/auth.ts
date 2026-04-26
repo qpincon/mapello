@@ -20,6 +20,7 @@ export const auth = betterAuth({
 	database: drizzleAdapter(db, { provider: 'sqlite' }),
 	emailAndPassword: {
 		enabled: true,
+		requireEmailVerification: true,
 		sendResetPassword: async ({ user, url }) => {
 			await resend.emails.send({
 				from: 'Mapello <noreply@mapello.net>',
@@ -29,6 +30,19 @@ export const auth = betterAuth({
 				html: `<p>Click the link below to reset your password:</p><p><a href="${url}">${url}</a></p><p>This link expires in 1 hour.</p>`,
 			});
 		},
+	},
+	emailVerification: {
+		sendVerificationEmail: async ({ user, url }) => {
+			await resend.emails.send({
+				from: 'Mapello <noreply@mapello.net>',
+				to: user.email,
+				subject: 'Verify your Mapello email',
+				text: `Click the link below to verify your email address:\n\n${url}\n\nThis link expires in 1 hour.`,
+				html: `<p>Click the link below to verify your email address:</p><p><a href="${url}">${url}</a></p><p>This link expires in 1 hour.</p>`,
+			});
+		},
+		sendOnSignUp: true,
+		autoSignInAfterVerification: true,
 	},
 	socialProviders: {
 		...(googleClientId && googleClientSecret

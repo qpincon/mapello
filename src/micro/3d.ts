@@ -109,7 +109,7 @@ function isWallVisibleNDC(
     // 2D cross product determines winding order
     // Use threshold to only cull walls that are clearly back-facing
     const cross = cross2D(v1x, v1y, v2x, v2y);
-    const CULL_THRESHOLD = -0.0001;
+    const CULL_THRESHOLD = -0.00001;
     return cross < CULL_THRESHOLD;
 }
 
@@ -217,7 +217,10 @@ function renderExtrudedBuildingImproved(
             if (allInsideNDC) {
                 let visible = isWallVisibleNDC(b0p.ndc, b1p.ndc, t0p.ndc);
                 if (invertVisibility) visible = !visible;
-                if (!visible) continue;
+                if (!visible) {
+                    nbCulled += 1;
+                    continue;
+                }
             }
             // If any vertex is outside NDC bounds, skip culling and render the wall
 
@@ -248,6 +251,8 @@ function renderExtrudedBuildingImproved(
     return { elements, className, minVertexDepth };
 }
 
+let nbCulled = 0;
+
 /**
  * Render buildings with grouping, hole support, and depth sorting by closest element.
  * Accepts both normal features (RenderedFeaturePoly) and grouped features (GroupedFeature).
@@ -260,6 +265,7 @@ export function renderBuildingsToSvgImproved(
     layerState: MicroLayerDefinition,
     animated: boolean = false,
 ) {
+    nbCulled = 0;
     const svgContainer = svg.append('g')
         .attr('id', 'buildings')
         .attr("clip-path", "url(#clipMapBorder)")
@@ -411,4 +417,5 @@ export function renderBuildingsToSvgImproved(
 
         svgContainer.appendChild(g);
     }
+    console.log('Elements culled:', nbCulled);
 }

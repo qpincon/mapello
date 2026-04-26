@@ -1,4 +1,4 @@
-import { addAttribution, addFrameShadow, additionnalCssExport, changeIdAndReferences, ExportFontChoice, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
+import { addAttribution, addFrameShadow, additionnalCssExport, changeIdAndReferences, ExportFontChoice, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
 import type { ElementAnnotations, ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
 import { DOM_PARSER, fontsToCssMultiSubset, fontsToCssEmbedMultiSubset, getUsedInlineFonts } from 'src/util/dom';
 import svgoConfigBase from '../svgoExport.config';
@@ -235,11 +235,13 @@ export async function exportMacro(
     svgElement.classList.remove('animate-transition');
     svgElement.classList.add('cartosvg');
 
+    const w = stateMacro.macroParams.General.width;
+    const h = stateMacro.macroParams.General.height;
+    let shadowPadded = false;
+
     if (frameShadow) {
         const bw = stateMacro.macroParams.Border.borderWidth;
         const br = stateMacro.macroParams.Border.borderRadius;
-        const w = stateMacro.macroParams.General.width;
-        const h = stateMacro.macroParams.General.height;
         addFrameShadow(svgElement, mapId, {
             x: bw / 2,
             y: bw / 2,
@@ -247,16 +249,21 @@ export async function exportMacro(
             height: h - bw,
             rx: Math.max(w, h) * (br / 100),
         });
+        const m = FRAME_SHADOW_MARGIN;
+        const paddedW = w + 2 * m;
+        const paddedH = h + 2 * m;
+        svgElement.setAttribute('width', String(paddedW));
+        svgElement.setAttribute('height', String(paddedH));
+        svgElement.setAttribute('viewBox', `${-m} ${-m} ${paddedW} ${paddedH}`);
+        shadowPadded = true;
     }
 
     if (useViewBox) {
-        const w = svgElement.getAttribute('width');
-        const h = svgElement.getAttribute('height');
-        if (w && h) {
+        if (!shadowPadded) {
             svgElement.setAttribute('viewBox', `0 0 ${w} ${h}`);
-            svgElement.removeAttribute('width');
-            svgElement.removeAttribute('height');
         }
+        svgElement.removeAttribute('width');
+        svgElement.removeAttribute('height');
     }
 
     if (minifyJs !== false) {
@@ -273,7 +280,7 @@ export async function exportMacro(
     scriptElem.appendChild(scriptContent);
     svgElement.append(scriptElem);
 
-    addAttribution(svgElement, stateMacro.macroParams.General.width, stateMacro.macroParams.General.height, 'macro', customAttributions);
+    addAttribution(svgElement, w, h, 'macro', customAttributions);
 
     if (!downloadExport) return svgElement.outerHTML;
     download(svgElement.outerHTML, 'text/plain', 'cartosvg-export.svg');

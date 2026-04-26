@@ -2,12 +2,6 @@
   import { onMount } from "svelte";
   import ShowcaseSlot from "./ShowcaseSlot.svelte";
   import ValueCard from "./ValueCard.svelte";
-  import FeatureRow from "./FeatureRow.svelte";
-  import IlluGlobe from "./IlluGlobe.svelte";
-  import IlluData from "./IlluData.svelte";
-  import IlluAnnotate from "./IlluAnnotate.svelte";
-  import IlluExport from "./IlluExport.svelte";
-  import IlluForever from "./IlluForever.svelte";
 
   const ICONS = {
     paste: `<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/>`,
@@ -56,7 +50,6 @@
       aspectRatio: "1 / 1",
       gradient: "linear-gradient(135deg, #3a2a1a 0%, #5a4a2a 50%, #7a6a3a 100%)",
     },
-
     {
       id: "macau",
       title: "Macau Peninsula",
@@ -195,74 +188,102 @@
 
 <!-- ═══════════════════════════════════════ HERO ═══════════════════════════════════════ -->
 <section class="hero">
-  <svg class="hero-globe" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <svg class="hero-globe" viewBox="0 0 600 600" fill="none" aria-hidden="true">
     <defs>
-      <clipPath id="globe-clip"><circle cx="300" cy="300" r="284" /></clipPath>
+      <clipPath id="hero-clip"><circle cx="300" cy="300" r="284" /></clipPath>
     </defs>
-    <circle cx="300" cy="300" r="284" stroke="white" stroke-width="0.8" />
-    <g clip-path="url(#globe-clip)" stroke="white">
-      <ellipse cx="300" cy="300" rx="284" ry="76" stroke-width="0.7" />
-      <ellipse cx="300" cy="216" rx="246" ry="66" stroke-width="0.6" />
-      <ellipse cx="300" cy="384" rx="246" ry="66" stroke-width="0.6" />
-      <ellipse cx="300" cy="144" rx="142" ry="38" stroke-width="0.5" />
-      <ellipse cx="300" cy="456" rx="142" ry="38" stroke-width="0.5" />
-      <line x1="300" y1="16" x2="300" y2="584" stroke-width="0.6" />
-      <ellipse cx="300" cy="300" rx="142" ry="284" stroke-width="0.6" />
-      <ellipse cx="300" cy="300" rx="246" ry="284" stroke-width="0.6" />
+    <circle cx="300" cy="300" r="284" stroke="white" stroke-width="0.7" stroke-opacity="0.6" />
+    <g clip-path="url(#hero-clip)">
+      <ellipse cx="300" cy="300" rx="284" ry="76" stroke="#c9943a" stroke-width="1.1" stroke-opacity="0.7" />
+      <ellipse cx="300" cy="216" rx="246" ry="66" stroke="white" stroke-width="0.5" stroke-opacity="0.35" />
+      <ellipse cx="300" cy="384" rx="246" ry="66" stroke="white" stroke-width="0.5" stroke-opacity="0.35" />
+      <ellipse cx="300" cy="144" rx="142" ry="38" stroke="white" stroke-width="0.4" stroke-opacity="0.22" />
+      <ellipse cx="300" cy="456" rx="142" ry="38" stroke="white" stroke-width="0.4" stroke-opacity="0.22" />
+      <line x1="300" y1="16" x2="300" y2="584" stroke="#c9943a" stroke-width="1" stroke-opacity="0.6" />
+      <ellipse cx="300" cy="300" rx="142" ry="284" stroke="white" stroke-width="0.5" stroke-opacity="0.28" />
+      <ellipse cx="300" cy="300" rx="246" ry="284" stroke="white" stroke-width="0.4" stroke-opacity="0.2" />
+    </g>
+    <g stroke="#c9943a" stroke-width="1.5" stroke-opacity="0.5">
+      <line x1="300" y1="6" x2="300" y2="20" />
+      <line x1="300" y1="580" x2="300" y2="594" />
+      <line x1="6" y1="300" x2="20" y2="300" />
+      <line x1="580" y1="300" x2="594" y2="300" />
     </g>
   </svg>
+
   <div class="l-container hero-inner">
     <div class="hero-text">
-      <div class="hero-eyebrow lp-reveal">
-        <span class="eyebrow-rule"></span>
-        <span>Mapello</span>
-        <span class="eyebrow-rule"></span>
-      </div>
+      <div class="hero-eyebrow lp-reveal">48°52′N · 2°21′E — Mapello</div>
       <h1 class="hero-headline lp-reveal">
         The map tool<br /><em>I always wanted.</em>
       </h1>
       <p class="hero-sub lp-reveal">
-        Too technical or too ugly — that was always the trade-off. Export a single self-contained SVG, paste it
-        anywhere. Interactive, lightweight, no code.
+        Too technical or too ugly — that was always the trade-off. Design a beautiful,
+        interactive map and export a single self-contained SVG. Paste it anywhere. No code.
       </p>
       <div class="hero-actions lp-reveal">
-        <a href="/app" class="btn-primary">Start designing</a>
+        <a href="/app" class="btn-primary btn-large">Start designing</a>
         <a href="#showcase" class="btn-text-link">See examples</a>
+      </div>
+      <div class="hero-trust lp-reveal">
+        <span>Free to start</span>
+        <span class="trust-dot">·</span>
+        <span>No credit card</span>
+        <span class="trust-dot">·</span>
+        <span>Works forever</span>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ════════════════════════════════ VALUE PROPOSITION ════════════════════════════════ -->
-<section class="values">
+<!-- ════════════════════════════════ MANIFESTO ════════════════════════════════ -->
+<section class="manifesto">
   <div class="l-container">
-    <div class="values-grid">
+    <div class="manifesto-header lp-reveal">
+      <span class="section-tag">Our principles</span>
+      <h2>Maps should be beautiful.<br /><em>And they should just work.</em></h2>
+    </div>
+    <div class="manifesto-body">
       <div class="lp-reveal">
         <ValueCard
-          icon={ICONS.paste}
+          number="01"
           title="One file, works everywhere"
-          description="Your map exports as a single file. Paste it into your website, your blog, your presentation — it just works. No plugins, no accounts, no dependencies."
+          description="Your map exports as a single self-contained file. Paste it into your website, blog, or presentation — it just works. No plugins, no accounts, no dependencies."
         />
       </div>
       <div class="lp-reveal">
         <ValueCard
-          icon={ICONS.sparkle}
+          number="02"
           title="Looks great out of the box"
           description="Thoughtful defaults, curated color palettes, and subtle effects mean your map looks polished before you've changed a single setting."
         />
       </div>
       <div class="lp-reveal">
         <ValueCard
-          icon={ICONS.compress}
-          title="Fast to load, forever"
-          description="Exported maps are aggressively optimized. They stay lightweight as your page grows, and never slow your site down."
+          number="03"
+          title="Any projection, any scale"
+          description="Frame a continent as a globe, zoom into a single neighborhood, or tilt the view for depth. Every map style — from street level to world overview — in a few clicks."
         />
       </div>
       <div class="lp-reveal">
         <ValueCard
-          icon={ICONS.data}
+          number="04"
           title="Your spreadsheet becomes a map"
-          description="Drop in a CSV file and Mapello colors your map automatically — by country, by region, by any column you choose. No technical knowledge needed."
+          description="Drop in a CSV and Mapello colors your map automatically — by country, by region, by any column you choose. Add a legend in one click. No code required."
+        />
+      </div>
+      <div class="lp-reveal">
+        <ValueCard
+          number="05"
+          title="Annotate, link, and explain"
+          description="Draw arrows, add labels in any font, attach a popup that opens on click. Every annotation — freehand, text, shape — exports with the map, interactive and self-contained."
+        />
+      </div>
+      <div class="lp-reveal">
+        <ValueCard
+          number="06"
+          title="No lock-in. Ever."
+          description="There is no Mapello inside your exported file — just SVG. Cancel your account tomorrow and every map you've ever exported keeps working, unchanged, forever."
         />
       </div>
     </div>
@@ -375,65 +396,6 @@
   </div>
 </section>
 
-<!-- ══════════════════════════════ FEATURE DEEP-DIVE ════════════════════════════════ -->
-<section class="features">
-  <div class="l-container">
-    <div class="section-header lp-reveal" style="margin-bottom: 4rem;">
-      <span class="section-tag">How it works</span>
-      <h2>Designed for people, not developers</h2>
-    </div>
-    <div class="features-list">
-      <div class="lp-reveal">
-        <FeatureRow
-          tag="Any angle, any region"
-          title="See the world the way you want to show it"
-          description="Frame Europe as a globe, zoom into a country, or tilt the view for depth. Mapello gives you every common map style in a few clicks — no geography degree required."
-        >
-          {#snippet imageSlot()}<IlluGlobe />{/snippet}
-        </FeatureRow>
-      </div>
-      <div class="lp-reveal">
-        <FeatureRow
-          reversed
-          tag="Spreadsheet → colored map"
-          title="Your data tells the story — Mapello draws it"
-          description="Upload a CSV, pick the column that matters, and watch your map color itself. Choose between gradients for numbers or distinct colors for categories. Add a legend in one click."
-        >
-          {#snippet imageSlot()}<IlluData />{/snippet}
-        </FeatureRow>
-      </div>
-      <div class="lp-reveal">
-        <FeatureRow
-          tag="Annotate freely"
-          title="Add context that makes maps memorable"
-          description="Draw arrows, add labels in any font, highlight a region with a hand-drawn circle, or attach a popup that opens when readers click. Every annotation is part of the exported file."
-        >
-          {#snippet imageSlot()}<IlluAnnotate />{/snippet}
-        </FeatureRow>
-      </div>
-      <div class="lp-reveal">
-        <FeatureRow
-          reversed
-          tag="One file, anywhere"
-          title="Paste it in. That's literally it."
-          description="The exported map is a single, self-contained file. Copy it, paste it into your site's HTML, and it appears — interactive tooltips and all. No extra scripts, no CDN, no configuration."
-        >
-          {#snippet imageSlot()}<IlluExport />{/snippet}
-        </FeatureRow>
-      </div>
-      <div class="lp-reveal">
-        <FeatureRow
-          tag="No lock-in, ever"
-          title="Your maps are yours. Forever."
-          description="There is no Mapello inside your exported file — just SVG. It runs on its own, in any browser, with no dependency on our servers. Cancel your account tomorrow and every map you've ever exported keeps working, unchanged, forever."
-        >
-          {#snippet imageSlot()}<IlluForever />{/snippet}
-        </FeatureRow>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ════════════════════════════════ COMPARISON ══════════════════════════════════════ -->
 <section class="comparison">
   <div class="l-container">
@@ -463,288 +425,52 @@
           <tbody>
             <tr>
               <td class="compare-feature">Single self-contained SVG export</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-dash" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
             </tr>
             <tr>
               <td class="compare-feature">Works forever, no server dependency</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
             </tr>
             <tr>
               <td class="compare-feature">Interactive after export (tooltips, popovers)</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-dash" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
             </tr>
             <tr>
               <td class="compare-feature">No code required</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
             </tr>
             <tr>
               <td class="compare-feature">Data-bound coloring from a CSV</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-dash" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
             </tr>
             <tr>
               <td class="compare-feature">Rich annotations (labels, freehand, shapes)</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-dash" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-dash" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
             </tr>
             <tr>
               <td class="compare-feature">Free to start, no watermark</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-dash" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
             </tr>
           </tbody>
         </table>
@@ -768,307 +494,52 @@
           <tbody>
             <tr>
               <td class="compare-feature">Single self-contained SVG export</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-dash" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
             </tr>
             <tr>
               <td class="compare-feature">Works forever, no server dependency</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
             </tr>
             <tr>
               <td class="compare-feature">Interactive after export (tooltips, popovers)</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-dash" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg></td>
             </tr>
             <tr>
               <td class="compare-feature">No install, in-browser editing</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
             </tr>
             <tr>
               <td class="compare-feature">Stylized, fully customizable look</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
             </tr>
             <tr>
               <td class="compare-feature">3D building extrusion</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg></td>
             </tr>
             <tr>
               <td class="compare-feature">Free to start, no watermark</td>
-              <td class="compare-col-us"
-                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
-              <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
-                  ><polyline
-                    points="2.5 8.5 6.5 12.5 13.5 4"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-                ></td
-              >
+              <td class="compare-col-us"><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-dash" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
+              <td><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></td>
             </tr>
           </tbody>
         </table>
@@ -1076,33 +547,9 @@
     </div>
 
     <div class="compare-legend lp-reveal">
-      <span
-        ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
-          ><polyline
-            points="2.5 8.5 6.5 12.5 13.5 4"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          /></svg
-        > Fully supported</span
-      >
-      <span
-        ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-          ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
-        > Partial / depends</span
-      >
-      <span
-        ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-          ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
-            x1="12.5"
-            y1="3.5"
-            x2="3.5"
-            y2="12.5"
-            stroke-width="1.8"
-            stroke-linecap="round"
-          /></svg
-        > Not supported</span
-      >
+      <span><svg class="ci-check" viewBox="0 0 16 16" fill="none"><polyline points="2.5 8.5 6.5 12.5 13.5 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg> Fully supported</span>
+      <span><svg class="ci-dash" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg> Partial / depends</span>
+      <span><svg class="ci-cross" viewBox="0 0 16 16" fill="none"><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line x1="12.5" y1="3.5" x2="3.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /></svg> Not supported</span>
     </div>
   </div>
 </section>
@@ -1112,25 +559,25 @@
   <div class="l-container">
     <div class="stats-grid lp-reveal">
       <div class="stat">
-        <span class="stat-value">3 free</span>
-        <span class="stat-label">exports to get started</span>
+        <span class="stat-value">0</span>
+        <span class="stat-label">external dependencies in your export</span>
       </div>
       <div class="stat-divider"></div>
       <div class="stat">
         <span class="stat-value">&lt; 100 KB</span>
-        <span class="stat-label">typical exported map size</span>
+        <span class="stat-label">typical map, complete and ready</span>
       </div>
       <div class="stat-divider"></div>
       <div class="stat">
-        <span class="stat-value">Zero deps</span>
-        <span class="stat-label">exported maps need no extra code</span>
+        <span class="stat-value">&#x221e;</span>
+        <span class="stat-label">years it works · no servers needed</span>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ═══════════════════════════════════ PRICING ══════════════════════════════════════ -->
-<section class="pricing">
+<section class="pricing" id="pricing">
   <div class="l-container">
     <div class="section-header lp-reveal">
       <span class="section-tag">Pricing</span>
@@ -1152,39 +599,9 @@
           <span class="pricing-period">no credit card needed</span>
         </div>
         <ul class="pricing-features">
-          <li>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            >
-            Full editor — every feature
-          </li>
-          <li>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            >
-            3 exported maps
-          </li>
-          <li>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            >
-            Saves in your browser
-          </li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Full editor — every feature</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>3 exported maps</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Saves in your browser</li>
         </ul>
         <a href="/app" class="btn-outline">Get started free</a>
       </div>
@@ -1200,50 +617,10 @@
           <span class="pricing-period">per month</span>
         </div>
         <ul class="pricing-features">
-          <li>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            >
-            Everything in Free
-          </li>
-          <li>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            >
-            <strong>Unlimited</strong> exported maps
-          </li>
-          <li>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            >
-            <strong>Unlimited</strong> saved projects
-          </li>
-          <li>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            >
-            Priority support
-          </li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Everything in Free</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg><strong>Unlimited</strong> exported maps</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg><strong>Unlimited</strong> saved projects</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Priority support</li>
         </ul>
         <a href="/app" class="btn-primary btn-wide">Start free trial</a>
       </div>
@@ -1259,28 +636,8 @@
         </div>
         <div class="pricing-save">Save $30 — 2 months free</div>
         <ul class="pricing-features">
-          <li>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            >
-            Everything in Pro
-          </li>
-          <li>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            >
-            One payment per year
-          </li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Everything in Pro</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>One payment per year</li>
         </ul>
         <a href="/app" class="btn-outline">Choose annual</a>
       </div>
@@ -1290,24 +647,91 @@
 
 <!-- ════════════════════════════════ FINAL CTA ═══════════════════════════════════════ -->
 <section class="cta">
-  <div class="cta-glow"></div>
-  <div class="l-container cta-inner lp-reveal">
-    <h2>Your first 3 maps are on us.</h2>
-    <p>No account, no credit card. Open the editor and start designing right now.</p>
-    <a href="/app" class="btn-primary btn-large">Start designing</a>
+  <div class="cta-compass" aria-hidden="true">
+    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="94" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.6" />
+      <circle cx="100" cy="100" r="72" stroke="currentColor" stroke-width="0.5" stroke-opacity="0.35" />
+      <circle cx="100" cy="100" r="50" stroke="currentColor" stroke-width="0.4" stroke-opacity="0.2" />
+      <line x1="100" y1="6" x2="100" y2="28" stroke="currentColor" stroke-width="1.2" />
+      <line x1="100" y1="172" x2="100" y2="194" stroke="currentColor" stroke-width="1.2" />
+      <line x1="6" y1="100" x2="28" y2="100" stroke="currentColor" stroke-width="1.2" />
+      <line x1="172" y1="100" x2="194" y2="100" stroke="currentColor" stroke-width="1.2" />
+      <line x1="33" y1="33" x2="167" y2="167" stroke="currentColor" stroke-width="0.5" stroke-dasharray="3 5" stroke-opacity="0.45" />
+      <line x1="167" y1="33" x2="33" y2="167" stroke="currentColor" stroke-width="0.5" stroke-dasharray="3 5" stroke-opacity="0.45" />
+      <polygon points="100,8 105,42 100,36 95,42" fill="currentColor" />
+      <polygon points="100,192 105,158 100,164 95,158" fill="currentColor" fill-opacity="0.45" />
+      <polygon points="192,100 158,105 164,100 158,95" fill="currentColor" fill-opacity="0.45" />
+      <polygon points="8,100 42,105 36,100 42,95" fill="currentColor" fill-opacity="0.45" />
+      <circle cx="100" cy="100" r="4" fill="currentColor" />
+      <circle cx="100" cy="100" r="2" fill="currentColor" fill-opacity="0.5" />
+      <g stroke="currentColor" stroke-width="1" stroke-opacity="0.4">
+        <line x1="166" y1="34" x2="161" y2="39" />
+        <line x1="34" y1="34" x2="39" y2="39" />
+        <line x1="166" y1="166" x2="161" y2="161" />
+        <line x1="34" y1="166" x2="39" y2="161" />
+      </g>
+    </svg>
+  </div>
+  <div class="l-container">
+    <div class="cta-inner lp-reveal">
+      <span class="section-tag">Get started</span>
+      <h2>Your first 3 maps are on us.</h2>
+      <p>Open the editor and begin.<br /><em>No account needed.</em></p>
+      <a href="/app" class="btn-primary btn-large">Start designing</a>
+      <span class="cta-note">Free · No credit card · Works forever</span>
+    </div>
   </div>
 </section>
 
 <!-- ═══════════════════════════════════ FOOTER ═══════════════════════════════════════ -->
 <footer>
   <div class="l-container footer-inner">
-    <span class="footer-brand">Mapello</span>
-    <span class="footer-copy">&copy; 2026</span>
+    <div class="footer-brand-col">
+      <span class="footer-logo">Mapello</span>
+      <span class="footer-tagline">Maps you'll be proud to embed.</span>
+      <span class="footer-coords">48°52′N &nbsp; 2°21′E</span>
+    </div>
+    <div class="footer-links-col">
+      <span class="footer-col-title">Product</span>
+      <a href="/app">Editor</a>
+      <a href="#showcase">Examples</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <div class="footer-links-col">
+      <span class="footer-col-title">Company</span>
+      <a href="#">About</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Contact</a>
+    </div>
+  </div>
+  <div class="l-container footer-bottom">
+    <span>&copy; 2026 Mapello. Made with care.</span>
   </div>
 </footer>
 
 <style>
-  /* ── Shared ── */
+  /* ── Scroll animation ── */
+  :global(.lp-reveal) {
+    animation: scrollReveal 0.65s ease both;
+    animation-play-state: paused;
+  }
+  :global(.lp-reveal.visible) {
+    animation-play-state: running;
+  }
+  @keyframes scrollReveal {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in {
+    animation: fadeSlideIn 0.4s ease both;
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Shared section layout ── */
   section {
     position: relative;
     overflow: hidden;
@@ -1320,63 +744,33 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
-  }
-  .section-tag {
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--color-accent);
-    background: rgba(42, 125, 110, 0.12);
-    padding: 0.3rem 0.9rem;
-    border-radius: var(--radius-pill);
-    width: fit-content;
+    gap: 0.85rem;
   }
   .section-header h2 {
-    font-size: clamp(1.6rem, 3vw, 2.2rem);
-    font-weight: 700;
+    font-family: var(--font-serif);
+    font-size: clamp(1.7rem, 3.2vw, 2.4rem);
+    font-weight: 600;
     line-height: 1.2;
-    color: var(--color-text-on-light);
+    letter-spacing: 0.01em;
   }
   .section-header p {
     font-size: 1rem;
-    color: var(--color-text-muted);
-    line-height: 1.7;
+    line-height: 1.72;
   }
 
-  /* ── Scroll animation ── */
-  :global(.lp-reveal) {
-    animation: scrollReveal 0.65s ease both;
-    animation-play-state: paused;
-  }
-  :global(.lp-reveal.visible) {
-    animation-play-state: running;
-  }
-  @keyframes scrollReveal {
-    from {
-      opacity: 0;
-      transform: translateY(24px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* Tab-switch fade */
-  .fade-in {
-    animation: fadeSlideIn 0.4s ease both;
-  }
-  @keyframes fadeSlideIn {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  /* ── Section tag (gold across all sections) ── */
+  .section-tag {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    background: var(--color-gold-soft);
+    border: 1px solid var(--color-gold-border);
+    padding: 0.28rem 0.85rem;
+    border-radius: var(--radius-pill);
+    width: fit-content;
   }
 
   /* ── Buttons ── */
@@ -1384,49 +778,27 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
-    padding: 0.75rem 1.75rem;
-    background: var(--color-accent);
-    color: white;
-    font-weight: 500;
-    font-size: 0.88rem;
-    letter-spacing: 0.03em;
-    border-radius: 6px;
-    transition:
-      background var(--transition),
-      transform var(--transition);
+    padding: 0.82rem 2rem;
+    background: var(--color-gold);
+    color: var(--color-ink);
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.01em;
+    border-radius: 4px;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
   }
   .btn-primary:hover {
-    background: var(--color-accent-hover);
-    transform: translateY(-1px);
+    background: var(--color-gold-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(201,148,58,0.38);
   }
   .btn-large {
     padding: 1rem 2.5rem;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
   }
   .btn-wide {
     width: 100%;
   }
-
-  .btn-ghost {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.8rem 1.5rem;
-    color: var(--color-text-on-dark);
-    font-weight: 500;
-    font-size: 0.95rem;
-    border-radius: var(--radius-pill);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    transition:
-      border-color var(--transition),
-      background var(--transition);
-  }
-  .btn-ghost:hover {
-    border-color: rgba(255, 255, 255, 0.35);
-    background: rgba(255, 255, 255, 0.06);
-  }
-
   .btn-text-link {
     display: inline-flex;
     align-items: center;
@@ -1434,7 +806,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     letter-spacing: 0.02em;
-    color: rgba(255, 255, 255, 0.38);
+    color: rgba(255, 255, 255, 0.36);
     transition: color var(--transition);
   }
   .btn-text-link::after {
@@ -1447,52 +819,43 @@
   .btn-text-link:hover::after {
     transform: translateX(3px);
   }
-
   .btn-outline {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 100%;
     padding: 0.75rem 1.5rem;
-    color: var(--color-text-on-light);
+    color: var(--color-parchment-text);
     font-weight: 600;
     font-size: 0.9rem;
     border-radius: var(--radius-pill);
-    border: 1.5px solid var(--color-border-subtle);
-    transition:
-      border-color var(--transition),
-      background var(--transition);
+    border: 1.5px solid rgba(160, 120, 60, 0.25);
+    transition: border-color var(--transition), background var(--transition);
   }
   .btn-outline:hover {
-    border-color: var(--color-accent);
-    background: rgba(42, 125, 110, 0.06);
+    border-color: var(--color-gold);
+    background: var(--color-gold-soft);
   }
 
   /* ── Hero ── */
   .hero {
-    background: #060b12;
+    background-color: var(--color-ink);
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px),
+      radial-gradient(ellipse at 96% 4%, rgba(42,125,110,0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 4% 96%, rgba(201,148,58,0.07) 0%, transparent 50%);
+    background-size: 30px 30px, 100% 100%, 100% 100%;
+    padding: 9rem 0 8rem;
     display: flex;
     align-items: center;
-    padding: 9rem 0 8rem;
-  }
-  .hero::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 70%;
-    height: 90%;
-    background: radial-gradient(ellipse, rgba(42, 125, 110, 0.06) 0%, transparent 65%);
-    pointer-events: none;
   }
   .hero-globe {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: min(88vw, 620px);
-    opacity: 0.085;
+    width: min(86vw, 600px);
+    opacity: 0.082;
     pointer-events: none;
   }
   .hero-inner {
@@ -1506,43 +869,33 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.75rem;
-    max-width: 700px;
+    gap: 1.65rem;
+    max-width: 720px;
   }
   .hero-eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    font-size: 0.65rem;
-    font-weight: 500;
-    letter-spacing: 0.3em;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.3);
-    margin-bottom: -0.75rem;
-  }
-  .eyebrow-rule {
-    display: block;
-    width: 32px;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.15);
-    flex-shrink: 0;
+    color: var(--color-gold);
+    opacity: 0.75;
   }
   .hero-headline {
-    font-family: "Cormorant Garamond", "Palatino Linotype", "Palatino", Georgia, serif;
-    font-size: clamp(3.2rem, 5.8vw, 5.4rem);
+    font-family: var(--font-serif);
+    font-size: clamp(3rem, 5.5vw, 5.5rem);
     font-weight: 400;
     line-height: 1.05;
     letter-spacing: -0.01em;
-    color: rgba(255, 255, 255, 0.82);
+    color: rgba(255, 255, 255, 0.85);
   }
   .hero-headline em {
     font-style: italic;
     font-weight: 600;
-    background: none;
-    -webkit-background-clip: unset;
-    background-clip: unset;
-    -webkit-text-fill-color: #fff;
     color: #fff;
+    text-decoration: underline;
+    text-decoration-color: rgba(201, 148, 58, 0.45);
+    text-underline-offset: 5px;
+    text-decoration-thickness: 1px;
   }
   .hero-sub {
     font-size: 1rem;
@@ -1554,50 +907,80 @@
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
+    align-items: center;
     justify-content: center;
   }
-  /* ── Values ── */
-  .values {
-    background: var(--color-surface);
-    padding: 5rem 0;
+  .hero-trust {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-size: 0.74rem;
+    color: rgba(255, 255, 255, 0.24);
+    font-weight: 500;
+    letter-spacing: 0.01em;
   }
-  .values-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.25rem;
-    align-items: stretch;
-  }
+  .trust-dot { opacity: 0.5; }
 
-  .values-grid > :global(*) {
+  /* ── Manifesto ── */
+  .manifesto {
+    background-color: var(--color-parchment);
+    background-image:
+      repeating-radial-gradient(circle at 22% 32%, transparent 0, transparent 100px, rgba(160,120,60,0.065) 101px, transparent 102px),
+      repeating-radial-gradient(circle at 78% 68%, transparent 0, transparent 130px, rgba(160,120,60,0.045) 131px, transparent 132px);
+    padding: 4.5rem 0 3.5rem;
+  }
+  .manifesto-header {
     display: flex;
     flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 0;
+    max-width: 640px;
+  }
+  .manifesto-header h2 {
+    font-family: var(--font-serif);
+    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--color-parchment-text);
+    letter-spacing: 0.01em;
+  }
+  .manifesto-header h2 em {
+    font-style: italic;
+    color: var(--color-parchment-muted);
+  }
+  .manifesto-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 4rem;
   }
 
-  /* ── Showcase (theater) ── */
+  /* ── Showcase ── */
   .showcase {
     padding: 5.5rem 0;
   }
-  /* Wider container for showcase sections so maps breathe */
   .showcase :global(.l-container) {
     max-width: 1440px;
     padding: 0 2rem;
   }
-  .showcase-dark {
-    background: #111111;
-  }
-  .showcase-dark .section-header h2 {
-    color: var(--color-text-on-dark);
-  }
-  .showcase-dark .section-header p {
-    color: var(--color-text-on-dark-muted);
-  }
-  .showcase-dark .section-tag {
-    background: rgba(42, 125, 110, 0.2);
-  }
-  .showcase-light {
-    background: #f5f5f5;
-  }
 
+  .showcase-dark {
+    background-color: var(--color-ink-mid);
+    background-image: radial-gradient(circle, rgba(255,255,255,0.048) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+  .showcase-dark .section-header h2 { color: var(--color-text-on-dark); }
+  .showcase-dark .section-header p  { color: var(--color-text-on-dark-muted); }
+
+  .showcase-light {
+    background-color: var(--color-parchment);
+    background-image:
+      repeating-radial-gradient(circle at 30% 55%, transparent 0, transparent 120px, rgba(160,120,60,0.05) 121px, transparent 122px),
+      repeating-radial-gradient(circle at 70% 20%, transparent 0, transparent 90px, rgba(160,120,60,0.04) 91px, transparent 92px);
+  }
+  .showcase-light .section-header h2 { color: var(--color-parchment-text); }
+  .showcase-light .section-header p  { color: var(--color-parchment-muted); }
+
+  /* Theater */
   .theater-stage {
     display: grid;
     grid-template-columns: 3fr 2fr;
@@ -1606,21 +989,12 @@
     margin-bottom: 2rem;
   }
   .theater-display {
-    /* No background or border — the map SVG provides its own */
     overflow: hidden;
   }
-  .theater-display :global(.slot-wrapper) {
-    gap: 0;
-  }
-  .theater-display :global(.slot-caption) {
-    display: none;
-  }
-  .theater-display :global(.slot-frame) {
-    border-radius: 0;
-  }
-  .theater-display :global(svg) {
-    overflow: visible;
-  }
+  .theater-display :global(.slot-wrapper) { gap: 0; }
+  .theater-display :global(.slot-caption) { display: none; }
+  .theater-display :global(.slot-frame)   { border-radius: 0; }
+  .theater-display :global(svg)           { overflow: visible; }
 
   .theater-info {
     display: flex;
@@ -1628,28 +1002,22 @@
     gap: 1rem;
   }
   .theater-title {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-family: var(--font-serif);
+    font-size: 1.65rem;
+    font-weight: 600;
     line-height: 1.2;
+    letter-spacing: 0.01em;
   }
-  .showcase-dark .theater-title {
-    color: var(--color-text-on-dark);
-  }
-  .showcase-light .theater-title {
-    color: var(--color-text-on-light);
-  }
+  .showcase-dark .theater-title  { color: var(--color-text-on-dark); }
+  .showcase-light .theater-title { color: var(--color-parchment-text); }
 
   .theater-desc {
     font-size: 0.95rem;
     line-height: 1.75;
     white-space: pre-line;
   }
-  .showcase-dark .theater-desc {
-    color: var(--color-text-on-dark-muted);
-  }
-  .showcase-light .theater-desc {
-    color: var(--color-text-muted);
-  }
+  .showcase-dark .theater-desc  { color: var(--color-text-on-dark-muted); }
+  .showcase-light .theater-desc { color: var(--color-parchment-muted); }
 
   .theater-techniques {
     display: flex;
@@ -1658,21 +1026,20 @@
     margin-top: 0.5rem;
   }
   .technique-badge {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    padding: 0.3rem 0.75rem;
+    letter-spacing: 0.06em;
+    padding: 0.28rem 0.7rem;
     border-radius: var(--radius-pill);
+    background: transparent;
   }
   .showcase-dark .technique-badge {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--color-text-on-dark-muted);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255,255,255,0.42);
+    border: 1px solid rgba(255,255,255,0.14);
   }
   .showcase-light .technique-badge {
-    background: rgba(42, 125, 110, 0.08);
-    color: var(--color-secondary);
-    border: 1px solid rgba(42, 125, 110, 0.15);
+    color: var(--color-parchment-muted);
+    border: 1px solid var(--color-gold-border);
   }
 
   .theater-tabs {
@@ -1689,105 +1056,185 @@
     border-radius: var(--radius-sm);
     font-size: 0.82rem;
     font-weight: 500;
-    transition:
-      background var(--transition),
-      color var(--transition),
-      border-color var(--transition);
+    transition: background var(--transition), color var(--transition), border-color var(--transition);
     border: 1px solid transparent;
     cursor: pointer;
     background: none;
   }
-  .showcase-dark .theater-tab {
-    color: var(--color-text-on-dark-muted);
+  .showcase-dark .theater-tab         { color: var(--color-text-on-dark-muted); }
+  .showcase-dark .theater-tab:hover   { background: rgba(255,255,255,0.055); }
+  .showcase-dark .theater-tab.active  {
+    background: rgba(201,148,58,0.1);
+    color: var(--color-gold);
+    border-color: var(--color-gold-border);
   }
-  .showcase-dark .theater-tab:hover {
-    background: rgba(255, 255, 255, 0.06);
-  }
-  .showcase-dark .theater-tab.active {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--color-text-on-dark);
-    border-color: rgba(42, 125, 110, 0.4);
-  }
-  .showcase-light .theater-tab {
-    color: var(--color-text-muted);
-  }
-  .showcase-light .theater-tab:hover {
-    background: rgba(0, 0, 0, 0.04);
-  }
+  .showcase-light .theater-tab        { color: var(--color-parchment-muted); }
+  .showcase-light .theater-tab:hover  { background: rgba(160,120,60,0.07); }
   .showcase-light .theater-tab.active {
-    background: white;
-    color: var(--color-text-on-light);
-    border-color: var(--color-border-subtle);
-    box-shadow: var(--shadow-sm);
+    background: rgba(201,148,58,0.1);
+    color: var(--color-gold);
+    border-color: var(--color-gold-border);
   }
+
   .tab-index {
     font-size: 0.68rem;
     font-weight: 700;
-    opacity: 0.4;
+    opacity: 0.38;
     letter-spacing: 0.05em;
+    font-variant-numeric: tabular-nums;
   }
-  .theater-tab.active .tab-index {
-    opacity: 1;
-    color: var(--color-accent);
-  }
-  .tab-label {
-    white-space: nowrap;
-  }
+  .theater-tab.active .tab-index { opacity: 1; color: var(--color-gold); }
+  .tab-label { white-space: nowrap; }
 
-  /* ── Features ── */
-  .features {
-    background: white;
-    padding: 6rem 0;
+  /* ── Comparison ── */
+  .comparison {
+    background-color: #111;
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,0.038) 1px, transparent 1px),
+      radial-gradient(ellipse at 90% 8%, rgba(201,148,58,0.07) 0%, transparent 50%);
+    background-size: 30px 30px, 100% 100%;
+    padding: 5.5rem 0;
   }
-  .features-list {
+  .comparison .section-header h2 { color: var(--color-text-on-dark); }
+  .comparison .section-header p  { color: var(--color-text-on-dark-muted); }
+  .comparison-block { margin-bottom: 3.5rem; }
+  .comparison-group-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 1rem;
+  }
+  .compare-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    min-width: 560px;
+  }
+  .compare-table thead tr { border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .compare-table thead th {
+    padding: 0.9rem 1.1rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+    vertical-align: bottom;
+    line-height: 1.4;
+  }
+  .compare-table thead th.compare-col-feature { text-align: left; width: 34%; }
+  .col-sub {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    color: rgba(255,255,255,0.2);
+    margin-top: 0.25rem;
+    text-transform: none;
+  }
+  .compare-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .compare-table tbody tr:last-child { border-bottom: none; }
+  .compare-table tbody td {
+    padding: 0.8rem 1.1rem;
+    text-align: center;
+    vertical-align: middle;
+    color: rgba(255,255,255,0.5);
+  }
+  .compare-table tbody td.compare-feature {
+    text-align: left;
+    color: rgba(255,255,255,0.72);
+    font-weight: 500;
+    font-size: 0.85rem;
+  }
+  .compare-table th.compare-col-us,
+  .compare-table td.compare-col-us {
+    background: rgba(201,148,58,0.09);
+    color: var(--color-gold);
+    font-weight: 600;
+  }
+  .compare-table thead th.compare-col-us { color: #d4a050; letter-spacing: 0.08em; }
+  .ci-check, .ci-cross, .ci-dash {
+    width: 18px; height: 18px;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .ci-check { stroke: var(--color-gold); }
+  .ci-check.ci-check-muted { stroke: rgba(255,255,255,0.38); }
+  .ci-cross { stroke: rgba(255,255,255,0.2); }
+  .ci-dash  { stroke: rgba(255,255,255,0.32); }
+  .compare-legend {
     display: flex;
-    flex-direction: column;
-    gap: 5rem;
+    align-items: center;
+    gap: 1.75rem;
+    flex-wrap: wrap;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.28);
+    margin-top: 1.5rem;
+    padding-left: 0.25rem;
   }
+  .compare-legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .compare-legend .ci-check { stroke: rgba(255,255,255,0.38); }
 
   /* ── Stats ── */
   .stats {
-    background: linear-gradient(135deg, rgba(42, 125, 110, 0.08), rgba(80, 103, 132, 0.08));
-    border-top: 1px solid rgba(42, 125, 110, 0.15);
-    border-bottom: 1px solid rgba(42, 125, 110, 0.15);
-    padding: 3.5rem 0;
+    background-color: var(--color-ink);
+    background-image:
+      repeating-radial-gradient(circle at 30% 50%, transparent 0, transparent 80px, rgba(201,148,58,0.055) 81px, transparent 82px),
+      repeating-radial-gradient(circle at 70% 50%, transparent 0, transparent 110px, rgba(201,148,58,0.04) 111px, transparent 112px);
+    padding: 5rem 0;
+    border-top: 1px solid rgba(201,148,58,0.1);
+    border-bottom: 1px solid rgba(201,148,58,0.1);
   }
   .stats-grid {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 3rem;
+    gap: 4rem;
   }
   .stat {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.6rem;
     text-align: center;
   }
   .stat-value {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: var(--color-text-on-light);
+    font-family: var(--font-serif);
+    font-size: clamp(3.5rem, 6vw, 5.5rem);
+    font-weight: 400;
+    color: var(--color-gold);
+    line-height: 1;
     letter-spacing: -0.02em;
   }
   .stat-label {
-    font-size: 0.82rem;
-    color: var(--color-text-muted);
-    font-weight: 500;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.35);
+    font-weight: 400;
+    max-width: 160px;
+    line-height: 1.55;
   }
   .stat-divider {
     width: 1px;
-    height: 3rem;
-    background: var(--color-border-subtle);
+    height: 4rem;
+    background: rgba(201,148,58,0.22);
     flex-shrink: 0;
   }
 
   /* ── Pricing ── */
   .pricing {
-    background: white;
+    background-color: var(--color-parchment-light);
+    background-image: repeating-radial-gradient(circle at 60% 40%, transparent 0, transparent 140px, rgba(160,120,60,0.04) 141px, transparent 142px);
     padding: 6rem 0;
   }
+  .pricing .section-header h2 { color: var(--color-parchment-text); }
+  .pricing .section-header p  { color: var(--color-parchment-muted); }
   .pricing-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1800,27 +1247,25 @@
     flex-direction: column;
     padding: 2rem 1.75rem;
     border-radius: var(--radius-lg);
-    border: 1.5px solid var(--color-border-subtle);
+    border: 1.5px solid rgba(160,120,60,0.2);
     background: var(--color-white);
     position: relative;
   }
   .pricing-pro {
-    border-color: var(--color-accent);
-    box-shadow:
-      0 0 0 1px var(--color-accent),
-      var(--shadow-md);
+    border-color: var(--color-gold);
+    box-shadow: 0 0 0 1px var(--color-gold), var(--shadow-md);
   }
   .pricing-popular {
     position: absolute;
     top: -0.7rem;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: white;
-    background: var(--color-accent);
+    color: var(--color-ink);
+    background: var(--color-gold);
     padding: 0.25rem 0.9rem;
     border-radius: var(--radius-pill);
     white-space: nowrap;
@@ -1831,43 +1276,48 @@
     gap: 0.25rem;
     margin-bottom: 1.5rem;
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--color-border-subtle);
+    border-bottom: 1px solid rgba(160,120,60,0.15);
   }
   .pricing-card-head h3 {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
-    color: var(--color-text-on-light);
+    color: var(--color-parchment-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
   }
   .pricing-amount {
     display: flex;
     align-items: baseline;
-    gap: 0.1rem;
+    gap: 0.05rem;
   }
   .pricing-currency {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--color-text-muted);
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--color-parchment-muted);
     align-self: flex-start;
-    margin-top: 0.4rem;
+    margin-top: 0.55rem;
   }
   .pricing-value {
-    font-size: 3rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    color: var(--color-text-on-light);
+    font-family: var(--font-serif);
+    font-size: 4rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--color-parchment-text);
     line-height: 1;
   }
+  .pricing-pro .pricing-value { color: var(--color-gold); }
   .pricing-period {
-    font-size: 0.82rem;
-    color: var(--color-text-muted);
-    font-weight: 500;
+    font-size: 0.8rem;
+    color: var(--color-parchment-muted);
+    font-weight: 400;
   }
   .pricing-save {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 600;
-    color: var(--color-accent);
-    background: rgba(42, 125, 110, 0.1);
-    padding: 0.35rem 0.75rem;
+    color: var(--color-gold);
+    background: var(--color-gold-soft);
+    border: 1px solid var(--color-gold-border);
+    padding: 0.3rem 0.7rem;
     border-radius: var(--radius-pill);
     width: fit-content;
     margin-bottom: 0.75rem;
@@ -1885,274 +1335,178 @@
     align-items: center;
     gap: 0.6rem;
     font-size: 0.875rem;
-    color: var(--color-text-muted);
+    color: var(--color-parchment-muted);
     line-height: 1.4;
   }
   .pricing-features svg {
     width: 1rem;
     height: 1rem;
-    color: var(--color-accent);
+    color: var(--color-gold);
     flex-shrink: 0;
   }
 
   /* ── CTA ── */
   .cta {
-    background: var(--color-dark);
-    padding: 6rem 0 5rem;
-    text-align: center;
+    background-color: var(--color-ink);
+    background-image:
+      radial-gradient(ellipse at 12% 50%, rgba(201,148,58,0.09) 0%, transparent 55%),
+      radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 100% 100%, 30px 30px;
+    padding: 7rem 0 6rem;
   }
-  .cta-glow {
+  .cta-compass {
     position: absolute;
-    bottom: -30%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60%;
-    height: 80%;
-    background: radial-gradient(ellipse, rgba(42, 125, 110, 0.15) 0%, transparent 70%);
+    right: 5%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: min(420px, 36vw);
+    color: var(--color-gold);
+    opacity: 0.07;
     pointer-events: none;
   }
   .cta-inner {
     position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 1.25rem;
+    align-items: flex-start;
+    gap: 1.5rem;
+    max-width: 560px;
   }
   .cta-inner h2 {
-    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-    font-weight: 800;
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 600;
     color: var(--color-text-on-dark);
     line-height: 1.15;
+    letter-spacing: 0.01em;
   }
   .cta-inner p {
     font-size: 1.05rem;
     color: var(--color-text-on-dark-muted);
-    max-width: 400px;
-    margin-bottom: 0.5rem;
+    line-height: 1.7;
+    margin-top: -0.25rem;
+  }
+  .cta-inner p em {
+    font-style: italic;
+    color: rgba(255,255,255,0.5);
+  }
+  .cta-note {
+    font-size: 0.76rem;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    margin-top: -0.5rem;
   }
 
   /* ── Footer ── */
   footer {
-    background: #080f1e;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    padding: 1.5rem 0;
+    background: #040810;
+    border-top: 1px solid rgba(201,148,58,0.12);
+    padding: 4rem 0 2rem;
   }
   .footer-inner {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .footer-brand-col {
     display: flex;
-    align-items: center;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.6rem;
   }
-  .footer-brand {
-    font-size: 0.9rem;
+  .footer-logo {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-gold);
+    letter-spacing: 0.02em;
+  }
+  .footer-tagline {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.38);
+    line-height: 1.6;
+  }
+  .footer-coords {
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    color: rgba(201,148,58,0.4);
+    margin-top: 0.4rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .footer-links-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .footer-col-title {
+    font-size: 0.63rem;
     font-weight: 700;
-    color: var(--color-text-on-dark);
-    margin-right: auto;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.22);
+    margin-bottom: 0.3rem;
   }
-  .footer-copy {
-    font-size: 0.8rem;
-    color: var(--color-text-on-dark-muted);
+  .footer-links-col a {
+    font-size: 0.875rem;
+    color: rgba(255,255,255,0.42);
+    transition: color var(--transition);
+  }
+  .footer-links-col a:hover { color: rgba(255,255,255,0.78); }
+  .footer-bottom {
+    font-size: 0.76rem;
+    color: rgba(255,255,255,0.18);
   }
 
   /* ── Responsive ── */
   @media (max-width: 1024px) {
-    .values-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
     .theater-stage {
       grid-template-columns: 1fr;
       gap: 2rem;
-    }
-    .theater-display {
-      width: 100%;
-      margin: 0 auto;
     }
     .theater-info {
       text-align: center;
       align-items: center;
     }
-    .theater-techniques {
-      justify-content: center;
-    }
+    .theater-techniques { justify-content: center; }
+  }
+  @media (max-width: 900px) {
+    .hero { padding: 6rem 0 5rem; }
+    .manifesto-body { grid-template-columns: 1fr; column-gap: 0; }
   }
   @media (max-width: 768px) {
     .stats-grid {
       flex-direction: column;
-      gap: 2rem;
+      gap: 2.5rem;
     }
-    .stat-divider {
-      width: 3rem;
-      height: 1px;
-    }
+    .stat-divider { width: 3rem; height: 1px; }
     .pricing-grid {
       grid-template-columns: 1fr;
       max-width: 400px;
       margin: 0 auto;
     }
-    .theater-tabs {
-      gap: 0.3rem;
+    .theater-tabs { gap: 0.3rem; }
+    .tab-label { display: none; }
+    .tab-index { opacity: 1; font-size: 0.8rem; }
+    .footer-inner {
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
     }
-    .tab-label {
-      display: none;
-    }
-    .tab-index {
-      opacity: 1;
-      font-size: 0.8rem;
-    }
+    .footer-brand-col { grid-column: 1 / -1; }
+    .cta-compass { display: none; }
   }
   @media (max-width: 640px) {
-    .values-grid {
-      grid-template-columns: 1fr;
-    }
-    .hero-actions {
-      justify-content: center;
-    }
-    .hero-headline {
-      font-size: 2rem;
-    }
-  }
-
-  /* ── Comparison ── */
-  .comparison {
-    background: #111111;
-    padding: 5.5rem 0;
-  }
-  .comparison .section-header h2 {
-    color: var(--color-text-on-dark);
-  }
-  .comparison .section-header p {
-    color: var(--color-text-on-dark-muted);
-  }
-  .comparison .section-tag {
-    background: rgba(42, 125, 110, 0.2);
-  }
-  .comparison-block {
-    margin-bottom: 3.5rem;
-  }
-  .comparison-group-title {
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.35);
-    margin-bottom: 1rem;
-  }
-  .compare-table-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-  }
-  .compare-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.88rem;
-    min-width: 560px;
-  }
-  .compare-table thead tr {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  }
-  .compare-table thead th {
-    padding: 0.9rem 1.1rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    color: rgba(255, 255, 255, 0.45);
-    text-align: center;
-    vertical-align: bottom;
-    line-height: 1.4;
-  }
-  .compare-table thead th.compare-col-feature {
-    text-align: left;
-    width: 34%;
-  }
-  .col-sub {
-    display: block;
-    font-size: 0.65rem;
-    font-weight: 400;
-    letter-spacing: 0.03em;
-    color: rgba(255, 255, 255, 0.22);
-    margin-top: 0.25rem;
-    text-transform: none;
-  }
-  .compare-table tbody tr {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  }
-  .compare-table tbody tr:last-child {
-    border-bottom: none;
-  }
-  .compare-table tbody td {
-    padding: 0.8rem 1.1rem;
-    text-align: center;
-    vertical-align: middle;
-    color: rgba(255, 255, 255, 0.55);
-  }
-  .compare-table tbody td.compare-feature {
-    text-align: left;
-    color: rgba(255, 255, 255, 0.75);
-    font-weight: 500;
-    font-size: 0.85rem;
-  }
-  /* Highlighted Mapello column */
-  .compare-table th.compare-col-us,
-  .compare-table td.compare-col-us {
-    background: rgba(42, 125, 110, 0.09);
-    color: var(--color-accent);
-    font-weight: 600;
-  }
-  .compare-table thead th.compare-col-us {
-    color: #4ab8a3;
-    letter-spacing: 0.08em;
-  }
-  /* Icons */
-  .ci-check,
-  .ci-cross,
-  .ci-dash {
-    width: 18px;
-    height: 18px;
-    display: inline-block;
-    vertical-align: middle;
-  }
-  .ci-check {
-    stroke: var(--color-accent);
-  }
-  .ci-check.ci-check-muted {
-    stroke: rgba(255, 255, 255, 0.4);
-  }
-  .ci-cross {
-    stroke: rgba(255, 255, 255, 0.22);
-  }
-  .ci-dash {
-    stroke: rgba(255, 255, 255, 0.35);
-  }
-  /* Legend */
-  .compare-legend {
-    display: flex;
-    align-items: center;
-    gap: 1.75rem;
-    flex-wrap: wrap;
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.3);
-    margin-top: 1.5rem;
-    padding-left: 0.25rem;
-  }
-  .compare-legend span {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
-  .compare-legend .ci-check {
-    stroke: rgba(255, 255, 255, 0.4);
+    .hero-headline { font-size: 2.6rem; }
+    .hero-actions { justify-content: flex-start; }
+    .footer-inner { grid-template-columns: 1fr; }
+    .manifesto-header h2 { font-size: 1.6rem; }
   }
   @media (max-width: 720px) {
-    .comparison {
-      padding: 4rem 0;
-    }
-    .compare-table {
-      font-size: 0.82rem;
-    }
+    .comparison { padding: 4rem 0; }
+    .compare-table { font-size: 0.82rem; }
     .compare-table thead th,
-    .compare-table tbody td {
-      padding: 0.7rem 0.8rem;
-    }
+    .compare-table tbody td { padding: 0.7rem 0.8rem; }
   }
 </style>

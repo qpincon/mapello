@@ -345,6 +345,9 @@ export async function inlineFontVsPath(
     return false;
 }
 
+// Canvas padding needed to contain feDropShadow (dx=2, dy=2, stdDeviation=4): worst-case extent = dx + 3*std = 14px
+export const FRAME_SHADOW_MARGIN = 16;
+
 export function addFrameShadow(
     svgElement: SVGElement | Element,
     mapId: string,

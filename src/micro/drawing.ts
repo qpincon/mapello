@@ -7,7 +7,7 @@ import { DOM_PARSER, findStyleSheet, fontsToCssMultiSubset, fontsToCssEmbedMulti
 import { patternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download, randomString, xhtmlifyHtml } from "../util/common";
-import { addAttribution, addFrameShadow, additionnalCssExport, changeIdAndReferences, exportFontChoices, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
+import { addAttribution, addFrameShadow, additionnalCssExport, changeIdAndReferences, exportFontChoices, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.js?raw';
 import { createRoundedRectangleGeoJSON } from '../util/geometry';
@@ -731,7 +731,7 @@ export function generateCssFromState(state: MicroPalette): string | null {
                 css += updateStyleSheetOrGenerateCss(sheet, `#micro .${layer}-${i}:hover`, { 'fill': lighten(fill) });
             });
             if (layerDef['3dBuildings']) {
-                css += updateStyleSheetOrGenerateCss(sheet, `#buildings`, { 'stroke': layerDef.stroke! });
+                css += updateStyleSheetOrGenerateCss(sheet, `#buildings`, { 'stroke': layerDef.stroke!, 'stroke-linejoin': 'round' });
                 layerDef.fills.forEach((fill, i) => {
                     css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}`, {
                         '--building-color': fill,
@@ -910,6 +910,8 @@ export async function exportMicro(
     svgElement.classList.remove('animate-transition');
     svgElement.classList.add('cartosvg');
 
+    let shadowPadded = false;
+
     if (frameShadow) {
         const outerFrameRx = (borderRadius / 100) * Math.min(width - borderPadding, height - borderPadding);
         addFrameShadow(svgElement, mapId, {
@@ -919,6 +921,13 @@ export async function exportMicro(
             height,
             rx: outerFrameRx,
         });
+        const m = FRAME_SHADOW_MARGIN;
+        const paddedW = width + 2 * m;
+        const paddedH = height + 2 * m;
+        svgElement.setAttribute('width', String(paddedW));
+        svgElement.setAttribute('height', String(paddedH));
+        svgElement.setAttribute('viewBox', `${-m} ${-m} ${paddedW} ${paddedH}`);
+        shadowPadded = true;
     }
 
     if (animate || hasAnnotations) {
@@ -947,9 +956,11 @@ export async function exportMicro(
     addAttribution(svgElement, width, height, 'micro', customAttributions);
 
     if (useViewBox) {
-        svgElement.removeAttribute('height');
+        if (!shadowPadded) {
+            svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        }
         svgElement.removeAttribute('width');
-        svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        svgElement.removeAttribute('height');
     }
 
     if (!downloadExport) return svgElement.outerHTML;

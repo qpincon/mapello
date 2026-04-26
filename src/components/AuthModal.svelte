@@ -1,6 +1,6 @@
 <script lang="ts">
     import Modal from './Modal.svelte';
-    import { signIn, signUp, requestPasswordReset } from '$lib/auth-client';
+    import { signIn, signUp, requestPasswordReset, sendVerificationEmail } from '$lib/auth-client';
     import { invalidateAll } from '$app/navigation';
 
     interface Props {
@@ -10,13 +10,14 @@
 
     let { open = $bindable(), afterAuth }: Props = $props();
 
-    type AuthMode = 'login' | 'register' | 'forgot';
+    type AuthMode = 'login' | 'register' | 'forgot' | 'verify';
     let mode: AuthMode = $state('login');
     let email = $state('');
     let password = $state('');
     let errorMsg = $state('');
     let loading = $state(false);
     let forgotSent = $state(false);
+    let resendSent = $state(false);
 
     // Google login button is always shown; if not configured server-side the request will fail gracefully
 
@@ -24,10 +25,15 @@
         mode = m;
         errorMsg = '';
         forgotSent = false;
+        resendSent = false;
     }
 
     function close() {
         open = false;
+        mode = 'login';
+        errorMsg = '';
+        forgotSent = false;
+        resendSent = false;
     }
 
     async function handleSubmit(e: Event) {
@@ -36,23 +42,41 @@
         loading = true;
         try {
             if (mode === 'register') {
-                const result = await signUp.email({ name: email.split('@')[0], email, password });
+                const result = await signUp.email({ name: email.split('@')[0], email, password, callbackURL: '/app' });
                 if (result.error) {
                     errorMsg = result.error.message ?? 'Registration failed';
                     return;
                 }
+                switchMode('verify');
             } else {
                 const result = await signIn.email({ email, password });
                 if (result.error) {
+                    if (result.error.code === 'EMAIL_NOT_VERIFIED') {
+                        switchMode('verify');
+                        return;
+                    }
                     errorMsg = result.error.message ?? 'Login failed';
                     return;
                 }
+                close();
+                await invalidateAll();
+                afterAuth?.();
             }
-            close();
-            await invalidateAll();
-            afterAuth?.();
         } catch {
             errorMsg = 'An unexpected error occurred';
+        } finally {
+            loading = false;
+        }
+    }
+
+    async function handleResendVerification() {
+        resendSent = false;
+        loading = true;
+        try {
+            await sendVerificationEmail({ email, callbackURL: '/app' });
+            resendSent = true;
+        } catch {
+            errorMsg = 'Could not resend verification email';
         } finally {
             loading = false;
         }
@@ -95,11 +119,29 @@
 
 <Modal {open} onClosed={close} modalWidth="420px">
     <div slot="header">
-        <h5 class="modal-title">{mode === 'login' ? 'Sign in' : mode === 'register' ? 'Create account' : 'Reset password'}</h5>
+        <h5 class="modal-title">{mode === 'login' ? 'Sign in' : mode === 'register' ? 'Create account' : mode === 'verify' ? 'Verify your email' : 'Reset password'}</h5>
     </div>
 
     <div slot="content" class="auth-modal">
-        {#if mode !== 'forgot'}
+        {#if mode === 'verify'}
+            <div class="text-center py-2">
+                <p class="mb-2">We sent a verification link to <strong>{email}</strong>.</p>
+                <p class="text-muted small mb-3">Click the link in the email to activate your account.</p>
+                {#if resendSent}
+                    <div class="alert alert-success py-2 px-3 mb-3">Verification email resent.</div>
+                {/if}
+                {#if errorMsg}
+                    <div class="alert alert-danger py-2 px-3 mb-3">{errorMsg}</div>
+                {/if}
+                <button class="btn btn-outline-primary w-100 mb-2" type="button" onclick={handleResendVerification} disabled={loading}>
+                    {#if loading}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
+                    Resend verification email
+                </button>
+            </div>
+            <button type="button" class="btn btn-link w-100" onclick={() => switchMode('login')}>
+                Back to sign in
+            </button>
+        {:else if mode !== 'forgot'}
             <div class="mode-tabs mb-3">
                 <button
                     class="tab-btn"
