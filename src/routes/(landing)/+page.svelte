@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import ShowcaseSlot from "./ShowcaseSlot.svelte";
   import ValueCard from "./ValueCard.svelte";
+  import MapelloMark from "./MapelloMark.svelte";
 
   const ICONS = {
     paste: `<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/>`,
@@ -181,6 +182,7 @@
   <meta property="og:title" content="Mapello — SVG Map Designer" />
   <meta property="og:description" content="Design beautiful maps and embed them anywhere with a simple copy-paste." />
   <meta property="og:type" content="website" />
+  <meta property="og:image" content="/og-cover.png" />
   <link rel="preconnect" href="https://fonts.bunny.net" />
   <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800&display=swap" rel="stylesheet" />
   <link href="https://fonts.bunny.net/css?family=cormorant-garamond:400,400i,600,600i&display=swap" rel="stylesheet" />
@@ -397,7 +399,7 @@
 </section>
 
 <!-- ════════════════════════════════ COMPARISON ══════════════════════════════════════ -->
-<section class="comparison">
+<section class="comparison" id="compare">
   <div class="l-container">
     <div class="section-header lp-reveal">
       <span class="section-tag">How it compares</span>
@@ -1301,6 +1303,7 @@
 <footer>
   <div class="l-container footer-inner">
     <div class="footer-brand-col">
+      <div class="footer-mark"><MapelloMark size={32} accent="gold" /></div>
       <span class="footer-logo">Mapello</span>
       <span class="footer-tagline">Maps you'll be proud to embed.</span>
       <span class="footer-coords">48°52′N &nbsp; 2°21′E</span>
@@ -1479,7 +1482,7 @@
       30px 30px,
       100% 100%,
       100% 100%;
-    padding: 9rem 0 8rem;
+    padding: calc(9rem + 64px) 0 8rem;
     display: flex;
     align-items: center;
   }
@@ -2181,6 +2184,10 @@
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
+  }
+  .footer-mark {
+    margin-bottom: 0.2rem;
+    color: rgba(255, 255, 255, 0.55);
   }
   .footer-logo {
     font-family: var(--font-serif);
