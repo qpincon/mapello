@@ -115,11 +115,40 @@ for (var _annId in _annData) {
             });
         }
 
-        // Popover: click
+        // Popover: tap (pointer events) with click fallback for legacy browsers
         if (ann.popover) {
             el.style.cursor = 'pointer';
-            el.addEventListener('click', function (e) {
+            // Removes the 300ms tap delay on iOS and prevents double-tap-zoom on the element
+            el.style.touchAction = 'manipulation';
+
+            var _tapStartX = 0, _tapStartY = 0, _tapTracking = false, _tapPointerId = -1;
+
+            el.addEventListener('pointerdown', function (e) {
+                _tapStartX = e.clientX;
+                _tapStartY = e.clientY;
+                _tapTracking = true;
+                _tapPointerId = e.pointerId;
+                // Capture the pointer so pointermove/pointerup always fire on this element,
+                // enabling reliable swipe-vs-tap detection even if the finger moves off the element
+                try { el.setPointerCapture(e.pointerId); } catch (_) {}
+            });
+
+            el.addEventListener('pointermove', function (e) {
+                if (!_tapTracking || e.pointerId !== _tapPointerId) return;
+                var dx = e.clientX - _tapStartX;
+                var dy = e.clientY - _tapStartY;
+                if (dx * dx + dy * dy > 64) { _tapTracking = false; } // >8px = swipe, not tap
+            });
+
+            el.addEventListener('pointercancel', function () { _tapTracking = false; });
+
+            el.addEventListener('pointerup', function (e) {
+                if (!_tapTracking || e.pointerId !== _tapPointerId) return;
+                _tapTracking = false;
                 e.stopPropagation();
+                // Prevent the browser from synthesising a click after this pointerup,
+                // which would bubble to the mapElement dismiss handler and close the popover instantly
+                e.preventDefault();
                 if (_openPopoverId === id) {
                     _poFO.style.display = 'none';
                     _poFO.style.opacity = '';
@@ -142,6 +171,7 @@ for (var _annId in _annData) {
                 _poFO.innerHTML = '';
                 var _poWrapper = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
                 _poWrapper.style.cssText = 'display:inline-block;width:max-content;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));';
+                _poWrapper.addEventListener('pointerup', function (e) { e.stopPropagation(); });
                 _poWrapper.addEventListener('click', function (e) { e.stopPropagation(); });
                 var _poContent = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
                 _poContent.innerHTML = _tmpEl.innerHTML;
@@ -159,10 +189,22 @@ for (var _annId in _annData) {
                     _poFO.style.opacity = '1';
                 });
             });
+
+            // Swallow any residual synthetic click that some browsers fire after pointerup,
+            // so it doesn't bubble up to the mapElement dismiss handler
+            el.addEventListener('click', function (e) { e.stopPropagation(); });
         }
     })(_annId, _annData[_annId]);
 }
 
+// Dismiss open popover when tapping/clicking on empty SVG area.
+// pointerup handles touch (fires when per-element handler didn't stopPropagation, i.e. empty area tap).
+// click is a fallback for browsers without Pointer Events support.
+mapElement.addEventListener('pointerup', function () {
+    _poFO.style.display = 'none';
+    _poFO.style.opacity = '';
+    _openPopoverId = '';
+});
 mapElement.addEventListener('click', function () {
     _poFO.style.display = 'none';
     _poFO.style.opacity = '';

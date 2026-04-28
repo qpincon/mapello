@@ -1981,7 +1981,13 @@
     <div class="w-auto d-flex flex-grow-1 flex-column align-items-center h-100" style="position: relative;">
         <Navbar>
             <div class="d-flex align-items-center justify-content-between w-100 px-3">
-                <!-- LEFT: project name -->
+                <!-- LEFT: brand -->
+                <div class="d-flex align-items-center gap-2">
+                    <a href="/" class="navbar-brand-link" aria-label="Mapello home">
+                        <img src="/wordmark_combined_transparent.png" alt="Mapello" height="32" />
+                    </a>
+                </div>
+                <!-- RIGHT: tools + user -->
                 <div class="d-flex align-items-center gap-2">
                     {#if currentUser}
                         <ProjectDropdown
@@ -1997,9 +2003,6 @@
                             }}
                         />
                     {/if}
-                </div>
-                <!-- RIGHT: tools + user -->
-                <div class="d-flex align-items-center gap-2">
                     <FontPicker
                         onFontSelected={handleFontSelected}
                         existingFontNames={commonState.providedFonts.map((f) => f.name)}
@@ -2265,6 +2268,20 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .navbar-brand-link {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+        transition: opacity 0.2s ease;
+        flex-shrink: 0;
+    }
+    .navbar-brand-link:hover { opacity: 0.75; }
+    .navbar-brand-link img {
+        height: 32px;
+        width: auto;
+        display: block;
     }
 
     :global(.instructions-btn) {
