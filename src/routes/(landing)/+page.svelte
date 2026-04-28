@@ -216,98 +216,131 @@
 
 <!-- ═══════════════════════════════════════ HERO ═══════════════════════════════════════ -->
 <section class="hero">
-  <svg class="hero-globe" viewBox="0 0 600 600" fill="none" aria-hidden="true">
+  <svg class="hero-instrument" viewBox="0 0 600 600" fill="none" aria-hidden="true">
     <defs>
-      <clipPath id="hero-clip"><circle cx="300" cy="300" r="284" /></clipPath>
+      <clipPath id="hero-isoline-clip"><circle cx="300" cy="300" r="151"/></clipPath>
+      <line id="itick" x1="0" y1="-241" x2="0" y2="-250"/>
+      <line id="itick-card" x1="0" y1="-237" x2="0" y2="-257"/>
+      <radialGradient id="hero-teal-glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#2a7d6e" stop-opacity="0.1"/>
+        <stop offset="100%" stop-color="#2a7d6e" stop-opacity="0"/>
+      </radialGradient>
     </defs>
-    <circle
-      cx="300"
-      cy="300"
-      r="284"
-      stroke="white"
-      stroke-width="0.7"
-      stroke-opacity="0.6"
-    />
-    <g clip-path="url(#hero-clip)">
-      <ellipse
-        cx="300"
-        cy="300"
-        rx="284"
-        ry="76"
-        stroke="#c9943a"
-        stroke-width="1.1"
-        stroke-opacity="0.7"
-      />
-      <ellipse
-        cx="300"
-        cy="216"
-        rx="246"
-        ry="66"
-        stroke="white"
-        stroke-width="0.5"
-        stroke-opacity="0.35"
-      />
-      <ellipse
-        cx="300"
-        cy="384"
-        rx="246"
-        ry="66"
-        stroke="white"
-        stroke-width="0.5"
-        stroke-opacity="0.35"
-      />
-      <ellipse
-        cx="300"
-        cy="144"
-        rx="142"
-        ry="38"
-        stroke="white"
-        stroke-width="0.4"
-        stroke-opacity="0.22"
-      />
-      <ellipse
-        cx="300"
-        cy="456"
-        rx="142"
-        ry="38"
-        stroke="white"
-        stroke-width="0.4"
-        stroke-opacity="0.22"
-      />
-      <line
-        x1="300"
-        y1="16"
-        x2="300"
-        y2="584"
-        stroke="#c9943a"
-        stroke-width="1"
-        stroke-opacity="0.6"
-      />
-      <ellipse
-        cx="300"
-        cy="300"
-        rx="142"
-        ry="284"
-        stroke="white"
-        stroke-width="0.5"
-        stroke-opacity="0.28"
-      />
-      <ellipse
-        cx="300"
-        cy="300"
-        rx="246"
-        ry="284"
-        stroke="white"
-        stroke-width="0.4"
-        stroke-opacity="0.2"
-      />
+
+    <!-- teal inner halo -->
+    <circle cx="300" cy="300" r="295" fill="url(#hero-teal-glow)"/>
+
+    <!-- outer soft anchor ring -->
+    <circle cx="300" cy="300" r="290" stroke="white" stroke-width="0.5" stroke-opacity="0.15"/>
+
+    <!-- outer dashed ring — counter-rotates slowly -->
+    <g class="anim-rotate-ccw">
+      <circle cx="300" cy="300" r="260" stroke="white" stroke-width="0.8" stroke-opacity="0.30"
+              stroke-dasharray="18 6 4 6"/>
     </g>
+
+    <!-- 24 chronometer ticks -->
+    <g transform="translate(300,300)" stroke="white" stroke-width="0.65" stroke-opacity="0.28">
+      <use href="#itick" transform="rotate(0)"/>
+      <use href="#itick" transform="rotate(15)"/>
+      <use href="#itick" transform="rotate(30)"/>
+      <use href="#itick" transform="rotate(45)"/>
+      <use href="#itick" transform="rotate(60)"/>
+      <use href="#itick" transform="rotate(75)"/>
+      <use href="#itick" transform="rotate(90)"/>
+      <use href="#itick" transform="rotate(105)"/>
+      <use href="#itick" transform="rotate(120)"/>
+      <use href="#itick" transform="rotate(135)"/>
+      <use href="#itick" transform="rotate(150)"/>
+      <use href="#itick" transform="rotate(165)"/>
+      <use href="#itick" transform="rotate(180)"/>
+      <use href="#itick" transform="rotate(195)"/>
+      <use href="#itick" transform="rotate(210)"/>
+      <use href="#itick" transform="rotate(225)"/>
+      <use href="#itick" transform="rotate(240)"/>
+      <use href="#itick" transform="rotate(255)"/>
+      <use href="#itick" transform="rotate(270)"/>
+      <use href="#itick" transform="rotate(285)"/>
+      <use href="#itick" transform="rotate(300)"/>
+      <use href="#itick" transform="rotate(315)"/>
+      <use href="#itick" transform="rotate(330)"/>
+      <use href="#itick" transform="rotate(345)"/>
+    </g>
+    <!-- cardinal major ticks: N/E/S/W -->
+    <g transform="translate(300,300)" stroke="#c9943a" stroke-width="1.1" stroke-opacity="0.55">
+      <use href="#itick-card" transform="rotate(0)"/>
+      <use href="#itick-card" transform="rotate(90)"/>
+      <use href="#itick-card" transform="rotate(180)"/>
+      <use href="#itick-card" transform="rotate(270)"/>
+    </g>
+
+    <!-- compass rose: N axis gold, E/S/W white -->
+    <line x1="300" y1="300" x2="300" y2="94" stroke="#c9943a" stroke-width="0.85" stroke-opacity="0.48"/>
+    <line x1="300" y1="300" x2="506" y2="300" stroke="white" stroke-width="0.65" stroke-opacity="0.28"/>
+    <line x1="300" y1="300" x2="300" y2="506" stroke="white" stroke-width="0.65" stroke-opacity="0.28"/>
+    <line x1="300" y1="300" x2="94"  y2="300" stroke="white" stroke-width="0.65" stroke-opacity="0.28"/>
+    <!-- compass labels -->
+    <text x="300" y="74" text-anchor="middle"
+          fill="#c9943a" fill-opacity="0.72"
+          font-family="'Cormorant Garamond', serif" font-size="12" letter-spacing="1">N</text>
+    <text x="522" y="305" text-anchor="start" dominant-baseline="middle"
+          fill="white" fill-opacity="0.35"
+          font-family="'Cormorant Garamond', serif" font-size="12" letter-spacing="1">E</text>
+    <text x="300" y="532" text-anchor="middle"
+          fill="white" fill-opacity="0.35"
+          font-family="'Cormorant Garamond', serif" font-size="12" letter-spacing="1">S</text>
+    <text x="78" y="305" text-anchor="end" dominant-baseline="middle"
+          fill="white" fill-opacity="0.35"
+          font-family="'Cormorant Garamond', serif" font-size="12" letter-spacing="1">W</text>
+
+    <!-- inner gear ring — rotates CW -->
+    <g class="anim-rotate-cw">
+      <circle cx="300" cy="300" r="170" stroke="white" stroke-width="1" stroke-opacity="0.34"
+              stroke-dasharray="14 5"/>
+    </g>
+
+    <!-- isolines + gold equator (clipped inside inner ring) -->
+    <g clip-path="url(#hero-isoline-clip)">
+      <line x1="149" y1="300" x2="451" y2="300"
+            stroke="#c9943a" stroke-width="0.9" stroke-opacity="0.45"/>
+      <path class="anim-drift-fwd"
+            d="M 149,273 C 198,255 248,292 300,270 C 352,248 402,280 451,268"
+            stroke="white" stroke-width="0.75" stroke-opacity="0.22"
+            stroke-dasharray="60 15"/>
+      <path class="anim-drift-rev"
+            d="M 149,330 C 198,348 248,316 300,332 C 352,350 402,325 451,334"
+            stroke="white" stroke-width="0.75" stroke-opacity="0.22"
+            stroke-dasharray="60 15"/>
+      <path class="anim-drift-fwd"
+            d="M 149,244 C 198,230 248,260 300,243 C 352,226 402,252 451,241"
+            stroke="white" stroke-width="0.55" stroke-opacity="0.11"
+            stroke-dasharray="40 18"/>
+      <path class="anim-drift-rev"
+            d="M 149,358 C 198,374 248,348 300,361 C 352,374 402,354 451,363"
+            stroke="white" stroke-width="0.55" stroke-opacity="0.11"
+            stroke-dasharray="40 18"/>
+    </g>
+
+    <!-- central focal point: pulsing halo + solid dot -->
+    <circle class="anim-pulse" cx="300" cy="300" r="5" fill="none"
+            stroke="#c9943a" stroke-width="1.2" stroke-opacity="0.42"/>
+    <circle cx="300" cy="300" r="3.5" fill="#c9943a" fill-opacity="0.80"/>
+
+    <!-- outer crosshair ticks at SVG edges -->
     <g stroke="#c9943a" stroke-width="1.5" stroke-opacity="0.5">
-      <line x1="300" y1="6" x2="300" y2="20" />
-      <line x1="300" y1="580" x2="300" y2="594" />
-      <line x1="6" y1="300" x2="20" y2="300" />
-      <line x1="580" y1="300" x2="594" y2="300" />
+      <line x1="300" y1="6"   x2="300" y2="20"/>
+      <line x1="300" y1="580" x2="300" y2="594"/>
+      <line x1="6"   y1="300" x2="20"  y2="300"/>
+      <line x1="580" y1="300" x2="594" y2="300"/>
     </g>
+
+    <!-- coordinate annotations -->
+    <text x="420" y="126" text-anchor="middle"
+          fill="#c9943a" fill-opacity="0.55"
+          font-family="'Cormorant Garamond', serif" font-size="9.5" letter-spacing="1.5">48°52′N</text>
+    <text x="180" y="484" text-anchor="middle"
+          fill="#c9943a" fill-opacity="0.55"
+          font-family="'Cormorant Garamond', serif" font-size="9.5" letter-spacing="1.5">2°21′E</text>
   </svg>
 
   <div class="l-container hero-inner">
@@ -1929,6 +1962,7 @@
     background-color: var(--color-ink);
     background-image:
       radial-gradient(circle, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+      radial-gradient(circle at 50% 50%, rgba(201, 148, 58, 0.055) 0%, transparent 44%),
       radial-gradient(
         ellipse at 96% 4%,
         rgba(42, 125, 110, 0.12) 0%,
@@ -1942,19 +1976,45 @@
     background-size:
       30px 30px,
       100% 100%,
+      100% 100%,
       100% 100%;
     padding: calc(9rem + 64px) 0 8rem;
     display: flex;
     align-items: center;
   }
-  .hero-globe {
+  .hero-instrument {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: min(86vw, 600px);
-    opacity: 0.082;
+    opacity: 0.38;
     pointer-events: none;
+  }
+  .anim-rotate-cw,
+  .anim-rotate-ccw,
+  .anim-pulse {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .anim-rotate-cw  { animation: instrument-rotate-cw  80s linear infinite; }
+  .anim-rotate-ccw { animation: instrument-rotate-ccw 120s linear infinite; }
+  .anim-pulse      { animation: instrument-pulse 2.6s ease-in-out infinite; }
+  .anim-drift-fwd  { animation: instrument-drift 14s ease-in-out infinite alternate; }
+  .anim-drift-rev  { animation: instrument-drift 14s ease-in-out infinite alternate-reverse; }
+  @keyframes instrument-rotate-cw  { to { transform: rotate(360deg); } }
+  @keyframes instrument-rotate-ccw { to { transform: rotate(-360deg); } }
+  @keyframes instrument-pulse {
+    0%, 100% { transform: scale(1);   opacity: 0.42; }
+    50%      { transform: scale(3.2); opacity: 0; }
+  }
+  @keyframes instrument-drift { to { stroke-dashoffset: -150; } }
+  @media (prefers-reduced-motion: reduce) {
+    .anim-rotate-cw,
+    .anim-rotate-ccw,
+    .anim-drift-fwd,
+    .anim-drift-rev,
+    .anim-pulse { animation: none; }
   }
   .hero-inner {
     display: flex;
