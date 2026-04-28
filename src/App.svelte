@@ -36,6 +36,8 @@
     import { undo, redo, setRestoring, clearHistory } from "./util/history";
     import { type ExportOptions } from "./svg/export";
     import ExportModal from "./components/ExportModal.svelte";
+    import PostExportInfoModal from "./components/PostExportInfoModal.svelte";
+    import InstructionsModal from "./components/InstructionsModal.svelte";
     import AuthModal from "./components/AuthModal.svelte";
     import UpgradeModal from "./components/UpgradeModal.svelte";
     import ProjectDropdown from "./components/ProjectDropdown.svelte";
@@ -145,6 +147,9 @@
     let forceHoveredElement: Element | null = null;
     let contextualMenu: (HTMLDivElement & { opened?: boolean }) | null = $state(null);
     let showExportConfirm = $state(false);
+    let showPostExportInfo = $state(false);
+    const POST_EXPORT_INFO_HIDDEN_KEY = "cartosvg-hide-post-export-info";
+    let showInstructionsModal = $state(false);
     let showAuthModal = $state(false);
     let authAfterCallback: (() => void) | undefined = $state(undefined);
     let showUpgradeModal = $state(false);
@@ -1610,11 +1615,11 @@
         closeMenu();
     }
 
-    function validateExport(options: ExportOptions): void {
+    async function validateExport(options: ExportOptions): Promise<void> {
         const exportOptions = { ...options, skipAttribution: isSuperUser };
         if (commonState.currentMode === "macro") {
             const totalCss = macroSidebar!.computeCss();
-            exportMacro(
+            await exportMacro(
                 svg,
                 macroState,
                 commonState.providedFonts,
@@ -1625,7 +1630,7 @@
             );
         } else {
             const microCss = exportStyleSheet("#micro .line")!;
-            exportMicro(
+            await exportMicro(
                 svg,
                 microState,
                 commonState.providedFonts,
@@ -1636,6 +1641,9 @@
             );
         }
         showExportConfirm = false;
+        if (localStorage.getItem(POST_EXPORT_INFO_HIDDEN_KEY) !== "1") {
+            showPostExportInfo = true;
+        }
     }
 
     let inlineFontUsed = $state(false);
@@ -1970,7 +1978,7 @@
             </div>
         </div>
     </aside>
-    <div class="w-auto d-flex flex-grow-1 flex-column align-items-center h-100">
+    <div class="w-auto d-flex flex-grow-1 flex-column align-items-center h-100" style="position: relative;">
         <Navbar>
             <div class="d-flex align-items-center justify-content-between w-100 px-3">
                 <!-- LEFT: project name -->
@@ -2056,6 +2064,16 @@
                     {/if}
                 </div>
             </div>
+            <button
+                slot="bottom-left"
+                class="p-2 instructions-btn"
+                type="button"
+                title="Instructions"
+                aria-label="Instructions"
+                onclick={() => (showInstructionsModal = true)}
+            >
+                {@html icons["help"]}
+            </button>
         </Navbar>
         <div class="d-flex flex-column justify-content-center align-items-center h-100 position-relative">
             {#if serverSyncError}
@@ -2112,6 +2130,8 @@
     exportsRemaining={page.data.exportsRemaining ?? null}
 />
 
+<PostExportInfoModal bind:open={showPostExportInfo} onClosed={() => (showPostExportInfo = false)} />
+<InstructionsModal bind:open={showInstructionsModal} onClosed={() => (showInstructionsModal = false)} />
 <AuthModal bind:open={showAuthModal} afterAuth={authAfterCallback} />
 <UpgradeModal open={showUpgradeModal} onClosed={() => (showUpgradeModal = false)} />
 
@@ -2245,5 +2265,28 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    :global(.instructions-btn) {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        width: 60px;
+        height: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    :global(.instructions-btn > svg) {
+        fill: #5f5f5f;
+        max-width: 1.5rem;
+        transition: fill 0.3s;
+    }
+    :global(.instructions-btn:hover > svg) {
+        fill: black;
     }
 </style>

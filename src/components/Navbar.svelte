@@ -10,6 +10,7 @@
 <div id="navbar">
   <slot></slot>
 </div>
+<slot name="bottom-left"></slot>
 <a
   class="p-2 github"
   target="_blank"
