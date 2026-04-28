@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import MapelloMark from './MapelloMark.svelte';
 
   let overHero = $state(true);
   let mounted = $state(false);
@@ -33,8 +32,12 @@
   <div class="nav-inner">
     <!-- Brand -->
     <a href="/" class="nav-brand" aria-label="Mapello home">
-      <MapelloMark size={28} accent={overHero ? 'teal' : 'teal'} />
-      <span class="nav-wordmark">Mapello</span>
+      <img
+        src="/logo_wordmark_transparent.png"
+        alt="Mapello"
+        class="nav-logo"
+        height="36"
+      />
     </a>
 
     <!-- Center links -->
@@ -101,25 +104,24 @@
   .nav-brand {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
     text-decoration: none;
     flex-shrink: 0;
-    color: rgba(255, 255, 255, 0.88);
-    transition: color 0.35s ease, opacity 0.2s ease;
+    transition: opacity 0.2s ease;
   }
   .nav-brand:hover { opacity: 0.8; }
-  .scrolled .nav-brand { color: #060d16; }
 
-  .nav-wordmark {
-    font-family: 'Cormorant Garamond', 'Palatino Linotype', Georgia, serif;
-    font-size: 1.15rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    line-height: 1;
-    color: var(--color-gold);
-    transition: color 0.35s ease;
+  .nav-logo {
+    height: 36px;
+    width: auto;
+    display: block;
+    /* Dark nav (over hero): invert to white */
+    filter: brightness(0) invert(1);
+    transition: filter 0.35s ease;
   }
-  .scrolled .nav-wordmark { color: #0f172a; }
+  .scrolled .nav-logo {
+    /* Parchment nav: restore original navy colors */
+    filter: none;
+  }
 
   /* Center links */
   .nav-links {
@@ -160,7 +162,7 @@
   .scrolled .nav-link { color: rgba(30, 41, 59, 0.55); }
   .scrolled .nav-link:hover { color: #0f172a; }
 
-  /* Focus ring (accessibility) */
+  /* Focus ring */
   .nav-link:focus-visible,
   .nav-brand:focus-visible,
   .nav-cta:focus-visible {
@@ -213,10 +215,9 @@
       transform: translateY(0);
       transition: background 0.35s ease, border-color 0.35s ease;
     }
-    .site-nav.mounted {
-      transition-delay: 0s;
-    }
+    .site-nav.mounted { transition-delay: 0s; }
     .nav-link::after { transition: none; }
     .nav-cta { transition: background 0.2s ease; }
+    .nav-logo { transition: none; }
   }
 </style>

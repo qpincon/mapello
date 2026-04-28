@@ -2,7 +2,6 @@
   import { onMount } from "svelte";
   import ShowcaseSlot from "./ShowcaseSlot.svelte";
   import ValueCard from "./ValueCard.svelte";
-  import MapelloMark from "./MapelloMark.svelte";
 
   const ICONS = {
     paste: `<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/>`,
@@ -20,16 +19,19 @@
       highlights: ["Positron palette", "Link on building"],
       src: "/showcase/micro/naarden.svg",
       aspectRatio: "1 / 1",
-      gradient: "linear-gradient(135deg, #2d4a35 0%, #3d6645 50%, #4a7a52 100%)",
+      gradient:
+        "linear-gradient(135deg, #2d4a35 0%, #3d6645 50%, #4a7a52 100%)",
     },
     {
       id: "manhattan",
       title: "Lower Manhattan, 3D",
-      description: "The densest skyline on Earth, rendered with 3D building extrusion.",
+      description:
+        "The densest skyline on Earth, rendered with 3D building extrusion.",
       highlights: ["Obsidian palette", "3D buildings"],
       src: "/showcase/micro/manhattan.svg",
       aspectRatio: "1 / 1",
-      gradient: "linear-gradient(135deg, #0a1525 0%, #152035 50%, #1e2d4a 100%)",
+      gradient:
+        "linear-gradient(135deg, #0a1525 0%, #152035 50%, #1e2d4a 100%)",
     },
     {
       id: "bern",
@@ -39,7 +41,8 @@
       highlights: ["Warm palette", "Popover", "Image along curve"],
       src: "/showcase/micro/bern.svg",
       aspectRatio: "1 / 1",
-      gradient: "linear-gradient(135deg, #1a2a3a 0%, #2a3d55 50%, #3a5070 100%)",
+      gradient:
+        "linear-gradient(135deg, #1a2a3a 0%, #2a3d55 50%, #3a5070 100%)",
     },
     {
       id: "sagrada",
@@ -49,7 +52,8 @@
       highlights: ["Gatsby palette", "Popover", "3D buildings"],
       src: "/showcase/micro/sagrada.svg",
       aspectRatio: "1 / 1",
-      gradient: "linear-gradient(135deg, #3a2a1a 0%, #5a4a2a 50%, #7a6a3a 100%)",
+      gradient:
+        "linear-gradient(135deg, #3a2a1a 0%, #5a4a2a 50%, #7a6a3a 100%)",
     },
     {
       id: "macau",
@@ -59,7 +63,8 @@
       highlights: ["Playful palette", "Custom labels", "Custom markers"],
       src: "/showcase/micro/macau.svg",
       aspectRatio: "1 / 1",
-      gradient: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+      gradient:
+        "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
     },
     {
       id: "central-park",
@@ -69,30 +74,33 @@
       highlights: ["Poster palette", "Tooltip", "Custom labels"],
       src: "/showcase/micro/central-park.svg",
       aspectRatio: "1 / 1",
-      gradient: "linear-gradient(135deg, #1a2e1a 0%, #2a4a2a 50%, #3a5c3a 100%)",
+      gradient:
+        "linear-gradient(135deg, #1a2e1a 0%, #2a4a2a 50%, #3a5c3a 100%)",
     },
   ];
 
   const macroMaps = [
     {
-      id: "gdp",
-      title: "Europe — GDP per Capita",
+      id: "italia",
+      title: "Italy — Cities & Regions",
       description:
-        "A globe centered on Europe, where each country is shaded by wealth per person. Hover any country to see the exact figure. Built from IMF data in minutes.",
-      highlights: ["Globe view", "Continuous choropleth", "Hover tooltips"],
-      src: "/showcase/macro/gdp.svg",
-      aspectRatio: "1 / 1",
-      gradient: "radial-gradient(ellipse at 50% 40%, #1d3557 0%, #0d1f3c 50%, #080f1e 100%)",
+        "A stylized map of the Italian peninsula with labeled cities — Roma, Milano, Venezia, Napoli and more. Clean typography and a warm earthy palette.",
+      highlights: ["City labels", "Land glow", "Image along curve"],
+      src: "/showcase/macro/italia.svg",
+      aspectRatio: "600 / 660",
+      gradient:
+        "linear-gradient(160deg, #f3efec 0%, #e8dfc8 50%, #d4c8a8 100%)",
     },
     {
-      id: "france",
-      title: "French Wine Regions",
+      id: "we-work",
+      title: "Where We Work",
       description:
-        "Each French region colored by its dominant wine style. Click the cities for more information in popovers.",
-      highlights: ["Mercator", "Categorical choropleth", "Hover tooltips"],
-      src: "/showcase/macro/france.svg",
-      aspectRatio: "650 / 590",
-      gradient: "linear-gradient(160deg, #f5f0e8 0%, #d4c4a0 50%, #c9b28a 100%)",
+        "A world map with markers showing a company's offices around the world.",
+      highlights: ["Categorical choropleth", "Custom markers and labels"],
+      src: "/showcase/macro/we-work.svg",
+      aspectRatio: "710 / 520",
+      gradient:
+        "linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #3a2a1a 100%)",
     },
     {
       id: "japan",
@@ -102,16 +110,8 @@
       highlights: ["Tilted globe", "Click popovers", "Route annotation"],
       src: "/showcase/macro/japan.svg",
       aspectRatio: "430 / 620",
-      gradient: "radial-gradient(ellipse at 50% 40%, #e8f0f8 0%, #b8cfe0 50%, #8aacc0 100%)",
-    },
-    {
-      id: "usa",
-      title: "US Political Map",
-      description: "A clean choropleth of voting patterns by county, using a red-to-blue gradient.",
-      highlights: ["Categorical choropleth", "Custom palette"],
-      src: "/showcase/macro/usa.svg",
-      aspectRatio: "650 / 380",
-      gradient: "linear-gradient(135deg, #1a1a3a 0%, #2a2a5a 50%, #1a2a6a 100%)",
+      gradient:
+        "radial-gradient(ellipse at 50% 40%, #e8f0f8 0%, #b8cfe0 50%, #8aacc0 100%)",
     },
     {
       id: "ukraine",
@@ -120,26 +120,42 @@
       highlights: ["Continuous choropleth", "Graticule", "Background noise"],
       src: "/showcase/macro/ukraine.svg",
       aspectRatio: "1 / 1",
-      gradient: "linear-gradient(135deg, #1a2535 0%, #1e3a5a 50%, #1a3050 100%)",
+      gradient:
+        "linear-gradient(135deg, #1a2535 0%, #1e3a5a 50%, #1a3050 100%)",
     },
     {
-      id: "italia",
-      title: "Italy — Cities & Regions",
+      id: "gdp",
+      title: "Europe — GDP per Capita",
       description:
-        "A stylized map of the Italian peninsula with labeled cities — Roma, Milano, Venezia, Napoli and more. Clean typography and a warm earthy palette.",
-      highlights: ["City labels", "Land glow", "Image along curve"],
-      src: "/showcase/macro/italia.svg",
-      aspectRatio: "600 / 660",
-      gradient: "linear-gradient(160deg, #f3efec 0%, #e8dfc8 50%, #d4c8a8 100%)",
+        "A globe centered on Europe, where each country is shaded by wealth per person. Hover any country to see the exact figure. Built from IMF data in minutes.",
+      highlights: ["Globe view", "Continuous choropleth", "Hover tooltips"],
+      src: "/showcase/macro/gdp.svg",
+      aspectRatio: "1 / 1",
+      gradient:
+        "radial-gradient(ellipse at 50% 40%, #1d3557 0%, #0d1f3c 50%, #080f1e 100%)",
+    },
+
+    {
+      id: "france",
+      title: "French Wine Regions",
+      description:
+        "Each French region colored by its dominant wine style. Click the cities for more information in popovers.",
+      highlights: ["Mercator", "Categorical choropleth", "Hover tooltips"],
+      src: "/showcase/macro/france.svg",
+      aspectRatio: "650 / 590",
+      gradient:
+        "linear-gradient(160deg, #f5f0e8 0%, #d4c4a0 50%, #c9b28a 100%)",
     },
     {
-      id: "we-work",
-      title: "Where We Work",
-      description: "A world map with markers showing a company's offices around the world.",
-      highlights: ["Categorical choropleth", "Custom markers and labels"],
-      src: "/showcase/macro/we-work.svg",
-      aspectRatio: "710 / 520",
-      gradient: "linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #3a2a1a 100%)",
+      id: "usa",
+      title: "US Political Map",
+      description:
+        "A clean choropleth of voting patterns by county, using a red-to-blue gradient.",
+      highlights: ["Categorical choropleth", "Custom palette"],
+      src: "/showcase/macro/usa.svg",
+      aspectRatio: "650 / 380",
+      gradient:
+        "linear-gradient(135deg, #1a1a3a 0%, #2a2a5a 50%, #1a2a6a 100%)",
     },
   ];
 
@@ -164,7 +180,8 @@
     const io = new IntersectionObserver(
       (entries) =>
         entries.forEach((e) => {
-          if (e.isIntersecting) (e.target as HTMLElement).classList.add("visible");
+          if (e.isIntersecting)
+            (e.target as HTMLElement).classList.add("visible");
         }),
       { threshold: 0.1 },
     );
@@ -180,12 +197,21 @@
     content="Design beautiful, interactive maps and export them as a single file you can drop into any website — no coding required."
   />
   <meta property="og:title" content="Mapello — SVG Map Designer" />
-  <meta property="og:description" content="Design beautiful maps and embed them anywhere with a simple copy-paste." />
+  <meta
+    property="og:description"
+    content="Design beautiful maps and embed them anywhere with a simple copy-paste."
+  />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="/og-cover.png" />
   <link rel="preconnect" href="https://fonts.bunny.net" />
-  <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800&display=swap" rel="stylesheet" />
-  <link href="https://fonts.bunny.net/css?family=cormorant-garamond:400,400i,600,600i&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    href="https://fonts.bunny.net/css?family=cormorant-garamond:400,400i,600,600i&display=swap"
+    rel="stylesheet"
+  />
 </svelte:head>
 
 <!-- ═══════════════════════════════════════ HERO ═══════════════════════════════════════ -->
@@ -194,16 +220,87 @@
     <defs>
       <clipPath id="hero-clip"><circle cx="300" cy="300" r="284" /></clipPath>
     </defs>
-    <circle cx="300" cy="300" r="284" stroke="white" stroke-width="0.7" stroke-opacity="0.6" />
+    <circle
+      cx="300"
+      cy="300"
+      r="284"
+      stroke="white"
+      stroke-width="0.7"
+      stroke-opacity="0.6"
+    />
     <g clip-path="url(#hero-clip)">
-      <ellipse cx="300" cy="300" rx="284" ry="76" stroke="#c9943a" stroke-width="1.1" stroke-opacity="0.7" />
-      <ellipse cx="300" cy="216" rx="246" ry="66" stroke="white" stroke-width="0.5" stroke-opacity="0.35" />
-      <ellipse cx="300" cy="384" rx="246" ry="66" stroke="white" stroke-width="0.5" stroke-opacity="0.35" />
-      <ellipse cx="300" cy="144" rx="142" ry="38" stroke="white" stroke-width="0.4" stroke-opacity="0.22" />
-      <ellipse cx="300" cy="456" rx="142" ry="38" stroke="white" stroke-width="0.4" stroke-opacity="0.22" />
-      <line x1="300" y1="16" x2="300" y2="584" stroke="#c9943a" stroke-width="1" stroke-opacity="0.6" />
-      <ellipse cx="300" cy="300" rx="142" ry="284" stroke="white" stroke-width="0.5" stroke-opacity="0.28" />
-      <ellipse cx="300" cy="300" rx="246" ry="284" stroke="white" stroke-width="0.4" stroke-opacity="0.2" />
+      <ellipse
+        cx="300"
+        cy="300"
+        rx="284"
+        ry="76"
+        stroke="#c9943a"
+        stroke-width="1.1"
+        stroke-opacity="0.7"
+      />
+      <ellipse
+        cx="300"
+        cy="216"
+        rx="246"
+        ry="66"
+        stroke="white"
+        stroke-width="0.5"
+        stroke-opacity="0.35"
+      />
+      <ellipse
+        cx="300"
+        cy="384"
+        rx="246"
+        ry="66"
+        stroke="white"
+        stroke-width="0.5"
+        stroke-opacity="0.35"
+      />
+      <ellipse
+        cx="300"
+        cy="144"
+        rx="142"
+        ry="38"
+        stroke="white"
+        stroke-width="0.4"
+        stroke-opacity="0.22"
+      />
+      <ellipse
+        cx="300"
+        cy="456"
+        rx="142"
+        ry="38"
+        stroke="white"
+        stroke-width="0.4"
+        stroke-opacity="0.22"
+      />
+      <line
+        x1="300"
+        y1="16"
+        x2="300"
+        y2="584"
+        stroke="#c9943a"
+        stroke-width="1"
+        stroke-opacity="0.6"
+      />
+      <ellipse
+        cx="300"
+        cy="300"
+        rx="142"
+        ry="284"
+        stroke="white"
+        stroke-width="0.5"
+        stroke-opacity="0.28"
+      />
+      <ellipse
+        cx="300"
+        cy="300"
+        rx="246"
+        ry="284"
+        stroke="white"
+        stroke-width="0.4"
+        stroke-opacity="0.2"
+      />
     </g>
     <g stroke="#c9943a" stroke-width="1.5" stroke-opacity="0.5">
       <line x1="300" y1="6" x2="300" y2="20" />
@@ -220,8 +317,9 @@
         The map tool<br /><em>I always wanted.</em>
       </h1>
       <p class="hero-sub lp-reveal">
-        Too technical or too ugly — that was always the trade-off. Design a beautiful, interactive map and export a
-        single self-contained SVG. Paste it anywhere. No code.
+        Too technical or too ugly — that was always the trade-off. Design a
+        beautiful, interactive map and export a single self-contained SVG. Paste
+        it anywhere. No code.
       </p>
       <div class="hero-actions lp-reveal">
         <a href="/app" class="btn-primary btn-large">Start designing</a>
@@ -243,7 +341,9 @@
   <div class="l-container">
     <div class="manifesto-header lp-reveal">
       <span class="section-tag">Our principles</span>
-      <h2>Maps should be beautiful.<br /><em>And they should just work.</em></h2>
+      <h2>
+        Maps should be beautiful.<br /><em>And they should just work.</em>
+      </h2>
     </div>
     <div class="manifesto-body">
       <div class="lp-reveal">
@@ -299,8 +399,9 @@
       <span class="section-tag">City maps</span>
       <h2>Street-level maps that stop the scroll</h2>
       <p>
-        Zoom into any city or neighborhood. Customize colors, highlight buildings, add 3D, and export a map that looks
-        like it came from a design studio.
+        Zoom into any city or neighborhood. Customize colors, highlight
+        buildings, add 3D, and export a map that looks like it came from a
+        design studio.
       </p>
     </div>
 
@@ -335,7 +436,11 @@
       </div>
       <div class="theater-tabs">
         {#each microMaps as map, i}
-          <button class="theater-tab" class:active={activeMicro === i} onclick={() => selectMicro(i)}>
+          <button
+            class="theater-tab"
+            class:active={activeMicro === i}
+            onclick={() => selectMicro(i)}
+          >
             <span class="tab-index">{String(i + 1).padStart(2, "0")}</span>
             <span class="tab-label">{map.title}</span>
           </button>
@@ -352,8 +457,8 @@
       <span class="section-tag">World maps</span>
       <h2>Turn your data into a map in minutes</h2>
       <p>
-        Country-by-country comparisons, election maps, trade flows, demographics — if you have a spreadsheet, Mapello
-        can color a world map from it.
+        Country-by-country comparisons, election maps, trade flows, demographics
+        — if you have a spreadsheet, Mapello can color a world map from it.
       </p>
     </div>
 
@@ -388,7 +493,11 @@
       </div>
       <div class="theater-tabs">
         {#each macroMaps as map, i}
-          <button class="theater-tab" class:active={activeMacro === i} onclick={() => selectMacro(i)}>
+          <button
+            class="theater-tab"
+            class:active={activeMacro === i}
+            onclick={() => selectMacro(i)}
+          >
             <span class="tab-index">{String(i + 1).padStart(2, "0")}</span>
             <span class="tab-label">{map.title}</span>
           </button>
@@ -405,8 +514,8 @@
       <span class="section-tag">How it compares</span>
       <h2>Where Mapello stands apart</h2>
       <p>
-        Other tools make you choose between ease and quality — or tie your maps to their servers forever. Mapello
-        doesn't.
+        Other tools make you choose between ease and quality — or tie your maps
+        to their servers forever. Mapello doesn't.
       </p>
     </div>
 
@@ -419,9 +528,21 @@
             <tr>
               <th class="compare-col-feature"></th>
               <th class="compare-col-us">Mapello</th>
-              <th>Hosted chart tools<br /><span class="col-sub">Datawrapper, Flourish…</span></th>
-              <th>Code libraries<br /><span class="col-sub">D3, Leaflet, Highcharts…</span></th>
-              <th>Static generators<br /><span class="col-sub">Mapchart, QGIS export…</span></th>
+              <th
+                >Hosted chart tools<br /><span class="col-sub"
+                  >Datawrapper, Flourish…</span
+                ></th
+              >
+              <th
+                >Code libraries<br /><span class="col-sub"
+                  >D3, Leaflet, Highcharts…</span
+                ></th
+              >
+              <th
+                >Static generators<br /><span class="col-sub"
+                  >Mapchart, QGIS export…</span
+                ></th
+              >
             </tr>
           </thead>
           <tbody>
@@ -439,7 +560,14 @@
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -451,12 +579,26 @@
               >
               <td
                 ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
+                  ><line
+                    x1="3.5"
+                    y1="8"
+                    x2="12.5"
+                    y2="8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
                 ></td
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -468,7 +610,9 @@
               >
             </tr>
             <tr>
-              <td class="compare-feature">Works forever, no server dependency</td>
+              <td class="compare-feature"
+                >Works forever, no server dependency</td
+              >
               <td class="compare-col-us"
                 ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
                   ><polyline
@@ -481,7 +625,14 @@
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -492,7 +643,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -502,7 +656,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -513,7 +670,9 @@
               >
             </tr>
             <tr>
-              <td class="compare-feature">Interactive after export (tooltips, popovers)</td>
+              <td class="compare-feature"
+                >Interactive after export (tooltips, popovers)</td
+              >
               <td class="compare-col-us"
                 ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
                   ><polyline
@@ -525,7 +684,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -536,12 +698,26 @@
               >
               <td
                 ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
+                  ><line
+                    x1="3.5"
+                    y1="8"
+                    x2="12.5"
+                    y2="8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
                 ></td
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -565,7 +741,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -576,7 +755,14 @@
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -587,7 +773,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -610,7 +799,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -621,12 +813,26 @@
               >
               <td
                 ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
+                  ><line
+                    x1="3.5"
+                    y1="8"
+                    x2="12.5"
+                    y2="8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
                 ></td
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -638,7 +844,9 @@
               >
             </tr>
             <tr>
-              <td class="compare-feature">Rich annotations (labels, freehand, shapes)</td>
+              <td class="compare-feature"
+                >Rich annotations (labels, freehand, shapes)</td
+              >
               <td class="compare-col-us"
                 ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
                   ><polyline
@@ -651,17 +859,38 @@
               >
               <td
                 ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
+                  ><line
+                    x1="3.5"
+                    y1="8"
+                    x2="12.5"
+                    y2="8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
                 ></td
               >
               <td
                 ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
+                  ><line
+                    x1="3.5"
+                    y1="8"
+                    x2="12.5"
+                    y2="8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
                 ></td
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -686,11 +915,21 @@
               >
               <td
                 ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
+                  ><line
+                    x1="3.5"
+                    y1="8"
+                    x2="12.5"
+                    y2="8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -700,7 +939,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -724,9 +966,20 @@
             <tr>
               <th class="compare-col-feature"></th>
               <th class="compare-col-us">Mapello</th>
-              <th>Map platforms<br /><span class="col-sub">Mapbox Studio, Felt…</span></th>
-              <th>Code libraries<br /><span class="col-sub">Prettymaps (Python)…</span></th>
-              <th>Embed widgets<br /><span class="col-sub">Google My Maps…</span></th>
+              <th
+                >Map platforms<br /><span class="col-sub"
+                  >Mapbox Studio, Felt…</span
+                ></th
+              >
+              <th
+                >Code libraries<br /><span class="col-sub"
+                  >Prettymaps (Python)…</span
+                ></th
+              >
+              <th
+                >Embed widgets<br /><span class="col-sub">Google My Maps…</span
+                ></th
+              >
             </tr>
           </thead>
           <tbody>
@@ -744,7 +997,14 @@
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -756,12 +1016,26 @@
               >
               <td
                 ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
+                  ><line
+                    x1="3.5"
+                    y1="8"
+                    x2="12.5"
+                    y2="8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
                 ></td
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -773,7 +1047,9 @@
               >
             </tr>
             <tr>
-              <td class="compare-feature">Works forever, no server dependency</td>
+              <td class="compare-feature"
+                >Works forever, no server dependency</td
+              >
               <td class="compare-col-us"
                 ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
                   ><polyline
@@ -786,7 +1062,14 @@
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -797,7 +1080,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -808,7 +1094,14 @@
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -820,7 +1113,9 @@
               >
             </tr>
             <tr>
-              <td class="compare-feature">Interactive after export (tooltips, popovers)</td>
+              <td class="compare-feature"
+                >Interactive after export (tooltips, popovers)</td
+              >
               <td class="compare-col-us"
                 ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
                   ><polyline
@@ -832,7 +1127,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -843,7 +1141,14 @@
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -855,7 +1160,14 @@
               >
               <td
                 ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
+                  ><line
+                    x1="3.5"
+                    y1="8"
+                    x2="12.5"
+                    y2="8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
                 ></td
               >
             </tr>
@@ -872,7 +1184,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -883,7 +1198,14 @@
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -894,7 +1216,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -917,7 +1242,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -927,7 +1255,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -938,7 +1269,14 @@
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -962,7 +1300,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -973,7 +1314,14 @@
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -985,7 +1333,14 @@
               >
               <td
                 ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
                     x1="12.5"
                     y1="3.5"
                     x2="3.5"
@@ -1010,11 +1365,21 @@
               >
               <td
                 ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-                  ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
+                  ><line
+                    x1="3.5"
+                    y1="8"
+                    x2="12.5"
+                    y2="8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -1024,7 +1389,10 @@
                 ></td
               >
               <td
-                ><svg class="ci-check ci-check-muted" viewBox="0 0 16 16" fill="none"
+                ><svg
+                  class="ci-check ci-check-muted"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   ><polyline
                     points="2.5 8.5 6.5 12.5 13.5 4"
                     stroke-width="2"
@@ -1052,12 +1420,26 @@
       >
       <span
         ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
-          ><line x1="3.5" y1="8" x2="12.5" y2="8" stroke-width="2" stroke-linecap="round" /></svg
+          ><line
+            x1="3.5"
+            y1="8"
+            x2="12.5"
+            y2="8"
+            stroke-width="2"
+            stroke-linecap="round"
+          /></svg
         > Partial / depends</span
       >
       <span
         ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
-          ><line x1="3.5" y1="3.5" x2="12.5" y2="12.5" stroke-width="1.8" stroke-linecap="round" /><line
+          ><line
+            x1="3.5"
+            y1="3.5"
+            x2="12.5"
+            y2="12.5"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          /><line
             x1="12.5"
             y1="3.5"
             x2="3.5"
@@ -1100,8 +1482,8 @@
       <span class="section-tag">Pricing</span>
       <h2>Start free. Pay when you're ready.</h2>
       <p>
-        Design as much as you want for free. Export your first 3 maps with no account needed. Upgrade when your project
-        grows.
+        Design as much as you want for free. Export your first 3 maps with no
+        account needed. Upgrade when your project grows.
       </p>
     </div>
 
@@ -1111,7 +1493,9 @@
         <div class="pricing-card-head">
           <h3>Free</h3>
           <div class="pricing-amount">
-            <span class="pricing-currency">$</span><span class="pricing-value">0</span>
+            <span class="pricing-currency">$</span><span class="pricing-value"
+              >0</span
+            >
           </div>
           <span class="pricing-period">no credit card needed</span>
         </div>
@@ -1156,7 +1540,9 @@
         <div class="pricing-card-head">
           <h3>Pro</h3>
           <div class="pricing-amount">
-            <span class="pricing-currency">$</span><span class="pricing-value">15</span>
+            <span class="pricing-currency">$</span><span class="pricing-value"
+              >15</span
+            >
           </div>
           <span class="pricing-period">per month</span>
         </div>
@@ -1179,7 +1565,7 @@
               stroke-width="2.5"
               stroke-linecap="round"
               stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            ><strong>Unlimited</strong> exported maps
+            ><span><strong>Unlimited</strong> exported maps</span>
           </li>
           <li>
             <svg
@@ -1189,7 +1575,7 @@
               stroke-width="2.5"
               stroke-linecap="round"
               stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            ><strong>Unlimited</strong> saved projects
+            ><span><strong>Unlimited</strong> saved projects</span>
           </li>
           <li>
             <svg
@@ -1210,7 +1596,9 @@
         <div class="pricing-card-head">
           <h3>Pro — Annual</h3>
           <div class="pricing-amount">
-            <span class="pricing-currency">$</span><span class="pricing-value">150</span>
+            <span class="pricing-currency">$</span><span class="pricing-value"
+              >150</span
+            >
           </div>
           <span class="pricing-period">per year</span>
         </div>
@@ -1247,13 +1635,62 @@
 <section class="cta">
   <div class="cta-compass" aria-hidden="true">
     <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="100" cy="100" r="94" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.6" />
-      <circle cx="100" cy="100" r="72" stroke="currentColor" stroke-width="0.5" stroke-opacity="0.35" />
-      <circle cx="100" cy="100" r="50" stroke="currentColor" stroke-width="0.4" stroke-opacity="0.2" />
-      <line x1="100" y1="6" x2="100" y2="28" stroke="currentColor" stroke-width="1.2" />
-      <line x1="100" y1="172" x2="100" y2="194" stroke="currentColor" stroke-width="1.2" />
-      <line x1="6" y1="100" x2="28" y2="100" stroke="currentColor" stroke-width="1.2" />
-      <line x1="172" y1="100" x2="194" y2="100" stroke="currentColor" stroke-width="1.2" />
+      <circle
+        cx="100"
+        cy="100"
+        r="94"
+        stroke="currentColor"
+        stroke-width="0.8"
+        stroke-opacity="0.6"
+      />
+      <circle
+        cx="100"
+        cy="100"
+        r="72"
+        stroke="currentColor"
+        stroke-width="0.5"
+        stroke-opacity="0.35"
+      />
+      <circle
+        cx="100"
+        cy="100"
+        r="50"
+        stroke="currentColor"
+        stroke-width="0.4"
+        stroke-opacity="0.2"
+      />
+      <line
+        x1="100"
+        y1="6"
+        x2="100"
+        y2="28"
+        stroke="currentColor"
+        stroke-width="1.2"
+      />
+      <line
+        x1="100"
+        y1="172"
+        x2="100"
+        y2="194"
+        stroke="currentColor"
+        stroke-width="1.2"
+      />
+      <line
+        x1="6"
+        y1="100"
+        x2="28"
+        y2="100"
+        stroke="currentColor"
+        stroke-width="1.2"
+      />
+      <line
+        x1="172"
+        y1="100"
+        x2="194"
+        y2="100"
+        stroke="currentColor"
+        stroke-width="1.2"
+      />
       <line
         x1="33"
         y1="33"
@@ -1275,9 +1712,21 @@
         stroke-opacity="0.45"
       />
       <polygon points="100,8 105,42 100,36 95,42" fill="currentColor" />
-      <polygon points="100,192 105,158 100,164 95,158" fill="currentColor" fill-opacity="0.45" />
-      <polygon points="192,100 158,105 164,100 158,95" fill="currentColor" fill-opacity="0.45" />
-      <polygon points="8,100 42,105 36,100 42,95" fill="currentColor" fill-opacity="0.45" />
+      <polygon
+        points="100,192 105,158 100,164 95,158"
+        fill="currentColor"
+        fill-opacity="0.45"
+      />
+      <polygon
+        points="192,100 158,105 164,100 158,95"
+        fill="currentColor"
+        fill-opacity="0.45"
+      />
+      <polygon
+        points="8,100 42,105 36,100 42,95"
+        fill="currentColor"
+        fill-opacity="0.45"
+      />
       <circle cx="100" cy="100" r="4" fill="currentColor" />
       <circle cx="100" cy="100" r="2" fill="currentColor" fill-opacity="0.5" />
       <g stroke="currentColor" stroke-width="1" stroke-opacity="0.4">
@@ -1303,8 +1752,12 @@
 <footer>
   <div class="l-container footer-inner">
     <div class="footer-brand-col">
-      <div class="footer-mark"><MapelloMark size={32} accent="gold" /></div>
-      <span class="footer-logo">Mapello</span>
+      <img
+        src="/logo_wordmark_transparent.png"
+        alt="Mapello"
+        class="footer-logo-img"
+        height="36"
+      />
       <span class="footer-tagline">Maps you'll be proud to embed.</span>
       <span class="footer-coords">48°52′N &nbsp; 2°21′E</span>
     </div>
@@ -1476,8 +1929,16 @@
     background-color: var(--color-ink);
     background-image:
       radial-gradient(circle, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
-      radial-gradient(ellipse at 96% 4%, rgba(42, 125, 110, 0.12) 0%, transparent 50%),
-      radial-gradient(ellipse at 4% 96%, rgba(201, 148, 58, 0.07) 0%, transparent 50%);
+      radial-gradient(
+        ellipse at 96% 4%,
+        rgba(42, 125, 110, 0.12) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse at 4% 96%,
+        rgba(201, 148, 58, 0.07) 0%,
+        transparent 50%
+      );
     background-size:
       30px 30px,
       100% 100%,
@@ -1616,7 +2077,11 @@
 
   .showcase-dark {
     background-color: var(--color-ink-mid);
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.048) 1px, transparent 1px);
+    background-image: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.048) 1px,
+      transparent 1px
+    );
     background-size: 30px 30px;
   }
   .showcase-dark .section-header h2 {
@@ -1794,7 +2259,11 @@
     background-color: #111;
     background-image:
       radial-gradient(circle, rgba(255, 255, 255, 0.038) 1px, transparent 1px),
-      radial-gradient(ellipse at 90% 8%, rgba(201, 148, 58, 0.07) 0%, transparent 50%);
+      radial-gradient(
+        ellipse at 90% 8%,
+        rgba(201, 148, 58, 0.07) 0%,
+        transparent 50%
+      );
     background-size:
       30px 30px,
       100% 100%;
@@ -2115,7 +2584,11 @@
   .cta {
     background-color: var(--color-ink);
     background-image:
-      radial-gradient(ellipse at 12% 50%, rgba(201, 148, 58, 0.09) 0%, transparent 55%),
+      radial-gradient(
+        ellipse at 12% 50%,
+        rgba(201, 148, 58, 0.09) 0%,
+        transparent 55%
+      ),
       radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size:
       100% 100%,
@@ -2181,20 +2654,17 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   }
   .footer-brand-col {
+    align-items: baseline;
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
   }
-  .footer-mark {
-    margin-bottom: 0.2rem;
-    color: rgba(255, 255, 255, 0.55);
-  }
-  .footer-logo {
-    font-family: var(--font-serif);
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--color-gold);
-    letter-spacing: 0.02em;
+  .footer-logo-img {
+    height: 36px;
+    width: auto;
+    display: block;
+    filter: brightness(0) invert(1);
+    opacity: 0.85;
   }
   .footer-tagline {
     font-size: 0.85rem;
