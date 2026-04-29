@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-
   interface Props {
     title: string;
     description: string;
@@ -9,33 +7,12 @@
     placeholderGradient?: string;
   }
   let { title, description, src, aspectRatio = '1 / 1', placeholderGradient = 'linear-gradient(135deg, #222, #333)' }: Props = $props();
-
-  // Unique container ID generated client-side (SSR disabled for this page)
-  const containerId = `slot-${Math.random().toString(36).slice(2, 9)}`;
-
-  onMount(() => {
-    if (!src) return;
-
-    // Use the project's svg-loader.js to fetch, inline, and execute the SVG.
-    // Creating a script element (vs innerHTML) ensures it executes.
-    const script = document.createElement('script');
-    script.src = '/svg-loader.js';
-    script.setAttribute('data-svg-path', src);
-    script.setAttribute('data-target-container-id', containerId);
-    document.body.appendChild(script);
-
-    return () => {
-      script.remove();
-      const container = document.getElementById(containerId);
-      if (container) container.innerHTML = '';
-    };
-  });
 </script>
 
 <div class="slot-wrapper">
   <div class="slot-frame" style="aspect-ratio: {aspectRatio}">
     {#if src}
-      <div id={containerId} class="slot-content"></div>
+      <object data={src} type="image/svg+xml" class="slot-content"></object>
     {:else}
       <div class="slot-placeholder" style="background: {placeholderGradient}">
         <svg class="slot-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -68,13 +45,6 @@
   .slot-content {
     position: absolute;
     inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* The SVG inserted by svg-loader fills the container */
-  .slot-content :global(svg) {
     width: 100%;
     height: 100%;
     display: block;

@@ -1,16 +1,11 @@
 <script lang="ts">
-    let activeTab = $state<"loader" | "inline">("loader");
+    let activeTab = $state<"object" | "inline">("object");
     let copied = $state(false);
 
-    const LOADER_SNIPPET = `<div id="container1"></div>
-<script
-  data-svg-path="./cartosvg-export.svg"
-  data-target-container-id="container1"
-  src="https://mapello.net/svg-loader.js"
-><\/script>`;
+    const OBJECT_SNIPPET = `<object\n  data="./cartosvg-export.svg"\n  type="image/svg+xml"\n></object>`;
 
     async function copySnippet() {
-        await navigator.clipboard.writeText(LOADER_SNIPPET);
+        await navigator.clipboard.writeText(OBJECT_SNIPPET);
         copied = true;
         setTimeout(() => (copied = false), 2000);
     }
@@ -19,11 +14,11 @@
 <div class="mode-tabs mb-3">
     <button
         class="tab-btn"
-        class:active={activeTab === "loader"}
+        class:active={activeTab === "object"}
         type="button"
-        onclick={() => (activeTab = "loader")}
+        onclick={() => (activeTab = "object")}
     >
-        With svg-loader.js <span class="recommended-badge">recommended</span>
+        With &lt;object&gt; <span class="recommended-badge">recommended</span>
     </button>
     <button
         class="tab-btn"
@@ -35,20 +30,19 @@
     </button>
 </div>
 
-{#if activeTab === "loader"}
+{#if activeTab === "object"}
     <ol class="steps-list">
         <li>Move the downloaded <code>cartosvg-export.svg</code> into your website's project folder (e.g. next to your HTML file).</li>
-        <li>Add an empty <code>&lt;div&gt;</code> with an <code>id</code> where the map should appear.</li>
-        <li>Drop in the loader script, pointing it at your file and that <code>id</code>.</li>
+        <li>Paste the <code>&lt;object&gt;</code> tag where the map should appear.</li>
     </ol>
     <div class="snippet-wrapper">
-        <pre class="code-block"><code>{LOADER_SNIPPET}</code></pre>
+        <pre class="code-block"><code>{OBJECT_SNIPPET}</code></pre>
         <button class="copy-btn" type="button" onclick={copySnippet}>
             {copied ? "Copied!" : "Copy"}
         </button>
     </div>
     <p class="text-muted small mt-2 mb-0">
-        The script keeps your HTML clean and lets you swap the map by replacing the SVG file.
+        Keeps your HTML clean and lets you swap the map by replacing the SVG file. Tooltips and popovers work.
     </p>
 {:else}
     <ol class="steps-list">
