@@ -148,7 +148,7 @@
     let contextualMenu: (HTMLDivElement & { opened?: boolean }) | null = $state(null);
     let showExportConfirm = $state(false);
     let showPostExportInfo = $state(false);
-    const POST_EXPORT_INFO_HIDDEN_KEY = "cartosvg-hide-post-export-info";
+    const POST_EXPORT_INFO_HIDDEN_KEY = "mapello-hide-post-export-info";
     let showInstructionsModal = $state(false);
     let showAuthModal = $state(false);
     let authAfterCallback: (() => void) | undefined = $state(undefined);

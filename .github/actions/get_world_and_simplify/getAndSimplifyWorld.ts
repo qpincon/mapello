@@ -3,7 +3,7 @@ import path from 'node:path';
 import mapshaper from 'mapshaper';
 
 // run: bun run getAndSimplifyWorld.ts
-const assetsPath = '/home/quentin/Tests/CartoSVG/src/assets/layers';
+const assetsPath = '/home/quentin/Tests/mapello/src/assets/layers';
 
 function cleanNames(dir: string) {
     for (const file of fs.readdirSync(dir)) {

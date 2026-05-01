@@ -6,7 +6,7 @@ import * as subscriptionSchema from './subscription-schema';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const dbPath = resolve('data/cartosvg.db');
+const dbPath = resolve('data/mapello.db');
 mkdirSync(resolve('data'), { recursive: true });
 
 const sqlite = new Database(dbPath);

@@ -5,6 +5,6 @@ export default {
 	out: './drizzle',
 	dialect: 'sqlite',
 	dbCredentials: {
-		url: './data/cartosvg.db',
+		url: './data/mapello.db',
 	},
 } satisfies Config;

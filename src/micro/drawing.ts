@@ -909,7 +909,7 @@ export async function exportMicro(
     styleElem.innerHTML = finalCss + fontCss;
     svgElement.append(styleElem);
     svgElement.classList.remove('animate-transition');
-    svgElement.classList.add('cartosvg');
+    svgElement.classList.add('mapello');
 
     let shadowPadded = false;
 
@@ -964,5 +964,5 @@ export async function exportMicro(
     }
 
     if (!downloadExport) return svgElement.outerHTML;
-    download(svgElement.outerHTML, 'text/plain', 'cartosvg-export.svg');
+    download(svgElement.outerHTML, 'text/plain', 'mapello-export.svg');
 }

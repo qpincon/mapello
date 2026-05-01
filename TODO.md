@@ -179,7 +179,7 @@
 - [ ] Use svelte/kit
     - [x] Disable cloudflare deployment
     - [ ] Deploy on VPS
-    - [ ] HtmlWebpackPlugin -> new FrontPage component
+    - [x] HtmlWebpackPlugin -> new FrontPage component
 - [x] Use vite
   - [x] require.context => import.meta.glob
   - [x] Inline imports -> ?raw (https://vite.dev/guide/assets)
@@ -273,5 +273,5 @@
 - [x] non-latin characters conversion to svg path
 - [x] ISE: show elements highlight even for hover
 - [x] adding tooltip happens on all elements
-- [ ] Generic tooltip positioning to use same principal as macro tooltip (first position is wrong)
-- [ ] Frame shadow: add some padding around map ?
+- [x] Generic tooltip positioning to use same principal as macro tooltip (first position is wrong)
+- [x] Frame shadow: add some padding around map ?

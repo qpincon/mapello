@@ -404,7 +404,7 @@ export function addAttribution(
 
     // Build list of attribution lines
     const lines: { label: string; href?: string }[] = [
-        { label: 'CartoSVG', href: 'https://cartosvg.com' },
+        { label: 'mapello', href: 'https://mapello.net' },
     ];
     if (mode === 'macro') {
         lines.push({ label: '© GeoBoundaries', href: 'https://www.geoboundaries.org' });

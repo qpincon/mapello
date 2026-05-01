@@ -5,7 +5,7 @@
     import { createEventDispatcher } from "svelte";
     import { extractFileName } from "../util/common";
 
-    const exampleProjects = import.meta.glob("../examples/*.cartosvg", {
+    const exampleProjects = import.meta.glob("../examples/*.mapello", {
         import: "default",
         query: "?raw",
     }) as Record<string, () => Promise<string>>;

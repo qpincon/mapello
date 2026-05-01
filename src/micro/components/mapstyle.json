@@ -5,7 +5,7 @@
   "sources": {
     "protomaps": {
       "type": "vector",
-      "url": "pmtiles://https://cartosvg.b-cdn.net/world.pmtiles",
+      "url": "pmtiles://https://tiles.mapello.net/world.pmtiles",
       "attribution": "<a href=\"https://protomaps.com\">Protomaps</a> © <a href=\"https://openstreetmap.org\">OpenStreetMap</a>"
     }
   },

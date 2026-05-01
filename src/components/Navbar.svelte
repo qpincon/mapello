@@ -15,7 +15,7 @@
   class="p-2 github"
   target="_blank"
   style="width:60px; height:auto; fill:#aaa;"
-  href="https://github.com/qpincon/CartoSVG">{@html githubLogo}</a
+  href="https://github.com/qpincon/mapello">{@html githubLogo}</a
 >
 
 <style lang="scss">

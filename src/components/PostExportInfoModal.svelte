@@ -14,7 +14,7 @@
     }
 
     function dontShowAgain() {
-        localStorage.setItem("cartosvg-hide-post-export-info", "1");
+        localStorage.setItem("mapello-hide-post-export-info", "1");
         onClosed();
     }
 </script>

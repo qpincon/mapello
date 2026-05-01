@@ -2,7 +2,7 @@
     let activeTab = $state<"object" | "inline">("object");
     let copied = $state(false);
 
-    const OBJECT_SNIPPET = `<object\n  data="./cartosvg-export.svg"\n  type="image/svg+xml"\n></object>`;
+    const OBJECT_SNIPPET = `<object\n  data="./mapello-export.svg"\n  type="image/svg+xml"\n></object>`;
 
     async function copySnippet() {
         await navigator.clipboard.writeText(OBJECT_SNIPPET);
@@ -32,7 +32,7 @@
 
 {#if activeTab === "object"}
     <ol class="steps-list">
-        <li>Move the downloaded <code>cartosvg-export.svg</code> into your website's project folder (e.g. next to your HTML file).</li>
+        <li>Move the downloaded <code>mapello-export.svg</code> into your website's project folder (e.g. next to your HTML file).</li>
         <li>Paste the <code>&lt;object&gt;</code> tag where the map should appear.</li>
     </ol>
     <div class="snippet-wrapper">
@@ -46,7 +46,7 @@
     </p>
 {:else}
     <ol class="steps-list">
-        <li>Open the downloaded <code>cartosvg-export.svg</code> file in a text editor.</li>
+        <li>Open the downloaded <code>mapello-export.svg</code> file in a text editor.</li>
         <li>Copy its full contents and paste them directly into your HTML where the map should appear.</li>
     </ol>
     <p class="text-muted small mt-2 mb-0">

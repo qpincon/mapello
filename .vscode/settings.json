@@ -47,4 +47,7 @@
     "**/src/assets/layers": true,
     "**/src/examples": true,
   },
+  "cSpell.words": [
+    "mapello"
+  ],
 }

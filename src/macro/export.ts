@@ -234,7 +234,7 @@ export async function exportMacro(
     const svgElement = optimizedSVG.firstChild as Element;
     svgElement.append(styleElem);
     svgElement.classList.remove('animate-transition');
-    svgElement.classList.add('cartosvg');
+    svgElement.classList.add('mapello');
 
     const w = stateMacro.macroParams.General.width;
     const h = stateMacro.macroParams.General.height;
@@ -284,7 +284,7 @@ export async function exportMacro(
     if (!skipAttribution) addAttribution(svgElement, w, h, 'macro', customAttributions);
 
     if (!downloadExport) return svgElement.outerHTML;
-    download(svgElement.outerHTML, 'text/plain', 'cartosvg-export.svg');
+    download(svgElement.outerHTML, 'text/plain', 'mapello-export.svg');
 }
 
 export function getFinalTooltipTemplate(groupId: string, tooltipDefs: TooltipDefs): string {
