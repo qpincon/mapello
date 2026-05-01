@@ -1,59 +1,69 @@
-<script>
-  import "bootstrap/js/dist/collapse";
-  import { createEventDispatcher } from "svelte";
+<script lang="ts">
+  import { createEventDispatcher, onMount } from "svelte";
 
   import ColorPickerPreview from "./ColorPickerPreview.svelte";
   import RangeInput from "./RangeInput.svelte";
   import { camelCaseToSentence } from "../util/common";
-  export let sections;
-  export let paramDefs;
-  export let level = 0;
-  export let helpParams = {};
-  export let otherParams = {};
+  import type { OtherParams, ParamDefinitions, ParamKey } from "src/params";
+  import type { Color } from "src/types";
+  import { Collapse } from "bootstrap";
 
   const dispatch = createEventDispatcher();
 
-  function propChanged(prop, value) {
+  interface Props {
+    sections: Record<string, Record<string, number | Color>>;
+    paramDefs: ParamDefinitions;
+    helpParams: Record<string, string>;
+    otherParams?: OtherParams;
+    sectionLabels?: Record<string, string>;
+  }
+
+  let { sections = $bindable(), paramDefs, helpParams = {}, otherParams = {}, sectionLabels = {} }: Props = $props();
+
+  onMount(() => {
+    const collapses = document.querySelectorAll(".collapse");
+    console.log(collapses);
+    collapses.forEach((collapseElement) => {
+      new Collapse(collapseElement, { toggle: false });
+    });
+  });
+
+  function propChanged(prop: string, value: string | number | boolean) {
+    console.log("propChanged", prop, value);
     const payload = { prop, value };
     dispatch("change", payload);
   }
 
-  function getLabel(key) {
+  function getLabel(key: string) {
     const displayedKey = otherParams[key]?.rename || key;
     return camelCaseToSentence(displayedKey);
   }
+
+  function sectionTitles(): ParamKey[] {
+    console.log(sections);
+    return Object.keys(sections) as ParamKey[];
+  }
 </script>
 
-{#each Object.keys(sections) as title, i (title)}
+{#each sectionTitles() as title, i (title)}
   <div class="accordion">
     <div class="accordion-item">
       <h3 class="accordion-header">
         <button
-          class="accordion-button fs-5"
+          class={`accordion-button fs-5 ${i >= 3 ? "collapsed" : ""}`}
           type="button"
           data-bs-toggle="collapse"
           data-bs-target={`#panel-${title}-collapse`}
         >
-          <span> {camelCaseToSentence(title)} </span>
+          <span>{sectionLabels[title] ?? camelCaseToSentence(title)}</span>
           {#if title in helpParams}
-            <span
-              class="help-tooltip fs-6 float-end"
-              data-bs-toggle="tooltip"
-              data-bs-title={helpParams[title]}>?</span
+            <span class="help-tooltip fs-6 float-end" data-bs-toggle="tooltip" data-bs-title={helpParams[title]}>?</span
             >
           {/if}
         </button>
       </h3>
-      {@html "<!-- Buggy - collaspe on any click inside... class:show={level === 0 && i < 4}-->"}
-      <div
-        id={`panel-${title}-collapse`}
-        class="accordion-collapse collapse show"
-      >
-        <div
-          class="accordion-body"
-          style="border-left: solid {2 *
-            level}px var(--bs-accordion-active-bg);"
-        >
+      <div id={`panel-${title}-collapse`} class={`accordion-collapse collapse ${i < 3 ? "show" : ""}`}>
+        <div class="accordion-body">
           {#each Object.keys(sections[title]) as key, i (key)}
             {#if otherParams[key]?.disabled !== true}
               <div class="field">
@@ -63,26 +73,23 @@
                       title={getLabel(key)}
                       helpText={helpParams[key]}
                       id={`form-${key}`}
-                      value={sections[title][key]}
+                      value={sections[title][key] as number}
                       min={paramDefs[key].min}
                       max={paramDefs[key].max}
                       step={paramDefs[key].step || 1}
                       onChange={(val) => {
                         sections[title][key] = val;
                         propChanged(key, val);
-                        sections = sections;
                       }}
                     />
                   {:else if paramDefs[key].type == "select"}
                     <div class="row">
-                      <label class="col-4 col-form-label" for={`form-${key}`}
-                        >{getLabel(key)}</label
-                      >
+                      <label class="col-4 col-form-label" for={`form-${key}`}>{getLabel(key)}</label>
                       <select
                         id={`form-${key}`}
                         class="form-select form-select-sm me-4 col"
                         bind:value={sections[title][key]}
-                        on:change={(e) => propChanged(key, e.target.value)}
+                        onchange={(e) => propChanged(key, (e.target as HTMLSelectElement).value)}
                       >
                         {#each paramDefs[key].choices as opt}
                           <option value={opt}>
@@ -110,9 +117,7 @@
                       class="form-check-input"
                       id={`form-${key}`}
                       bind:checked={sections[title][key]}
-                      on:change={(e) => {
-                        propChanged(key, e.target.checked);
-                      }}
+                      onchange={(e) => propChanged(key, (e.target as HTMLInputElement).checked)}
                     />
                   </div>
                 {:else if key.toLowerCase().includes("color")}
@@ -120,11 +125,10 @@
                     id={`form-${key}`}
                     popup="right"
                     title={camelCaseToSentence(key)}
-                    value={sections[title][key]}
+                    value={sections[title][key] as Color}
                     onChange={(col) => {
                       sections[title][key] = col;
                       propChanged(key, col);
-                      sections = sections;
                     }}
                   />
                 {:else}
@@ -137,8 +141,7 @@
                       class="form-control"
                       id={`form-${key}`}
                       bind:value={sections[title][key]}
-                      on:change={(e) =>
-                        propChanged(key, parseFloat(e.target.value))}
+                      onchange={(e) => propChanged(key, parseFloat((e.target as HTMLInputElement).value))}
                     />
                   </div>
                 {/if}

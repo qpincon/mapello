@@ -1,56 +1,88 @@
-<script>
+<script lang="ts">
     import { fade, fly } from "svelte/transition";
     import { quintOut } from "svelte/easing";
-    import { initTooltips } from '../util/common';
+    import { initTooltips } from "../util/common";
 
-    const noop = () => {};
+    // Types
+    interface EventRemover {
+        remove: () => void;
+    }
 
-    export let open = false;
-    export let dialogClasses = "";
-    export let modalWidth = "50%";
-    export let backdrop = true;
-    export let ignoreBackdrop = false;
-    export let keyboard = true;
-    export let describedby = "";
-    export let labelledby = "";
-    export let onOpened = noop;
-    export let onClosed = noop;
+    type NoopFunction = () => void;
 
-    let _keyboardEvent;
+    const noop: NoopFunction = () => {};
 
-    function attachEvent(target, ...args) {
-        target.addEventListener(...args);
+    interface Props {
+        open: boolean;
+        dialogClasses?: string;
+        modalWidth?: string;
+        backdrop?: boolean;
+        ignoreBackdrop?: boolean;
+        keyboard?: boolean;
+        describedby?: string;
+        labelledby?: string;
+        onOpened?: NoopFunction;
+        onClosed?: NoopFunction;
+    }
+
+    let {
+        open,
+        dialogClasses = "",
+        modalWidth = "50%",
+        backdrop = true,
+        ignoreBackdrop = false,
+        keyboard = true,
+        describedby = "",
+        labelledby = "",
+        onOpened = noop,
+        onClosed = noop,
+    }: Props = $props();
+
+    let _keyboardEvent: EventRemover | null = null;
+
+    function attachEvent(
+        target: EventTarget,
+        type: string,
+        listener: EventListener,
+        options?: boolean | AddEventListenerOptions,
+    ): EventRemover {
+        target.addEventListener(type, listener, options);
         return {
-            remove: () => target.removeEventListener(...args),
+            remove: () => target.removeEventListener(type, listener, options),
         };
     }
 
-    function checkClass(className) {
+    function checkClass(className: string): boolean {
         return document.body.classList.contains(className);
     }
 
-    function modalOpen() {
+    function modalOpen(): void {
         if (!checkClass("modal-open")) {
             document.body.classList.add("modal-open");
         }
     }
-    function modalClose() {
+
+    function modalClose(): void {
         if (checkClass("modal-open")) {
             document.body.classList.remove("modal-open");
         }
     }
 
-    function handleBackdrop(event) {
+    function handleBackdrop(event: MouseEvent): void {
+        if (event.target !== event.currentTarget) {
+            return;
+        }
         if (backdrop && !ignoreBackdrop) {
             event.stopPropagation();
             open = false;
         }
     }
 
-    function onModalOpened() {
+    function onModalOpened(): void {
         if (keyboard) {
-            _keyboardEvent = attachEvent(document, "keydown", (e) => {
-                if (event.key === "Escape") {
+            _keyboardEvent = attachEvent(document, "keydown", (e: Event) => {
+                const keyboardEvent = e as KeyboardEvent;
+                if (keyboardEvent.key === "Escape") {
                     open = false;
                 }
             });
@@ -59,21 +91,21 @@
         onOpened();
     }
 
-    function onModalClosed() {
+    function onModalClosed(): void {
         if (_keyboardEvent) {
             _keyboardEvent.remove();
+            _keyboardEvent = null;
         }
         onClosed();
     }
 
-    // Watching changes for Open vairable
-    $: {
+    $effect(() => {
         if (open) {
             modalOpen();
         } else {
             modalClose();
         }
-    }
+    });
 </script>
 
 {#if open}
@@ -84,9 +116,9 @@
         aria-labelledby={labelledby}
         aria-describedby={describedby}
         aria-modal="true"
-        on:click|self={handleBackdrop}
-        on:introend={onModalOpened}
-        on:outroend={onModalClosed}
+        onclick={handleBackdrop}
+        onintroend={onModalOpened}
+        onoutroend={onModalClosed}
         transition:fade
         style:--bs-modal-width={modalWidth}
     >
@@ -98,20 +130,26 @@
         >
             <div class="modal-content">
                 <div class="modal-header p-3">
-                    <slot name="header"/>
-                    <button type="button" class="btn-close me-2" data-bs-dismiss="modal" aria-label="Close" on:click={() => open = false}></button>
+                    <slot name="header" />
+                    <button
+                        type="button"
+                        class="btn-close me-2"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        onclick={() => (open = false)}
+                    ></button>
                 </div>
                 <div class="modal-body p-3">
-                    <slot name="content"/>
+                    <slot name="content" />
                 </div>
                 <div class="modal-footer">
-                    <slot name="footer"/>
+                    <slot name="footer" />
                 </div>
             </div>
         </div>
     </div>
     {#if open}
-        <div class="modal-backdrop show" transition:fade={{ duration: 150 }} />
+        <div class="modal-backdrop show" transition:fade={{ duration: 150 }}></div>
     {/if}
 {/if}
 
@@ -126,6 +164,6 @@
         min-width: 10rem;
     }
     .modal-content {
-        overflow-x: scroll;
+        overflow: visible;
     }
 </style>

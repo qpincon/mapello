@@ -1,0 +1,18 @@
+{
+    "italia": {
+        "title": "La Bella Italia",
+        "description": "Italia map built with CartoSVG"
+    },
+    "mercator": {
+        "title": "Mercator projection",
+        "description": "Simple example using the Mercator map projection"
+    },
+    "usa": {
+        "title": "USA Elections",
+        "description": "USA elections map built with CartoSVG"
+    },
+    "ukraine": {
+        "title": "Ukraine population",
+        "description": "Ukraine population map, built with CartoSVG"
+    }
+}

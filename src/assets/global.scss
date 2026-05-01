@@ -1,4 +1,5 @@
 $primary: #506784;
+$teal: #2a7d6e;
 
 $accordion-padding-y: 0.3rem;
 $accordion-padding-x: 0.4rem;
@@ -8,6 +9,8 @@ $accordion-border-width: 1px;
 $accordion-border-radius: 5px;
 $accordion-inner-border-radius: 5px;
 $accordion-button-color: white;
+$accordion-icon-color: white;
+$accordion-icon-active-color: white;
 $accordion-button-bg: $primary;
 $accordion-button-active-color: white;
 $accordion-button-active-bg: $primary;
@@ -26,6 +29,7 @@ $navbar-padding-y: 0px;
 @import "bootstrap/scss/variables";
 
 // // 4. Include any default map overrides here
+$theme-colors: map-merge($theme-colors, ("teal": $teal));
 
 // // 5. Include remainder of required parts
 @import "bootstrap/scss/maps";
@@ -74,13 +78,57 @@ body {
 #contextmenu {
     max-width: 15rem;
     background-color: #f8f8f8;
+    z-index: 2;
 
-    div[role="button"] {
+    div[role="button"],
+    .menu-link-item {
         &:hover {
             background-color: #e2eef8;
         }
     }
+
+    .menu-link-remove {
+        font-size: 1.1rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .menu-divider {
+        border-color: #ddd;
+        opacity: 1;
+    }
+
+    .menu-link-url small {
+        font-size: 0.7rem;
+        max-width: 13rem;
+    }
+
+    .menu-ann-item {
+        &:hover {
+            background-color: #e2eef8;
+        }
+    }
+
+    .menu-ann-remove {
+        font-size: 1.1rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .menu-ann-preview small {
+        font-size: 0.7rem;
+        max-width: 13rem;
+
+        * {
+            display: inline;
+        }
+
+        img {
+            display: none;
+        }
+    }
 }
+
 
 .accordion-item.noborder {
     border: none;
@@ -138,9 +186,6 @@ body {
     margin-bottom: 1rem;
 }
 
-#main-menu>div {
-    background-color: white;
-}
 
 .icon-add svg {
     color: #253446;
@@ -151,11 +196,12 @@ body {
 }
 
 #static-svg-map text {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    user-select: none;
 }
 
 aside .nav-link.active {
-    border-top: 3px solid #95b0ff !important
+    border-top: 3px solid #95b0ff !important;
+    font-weight: 500 !important;
 }
 
 .picker_wrapper.popup {
@@ -177,19 +223,105 @@ aside .nav-link.active {
     width: 100%;
     position: relative;
     color: $primary;
+
     &:first-child {
         border-top: 0;
     }
+
+    &>.row {
+        width: 100%;
+    }
 }
+
 #main-menu {
     color: $primary;
     font-size: 14px;
     width: 90%;
 }
+
+.user-email-header {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.nav-pro-badge {
+    background: #0d6efd;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.nav-exports-left {
+    font-size: 12px;
+    color: #6c757d;
+}
+
 .popup.popup_right {
     left: 30px !important;
 }
 
-.hidden, .hidden-after {
+.hidden,
+.hidden-after {
     display: none;
+}
+
+#maplibre-map {
+    position: absolute;
+    top: 0px;
+    left: 1.5rem;
+    background-color: white;
+    pointer-events: none;
+}
+
+/* Navbar action buttons */
+.navbar-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #3a4a63;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.4;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+
+    &:hover {
+        background: rgba(80, 103, 132, 0.1);
+        color: #2a3d5c;
+    }
+    &.navbar-btn-cta {
+        background: #2a7d6e;
+        color: white;
+        &:hover { background: #236859; }
+    }
+    &.navbar-avatar {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border-radius: 50%;
+        background: #3a4a63;
+        color: white;
+        font-weight: 600;
+        font-size: 13px;
+        justify-content: center;
+        &:hover { background: #2e3d55; }
+        &.dropdown-toggle::after { display: none; }
+    }
+}
+.navbar-btn.dropdown-toggle::after {
+    display: inline-block;
+    margin-left: 0.35em;
+    vertical-align: 0.15em;
+    content: "";
+    border-top: 0.3em solid;
+    border-right: 0.3em solid transparent;
+    border-bottom: 0;
+    border-left: 0.3em solid transparent;
 }

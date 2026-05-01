@@ -1,3 +1,4 @@
+// TODO: remove this file
 const path = require('path');
 const sveltePreprocess = require('svelte-preprocess');
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
@@ -12,14 +13,13 @@ const isProduction = mode.includes('production');
 const config = {
     entry: {
         main: './src/entrypoints/index.js',
-        about: './src/entrypoints/about.js',
     },
     mode: isProduction ? 'production' : 'development',
     resolve: {
         alias: {
             svelte: path.resolve('node_modules', 'svelte')
         },
-        extensions: ['.js', '.svelte'],
+        extensions: ['.ts', '.mjs', '.js', '.svelte'],
         mainFields: ['svelte', 'browser', 'module', 'main']
     },
     output: {
@@ -51,9 +51,10 @@ const config = {
                     loader: 'svelte-loader',
                     options: {
                         compilerOptions: {
-                            dev: !isProduction
+                            dev: !isProduction,
                         },
                         preprocess: sveltePreprocess({
+                            typescript: true,
                             scss: {
                                 renderSync: true,
                             },
@@ -99,9 +100,9 @@ const config = {
         new NodePolyfillPlugin(),
         new CopyPlugin({
             patterns: [
-              { from: "ele", to: "ele" },
+                { from: "ele", to: "ele" },
             ],
-          }),
+        }),
         new HtmlWebpackPlugin({
             template: './src/index.ejs',
             title: 'CartoSVG - Design gorgeous interactive maps',
@@ -110,16 +111,6 @@ const config = {
             },
             chunks: ['main'],
             filename: 'app.html',
-            favicon: './src/assets/img/logo_transparent.webp'
-        }),
-        new HtmlWebpackPlugin({
-            template: './src/index.ejs',
-            title: 'About',
-            meta: {
-                description: 'CartoSVG aims to be a easy, beautiful and lightweight datamaps replacement.'
-            },
-            filename: 'about.html',
-            chunks: ['about'],
             favicon: './src/assets/img/logo_transparent.webp'
         }),
     ],

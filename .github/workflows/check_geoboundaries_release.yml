@@ -1,7 +1,6 @@
 name: Get latest GeoBoundaries release version
 on:
-  schedule:
-  -  cron:  '0 0 1 * *'
+  workflow_dispatch:
 jobs:
   get-release-version:
     runs-on: ubuntu-latest

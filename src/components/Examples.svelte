@@ -1,30 +1,33 @@
-<script>
+<script lang="ts">
     import Icon from "./Icon.svelte";
-    import htmlIcon from "../assets/img/html.svg?inline";
-    import examplesDesc from '../../examples.json';
+    import htmlIcon from "../assets/img/html.svg?raw";
+    import examplesDesc from "../examples.json";
+    import { createEventDispatcher } from "svelte";
+    import { extractFileName } from "../util/common";
 
-    const exampleProjects = require.context('../examples/', false, /\..*cartosvg$/, 'lazy');
-    const exampleMap = exampleProjects.keys().reduce((acc, file) => {
-        const name = file.match(/[-a-zA-Z-_]+/)[0]; // remove extension
-        acc[name] = file;
-        return acc;
-    }, {});
-    
-    import { createEventDispatcher } from 'svelte';
+    const exampleProjects = import.meta.glob("../examples/*.cartosvg", {
+        import: "default",
+        query: "?raw",
+    }) as Record<string, () => Promise<string>>;
+    Object.keys(exampleProjects).forEach((fileName) => {
+        const name = extractFileName(fileName); // remove extension
+        exampleProjects[name] = exampleProjects[fileName];
+        delete exampleProjects[fileName];
+    });
 
-	const dispatch = createEventDispatcher();
+    const dispatch = createEventDispatcher();
 
-    async function loadExample(project) {
-        const jsonProject = await exampleProjects(exampleMap[project]);
-		dispatch('example', {
-			projectParams: jsonProject
-		});
-	}
+    async function loadExample(project: string) {
+        const jsonProject = JSON.parse(await exampleProjects[project]());
+        dispatch("example", {
+            projectParams: jsonProject,
+        });
+    }
 </script>
 
-<div class="mx-4 dropdown">
+<div class="dropdown">
     <button
-        class="btn btn-outline-secondary dropdown-toggle"
+        class="navbar-btn dropdown-toggle"
         type="button"
         data-bs-toggle="dropdown"
         aria-expanded="false"
@@ -34,15 +37,26 @@
     <ul class="dropdown-menu">
         {#each Object.entries(examplesDesc) as [exampleTitle, exampleDesc]}
             <li class="d-flex">
-                <a class="dropdown-item text-decoration-none" title="Project" href="#" on:click={() => loadExample(exampleTitle)}> {exampleDesc.title} </a>
-                <a class="dropdown-item html-btm" title="Exported example"  target="_blank" href="{exampleTitle}.html"><Icon svg={htmlIcon} /></a>
+                <a
+                    class="dropdown-item text-decoration-none"
+                    title="Project"
+                    href="#"
+                    on:click={() => loadExample(exampleTitle)}
+                >
+                    {exampleDesc.title}
+                </a>
+                <a class="dropdown-item html-btm" title="Exported example" target="_blank" href="{exampleTitle}.html"
+                    ><Icon svg={htmlIcon} /></a
+                >
             </li>
         {/each}
     </ul>
 </div>
 
 <style>
-    a { color: inherit !important; }
+    a {
+        color: inherit !important;
+    }
     .html-btm {
         width: 3rem;
     }

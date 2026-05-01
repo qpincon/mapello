@@ -1,0 +1,33 @@
+jq '
+  {
+    stateMacro: {
+      macroParams: .macroParams,
+      inlinePropsMacro: .inlineProps,
+      chosenCountriesAdm: .chosenCountriesAdm,
+      zonesData: .zonesData,
+      zonesFilter: .zonesFilter,
+      lastUsedLabelProps: .lastUsedLabelProps,
+      contourParams: .contourParams,
+      colorDataDefs: .colorDataDefs,
+      legendDefs: .legendDefs,
+      tooltipDefs: .tooltipDefs,
+      customCategoricalPalette: .customCategoricalPalette,
+      orderedTabs: .orderedTabs,
+      visibleArea: 0.01,
+    },
+    stateMicro: {
+      microParams: .microParams,
+      inlinePropsMicro: .inlinePropsMicro,
+      microLayerDefinitions: .microLayerDefinitions
+    },
+    stateCommon: {
+      baseCss: .baseCss,
+      providedFonts: .providedFonts,
+      providedShapes: .providedShapes,
+      providedPaths: .providedPaths,
+      inlineStyles: .inlineStyles,
+      shapeCount: .shapeCount,
+      currentMode: "macro"
+    }
+  }
+' state.json > new_state.json

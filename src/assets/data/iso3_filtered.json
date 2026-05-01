@@ -59,8 +59,8 @@
     "name": "Antarctica",
     "alpha-2": "AQ",
     "alpha-3": "ATA",
-    "region": "",
-    "sub-region": ""
+    "region": "Antartica",
+    "sub-region": "Antartica"
   },
   {
     "name": "Antigua and Barbuda",
@@ -1713,6 +1713,13 @@
     "alpha-3": "WLF",
     "region": "Oceania",
     "sub-region": "Polynesia"
+  },
+  {
+    "name": "Kosovo",
+    "alpha-2": "XK",
+    "alpha-3": "XKX",
+    "region": "Europe",
+    "sub-region": "Eastern Europe"
   },
   {
     "name": "Western Sahara",

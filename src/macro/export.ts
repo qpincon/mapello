@@ -1,0 +1,296 @@
+import { addAttribution, addFrameShadow, additionnalCssExport, changeIdAndReferences, ExportFontChoice, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
+import type { ElementAnnotations, ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
+import { DOM_PARSER, fontsToCssMultiSubset, fontsToCssEmbedMultiSubset, getUsedInlineFonts } from 'src/util/dom';
+import svgoConfigBase from '../svgoExport.config';
+import type { Config } from 'svgo/browser';
+
+const svgoConfig = {
+    ...svgoConfigBase,
+    plugins: [...svgoConfigBase.plugins, 'removeOffCanvasPaths'],
+};
+import { discriminateCssForExport, download, htmlToElement, indexBy, pick, randomString, xhtmlifyHtml } from 'src/util/common';
+import { encodeSVGDataImageStr, imageFromSpecialGElemStr } from 'src/svg/contourMethods';
+import { transitionCssMacro } from 'src/svg/transition';
+
+// Import export-only scripts as raw strings
+import hoverScript from 'src/svg/exportScripts/hover.js?raw';
+import tooltipScript from 'src/svg/exportScripts/tooltip.js?raw';
+import duplicateContoursScript from 'src/svg/exportScripts/duplicateContours.js?raw';
+import gElemsToImagesScript from 'src/svg/exportScripts/gElemsToImages.js?raw';
+import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
+import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.js?raw';
+
+interface FinalDataByGroup {
+    data: { [groupId: string]: { [shapeId: string]: any } };
+    tooltips: { [groupId: string]: string };
+}
+
+export async function exportMacro(
+    svg: SvgSelection,
+    stateMacro: StateMacro,
+    providedFonts: ProvidedFont[],
+    downloadExport: boolean = true,
+    commonCss: string,
+    options: ExportOptions = {},
+    elementAnnotations?: ElementAnnotations,
+): Promise<string | void> {
+    const {
+        exportFonts = ExportFontChoice.convertToPath,
+        minifyJs = false,
+        animate = false,
+        useViewBox = false,
+        frameShadow = false,
+        customAttributions,
+        skipAttribution = false,
+    } = options;
+    // console.log('options', options);
+    const svgNode = svg.node()!;
+    // Remove ALL foreignObjects from the SVG before SVGO.
+    // There can be multiple: macro tooltip, element-annotation tooltip, and/or an open popover.
+    // Each may contain HTML5 content with void elements (<br>, <img>) that break SVGO's XML parser.
+    const fos = Array.from(svgNode.querySelectorAll('foreignObject'));
+    fos.forEach(fo => document.body.append(fo));
+
+    // Remove selection overlay from export
+    const selectionOverlay = svgNode.querySelector('#selection-overlay');
+    if (selectionOverlay) selectionOverlay.remove();
+
+    // === Remove contours images (keep only <g> element to duplicate afterwards) ==
+    let contours = Array.from(svgNode.querySelectorAll('image.contour-to-dup'));
+    const contoursWithParents: [Element, Element][] = contours.map(el => {
+        const parent = el.parentNode as Element;
+        document.body.append(el);
+        return [el, parent];
+    });
+
+    /** Add an element using the SVG filter, otherwise it gets removed by SVGO as it's never used directly but later in JS*/
+    svgNode.querySelectorAll('[image-filter-name]').forEach(elem => {
+        const filterName = elem.getAttribute('image-filter-name');
+        if (filterName) {
+            const emptyElementTrickSvgo = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            emptyElementTrickSvgo.classList.add('svgo-trick');
+            emptyElementTrickSvgo.setAttribute('filter', `url(#${filterName})`);
+            svgNode.append(emptyElementTrickSvgo);
+        }
+    });
+    // === End remove contours ==
+
+    // Set pathLength on legend rects for draw animation (stroke-dasharray: 1 / stroke-dashoffset)
+    if (animate) {
+        svgNode.querySelectorAll('#svg-map-legend rect').forEach(el => el.setAttribute('pathLength', '1'));
+    }
+
+    const usedFonts = getUsedInlineFonts(svgNode);
+    const usedProvidedFonts = providedFonts.filter(font => usedFonts.has(font.name));
+
+    const SVGO = await import('svgo/browser');
+
+    // Optimize whole SVG
+    const finalSvg = SVGO.optimize(svgNode.outerHTML, svgoConfig as Config).data;
+
+    // === re-insert foreignObjects and contours ===
+    fos.forEach(fo => svgNode.append(fo));
+    contoursWithParents.forEach(([el, parent]) => {
+        parent.insertBefore(el, parent.firstChild);
+    });
+    svgNode.querySelectorAll('.svgo-trick').forEach(el => el.remove());
+    // === End re-insertion === 
+
+    const optimizedSVG = DOM_PARSER.parseFromString(finalSvg, 'image/svg+xml');
+    optimizedSVG.querySelectorAll('.svgo-trick').forEach(el => el.remove());
+
+    let pathIsBetter = false;
+    if (exportFonts === ExportFontChoice.smallest || exportFonts === ExportFontChoice.convertToPath) {
+        pathIsBetter = await inlineFontVsPath(optimizedSVG.firstChild as SVGElement, usedProvidedFonts, exportFonts);
+    } else if (exportFonts === ExportFontChoice.noExport) {
+        pathIsBetter = true;
+    }
+
+    const finalDataByGroup: FinalDataByGroup = { data: {}, tooltips: {} };
+    let tooltipEnabled = false;
+
+    [...stateMacro.chosenCountriesAdm, 'countries'].forEach(groupId => {
+        const group = optimizedSVG.getElementById(groupId);
+        if (!group || !stateMacro.tooltipDefs[groupId]?.enabled) return;
+
+        tooltipEnabled = true;
+        const ttTemplate = getFinalTooltipTemplate(groupId, stateMacro.tooltipDefs);
+        let usedVars = [...ttTemplate.matchAll(/__(\w+)__/g)].map(group => group[1]);
+        usedVars = [...new Set(usedVars)];
+        usedVars = usedVars.filter(v => v !== 'name');
+
+        let functionStr = ttTemplate.replaceAll(/__(\w+)__/gi, '${data.$1}');
+        functionStr = functionStr.replace('data.name', 'shapeId');
+        // Escape literal $ that aren't part of ${data.} or ${shapeId} template expressions,
+        // so they survive eval('`' + str + '`') in the exported tooltip script
+        functionStr = functionStr.replace(/\$(?!\{(?:data\.|shapeId))/g, "&#36;");
+        finalDataByGroup.tooltips[groupId] = functionStr;
+
+        const zonesDataDup = JSON.parse(JSON.stringify(stateMacro.zonesData[groupId].data));
+        stateMacro.zonesData[groupId].numericCols.forEach(colDef => {
+            const col = colDef.column;
+            zonesDataDup.forEach((row: any) => {
+                // Preserve null/empty as empty string so tooltip can detect missing data
+                if (row[col] == null || row[col] === '') {
+                    row[col] = '';
+                } else {
+                    row[col] = stateMacro.zonesData[groupId].formatters![col](row[col]);
+                }
+            });
+        });
+
+        const indexed = indexBy(zonesDataDup, 'name');
+        const finalData: { [shapeId: string]: any } = {};
+
+        for (const child of group.children) {
+            // If the child is an <a> link wrapper, look inside for the actual element
+            const elem = child.tagName.toLowerCase() === 'a' ? child.firstElementChild : child;
+            const id = elem?.getAttribute('id');
+            if (!id || !indexed[id]) continue;
+            finalData[id] = pick(indexed[id], usedVars);
+        }
+        finalDataByGroup.data[groupId] = finalData;
+    });
+
+    // Build tooltip code by replacing placeholders with actual values
+    const annotationTooltipIds = elementAnnotations
+        ? Object.entries(elementAnnotations).filter(([, v]) => v.tooltip).map(([k]) => k)
+        : [];
+    const tooltipCode = tooltipEnabled
+        ? tooltipScript
+            .replaceAll('__WIDTH__', stateMacro.macroParams.General.width.toString())
+            .replaceAll('__HEIGHT__', stateMacro.macroParams.General.height.toString())
+            .replaceAll('__DATA_BY_GROUP__', JSON.stringify(finalDataByGroup))
+            .replaceAll('__ANNOTATION_IDS__', JSON.stringify(annotationTooltipIds))
+        : '';
+
+    // Build intersection observer code with animation end handler
+    const animationCode = animate
+        ? intersectionObserverScript.replaceAll('__ON_ANIMATION_END__', 'gElemsToImages(true);')
+        : 'gElemsToImages();';
+
+    const hasAnnotations = elementAnnotations && Object.keys(elementAnnotations).length > 0;
+
+    // === Styling ===
+    const mapId = randomString(5);
+    const styleElem = document.createElementNS("http://www.w3.org/2000/svg", 'style');
+    let renderedCss = commonCss.replaceAll(/rgb\(.*?\)/g, rgb2hex) + additionnalCssExport;
+    if (frameShadow) {
+        renderedCss = renderedCss.replace(/contain\s*:\s*content\s*;?/g, '');
+    }
+    const animateCss = animate ? transitionCssMacro : '';
+    const finalCss = discriminateCssForExport(renderedCss + animateCss, mapId);
+    (optimizedSVG.firstChild as Element).setAttribute('id', mapId);
+    changeIdAndReferences(optimizedSVG.firstChild as Element, mapId);
+    // === End styling ===
+
+    // Build annotation code after changeIdAndReferences so #paths element IDs are correctly resolved
+    let annotationCode = '';
+    if (hasAnnotations) {
+        const resolvedAnnotations: Record<string, { tooltip?: string; popover?: string }> = {};
+        for (const [id, ann] of Object.entries(elementAnnotations!)) {
+            // #paths elements get their IDs prefixed by changeIdAndReferences; try both
+            const resolvedId = optimizedSVG.getElementById(id) ? id : `${mapId}-${id}`;
+            if (optimizedSVG.getElementById(resolvedId)) {
+                resolvedAnnotations[resolvedId] = {
+                    tooltip: ann.tooltip ? xhtmlifyHtml(ann.tooltip) : undefined,
+                    popover: ann.popover ? xhtmlifyHtml(ann.popover) : undefined,
+                };
+            }
+        }
+        if (Object.keys(resolvedAnnotations).length > 0) {
+            annotationCode = elementAnnotationsScript.replaceAll(
+                '__ELEMENT_ANNOTATIONS__',
+                JSON.stringify(resolvedAnnotations)
+            );
+        }
+    }
+
+    let finalScript = `
+    (function() {
+        const mapElement = document.currentScript.parentNode;
+
+        ${encodeSVGDataImageStr}
+        ${imageFromSpecialGElemStr}
+        ${duplicateContoursScript}
+        ${gElemsToImagesScript}
+        ${tooltipCode}
+        ${hoverScript}
+        ${annotationCode}
+        ${animationCode}
+    })()
+        `;
+
+    let fontCss = '';
+    if (!pathIsBetter) {
+        const svgTextContent = (optimizedSVG.firstChild as SVGElement)?.textContent || '';
+        if (exportFonts === ExportFontChoice.embedFontFace || exportFonts === ExportFontChoice.smallest) {
+            fontCss = await fontsToCssMultiSubset(usedProvidedFonts, svgTextContent);
+        } else {
+            fontCss = await fontsToCssEmbedMultiSubset(usedProvidedFonts, svgTextContent);
+        }
+    }
+    styleElem.innerHTML = finalCss + fontCss;
+    const svgElement = optimizedSVG.firstChild as Element;
+    svgElement.append(styleElem);
+    svgElement.classList.remove('animate-transition');
+    svgElement.classList.add('cartosvg');
+
+    const w = stateMacro.macroParams.General.width;
+    const h = stateMacro.macroParams.General.height;
+    let shadowPadded = false;
+
+    if (frameShadow) {
+        const bw = stateMacro.macroParams.Border.borderWidth;
+        const br = stateMacro.macroParams.Border.borderRadius;
+        addFrameShadow(svgElement, mapId, {
+            x: bw / 2,
+            y: bw / 2,
+            width: w - bw,
+            height: h - bw,
+            rx: Math.max(w, h) * (br / 100),
+        });
+        const m = FRAME_SHADOW_MARGIN;
+        const paddedW = w + 2 * m;
+        const paddedH = h + 2 * m;
+        svgElement.setAttribute('width', String(paddedW));
+        svgElement.setAttribute('height', String(paddedH));
+        svgElement.setAttribute('viewBox', `${-m} ${-m} ${paddedW} ${paddedH}`);
+        shadowPadded = true;
+    }
+
+    if (useViewBox) {
+        if (!shadowPadded) {
+            svgElement.setAttribute('viewBox', `0 0 ${w} ${h}`);
+        }
+        svgElement.removeAttribute('width');
+        svgElement.removeAttribute('height');
+    }
+
+    if (minifyJs !== false) {
+        const terser = await import('terser');
+        const minified = await terser.minify(finalScript, {
+            toplevel: true,
+            mangle: { eval: true, reserved: ['data', 'shapeId'] }
+        });
+        finalScript = minified.code || finalScript;
+    }
+
+    const scriptElem = document.createElementNS("http://www.w3.org/2000/svg", 'script');
+    const scriptContent = document.createTextNode(finalScript);
+    scriptElem.appendChild(scriptContent);
+    svgElement.append(scriptElem);
+
+    if (!skipAttribution) addAttribution(svgElement, w, h, 'macro', customAttributions);
+
+    if (!downloadExport) return svgElement.outerHTML;
+    download(svgElement.outerHTML, 'text/plain', 'cartosvg-export.svg');
+}
+
+export function getFinalTooltipTemplate(groupId: string, tooltipDefs: TooltipDefs): string {
+    const cs = tooltipDefs[groupId].containerStyle || {};
+    const runtimeProps = { "will-change": "opacity", "z-index": "1000", "width": "max-content", "max-width": "15rem", "line-height": "1.42" };
+    const all = { ...cs, ...runtimeProps };
+    const styleStr = Object.entries(all).map(([k, v]) => `${k}: ${v}`).join("; ");
+    return `<div style="${styleStr}">${tooltipDefs[groupId].template}</div>`;
+}

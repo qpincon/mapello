@@ -1,23 +1,16 @@
-<script>
-  import logo from "../assets/img/logo_brand.webp";
-  import githubLogo from "../assets/img/github.svg?inline";
-  export let activeTitle = "index.html";
+<script lang="ts">
+  import githubLogo from "../assets/img/github.svg?raw";
+  interface Props {
+    activeTitle?: string;
+  }
+
+  let { activeTitle = "index.html" }: Props = $props();
 </script>
 
 <div id="navbar">
-  <a href="app.html" class="logo">
-    <img src={logo} alt="Logo" height="50" width="140" />
-  </a>
-  {#if activeTitle === "index.html"}
-    <a
-      class:active={activeTitle === "about.html"}
-      role="button"
-      href="about.html"
-      >About
-    </a>
-  {/if}
   <slot></slot>
 </div>
+<slot name="bottom-left"></slot>
 <a
   class="p-2 github"
   target="_blank"
@@ -26,17 +19,13 @@
 >
 
 <style lang="scss">
-  .logo {
-    padding: 5px;
-  }
   #navbar {
     display: flex;
     width: 100%;
-    background-color: #ebf0f8;
-    border-bottom: 1px solid #c8d4e3;
-    flex-basis: 50px;
+    background-color: #f4f7fb;
+    border-bottom: 1px solid #e0e8f0;
+    min-height: 50px;
     display: flex;
-    flex-direction: row-reverse;
     align-items: center;
     > a {
       text-decoration: none;

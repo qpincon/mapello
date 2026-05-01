@@ -7,7 +7,7 @@
 - [-] Add possibility to change background image (noise for now)
 - [x] Import geojson instead of topojson
 - [x] Draw on canvas on move, using simplified geometries
-- [ ] Export with a level of precision
+- [-] Export with a level of precision
 - [-] Export a JS file defining a class, to call on an element
 - [x] Allow placing points (choosing from a set of shapes)
     - [x] Make the shape resizable / stylable with inline-style-editor (right click -> edit size + edit style)
@@ -22,9 +22,9 @@
 - [x] If viewBox, always fill container, and get dynamic size for drawing with canvas
 - [x] If width/height, give control over width/height
 - [x] Fix change sea color not working
-- [ ] Add spinner on loading (geosjon / font)
+- [-] Add spinner on loading (geosjon / font)
 - [x] Fix dragging created paths
-- [ ] Display labels using projection (how?)
+- [-] Display labels using projection (how?)
 - [x] Add credits to:
     - geoboundaries
     - d3
@@ -92,7 +92,7 @@
 - [x] Micro: Layers in "layers" tab
 - [-] Micro: Building with same id = same color 
 - [x] Micro: Check building order with height
-- [ ] Micro: Check building to merge if below other buidling
+- [-] Micro: Check building to merge if below other buidling
 - [x] Micro: Railway layer 
 - [x] Micro: MapTiler + OSM attribution 
 - [x] Micro: OSM attribution on exported file 
@@ -127,54 +127,151 @@
 - [x] Micro: Debug right click
 - [x] Micro: Fill pattern hover
 - [x] Micro: Stop computations when moving
-- [ ] Remove labels off canvas
-- [ ] Freehand: style group with ISE (add custom CSS rule on the fly on <g> parent)
-- [ ] Freehand: Allow drag drawing
-- [ ] Freehand: Allow deletion
-- [ ] Double click text edit prevent ISE
-- [ ] Micro: 3d elements (see maplibre 3D model demo)
-- [ ] Micro: Use protomaps (upload tiles and configure nginx to serve it, using the pm plugin in the front)
-- [ ] Self-hosting
+- [x] Bug: Click on increment range on significant digits legend does nothing
+- [x] Remove labels off canvas
+- [x] Freehand: style group with ISE (add custom CSS rule on the fly on <g> parent)
+- [x] Freehand: Allow drag drawing
+- [x] Freehand: Allow deletion
+- [x] Double click text edit prevent ISE
+- [x] Micro: 3d elements (see maplibre 3D model demo) (three.js SVG renderer / zdog?)
+- [x] Micro: Use protomaps (upload tiles and configure nginx to serve it, using the pm plugin in the front)
 - [ ] Show tooltip conditionnaly
-- [ ] Tooltip creation: Use WYSIWYG editor
-- [ ] Allow tooltip creation on single element
-- [ ] Draw pin on map / any imported image (URL or uploaded as b64, must be < some size in kb)
+- [x] Tooltip creation: Use WYSIWYG editor
+- [x] Allow tooltip creation on single element - will take precedence over general one
+- [x] Draw pin on map / any imported image (URL or uploaded as b64, must be < some size in kb)
 - [ ] Data export: remove empty objects
-- [ ] Data import / export: Move into modal
-- [ ] Data edition: allow inline edition with a lightweight grid edition sofware (lazy-loaded)
-- [ ] Top space above "Max legend width"
+- [x] Data import / export: Move into modal
+- [x] Data edition: allow inline edition with a lightweight grid edition sofware (lazy-loaded)
+- [x] Top space above "Max legend width"
 - [ ] Bootstrap: allow main colors customization
   - upgrade to 5.3
   - use color modes
   - pass mode as input of Map
-- [ ] Macro: Render simplified while changing altitude / fov
-- [ ] Allow external link on click of entity
-- [ ] Text / icons / images / freehand : use https://github.com/daybrush/moveable
+- [x] Macro: Render simplified while changing altitude / fov (on slider change -> need to dispatch any change on slider)
+- [x] Macro: Use same border method as micro (clip-path + remove geo entirely outside) 
+- [x] Macro: be able to change graticule color
+- [ ] Macro: find a way to match ADM2 boundary data with land data (see UK adm2 for instance)
 
+- [x] Allow external link on click of entity (a xmlns="http://www.w3.org/2000/svg" xlink:href="url.html" xmlns:xlink="http://www.w3.org/1999/xlink" )
+- [-] Text / icons / images / freehand : use https://github.com/daybrush/moveable
+- [x] Text: just use Maj+Enter for new line instead of ++
 
-- [ ] Geoboundaries: give name to disputed territories
+- [x] Geoboundaries: give name to disputed territories
 - [ ] Geoboundaries: attribution to exported file
-- [ ] Geoboundaries: remove job (or just send an alert)
+- [x] Geoboundaries: remove job (or just send an alert)
 - [ ] "No data color" should be available in "color using data"
 - [ ] ISE: 
-  - clearer wording (stroke-width -> Stroke Width)
-  - stroke / fill -> "Stroke / Fill color"
-  - Color picker below, not to side
-  - Allow text mapping ('inline' -> "France", ".country" -> "All countries", ".country:hover": "Countries hover)
-  - Change "rule" to dropdown select
-  - Allow parametrization of modal width
-  - Callback function to allow to go up the DOM tree of selected element
+  - [x] clearer wording (stroke-width -> Stroke Width)
+  - [x] stroke / fill -> "Stroke / Fill color"
+  - [-] Color picker below, not to side
+  - [x] Allow text mapping ('inline' -> "France", ".country" -> "All countries", ".country:hover": "Countries hover)
+  - [x] Change "rule" to dropdown select
+  - [-] Allow parametrization of modal width
+  - [ ] Callback function to allow to go up the DOM tree of selected element
+  - [x] Export type declarations
+  - [x] Svelte 5
+
+- [x] Bugfix: handle input wrong color in color picker text
 
 - [ ] Separate (lazy-load) micro and macro
-- [ ] Migrate to svelte 5
-- [ ] Use typescript
+- [x] Migrate to svelte 5
+- [x] Use typescript
 - [ ] Use svelte/kit
-    - [ ] Disable cloudflare deployment
+    - [x] Disable cloudflare deployment
     - [ ] Deploy on VPS
-- [ ] Use vite
-  - require.context => import.meta.glob
-  - HtmlWebpackPlugin -> new FrontPage component
-  - Inline imports -> ?raw (https://vite.dev/guide/assets)
-
-
-
+    - [ ] HtmlWebpackPlugin -> new FrontPage component
+- [x] Use vite
+  - [x] require.context => import.meta.glob
+  - [x] Inline imports -> ?raw (https://vite.dev/guide/assets)
+- [ ] Option to have fade out gradient like https://www.mapiful.com/editor/#/editor/location
+- [x] Micro: always stitch water when zoom level low enough to avoid cut oceans
+- [x] Micro: make clip-path smaller when border width is big (avoid overlap with geometries)
+- [x] Bug wen reset project on micro
+- [x] fix animate on micro
+- [x] fix background shadow on micro
+- [ ] Micro: minify class names + CSS on export ?
+- [x] text-to-svg: don't accept woff2 fonts
+- [x] Macro: have same tilt / rotation behavior as maplibre
+- [x] micro landing: fix weird map expanding size
+- [x] micro: remove pathlength when no animation
+- [x] micro: when 3d, remove ground buildings
+- [x] micro 3D: proper plotting of building parts
+- [-] micro 3D: elevation to plot elevated sides of water ?
+- [x] micro 3D animation: only animate roof
+- [x] micro: fix use viewbox
+- [x] micro 3D: scale building height slider
+- [-] micro: scale roads width slider
+- [ ] micro: monochrome palettes (dark water, dark land) https://snazzymaps.com/
+- [ ] micro optim: remove features totally included in other feature and smaller
+- [x] micro 3D: fix cut buidlings at the bottom of the frame
+- [x] micro 3D: use min_height for extrusion base: https://github.com/protomaps/basemaps/issues/465
+- [ ] sketchmeup / transparentracks
+- [x] micro: only enable hover effect on buildings?
+- [x] micro 3D: remove element if contains all other parts and altitude is high (eiffel, london eye)
+- [x] micro 3D: Fix rendering when browser zoom different
+- [x] ISE: default to "fill color" when already defined
+- [x] ISE: Fix "fill color" selected by default that changes stroke after one popup was opened before
+- [x] Remove "path-images" out of frame
+- [x] Fix points / labels not displayed when moving (micro)
+- [x] micro: clip-path freehand drawing
+- [x] Macro export bug, stuff drawn outside of frame
+- [ ] Macro: use noise from fitler instead of image
+- [x] Style independently and globally freehand
+- [x] Micro 3D: problem with complex geometries (louvre)
+- [ ] Macro: less simplification for base layers (land + adm0)
+- [x] ISE: use icons for fill / stroke / dasharray / width
+- [x] ISE: don't display lines with only 1 item
+- [ ] Export: move "animate" option, explain how to usage SVG (script or c/c), viewbox
+- [x] Font picker
+- [x] Font: Add "Will font be used only on map" -> if yes, transform to path or embed font face declaration
+- [ ] Macro: Live-update as much as possible without calling the full draw routine for better interactivity
+- [x] Font: chosing a font will change default font used for new labels / all labels with manually changed fonts
+- [ ] Micro: change style to have more roads visible (manhattan example)
+- [x] Attribution: add it to macro, better styling
+- [x] ISE: remove color picker on svg <text> / <tspan> element 
+- [x] ISE: remove stroke linejoin
+- [ ] macro: rework layer re-ordering UI
+- [ ] Micro: make 3D building stand out of the buidling toggle
+- [x] Switch back to macro if micro not loaded -> can't do anything -> empty map-container when switching?
+- [x] Micro: export tooltip / popover not working
+- [x] popover / tooltip: focus the editor directly + add a close button to modal
+- [x] macro: selecting adm2 after adm1 removes adm1 without adding adm2
+- [x] color picker tooltip makes pages bigger and must scroll when on bottom (second glow)
+- [x] macro "Color using data" default: "color on" & "Palette" empty
+- [ ] macro export: linear gradient like https://bunny.net/static/storage-map-48de78a4f676dd3129102dadd7f90751.svg ?
+- [x] Fix copy paste color in colorpickerpreview: picker has the wrong color location when opened
+- [x] macro: the legend title edition should have the same behavior as a regular label edit 
+- [x] macro: no data color not working
+- [x] macro: disallow changing fill on legend entry using inline style editor
+- [x] macro: when toggling on "show countries", the countries all have the same colors, the CSS is not applied. Fixed on redraw
+- [x] macro: reordering layers breaks rendering. Seems to be the same problem as above
+- [x] macro: map nubmer formatting locales to readable (en-US to "(English - United States of America)" for instance)
+- [x] macro: number formatting not applied to tooltip
+- [x] after removing popover, we need a redraw to remove cursor: pointer. It should be removed directly.
+- [x] macro tooltip template: remove empty divs (empty <b> in the siv makes that the inlinestyleditor can't propose to edit the text properties )
+- [x] macro tooltip: add boxshadow by default
+- [x] macro: custom palette?
+- [ ] ISE: open above when no room
+- [ ] ISE: italic text
+- [ ] nginx rate limiting 
+- [x] micro: fix lines on map boundaries removed from export
+- [x] micro: landuse_pedestrian above grass ? (la cité)
+- [ ] more patterns: https://www.svgbackgrounds.com/set/free-svg-backgrounds-and-patterns/
+- [x] No more than 20 projects
+- [x] Check disposable email adresses
+- [ ] slider: allow editing value directly by text
+- [x] Font conversion to path: only suggest of not used in tooltip / popover, alwyas import font-face otherwise
+- [x] macro coloring: only take into account visible parts of the map
+- [x] Show N/A in tooltip when no data for referenced column
+- [x] Macro tooltip: cannot edit default border / background color
+- [x] Macro tooltip: do not break all formatting. Only edit style in editor direclty ??
+- [x] Export: possibility to add attribution
+- [x] Macro: number formatting inside tooltip
+- [x] Popover: the arrow should have the same color as the content background color
+- [x] Popover in editor: open it before selectionOverlay
+- [x] Frame shadow: add padding to SVG for it to display properly
+- [x] non-latin characters conversion to svg path
+- [x] ISE: show elements highlight even for hover
+- [x] adding tooltip happens on all elements
+- [ ] Generic tooltip positioning to use same principal as macro tooltip (first position is wrong)
+- [ ] Frame shadow: add some padding around map ?

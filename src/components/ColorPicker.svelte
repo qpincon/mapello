@@ -1,73 +1,84 @@
-<script>
-    import Picker from 'vanilla-picker';
-    
-    import { onMount, onDestroy } from 'svelte';
-    
-    export let value = "#AAAAAAFF";
-    export let options = {};
-    export let onChange = () => {};
-    let self;
-    let pickerElem;
-    
-    $: if (pickerElem || value.length) {
-        if(isHexColor(value)) pickerElem.setColor(value);
+<script lang="ts">
+    import Picker, { type Options, type Color as ColorInternal } from "vanilla-picker";
+
+    import { onMount, onDestroy } from "svelte";
+    import type { Color } from "src/types";
+
+    interface ExtendedPicker extends Picker {
+        __originalOpenHandler?: () => void;
+        openHandler: () => void;
     }
 
-    export function setColor(hexString) {
+    interface Props {
+        value: Color;
+        options?: Options;
+        onChange: (newColor: Color, oldColor?: Color) => void;
+    }
+
+    let { value, options = {}, onChange }: Props = $props();
+
+    let self: HTMLElement | null = $state(null);
+    let pickerElem: ExtendedPicker | null = $state(null);
+    let isInternalChange = false;
+
+    $effect(() => {
+        if (!pickerElem && self) {
+            options.onChange = (col) => {
+                setValue(col.hex as Color);
+            };
+            pickerElem = new Picker({
+                parent: self,
+                color: value,
+                ...options,
+            }) as ExtendedPicker;
+            pickerElem.__originalOpenHandler = pickerElem.openHandler;
+            pickerElem.openHandler = function () {
+                _onOpen();
+                this.__originalOpenHandler?.();
+            };
+        }
+    });
+
+    $effect(() => {
+        if (pickerElem && value.length && isHexColor(value) && !isInternalChange) {
+            pickerElem.setColor(value, true);
+        }
+    });
+
+    export function setColor(hexString: Color): void {
         if (!isHexColor(hexString)) return;
-        pickerElem.setColor(hexString);
-    }
-    
-    export function open() {
-        pickerElem.show();
-        pickerElem.openHandler();
+        if (pickerElem) pickerElem.setColor(hexString, true);
     }
 
-    function isHexColor (hex) {
-        return typeof hex === 'string'
-            && (hex.length === 8 || hex.length === 6)
-            && !isNaN(Number('0x' + hex))
-}
+    export function open(): void {
+        if (pickerElem) {
+            pickerElem.show();
+            pickerElem.openHandler();
+        }
+    }
 
-    function setValue(val) {
+    function isHexColor(hex: Color): boolean {
+        const raw = typeof hex === "string" && hex.startsWith('#') ? hex.slice(1) : hex;
+        return typeof raw === "string" && (raw.length === 8 || raw.length === 6) && !isNaN(Number("0x" + raw));
+    }
+
+    function setValue(val: Color): void {
         if (val === value) return;
-        onChange(val, value)
+        isInternalChange = true;
+        onChange(val, value);
         value = val;
-    }
-    
-    function _onChange(color) {
-        setValue(color.hex);
-    }
-    
-    onMount( () => {
-        _init(options);
-    });
-    
-    onDestroy( () => {
-        pickerElem.destroy();
-    });
-
-    export function init() {
-        _init(options);
-    }
-    function _onOpen() {
+        queueMicrotask(() => { isInternalChange = false; });
     }
 
-    function _init(opts) {
-        if (!self) return;
-        if (pickerElem) pickerElem.destroy();
-        opts.onChange = _onChange;
-        pickerElem = new Picker({
-            parent: self,
-            color: value,
-            ...opts
-        });
-        pickerElem.__originalOpenHandler = pickerElem.openHandler;
-        pickerElem.openHandler = function(e) {
-            _onOpen();
-            this.__originalOpenHandler();
-        };
+    onDestroy(() => {
+        if (pickerElem) {
+            pickerElem.destroy();
+        }
+    });
+
+    function _onOpen(): void {
+        // Handler for when picker opens
     }
 </script>
-    
-<div bind:this={self} style="position: absolute;" ></div>
+
+<div bind:this={self} style="position: absolute;"></div>

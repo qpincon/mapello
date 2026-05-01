@@ -1,51 +1,70 @@
-<script>
+<script lang="ts">
+    import { clamp } from "lodash-es";
     import { tapHold } from "../util/common";
 
-    export let value;
-    export let title;
-    export let min = 0;
-    export let max = 10;
-    export let step = 1;
-    export let onChange = (newVal) => {};
-    export let id = "rangeinputid";
-    export let helpText = null;
-    export let labelAbove = false;
-
-    // props are passed as strings most of the time
-    $: _step = parseFloat(step);
-    $: _min = parseFloat(min);
-    $: _max = parseFloat(max);
-
-    function countDecimals(val) {
-        if(Math.floor(val.valueOf()) === val.valueOf()) return 0;
-        return val.toString().split(".")[1].length || 0; 
+    interface Props {
+        value: number;
+        title: string;
+        min: number;
+        max: number;
+        step?: number;
+        onChange?: (newVal: number) => void;
+        id: string;
+        helpText?: string | null;
+        labelAbove?: boolean;
     }
 
-    $:nbDecimals = countDecimals(_step);
-    const increment = () => {
-        if (value === null) value = _step;
-        else if (value === _max) return;
-        else value += _step;
-        onChange(value);
+    let { value = $bindable(), title, min, max, step = 1, onChange, id, helpText, labelAbove }: Props = $props();
+
+    let slider: HTMLElement | undefined = $state();
+    /** This is to enable onchange event propagation when the increment / decrement counters are clicked
+     * (for when RangeInput is used in a <form> that globally listens for "onchange" )*/
+    const changeEvent = new Event("change", {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+    });
+
+    function countDecimals(val: number): number {
+        if (Math.floor(val.valueOf()) === val.valueOf()) return 0;
+        return val.toString().split(".")[1]?.length || 0;
+    }
+
+    let nbDecimals: number = $derived(countDecimals(step));
+
+    const increment = (e?: MouseEvent): void => {
+        if (e) e.stopPropagation();
+        const beforeValue = value;
+        if (value === null) value = step;
+        else if (value === max) return;
+        else value += step;
+        value = clamp(value, min, max);
+        if (value === beforeValue) return;
+        if (onChange) onChange!(value);
+        slider?.dispatchEvent(changeEvent);
     };
 
-    const decrement = () => {
-        if (value === null) value = _min;
-        else if (value === _min) return;
-        else value -= _step;
-        onChange(value);
+    const decrement = (e?: MouseEvent): void => {
+        if (e) e.stopPropagation();
+        const beforeValue = value;
+        if (value === null) value = min;
+        else if (value === min) return;
+        else value -= step;
+        value = clamp(value, min, max);
+        if (value === beforeValue) return;
+        if (onChange) onChange!(value);
+        slider?.dispatchEvent(changeEvent);
     };
 </script>
 
-<div class="{labelAbove ? 'd-flex flex-column justify-content-center': 'row align-items-center'}  w-100">
-    <label for={id} class="d-flex col-4 col-form-label align-items-center {labelAbove ? 'p-0' : ''}">
-        {title}
+<div
+    bind:this={slider}
+    class="{labelAbove ? 'd-flex flex-column justify-content-center' : 'row align-items-center'}  w-100"
+>
+    <label for={id} class="text-nowrap d-flex col-4 col-form-label align-items-center {labelAbove ? 'p-0' : ''}">
+        <span> {title}</span>
         {#if helpText}
-            <span
-                class="help-tooltip fs-6"
-                data-bs-toggle="tooltip"
-                data-bs-title={helpText}>?</span
-            >
+            <span class="help-tooltip fs-6" data-bs-toggle="tooltip" data-bs-title={helpText}>?</span>
         {/if}
     </label>
 
@@ -55,16 +74,19 @@
             class="form-range"
             {id}
             bind:value
-            min={_min}
-            max={_max}
-            step={_step}
-            on:change={(e) => onChange(parseFloat(e.target.value))}
+            {min}
+            {max}
+            {step}
+            onchange={(e) => {
+                console.log("slider change", e);
+                if (e.target && e.target instanceof HTMLInputElement) {
+                    if (onChange) onChange!(parseFloat(e.target.value));
+                }
+            }}
         />
         <div class="d-flex align-items-center">
-            <span
-                class="text-center d-flex text-primary mx-1 text-opacity-75 fs-6"
-            >
-                {value.toFixed(nbDecimals)}
+            <span class="text-center d-flex text-primary mx-1 text-opacity-75 fs-6">
+                {value?.toFixed(nbDecimals) ?? "0"}
             </span>
             <div class="arrows">
                 <div class="numeric-input">
@@ -73,10 +95,8 @@
                         height="10"
                         fill="currentColor"
                         viewBox="3 3 18 18"
-                        use:tapHold
-                        on:hold={increment}
-                        on:click={increment}
-                        ><path d="M7,15L12,10L17,15H7Z" /></svg
+                        use:tapHold={increment}
+                        onclick={increment}><path d="M7,15L12,10L17,15H7Z" /></svg
                     >
                 </div>
                 <div class="numeric-input">
@@ -85,10 +105,8 @@
                         height="10"
                         fill="currentColor"
                         viewBox="3 3 18 18"
-                        use:tapHold
-                        on:hold={decrement}
-                        on:click={decrement}
-                        ><path d="M7,10L12,15L17,10H7Z" /></svg
+                        use:tapHold={decrement}
+                        onclick={decrement}><path d="M7,10L12,15L17,10H7Z" /></svg
                     >
                 </div>
             </div>
