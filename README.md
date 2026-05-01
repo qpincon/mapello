@@ -1,5 +1,5 @@
 
-[![Mapello logo](src/assets/img/logo_wordmark.png 'Mapello logo')](https://mapello.net)
+[![Mapello logo](public/logo_wordmark.png)](https://mapello.net)
 
 This is the source code of the [Mapello](https://mapello.net) website. 
 
