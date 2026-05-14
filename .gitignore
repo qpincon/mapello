@@ -3,5 +3,6 @@ dist/
 public/*.pmtiles
 .svelte-kit/
 .env
+.env.prod
 data/
 build/

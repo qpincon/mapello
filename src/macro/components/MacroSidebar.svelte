@@ -624,6 +624,7 @@
             <a
                 href="javascript:;"
                 class="nav-link d-flex align-items-center position-relative fs-5"
+                data-tour="macro-tab-general"
                 onclick={() => (mainMenuSelection = "general")}
                 class:active={mainMenuSelection === "general"}
             >
@@ -634,6 +635,7 @@
             <a
                 href="javascript:;"
                 class="nav-link d-flex align-items-center position-relative fs-5"
+                data-tour="macro-tab-layers"
                 onclick={() => (mainMenuSelection = "layers")}
                 class:active={mainMenuSelection === "layers"}
             >
@@ -810,6 +812,7 @@
                 {/if}
                 {#if macroState.zonesData[currentMacroLayerTab]?.["data"]}
                     <button
+                        id="manage-data-btn"
                         class="btn btn-outline-teal w-100 text-start mt-3 mb-2 p-2"
                         onclick={() => (showDataManager = true)}
                     >

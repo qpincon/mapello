@@ -2,7 +2,9 @@ import type { RequestHandler } from './$types';
 import { json, error } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { userProjects, MAX_PROJECT_BYTES, MAX_PROJECTS } from '$lib/server/schema';
+import { userProjects, MAX_PROJECT_BYTES } from '$lib/server/schema';
+import { isPro } from '$lib/server/subscription';
+import { FREE_PROJECT_LIMIT, PRO_PROJECT_LIMIT } from '$lib/billing-constants';
 import { eq, desc, count } from 'drizzle-orm';
 
 async function requireUser(request: Request) {
@@ -33,8 +35,9 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!name || !project_json) throw error(400, 'Missing name or project_json');
 
 	const [{ total }] = await db.select({ total: count() }).from(userProjects).where(eq(userProjects.userId, user.id));
-	if (total >= MAX_PROJECTS) {
-		throw error(403, `Project limit reached (maximum ${MAX_PROJECTS})`);
+	const limit = (await isPro(user.id)) ? PRO_PROJECT_LIMIT : FREE_PROJECT_LIMIT;
+	if (total >= limit) {
+		throw error(403, `Project limit reached (maximum ${limit})`);
 	}
 
 	if (new TextEncoder().encode(project_json).byteLength > MAX_PROJECT_BYTES) {

@@ -26,7 +26,8 @@
   },
   "editor.formatOnSave": true,
   "[svelte]": {
-    "editor.defaultFormatter": "svelte.svelte-vscode"
+    "editor.defaultFormatter": "svelte.svelte-vscode",
+    "editor.formatOnSave": false
   },
   "svelte.plugin.svelte.format.config.printWidth": 120,
   "files.exclude": {

@@ -5,11 +5,11 @@
     import { drag } from "d3-drag";
     import { zoom } from "d3-zoom";
     import InlineStyleEditor from "inline-style-editor";
-    import { cloneDeep, debounce } from "lodash-es";
+    import {  debounce } from "lodash-es";
     import { drawCustomPaths, parseAndUnprojectPath } from "./svg/paths";
     import PathEditor from "./svg/pathEditor";
     import Geocoding from "./components/Geocoding.svelte";
-    import { download, initTooltips, pascalCaseToSentence, sleep } from "./util/common";
+    import {  initTooltips, pascalCaseToSentence, sleep } from "./util/common";
     import { processUploadedImage } from "./util/imageProcess";
     import * as shapes from "./svg/shapeDefs";
     import * as markers from "./svg/markerDefs";
@@ -38,9 +38,11 @@
     import ExportModal from "./components/ExportModal.svelte";
     import PostExportInfoModal from "./components/PostExportInfoModal.svelte";
     import InstructionsModal from "./components/InstructionsModal.svelte";
+    import { maybeStartTour, startTour } from "./util/tour";
     import AuthModal from "./components/AuthModal.svelte";
     import UpgradeModal from "./components/UpgradeModal.svelte";
     import ProjectDropdown from "./components/ProjectDropdown.svelte";
+    import { FREE_PROJECT_LIMIT, PRO_PROJECT_LIMIT } from "$lib/billing-constants";
     import { signOut } from "$lib/auth-client";
     import { page } from "$app/state";
     import { invalidateAll } from "$app/navigation";
@@ -484,6 +486,7 @@
                 }
             }
         });
+        setTimeout(() => maybeStartTour({ loggedIn: !!currentUser }), 600);
     });
 
     function attachListeners(): void {
@@ -2001,6 +2004,9 @@
                             onSaveError={(msg) => {
                                 serverSyncError = msg;
                             }}
+                            isPro={!!page.data.subscription}
+                            projectLimit={page.data.subscription ? PRO_PROJECT_LIMIT : FREE_PROJECT_LIMIT}
+                            onUpgrade={() => (showUpgradeModal = true)}
                         />
                     {/if}
                     <FontPicker
@@ -2008,7 +2014,7 @@
                         existingFontNames={commonState.providedFonts.map((f) => f.name)}
                         iconOnly={true}
                     />
-                    <button class="navbar-btn navbar-btn-cta" type="button" onclick={onExportSvgClicked}>
+                    <button id="export-btn" class="navbar-btn navbar-btn-cta" type="button" onclick={onExportSvgClicked}>
                         <Icon fillColor="none" svg={icons["download"]} /> Export
                     </button>
                     {#if currentUser}
@@ -2055,6 +2061,7 @@
                         </div>
                     {:else}
                         <button
+                            id="sign-in-btn"
                             class="navbar-btn"
                             type="button"
                             onclick={() => {
@@ -2068,6 +2075,7 @@
                 </div>
             </div>
             <button
+                id="instructions-btn"
                 slot="bottom-left"
                 class="p-2 instructions-btn"
                 type="button"
@@ -2134,7 +2142,14 @@
 />
 
 <PostExportInfoModal bind:open={showPostExportInfo} onClosed={() => (showPostExportInfo = false)} />
-<InstructionsModal bind:open={showInstructionsModal} onClosed={() => (showInstructionsModal = false)} />
+<InstructionsModal
+    bind:open={showInstructionsModal}
+    onClosed={() => (showInstructionsModal = false)}
+    onStartTour={() => {
+        showInstructionsModal = false;
+        setTimeout(() => startTour({ force: true, loggedIn: !!currentUser }), 300);
+    }}
+/>
 <AuthModal bind:open={showAuthModal} afterAuth={authAfterCallback} />
 <UpgradeModal open={showUpgradeModal} onClosed={() => (showUpgradeModal = false)} />
 

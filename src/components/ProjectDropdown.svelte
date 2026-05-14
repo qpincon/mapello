@@ -20,6 +20,9 @@
         getProjectJson: () => string;
         applyState: (state: GlobalState) => Promise<void>;
         onSaveError: (message: string) => void;
+        isPro: boolean;
+        projectLimit: number;
+        onUpgrade: () => void;
     }
 
     let {
@@ -28,6 +31,9 @@
         getProjectJson,
         applyState,
         onSaveError,
+        isPro,
+        projectLimit,
+        onUpgrade,
     }: Props = $props();
 
     let toggleEl: HTMLElement;
@@ -45,14 +51,22 @@
     let creatingProject = $state(false);
     let showNewProjectInput = $state(false);
     let newProjectNameInput = $state("");
+    let searchQuery = $state("");
+    let searchInputEl: HTMLInputElement | null = $state(null);
 
-    const MAX_PROJECTS = 20;
     let totalProjectCount = $derived(projects.length + (currentProjectId ? 1 : 0));
-    let atProjectLimit = $derived(totalProjectCount >= MAX_PROJECTS);
+    let atProjectLimit = $derived(totalProjectCount >= projectLimit);
+    let filteredProjects = $derived.by(() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return projects;
+        return projects.filter((p) => p.name.toLowerCase().includes(q));
+    });
 
     onMount(() => {
         dropdown = new Dropdown(toggleEl);
         toggleEl.addEventListener("show.bs.dropdown", fetchProjects);
+        toggleEl.addEventListener("shown.bs.dropdown", () => searchInputEl?.focus());
+        toggleEl.addEventListener("hidden.bs.dropdown", () => (searchQuery = ""));
     });
 
     async function getServerErrorMessage(res: Response, fallback: string): Promise<string> {
@@ -202,6 +216,7 @@
 <div class="dropdown">
     <button
         bind:this={toggleEl}
+        id="project-dropdown"
         class="navbar-btn dropdown-toggle project-dropdown-toggle"
         type="button"
         data-bs-toggle="dropdown"
@@ -279,16 +294,34 @@
             {/if}
         </li>
 
+        {#if projects.length > 10}
+            <li class="px-2 pb-1">
+                <input
+                    bind:this={searchInputEl}
+                    class="form-control form-control-sm"
+                    type="text"
+                    placeholder="Search projects…"
+                    bind:value={searchQuery}
+                    onclick={(e) => e.stopPropagation()}
+                    onkeydown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Escape") searchQuery = "";
+                    }}
+                />
+            </li>
+        {/if}
+
         {#if errorMsg}
             <li><span class="dropdown-item-text text-danger small">{errorMsg}</span></li>
         {/if}
 
+        <div class="project-list-scroll">
         {#if loading}
             <li><span class="dropdown-item-text text-muted small">Loading…</span></li>
-        {:else if projects.length === 0}
-            <li><span class="dropdown-item-text text-muted small">No other projects.</span></li>
+        {:else if filteredProjects.length === 0}
+            <li><span class="dropdown-item-text text-muted small">{searchQuery ? "No matches." : "No other projects."}</span></li>
         {:else}
-            {#each projects as project (project.id)}
+            {#each filteredProjects as project (project.id)}
                 <li class="project-item px-2 py-1">
                     {#if renamingId === project.id}
                         <div class="d-flex gap-1 align-items-center w-100">
@@ -366,6 +399,7 @@
                 </li>
             {/each}
         {/if}
+        </div>
         <li class="px-2 pt-1">
             {#if showNewProjectInput}
                 <div class="d-flex gap-1 align-items-center">
@@ -397,7 +431,16 @@
                     >
                 </div>
             {:else if atProjectLimit}
-                <span class="dropdown-item-text text-muted small">Maximum {MAX_PROJECTS} projects reached</span>
+                {#if isPro}
+                    <span class="dropdown-item-text text-muted small">Maximum {projectLimit} projects reached</span>
+                {:else}
+                    <div class="px-2 py-1">
+                        <div class="text-muted small mb-1">Free plan limit ({projectLimit} projects) reached.</div>
+                        <button class="btn btn-sm btn-primary w-100" type="button" onclick={onUpgrade}>
+                            Upgrade to Pro
+                        </button>
+                    </div>
+                {/if}
             {:else}
                 <button
                     class="dropdown-item"
@@ -424,6 +467,10 @@
     }
     .project-dropdown-menu {
         min-width: 280px;
+    }
+    .project-list-scroll {
+        max-height: 20rem;
+        overflow-y: auto;
     }
     .current-project-label {
         font-size: 0.875rem;

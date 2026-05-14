@@ -69,6 +69,7 @@
     "d3-geo": "^3.1.1",
     "d3-geo-projection": "^4.0.0",
     "disposable-email-domains": "^1.0.62",
+    "driver.js": "^1.4.0",
     "drizzle-orm": "^0.45.1",
     "fit-curve": "^0.2.0",
     "inline-style-editor": "1.5.8",

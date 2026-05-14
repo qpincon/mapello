@@ -216,6 +216,81 @@
 
 <!-- ═══════════════════════════════════════ HERO ═══════════════════════════════════════ -->
 <section class="hero">
+  <!-- horizontal graticule — connects the two side strips -->
+  <svg class="hero-graticule" viewBox="0 0 1000 340" preserveAspectRatio="none" fill="none" aria-hidden="true">
+    <line x1="0" y1="50" x2="1000" y2="50" stroke="white" stroke-width="0.3" stroke-opacity="0.05" />
+    <line x1="0" y1="115" x2="1000" y2="115" stroke="white" stroke-width="0.3" stroke-opacity="0.05" />
+    <line x1="0" y1="180" x2="1000" y2="180" stroke="#c9943a" stroke-width="0.5" stroke-opacity="0.12" />
+    <line x1="0" y1="245" x2="1000" y2="245" stroke="white" stroke-width="0.3" stroke-opacity="0.05" />
+    <line x1="0" y1="310" x2="1000" y2="310" stroke="white" stroke-width="0.3" stroke-opacity="0.05" />
+  </svg>
+
+  <!-- corner brackets (chart frame corners aligned with strip extents) -->
+  <svg class="hero-corner hero-corner-tl" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+    <path d="M 0,16 L 0,0 L 16,0" stroke="white" stroke-opacity="0.22" stroke-width="1" />
+    <text x="22" y="11" fill="#c9943a" fill-opacity="0.45" font-family="'Cormorant Garamond', serif" font-size="8" letter-spacing="1.5">N</text>
+    <path d="M 22,17 L 22,28 M 19,20 L 22,17 L 25,20" stroke="#c9943a" stroke-opacity="0.40" stroke-width="0.7" fill="none" />
+  </svg>
+  <svg class="hero-corner hero-corner-tr" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+    <path d="M 24,0 L 40,0 L 40,16" stroke="white" stroke-opacity="0.22" stroke-width="1" />
+  </svg>
+  <svg class="hero-corner hero-corner-bl" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+    <path d="M 0,24 L 0,40 L 16,40" stroke="white" stroke-opacity="0.22" stroke-width="1" />
+  </svg>
+  <svg class="hero-corner hero-corner-br" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+    <path d="M 24,40 L 40,40 L 40,24" stroke="white" stroke-opacity="0.22" stroke-width="1" />
+  </svg>
+
+  <!-- top-center fold ornament -->
+  <svg class="hero-fold hero-fold-top" viewBox="0 0 140 12" fill="none" aria-hidden="true">
+    <line x1="0" y1="6" x2="55" y2="6" stroke="white" stroke-width="0.5" stroke-opacity="0.22" />
+    <polygon points="63,2 66,6 63,10 60,6" fill="white" fill-opacity="0.22" />
+    <polygon points="77,2 80,6 77,10 74,6" fill="white" fill-opacity="0.22" />
+    <line x1="85" y1="6" x2="140" y2="6" stroke="white" stroke-width="0.5" stroke-opacity="0.22" />
+  </svg>
+
+  <!-- bottom-center fold ornament -->
+  <svg class="hero-fold hero-fold-bottom" viewBox="0 0 140 12" fill="none" aria-hidden="true">
+    <line x1="0" y1="6" x2="55" y2="6" stroke="white" stroke-width="0.5" stroke-opacity="0.22" />
+    <polygon points="63,2 66,6 63,10 60,6" fill="white" fill-opacity="0.22" />
+    <polygon points="77,2 80,6 77,10 74,6" fill="white" fill-opacity="0.22" />
+    <line x1="85" y1="6" x2="140" y2="6" stroke="white" stroke-width="0.5" stroke-opacity="0.22" />
+  </svg>
+
+  <!-- left latitude scale -->
+  <svg class="hero-side hero-side-left" viewBox="0 0 72 340" fill="none" aria-hidden="true">
+    <line x1="62" y1="20" x2="62" y2="320" stroke="white" stroke-width="0.5" stroke-opacity="0.22" />
+    <polygon points="62,12.5 64.5,16 62,19.5 59.5,16" fill="white" fill-opacity="0.20" />
+    <polygon points="62,320.5 64.5,324 62,327.5 59.5,324" fill="white" fill-opacity="0.20" />
+    <line x1="52" y1="50" x2="62" y2="50" stroke="white" stroke-width="0.6" stroke-opacity="0.25" />
+    <text x="48" y="53" text-anchor="end" fill="white" fill-opacity="0.26" font-family="'Cormorant Garamond', serif" font-size="8.5" letter-spacing="1.2">55°N</text>
+    <line x1="52" y1="115" x2="62" y2="115" stroke="white" stroke-width="0.6" stroke-opacity="0.25" />
+    <text x="48" y="118" text-anchor="end" fill="white" fill-opacity="0.26" font-family="'Cormorant Garamond', serif" font-size="8.5" letter-spacing="1.2">52°N</text>
+    <line x1="48" y1="180" x2="62" y2="180" stroke="#c9943a" stroke-width="0.8" stroke-opacity="0.44" />
+    <text x="44" y="183" text-anchor="end" fill="#c9943a" fill-opacity="0.52" font-family="'Cormorant Garamond', serif" font-size="8.5" letter-spacing="1.2">48°N</text>
+    <line x1="52" y1="245" x2="62" y2="245" stroke="white" stroke-width="0.6" stroke-opacity="0.25" />
+    <text x="48" y="248" text-anchor="end" fill="white" fill-opacity="0.26" font-family="'Cormorant Garamond', serif" font-size="8.5" letter-spacing="1.2">45°N</text>
+    <line x1="52" y1="310" x2="62" y2="310" stroke="white" stroke-width="0.6" stroke-opacity="0.25" />
+    <text x="48" y="313" text-anchor="end" fill="white" fill-opacity="0.26" font-family="'Cormorant Garamond', serif" font-size="8.5" letter-spacing="1.2">41°N</text>
+  </svg>
+
+  <!-- right latitude scale -->
+  <svg class="hero-side hero-side-right" viewBox="0 0 72 340" fill="none" aria-hidden="true">
+    <line x1="10" y1="20" x2="10" y2="320" stroke="white" stroke-width="0.5" stroke-opacity="0.22" />
+    <polygon points="10,12.5 12.5,16 10,19.5 7.5,16" fill="white" fill-opacity="0.20" />
+    <polygon points="10,320.5 12.5,324 10,327.5 7.5,324" fill="white" fill-opacity="0.20" />
+    <line x1="10" y1="50" x2="20" y2="50" stroke="white" stroke-width="0.6" stroke-opacity="0.25" />
+    <text x="24" y="53" fill="white" fill-opacity="0.26" font-family="'Cormorant Garamond', serif" font-size="8.5" letter-spacing="1.2">55°N</text>
+    <line x1="10" y1="115" x2="20" y2="115" stroke="white" stroke-width="0.6" stroke-opacity="0.25" />
+    <text x="24" y="118" fill="white" fill-opacity="0.26" font-family="'Cormorant Garamond', serif" font-size="8.5" letter-spacing="1.2">52°N</text>
+    <line x1="10" y1="180" x2="24" y2="180" stroke="#c9943a" stroke-width="0.8" stroke-opacity="0.44" />
+    <text x="28" y="183" fill="#c9943a" fill-opacity="0.52" font-family="'Cormorant Garamond', serif" font-size="8.5" letter-spacing="1.2">48°N</text>
+    <line x1="10" y1="245" x2="20" y2="245" stroke="white" stroke-width="0.6" stroke-opacity="0.25" />
+    <text x="24" y="248" fill="white" fill-opacity="0.26" font-family="'Cormorant Garamond', serif" font-size="8.5" letter-spacing="1.2">45°N</text>
+    <line x1="10" y1="310" x2="20" y2="310" stroke="white" stroke-width="0.6" stroke-opacity="0.25" />
+    <text x="24" y="313" fill="white" fill-opacity="0.26" font-family="'Cormorant Garamond', serif" font-size="8.5" letter-spacing="1.2">41°N</text>
+  </svg>
+
   <svg
     class="hero-instrument"
     viewBox="0 0 600 600"
@@ -223,9 +298,6 @@
     aria-hidden="true"
   >
     <defs>
-      <clipPath id="hero-isoline-clip"
-        ><circle cx="300" cy="300" r="151" /></clipPath
-      >
       <clipPath id="hero-sweep-clip"
         ><circle cx="300" cy="300" r="262" /></clipPath
       >
@@ -259,7 +331,14 @@
     <circle cx="300" cy="300" r="158" fill="url(#hero-gold-core)" />
 
     <!-- anchor rings -->
-    <circle cx="300" cy="300" r="290" stroke="white" stroke-width="0.4" stroke-opacity="0.12" />
+    <circle
+      cx="300"
+      cy="300"
+      r="290"
+      stroke="white"
+      stroke-width="0.4"
+      stroke-opacity="0.12"
+    />
 
     <!-- outer dashed ring — counter-rotates slowly -->
     <g class="anim-rotate-ccw">
@@ -288,25 +367,84 @@
     </g>
 
     <!-- 36 fine ticks (every 10°) -->
-    <g transform="translate(300,300)" stroke="white" stroke-width="0.5" stroke-opacity="0.20">
-      <use href="#itick-fine" transform="rotate(0)" /><use href="#itick-fine" transform="rotate(10)" />
-      <use href="#itick-fine" transform="rotate(20)" /><use href="#itick-fine" transform="rotate(30)" />
-      <use href="#itick-fine" transform="rotate(40)" /><use href="#itick-fine" transform="rotate(50)" />
-      <use href="#itick-fine" transform="rotate(60)" /><use href="#itick-fine" transform="rotate(70)" />
-      <use href="#itick-fine" transform="rotate(80)" /><use href="#itick-fine" transform="rotate(90)" />
-      <use href="#itick-fine" transform="rotate(100)" /><use href="#itick-fine" transform="rotate(110)" />
-      <use href="#itick-fine" transform="rotate(120)" /><use href="#itick-fine" transform="rotate(130)" />
-      <use href="#itick-fine" transform="rotate(140)" /><use href="#itick-fine" transform="rotate(150)" />
-      <use href="#itick-fine" transform="rotate(160)" /><use href="#itick-fine" transform="rotate(170)" />
-      <use href="#itick-fine" transform="rotate(180)" /><use href="#itick-fine" transform="rotate(190)" />
-      <use href="#itick-fine" transform="rotate(200)" /><use href="#itick-fine" transform="rotate(210)" />
-      <use href="#itick-fine" transform="rotate(220)" /><use href="#itick-fine" transform="rotate(230)" />
-      <use href="#itick-fine" transform="rotate(240)" /><use href="#itick-fine" transform="rotate(250)" />
-      <use href="#itick-fine" transform="rotate(260)" /><use href="#itick-fine" transform="rotate(270)" />
-      <use href="#itick-fine" transform="rotate(280)" /><use href="#itick-fine" transform="rotate(290)" />
-      <use href="#itick-fine" transform="rotate(300)" /><use href="#itick-fine" transform="rotate(310)" />
-      <use href="#itick-fine" transform="rotate(320)" /><use href="#itick-fine" transform="rotate(330)" />
-      <use href="#itick-fine" transform="rotate(340)" /><use href="#itick-fine" transform="rotate(350)" />
+    <g
+      transform="translate(300,300)"
+      stroke="white"
+      stroke-width="0.5"
+      stroke-opacity="0.20"
+    >
+      <use href="#itick-fine" transform="rotate(0)" /><use
+        href="#itick-fine"
+        transform="rotate(10)"
+      />
+      <use href="#itick-fine" transform="rotate(20)" /><use
+        href="#itick-fine"
+        transform="rotate(30)"
+      />
+      <use href="#itick-fine" transform="rotate(40)" /><use
+        href="#itick-fine"
+        transform="rotate(50)"
+      />
+      <use href="#itick-fine" transform="rotate(60)" /><use
+        href="#itick-fine"
+        transform="rotate(70)"
+      />
+      <use href="#itick-fine" transform="rotate(80)" /><use
+        href="#itick-fine"
+        transform="rotate(90)"
+      />
+      <use href="#itick-fine" transform="rotate(100)" /><use
+        href="#itick-fine"
+        transform="rotate(110)"
+      />
+      <use href="#itick-fine" transform="rotate(120)" /><use
+        href="#itick-fine"
+        transform="rotate(130)"
+      />
+      <use href="#itick-fine" transform="rotate(140)" /><use
+        href="#itick-fine"
+        transform="rotate(150)"
+      />
+      <use href="#itick-fine" transform="rotate(160)" /><use
+        href="#itick-fine"
+        transform="rotate(170)"
+      />
+      <use href="#itick-fine" transform="rotate(180)" /><use
+        href="#itick-fine"
+        transform="rotate(190)"
+      />
+      <use href="#itick-fine" transform="rotate(200)" /><use
+        href="#itick-fine"
+        transform="rotate(210)"
+      />
+      <use href="#itick-fine" transform="rotate(220)" /><use
+        href="#itick-fine"
+        transform="rotate(230)"
+      />
+      <use href="#itick-fine" transform="rotate(240)" /><use
+        href="#itick-fine"
+        transform="rotate(250)"
+      />
+      <use href="#itick-fine" transform="rotate(260)" /><use
+        href="#itick-fine"
+        transform="rotate(270)"
+      />
+      <use href="#itick-fine" transform="rotate(280)" /><use
+        href="#itick-fine"
+        transform="rotate(290)"
+      />
+      <use href="#itick-fine" transform="rotate(300)" /><use
+        href="#itick-fine"
+        transform="rotate(310)"
+      />
+      <use href="#itick-fine" transform="rotate(320)" /><use
+        href="#itick-fine"
+        transform="rotate(330)"
+      />
+      <use href="#itick-fine" transform="rotate(340)" /><use
+        href="#itick-fine"
+        transform="rotate(350)"
+      />
     </g>
 
     <!-- 24 chronometer ticks (every 15°) -->
@@ -343,7 +481,12 @@
     </g>
 
     <!-- intercardinal ticks: NE/SE/SW/NW -->
-    <g transform="translate(300,300)" stroke="#c9943a" stroke-width="0.9" stroke-opacity="0.38">
+    <g
+      transform="translate(300,300)"
+      stroke="#c9943a"
+      stroke-width="0.9"
+      stroke-opacity="0.38"
+    >
       <use href="#itick-mid" transform="rotate(45)" />
       <use href="#itick-mid" transform="rotate(135)" />
       <use href="#itick-mid" transform="rotate(225)" />
@@ -390,68 +533,164 @@
     </g>
 
     <!-- compass axes: N gold, E/S/W white -->
-    <line x1="300" y1="300" x2="300" y2="90" stroke="#c9943a" stroke-width="1.0" stroke-opacity="0.55" />
-    <line x1="300" y1="300" x2="510" y2="300" stroke="white" stroke-width="0.7" stroke-opacity="0.30" />
-    <line x1="300" y1="300" x2="300" y2="510" stroke="white" stroke-width="0.7" stroke-opacity="0.30" />
-    <line x1="300" y1="300" x2="90" y2="300" stroke="white" stroke-width="0.7" stroke-opacity="0.30" />
+    <line
+      x1="300"
+      y1="300"
+      x2="300"
+      y2="90"
+      stroke="#c9943a"
+      stroke-width="1.0"
+      stroke-opacity="0.55"
+    />
+    <line
+      x1="300"
+      y1="300"
+      x2="510"
+      y2="300"
+      stroke="white"
+      stroke-width="0.7"
+      stroke-opacity="0.30"
+    />
+    <line
+      x1="300"
+      y1="300"
+      x2="300"
+      y2="510"
+      stroke="white"
+      stroke-width="0.7"
+      stroke-opacity="0.30"
+    />
+    <line
+      x1="300"
+      y1="300"
+      x2="90"
+      y2="300"
+      stroke="white"
+      stroke-width="0.7"
+      stroke-opacity="0.30"
+    />
 
     <!-- compass rose diamond petals -->
     <!-- N petal (gold, prominent) -->
-    <path d="M 300,300 L 292,248 300,190 308,248 Z" fill="#c9943a" fill-opacity="0.60" />
+    <path
+      d="M 300,300 L 292,248 300,190 308,248 Z"
+      fill="#c9943a"
+      fill-opacity="0.60"
+    />
     <!-- S petal -->
-    <path d="M 300,300 L 308,352 300,410 292,352 Z" fill="white" fill-opacity="0.15" />
+    <path
+      d="M 300,300 L 308,352 300,410 292,352 Z"
+      fill="white"
+      fill-opacity="0.15"
+    />
     <!-- E petal -->
-    <path d="M 300,300 L 352,292 410,300 352,308 Z" fill="white" fill-opacity="0.15" />
+    <path
+      d="M 300,300 L 352,292 410,300 352,308 Z"
+      fill="white"
+      fill-opacity="0.15"
+    />
     <!-- W petal -->
-    <path d="M 300,300 L 248,308 190,300 248,292 Z" fill="white" fill-opacity="0.15" />
+    <path
+      d="M 300,300 L 248,308 190,300 248,292 Z"
+      fill="white"
+      fill-opacity="0.15"
+    />
 
     <!-- compass labels -->
-    <text x="300" y="70" text-anchor="middle" fill="#c9943a" fill-opacity="0.84" font-family="'Cormorant Garamond', serif" font-size="13" letter-spacing="1">N</text>
-    <text x="524" y="305" text-anchor="start" dominant-baseline="middle" fill="white" fill-opacity="0.42" font-family="'Cormorant Garamond', serif" font-size="12" letter-spacing="1">E</text>
-    <text x="300" y="536" text-anchor="middle" fill="white" fill-opacity="0.42" font-family="'Cormorant Garamond', serif" font-size="12" letter-spacing="1">S</text>
-    <text x="76" y="305" text-anchor="end" dominant-baseline="middle" fill="white" fill-opacity="0.42" font-family="'Cormorant Garamond', serif" font-size="12" letter-spacing="1">W</text>
-
-    <!-- globe grid + isolines (clipped inside inner circle) -->
-    <g clip-path="url(#hero-isoline-clip)">
-      <!-- meridians (longitude ellipses — orthographic projection) -->
-      <!-- central meridian 0° lon (straight vertical) -->
-      <line x1="300" y1="149" x2="300" y2="451" stroke="white" stroke-width="0.55" stroke-opacity="0.18" />
-      <!-- ±30° lon (rx = 151·sin30° = 75.5) -->
-      <ellipse cx="300" cy="300" rx="76" ry="151" stroke="white" stroke-width="0.55" stroke-opacity="0.14" fill="none" />
-      <!-- ±60° lon (rx = 151·sin60° = 130.8) -->
-      <ellipse cx="300" cy="300" rx="131" ry="151" stroke="white" stroke-width="0.40" stroke-opacity="0.09" fill="none" />
-
-      <!-- parallels (latitude horizontal lines) -->
-      <!-- equator (gold) -->
-      <line x1="149" y1="300" x2="451" y2="300" stroke="#c9943a" stroke-width="0.9" stroke-opacity="0.50" />
-      <!-- ±30° lat (y ± 151·sin30° = ±75.5) -->
-      <line x1="149" y1="225" x2="451" y2="225" stroke="white" stroke-width="0.55" stroke-opacity="0.18" />
-      <line x1="149" y1="375" x2="451" y2="375" stroke="white" stroke-width="0.55" stroke-opacity="0.18" />
-      <!-- ±60° lat (y ± 151·sin60° = ±130.8) -->
-      <line x1="149" y1="169" x2="451" y2="169" stroke="white" stroke-width="0.40" stroke-opacity="0.10" />
-      <line x1="149" y1="431" x2="451" y2="431" stroke="white" stroke-width="0.40" stroke-opacity="0.10" />
-
-      <!-- drifting ocean current isolines -->
-      <path class="anim-drift-fwd" d="M 149,273 C 198,255 248,292 300,270 C 352,248 402,280 451,268" stroke="white" stroke-width="0.75" stroke-opacity="0.20" stroke-dasharray="60 15" />
-      <path class="anim-drift-rev" d="M 149,330 C 198,348 248,316 300,332 C 352,350 402,325 451,334" stroke="white" stroke-width="0.75" stroke-opacity="0.20" stroke-dasharray="60 15" />
-      <path class="anim-drift-fwd" d="M 149,244 C 198,230 248,260 300,243 C 352,226 402,252 451,241" stroke="white" stroke-width="0.55" stroke-opacity="0.11" stroke-dasharray="40 18" />
-      <path class="anim-drift-rev" d="M 149,358 C 198,374 248,348 300,361 C 352,374 402,354 451,363" stroke="white" stroke-width="0.55" stroke-opacity="0.11" stroke-dasharray="40 18" />
-    </g>
+    <text
+      x="300"
+      y="70"
+      text-anchor="middle"
+      fill="#c9943a"
+      fill-opacity="0.84"
+      font-family="'Cormorant Garamond', serif"
+      font-size="13"
+      letter-spacing="1">N</text
+    >
+    <text
+      x="524"
+      y="305"
+      text-anchor="start"
+      dominant-baseline="middle"
+      fill="white"
+      fill-opacity="0.42"
+      font-family="'Cormorant Garamond', serif"
+      font-size="12"
+      letter-spacing="1">E</text
+    >
+    <text
+      x="300"
+      y="536"
+      text-anchor="middle"
+      fill="white"
+      fill-opacity="0.42"
+      font-family="'Cormorant Garamond', serif"
+      font-size="12"
+      letter-spacing="1">S</text
+    >
+    <text
+      x="76"
+      y="305"
+      text-anchor="end"
+      dominant-baseline="middle"
+      fill="white"
+      fill-opacity="0.42"
+      font-family="'Cormorant Garamond', serif"
+      font-size="12"
+      letter-spacing="1">W</text
+    >
 
     <!-- central reticle rings -->
-    <circle cx="300" cy="300" r="62" stroke="white" stroke-width="0.4" stroke-opacity="0.15" fill="none" />
-    <circle cx="300" cy="300" r="32" stroke="#c9943a" stroke-width="0.5" stroke-opacity="0.24" fill="none" />
+    <circle
+      cx="300"
+      cy="300"
+      r="62"
+      stroke="white"
+      stroke-width="0.4"
+      stroke-opacity="0.15"
+      fill="none"
+    />
+    <circle
+      cx="300"
+      cy="300"
+      r="32"
+      stroke="#c9943a"
+      stroke-width="0.5"
+      stroke-opacity="0.24"
+      fill="none"
+    />
 
     <!-- sweep arm (rotating sector) — radar scan effect -->
     <g clip-path="url(#hero-sweep-clip)">
       <g class="anim-sweep">
-        <path d="M 300,300 L 300,38 A 262,262 0 0,1 431,73 Z" fill="url(#hero-sweep-fill)" fill-opacity="0.5" />
-        <line x1="300" y1="300" x2="431" y2="73" stroke="#c9943a" stroke-width="0.8" stroke-opacity="0.40" />
+        <path
+          d="M 300,300 L 300,38 A 262,262 0 0,1 431,73 Z"
+          fill="url(#hero-sweep-fill)"
+          fill-opacity="0.5"
+        />
+        <line
+          x1="300"
+          y1="300"
+          x2="431"
+          y2="73"
+          stroke="#c9943a"
+          stroke-width="0.8"
+          stroke-opacity="0.40"
+        />
       </g>
     </g>
 
     <!-- central focal point: pulsing halo + solid dot -->
-    <circle class="anim-pulse" cx="300" cy="300" r="5" fill="none" stroke="#c9943a" stroke-width="1.2" stroke-opacity="0.45" />
+    <circle
+      class="anim-pulse"
+      cx="300"
+      cy="300"
+      r="5"
+      fill="none"
+      stroke="#c9943a"
+      stroke-width="1.2"
+      stroke-opacity="0.45"
+    />
     <circle cx="300" cy="300" r="3.5" fill="#c9943a" fill-opacity="0.88" />
 
     <!-- outer crosshair ticks at SVG edges -->
@@ -463,27 +702,64 @@
     </g>
     <!-- secondary bracket marks at crosshair edges -->
     <g stroke="white" stroke-width="0.8" stroke-opacity="0.22">
-      <line x1="286" y1="9" x2="286" y2="16" /><line x1="314" y1="9" x2="314" y2="16" />
-      <line x1="286" y1="584" x2="286" y2="591" /><line x1="314" y1="584" x2="314" y2="591" />
-      <line x1="9" y1="286" x2="16" y2="286" /><line x1="9" y1="314" x2="16" y2="314" />
-      <line x1="584" y1="286" x2="591" y2="286" /><line x1="584" y1="314" x2="591" y2="314" />
+      <line x1="286" y1="9" x2="286" y2="16" /><line
+        x1="314"
+        y1="9"
+        x2="314"
+        y2="16"
+      />
+      <line x1="286" y1="584" x2="286" y2="591" /><line
+        x1="314"
+        y1="584"
+        x2="314"
+        y2="591"
+      />
+      <line x1="9" y1="286" x2="16" y2="286" /><line
+        x1="9"
+        y1="314"
+        x2="16"
+        y2="314"
+      />
+      <line x1="584" y1="286" x2="591" y2="286" /><line
+        x1="584"
+        y1="314"
+        x2="591"
+        y2="314"
+      />
     </g>
 
     <!-- coordinate annotations -->
-    <text x="420" y="126" text-anchor="middle" fill="#c9943a" fill-opacity="0.62" font-family="'Cormorant Garamond', serif" font-size="9.5" letter-spacing="1.5">48°52′N</text>
-    <text x="180" y="484" text-anchor="middle" fill="#c9943a" fill-opacity="0.62" font-family="'Cormorant Garamond', serif" font-size="9.5" letter-spacing="1.5">2°21′E</text>
+    <text
+      x="420"
+      y="126"
+      text-anchor="middle"
+      fill="#c9943a"
+      fill-opacity="0.62"
+      font-family="'Cormorant Garamond', serif"
+      font-size="9.5"
+      letter-spacing="1.5">48°52′N</text
+    >
+    <text
+      x="180"
+      y="484"
+      text-anchor="middle"
+      fill="#c9943a"
+      fill-opacity="0.62"
+      font-family="'Cormorant Garamond', serif"
+      font-size="9.5"
+      letter-spacing="1.5">2°21′E</text
+    >
   </svg>
 
   <div class="l-container hero-inner">
     <div class="hero-text">
-      <div class="hero-eyebrow lp-reveal">48°52′N · 2°21′E — Mapello</div>
       <h1 class="hero-headline lp-reveal">
-        The map tool<br /><em>I always wanted.</em>
+        Maps you'll<br /><em>be proud to share.</em>
       </h1>
       <p class="hero-sub lp-reveal">
-        Too technical or too ugly — that was always the trade-off. Design a
-        beautiful, interactive map and export a single self-contained SVG. Paste
-        it anywhere. No code.
+        Design a beautiful, interactive map in the browser. Export one
+        self-contained SVG and paste it anywhere — your site, your slides, your
+        favorite CMS. No code, no plugins, no upkeep.
       </p>
       <div class="hero-actions lp-reveal">
         <a href="/app" class="btn-primary btn-large">Start designing</a>
@@ -1921,7 +2197,6 @@
         height="36"
       />
       <span class="footer-tagline">Maps you'll be proud to embed.</span>
-      <span class="footer-coords">48°52′N &nbsp; 2°21′E</span>
     </div>
     <div class="footer-links-col">
       <span class="footer-col-title">Product</span>
@@ -2111,9 +2386,79 @@
       100% 100%,
       100% 100%,
       100% 100%;
-    padding: calc(9rem + 64px) 0 8rem;
+    padding: calc(9rem + 64px) 0 12rem;
     display: flex;
     align-items: center;
+  }
+  .hero-side {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 72px;
+    height: 340px;
+    pointer-events: none;
+  }
+  .hero-side-left {
+    left: max(1.2rem, 3.5vw);
+  }
+  .hero-side-right {
+    right: max(1.2rem, 3.5vw);
+  }
+  @media (max-width: 860px) {
+    .hero-side {
+      display: none;
+    }
+  }
+  .hero-graticule {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 340px;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  .hero-corner {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    pointer-events: none;
+  }
+  .hero-corner-tl {
+    top: calc(50% - 175px);
+    left: max(1.2rem, 3.5vw);
+  }
+  .hero-corner-tr {
+    top: calc(50% - 175px);
+    right: max(1.2rem, 3.5vw);
+  }
+  .hero-corner-bl {
+    top: calc(50% + 135px);
+    left: max(1.2rem, 3.5vw);
+  }
+  .hero-corner-br {
+    top: calc(50% + 135px);
+    right: max(1.2rem, 3.5vw);
+  }
+  .hero-fold {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 140px;
+    height: 12px;
+    pointer-events: none;
+  }
+  .hero-fold-top {
+    top: 7rem;
+  }
+  .hero-fold-bottom {
+    bottom: 6rem;
+  }
+  @media (max-width: 640px) {
+    .hero-corner,
+    .hero-fold {
+      display: none;
+    }
   }
   .hero-instrument {
     position: absolute;
@@ -2123,9 +2468,8 @@
     width: min(88vw, 640px);
     opacity: 0.58;
     pointer-events: none;
-    filter:
-      drop-shadow(0 0 24px rgba(201, 148, 58, 0.18))
-      drop-shadow(0 0 56px rgba(42, 125, 110, 0.10));
+    filter: drop-shadow(0 0 24px rgba(201, 148, 58, 0.18))
+      drop-shadow(0 0 56px rgba(42, 125, 110, 0.1));
   }
   .anim-rotate-cw,
   .anim-rotate-ccw,
@@ -2141,12 +2485,6 @@
   }
   .anim-pulse {
     animation: instrument-pulse 2.6s ease-in-out infinite;
-  }
-  .anim-drift-fwd {
-    animation: instrument-drift 14s ease-in-out infinite alternate;
-  }
-  .anim-drift-rev {
-    animation: instrument-drift 14s ease-in-out infinite alternate-reverse;
   }
   .anim-sweep {
     transform-box: view-box;
@@ -2174,16 +2512,9 @@
       opacity: 0;
     }
   }
-  @keyframes instrument-drift {
-    to {
-      stroke-dashoffset: -150;
-    }
-  }
   @media (prefers-reduced-motion: reduce) {
     .anim-rotate-cw,
     .anim-rotate-ccw,
-    .anim-drift-fwd,
-    .anim-drift-rev,
     .anim-pulse,
     .anim-sweep {
       animation: none;
@@ -2229,10 +2560,10 @@
     text-decoration-thickness: 1px;
   }
   .hero-sub {
-    font-size: 1rem;
-    color: rgba(255, 255, 255, 0.4);
-    line-height: 1.85;
-    max-width: 520px;
+    font-size: 1.12rem;
+    color: rgba(255, 255, 255, 0.58);
+    line-height: 1.72;
+    max-width: 560px;
   }
   .hero-actions {
     display: flex;
