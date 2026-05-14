@@ -4,15 +4,13 @@ import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { env } from '$env/dynamic/private';
 import { db } from './db';
-import { Resend } from 'resend';
+import { resend } from './email';
 import disposableDomains from 'disposable-email-domains';
 
 const disposableDomainSet = new Set(disposableDomains);
 
 const googleClientId = env.GOOGLE_CLIENT_ID;
 const googleClientSecret = env.GOOGLE_CLIENT_SECRET;
-
-const resend = new Resend(env.RESEND_API_KEY);
 
 export const auth = betterAuth({
 	secret: env.BETTER_AUTH_SECRET ?? 'dev-secret-change-in-production',

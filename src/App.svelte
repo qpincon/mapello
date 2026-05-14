@@ -41,8 +41,9 @@
     import { maybeStartTour, startTour } from "./util/tour";
     import AuthModal from "./components/AuthModal.svelte";
     import UpgradeModal from "./components/UpgradeModal.svelte";
+    import FeedbackModal from "./components/FeedbackModal.svelte";
     import ProjectDropdown from "./components/ProjectDropdown.svelte";
-    import { FREE_PROJECT_LIMIT, PRO_PROJECT_LIMIT } from "$lib/billing-constants";
+  import { FREE_PROJECT_LIMIT, PRO_PROJECT_LIMIT } from "$lib/billing-constants";
     import { signOut } from "$lib/auth-client";
     import { page } from "$app/state";
     import { invalidateAll } from "$app/navigation";
@@ -152,6 +153,7 @@
     let showPostExportInfo = $state(false);
     const POST_EXPORT_INFO_HIDDEN_KEY = "mapello-hide-post-export-info";
     let showInstructionsModal = $state(false);
+    let showFeedbackModal = $state(false);
     let showAuthModal = $state(false);
     let authAfterCallback: (() => void) | undefined = $state(undefined);
     let showUpgradeModal = $state(false);
@@ -2074,17 +2076,32 @@
                     {/if}
                 </div>
             </div>
-            <button
-                id="instructions-btn"
-                slot="bottom-left"
-                class="p-2 instructions-btn"
-                type="button"
-                title="Instructions"
-                aria-label="Instructions"
-                onclick={() => (showInstructionsModal = true)}
-            >
-                {@html icons["help"]}
-            </button>
+            <div slot="bottom-left" class="bottom-buttons">
+                <button
+                    id="instructions-btn"
+                    class="instructions-btn"
+                    type="button"
+                    title="Instructions"
+                    aria-label="Instructions"
+                    onclick={() => (showInstructionsModal = true)}
+                >
+                    {@html icons["help"]}
+                    <span class="btn-label">Help</span>
+                </button>
+                {#if currentUser}
+                    <button
+                        id="feedback-btn"
+                        class="instructions-btn"
+                        type="button"
+                        title="Send feedback"
+                        aria-label="Send feedback"
+                        onclick={() => (showFeedbackModal = true)}
+                    >
+                        {@html icons["feedback"]}
+                        <span class="btn-label">Feedback</span>
+                    </button>
+                {/if}
+            </div>
         </Navbar>
         <div class="d-flex flex-column justify-content-center align-items-center h-100 position-relative">
             {#if serverSyncError}
@@ -2152,6 +2169,7 @@
 />
 <AuthModal bind:open={showAuthModal} afterAuth={authAfterCallback} />
 <UpgradeModal open={showUpgradeModal} onClosed={() => (showUpgradeModal = false)} />
+<FeedbackModal bind:open={showFeedbackModal} projectId={activeProjectId} projectName={currentProjectName} />
 
 <Modal
     open={showProjectLoginModal}
@@ -2299,26 +2317,50 @@
         display: block;
     }
 
-    :global(.instructions-btn) {
+    :global(.bottom-buttons) {
         position: absolute;
         bottom: 0;
-        left: 0;
+        left: 0.75rem;
+        display: flex;
+        flex-direction: row;
+        border: 1px solid #d0d8e4;
+        border-bottom: none;
+        border-radius: 8px 8px 0 0;
+        background: #f4f7fb;
+        overflow: hidden;
+    }
+    :global(.instructions-btn) {
         background: none;
         border: none;
+        border-right: 1px solid #d0d8e4;
         cursor: pointer;
-        padding: 0.5rem;
-        width: 60px;
+        padding: 0.35rem 0.75rem;
         height: auto;
         display: flex;
         align-items: center;
-        justify-content: center;
+        gap: 0.35rem;
+        color: #5f5f5f;
+        transition: background 0.2s, color 0.2s;
+    }
+    :global(.instructions-btn:last-child) {
+        border-right: none;
     }
     :global(.instructions-btn > svg) {
         fill: #5f5f5f;
-        max-width: 1.5rem;
-        transition: fill 0.3s;
+        max-width: 1rem;
+        flex-shrink: 0;
+        transition: fill 0.2s;
+    }
+    :global(.instructions-btn:hover) {
+        background: #e8eef6;
+        color: #1a1a1a;
     }
     :global(.instructions-btn:hover > svg) {
-        fill: black;
+        fill: #1a1a1a;
+    }
+    :global(.btn-label) {
+        font-size: 0.72rem;
+        font-weight: 500;
+        white-space: nowrap;
     }
 </style>
