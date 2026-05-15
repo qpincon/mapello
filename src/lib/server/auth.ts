@@ -6,6 +6,7 @@ import { getRequestEvent } from '$app/server';
 import { env } from '$env/dynamic/private';
 import { db } from './db';
 import { resend } from './email';
+import { buildTransactionalEmail } from './emailTemplates';
 import disposableDomains from 'disposable-email-domains';
 
 const disposableDomainSet = new Set(disposableDomains);
@@ -21,23 +22,37 @@ export const auth = betterAuth({
 		enabled: true,
 		requireEmailVerification: true,
 		sendResetPassword: async ({ user, url }) => {
+			const { html, text } = buildTransactionalEmail({
+				preheader: 'Choose a new password for your Mapello account.',
+				heading: 'Reset your password',
+				intro: "We received a request to reset your Mapello password. Click the button below to choose a new one. If you didn't ask for this, you can safely ignore this email.",
+				ctaLabel: 'Reset my password',
+				ctaUrl: url,
+			});
 			await resend.emails.send({
 				from: 'Mapello <noreply@mapello.net>',
 				to: user.email,
 				subject: 'Reset your Mapello password',
-				text: `Click the link below to reset your password:\n\n${url}\n\nThis link expires in 1 hour.`,
-				html: `<p>Click the link below to reset your password:</p><p><a href="${url}">${url}</a></p><p>This link expires in 1 hour.</p>`,
+				text,
+				html,
 			});
 		},
 	},
 	emailVerification: {
 		sendVerificationEmail: async ({ user, url }) => {
+			const { html, text } = buildTransactionalEmail({
+				preheader: 'Confirm your email to activate your Mapello account.',
+				heading: 'Welcome to Mapello',
+				intro: 'Click the button below to confirm your email address and finish creating your account.',
+				ctaLabel: 'Verify my email',
+				ctaUrl: url,
+			});
 			await resend.emails.send({
 				from: 'Mapello <noreply@mapello.net>',
 				to: user.email,
 				subject: 'Verify your Mapello email',
-				text: `Click the link below to verify your email address:\n\n${url}\n\nThis link expires in 1 hour.`,
-				html: `<p>Click the link below to verify your email address:</p><p><a href="${url}">${url}</a></p><p>This link expires in 1 hour.</p>`,
+				text,
+				html,
 			});
 		},
 		sendOnSignUp: true,
