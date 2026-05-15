@@ -7,6 +7,7 @@
     import { exportStyleSheet } from "../util/dom";
     import type { SvgSelection } from "../types";
     import { loadSvgString } from "../svg/svg";
+    import { invalidateAll } from "$app/navigation";
 
     interface Props {
         open: boolean;
@@ -152,6 +153,7 @@
             if (!res.ok) return;
             const data = await res.json();
             if (data.remaining !== -1) localRemaining = data.remaining;
+            invalidateAll();
             onExport(buildOptions());
         } finally {
             exportLoading = false;

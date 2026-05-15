@@ -18,6 +18,11 @@
     let loading = $state(false);
     let forgotSent = $state(false);
     let resendSent = $state(false);
+    let emailTouched = $state(false);
+
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailInvalid = $derived(email.length > 0 && !EMAIL_RE.test(email));
+    const emailError = $derived(emailTouched && emailInvalid ? 'Please enter a valid email address.' : '');
 
     // Google login button is always shown; if not configured server-side the request will fail gracefully
 
@@ -26,6 +31,7 @@
         errorMsg = '';
         forgotSent = false;
         resendSent = false;
+        emailTouched = false;
     }
 
     function close() {
@@ -34,6 +40,7 @@
         errorMsg = '';
         forgotSent = false;
         resendSent = false;
+        emailTouched = false;
     }
 
     async function handleSubmit(e: Event) {
@@ -174,12 +181,17 @@
                     <input
                         id="auth-email"
                         class="form-control"
+                        class:is-invalid={emailError}
                         type="email"
                         bind:value={email}
                         required
                         autocomplete="email"
                         placeholder="you@example.com"
+                        onblur={() => emailTouched = true}
                     />
+                    {#if emailError}
+                        <div class="invalid-feedback">{emailError}</div>
+                    {/if}
                 </div>
                 <div class="mb-3">
                     <label class="form-label" for="auth-password">Password</label>
@@ -206,7 +218,7 @@
                     <div class="alert alert-danger py-2 px-3 mb-3">{errorMsg}</div>
                 {/if}
 
-                <button class="btn btn-primary w-100" type="submit" disabled={loading}>
+                <button class="btn btn-primary w-100" type="submit" disabled={loading || emailInvalid}>
                     {#if loading}
                         <span class="spinner-border spinner-border-sm me-1"></span>
                     {/if}
@@ -254,17 +266,22 @@
                         <input
                             id="forgot-email"
                             class="form-control"
+                            class:is-invalid={emailError}
                             type="email"
                             bind:value={email}
                             required
                             autocomplete="email"
                             placeholder="you@example.com"
+                            onblur={() => emailTouched = true}
                         />
+                        {#if emailError}
+                            <div class="invalid-feedback">{emailError}</div>
+                        {/if}
                     </div>
                     {#if errorMsg}
                         <div class="alert alert-danger py-2 px-3 mb-3">{errorMsg}</div>
                     {/if}
-                    <button class="btn btn-primary w-100" type="submit" disabled={loading}>
+                    <button class="btn btn-primary w-100" type="submit" disabled={loading || emailInvalid}>
                         {#if loading}<span class="spinner-border spinner-border-sm me-1"></span>{/if}
                         Send reset link
                     </button>

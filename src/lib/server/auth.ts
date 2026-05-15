@@ -1,4 +1,5 @@
 import { betterAuth } from 'better-auth';
+import { APIError } from 'better-auth/api';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
@@ -66,7 +67,9 @@ export const auth = betterAuth({
 				before: async (user) => {
 					const domain = user.email.split('@')[1]?.toLowerCase();
 					if (domain && disposableDomainSet.has(domain)) {
-						return false;
+						throw new APIError('BAD_REQUEST', {
+							message: 'This email provider is not supported. Please use a different email address.',
+						});
 					}
 				},
 			},
