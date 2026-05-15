@@ -19,6 +19,7 @@
     let forgotSent = $state(false);
     let resendSent = $state(false);
     let emailTouched = $state(false);
+    let duplicateEmail = $state(false);
 
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const emailInvalid = $derived(email.length > 0 && !EMAIL_RE.test(email));
@@ -29,6 +30,7 @@
     function switchMode(m: AuthMode) {
         mode = m;
         errorMsg = '';
+        duplicateEmail = false;
         forgotSent = false;
         resendSent = false;
         emailTouched = false;
@@ -38,6 +40,7 @@
         open = false;
         mode = 'login';
         errorMsg = '';
+        duplicateEmail = false;
         forgotSent = false;
         resendSent = false;
         emailTouched = false;
@@ -46,11 +49,16 @@
     async function handleSubmit(e: Event) {
         e.preventDefault();
         errorMsg = '';
+        duplicateEmail = false;
         loading = true;
         try {
             if (mode === 'register') {
                 const result = await signUp.email({ name: email.split('@')[0], email, password, callbackURL: '/app' });
                 if (result.error) {
+                    if (result.error.message?.includes('already registered')) {
+                        duplicateEmail = true;
+                        return;
+                    }
                     errorMsg = result.error.message ?? 'Registration failed';
                     return;
                 }
@@ -214,6 +222,12 @@
                     </div>
                 {/if}
 
+                {#if duplicateEmail}
+                    <div class="alert alert-danger py-2 px-3 mb-3">
+                        This email is already registered.
+                        <button type="button" class="btn btn-link p-0 small d-inline" style="vertical-align:baseline;" onclick={() => switchMode('login')}>Sign in instead</button>
+                    </div>
+                {/if}
                 {#if errorMsg}
                     <div class="alert alert-danger py-2 px-3 mb-3">{errorMsg}</div>
                 {/if}

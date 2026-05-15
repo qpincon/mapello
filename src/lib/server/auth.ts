@@ -1,5 +1,5 @@
 import { betterAuth } from 'better-auth';
-import { APIError } from 'better-auth/api';
+import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
@@ -91,4 +91,18 @@ export const auth = betterAuth({
 		},
 	},
 	plugins: [sveltekitCookies(getRequestEvent)],
+	hooks: {
+		before: createAuthMiddleware(async (ctx) => {
+			if (ctx.path !== '/sign-up/email') return;
+			const body = ctx.body as { email?: unknown } | undefined;
+			const email = typeof body?.email === 'string' ? body.email.toLowerCase().trim() : undefined;
+			if (!email) return;
+			const existing = await ctx.context.internalAdapter.findUserByEmail(email);
+			if (existing?.user) {
+				throw new APIError('UNPROCESSABLE_ENTITY', {
+					message: 'This email is already registered. Sign in instead.',
+				});
+			}
+		}),
+	},
 });

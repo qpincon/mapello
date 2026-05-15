@@ -630,6 +630,7 @@
         try {
             Object.assign(commonState, state.stateCommon);
             Object.assign(macroState, state.stateMacro.macroParams ? state.stateMacro : defaultState.stateMacro);
+            if (!macroState.baseCss) macroState.baseCss = defaultState.stateMacro.baseCss;
             Object.assign(microState, state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro);
             await tick();
             switchMode(state.stateCommon.currentMode);
@@ -1675,8 +1676,8 @@
     }
 
     function getProjectJson(): string {
-        const baseCss = exportStyleSheet("#outline")!;
-        macroState.baseCss = baseCss;
+        const baseCss = exportStyleSheet("#outline");
+        if (baseCss) macroState.baseCss = baseCss;
         return JSON.stringify({ stateCommon: commonState, stateMacro: macroState, stateMicro: microState });
     }
 </script>
