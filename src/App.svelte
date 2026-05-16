@@ -47,6 +47,7 @@
     import { signOut } from "$lib/auth-client";
     import { page } from "$app/state";
     import { invalidateAll } from "$app/navigation";
+    import { track } from "./util/analytics";
     import { drawFreeHandShapes, FreehandDrawer } from "./svg/freeHandDraw";
     import type {
         SvgSelection,
@@ -519,6 +520,7 @@
 
     async function switchMode(newMode: Mode): Promise<void> {
         // if (commonState.currentMode === newMode) return;
+        track('mode_switch', { to: newMode });
         commonState.currentMode = newMode;
         select("#map-container").html("");
         await tick();
@@ -681,6 +683,7 @@
         )
             return;
 
+        track('example_load', { name: e.detail.name ?? 'unknown' });
         console.log(e.detail.projectParams);
         applyState(e.detail.projectParams);
         await tick();
@@ -1113,6 +1116,7 @@
     }
 
     function addPath(): void {
+        track('element_add', { type: 'path' });
         closeMenu();
         clearSelection();
         detachListeners();
@@ -1197,6 +1201,7 @@
     }
 
     function drawFreeHand(): void {
+        track('element_add', { type: 'freehand' });
         isDrawingFreeHand = true;
         isCursorInsideMap = true; // Assume cursor is inside since menu was just clicked
         closeMenu();
@@ -1339,6 +1344,7 @@
     // Opens the annotation editor modal. Parses existing stored HTML (format: `<div style="...">content</div>`)
     // into separate content + containerStyle for the QuillEditor.
     function beginAddAnnotation(elemId: string, type: "tooltip" | "popover"): void {
+        track('element_add', { type: `annotation_${type}` });
         annotationEditingElemId = elemId;
         annotationEditingType = type;
         const existing = commonState.elementAnnotations?.[elemId];
@@ -1438,6 +1444,7 @@
     }
 
     async function addLabel(): Promise<void> {
+        track('element_add', { type: 'label' });
         menuStates.addingLabel = true;
         await tick();
         textInput!.focus();
@@ -1537,6 +1544,7 @@
     }
 
     async function addShape(shapeName: ShapeName): Promise<void> {
+        track('element_add', { type: 'shape' });
         const shapeId = `${shapeName}-${commonState.shapeCount++}`;
         const lastPoint = [...commonState.providedShapes]
             .reverse()
@@ -1622,6 +1630,7 @@
     }
 
     async function validateExport(options: ExportOptions): Promise<void> {
+        track('export_complete', { mode: commonState.currentMode });
         const exportOptions = { ...options, skipAttribution: isSuperUser };
         if (commonState.currentMode === "macro") {
             const totalCss = macroSidebar!.computeCss();
@@ -1654,6 +1663,7 @@
 
     let inlineFontUsed = $state(false);
     function openExportModal() {
+        track('export_open', { mode: commonState.currentMode });
         const usedFonts = getUsedInlineFonts(svg.node()!);
         const usedProvidedFonts = commonState.providedFonts.filter((font) => usedFonts.has(font.name));
         inlineFontUsed = usedProvidedFonts.length > 0;
@@ -1661,6 +1671,7 @@
     }
 
     function onExportSvgClicked() {
+        track('export_clicked', { mode: commonState.currentMode });
         hidePopover();
         closeMenu();
         stopDrawFreeHand();

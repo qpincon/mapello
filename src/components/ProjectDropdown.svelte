@@ -6,6 +6,7 @@
     import { saveProjectToServer } from "../util/save";
     import Icon from "./Icon.svelte";
     import { icons } from "../shared/icons";
+    import { track } from "../util/analytics";
 
     interface CloudProject {
         id: number;
@@ -80,6 +81,7 @@
 
     async function saveCurrentProject() {
         if (!currentProjectId) return;
+        track('project_save');
         const err = await saveProjectToServer(currentProjectId, getProjectJson());
         if (err) onSaveError(err);
     }
@@ -100,6 +102,7 @@
     }
 
     async function handleLoad(id: number) {
+        track('project_load');
         loadingProjectId = id;
         errorMsg = "";
         try {
@@ -171,6 +174,7 @@
     }
 
     async function handleCreateNewProject(name?: string) {
+        track('project_create');
         const resolvedName = name?.trim() || uniqueNewProjectName();
         creatingProject = true;
         errorMsg = "";

@@ -4,6 +4,7 @@
     import { invalidateAll } from '$app/navigation';
     import { loadPaddle, openCheckout } from '$lib/paddle-client';
     import { PUBLIC_PADDLE_PRICE_MONTHLY, PUBLIC_PADDLE_PRICE_YEARLY } from '$env/static/public';
+    import { track } from '../util/analytics';
 
     interface Props {
         open: boolean;
@@ -23,7 +24,10 @@
     let prices = $state<PriceInfo>({ monthly: null, yearly: null, yearlyMonthly: null });
 
     $effect(() => {
-        if (open) fetchPrices();
+        if (open) {
+            track('upgrade_modal_open');
+            fetchPrices();
+        }
     });
 
     async function fetchPrices() {
@@ -73,6 +77,8 @@
     }
 
     async function subscribe(priceId: string) {
+        const plan = priceId === PUBLIC_PADDLE_PRICE_YEARLY ? 'yearly' : 'monthly';
+        track('paddle_checkout_start', { plan });
         loading = priceId;
         errorMsg = '';
         try {

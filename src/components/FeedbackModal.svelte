@@ -1,5 +1,6 @@
 <script lang="ts">
     import Modal from './Modal.svelte';
+    import { track } from '../util/analytics';
 
     interface Props {
         open: boolean;
@@ -38,6 +39,7 @@
                 errorMsg = text || 'Something went wrong. Please try again.';
                 return;
             }
+            track('feedback_submit', { category });
             sent = true;
             setTimeout(() => close(), 2000);
         } catch {

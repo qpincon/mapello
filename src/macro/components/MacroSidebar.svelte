@@ -13,6 +13,7 @@
     import { appState, commonState, macroState } from "../../state.svelte";
     import Icon from "../../components/Icon.svelte";
     import { icons } from "../../shared/icons";
+    import { track } from "../../util/analytics";
     import { allAvailableAdm, geometriesState, initWorldData, resolvedAdmGeometry } from "../geometry-data";
     import RangeInput from "src/components/RangeInput.svelte";
     import ColorPickerPreview from "src/components/ColorPickerPreview.svelte";
@@ -314,6 +315,7 @@
         const target = e.target as HTMLSelectElement;
         const newLayerName = target.value;
         if (macroState.chosenCountriesAdm.includes(newLayerName)) return;
+        track('layer_add', { kind: newLayerName.includes('ADM2') ? 'adm2' : 'adm1' });
         let searchedAdm;
         if (newLayerName.slice(-1) === "1") searchedAdm = newLayerName.replace("ADM1", "ADM2");
         else searchedAdm = newLayerName.replace("ADM2", "ADM1");

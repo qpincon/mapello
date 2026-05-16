@@ -1,6 +1,7 @@
 import { driver } from "driver.js";
 import type { DriveStep } from "driver.js";
 import { commonState } from "../state.svelte";
+import { track } from "./analytics";
 
 const TOUR_KEY = "mapello-onboarding-done";
 
@@ -18,6 +19,7 @@ export interface TourOptions {
 }
 
 export function startTour(opts: TourOptions = {}): void {
+    track('tour_start', { forced: opts.force ? 'true' : 'false' });
     const isMacro = commonState.currentMode === "macro";
     const loggedIn = opts.loggedIn ?? false;
 

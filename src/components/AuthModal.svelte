@@ -2,6 +2,7 @@
     import Modal from './Modal.svelte';
     import { signIn, signUp, requestPasswordReset, sendVerificationEmail } from '$lib/auth-client';
     import { invalidateAll } from '$app/navigation';
+    import { track } from '../util/analytics';
 
     interface Props {
         open: boolean;
@@ -9,6 +10,8 @@
     }
 
     let { open = $bindable(), afterAuth }: Props = $props();
+
+    $effect(() => { if (open) track('auth_modal_open'); });
 
     type AuthMode = 'login' | 'register' | 'forgot' | 'verify';
     let mode: AuthMode = $state('login');
@@ -62,6 +65,7 @@
                     errorMsg = result.error.message ?? 'Registration failed';
                     return;
                 }
+                track('auth_signup', { method: 'email' });
                 switchMode('verify');
             } else {
                 const result = await signIn.email({ email, password });
@@ -73,6 +77,7 @@
                     errorMsg = result.error.message ?? 'Login failed';
                     return;
                 }
+                track('auth_signin', { method: 'email' });
                 close();
                 await invalidateAll();
                 afterAuth?.();
@@ -98,6 +103,7 @@
     }
 
     async function handleGoogleSignIn() {
+        track('auth_signin', { method: 'google' });
         loading = true;
         try {
             await signIn.social({ provider: 'google', callbackURL: '/app' });
@@ -108,6 +114,7 @@
     }
 
     async function handleFacebookSignIn() {
+        track('auth_signin', { method: 'facebook' });
         loading = true;
         try {
             await signIn.social({ provider: 'facebook', callbackURL: '/app' });
