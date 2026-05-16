@@ -675,23 +675,6 @@
         reader.readAsText(file);
     }
 
-    async function loadExample(e: CustomEvent): Promise<void> {
-        if (
-            !window.confirm(
-                "Caution: Loading the example will discard your current project. Please save it first if you want to keep it.",
-            )
-        )
-            return;
-
-        track('example_load', { name: e.detail.name ?? 'unknown' });
-        console.log(e.detail.projectParams);
-        applyState(e.detail.projectParams);
-        await tick();
-        if (commonState.currentMode === "macro") {
-            macroSidebar!.applyStateAndDraw();
-        }
-    }
-
     function openEditor(e: MouseEvent): void {
         styleEditor!.open(e.target as HTMLElement, e.pageX, e.pageY);
     }
