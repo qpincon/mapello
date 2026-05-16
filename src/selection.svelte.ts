@@ -52,7 +52,9 @@ export function identifyClickedEntity(target: Element): SelectedEntity | null {
     if (freehandGroup) {
         const idAttr = freehandGroup.getAttribute("id");
         if (!idAttr) return null;
-        const index = parseInt(idAttr.match(/\d+$/)![0]);
+        const freehandMatch = idAttr.match(/\d+$/);
+        if (!freehandMatch) return null;
+        const index = parseInt(freehandMatch[0]);
         return { type: "freehand", index, id: idAttr };
     }
 
@@ -63,7 +65,9 @@ export function identifyClickedEntity(target: Element): SelectedEntity | null {
         if (target.closest("#paths") && target.tagName === "path") {
             const id = target.getAttribute("id");
             if (id) {
-                const index = parseInt(id.match(/\d+$/)![0]);
+                const pathMatch = id.match(/\d+$/);
+                if (!pathMatch) return null;
+                const index = parseInt(pathMatch[0]);
                 return { type: "path", index, id };
             }
         }
@@ -99,7 +103,9 @@ export function identifyClickedPath(e: MouseEvent): SelectedEntity | null {
     }
     if (bestElem && bestDist < 6) {
         const id = bestElem.getAttribute("id")!;
-        const index = parseInt(id.match(/\d+$/)![0]);
+        const bestMatch = id.match(/\d+$/);
+        if (!bestMatch) return null;
+        const index = parseInt(bestMatch[0]);
         return { type: "path", index, id };
     }
     return null;

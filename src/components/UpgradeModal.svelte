@@ -87,6 +87,7 @@
                 userId: page.data.user!.id,
                 userEmail: page.data.user!.email,
                 onComplete: async () => {
+                    track('paddle_checkout_complete', { plan });
                     await invalidateAll();
                     onClosed?.();
                 },

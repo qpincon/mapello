@@ -323,7 +323,7 @@ export function handleChangeProp(event: CustomEvent<{ prop: string; value: unkno
         value = event.detail.value;
     }
     if (macroPositionVars.includes(prop)) {
-        if (value) {
+        if (value !== undefined && value !== null) {
             macroState.inlinePropsMacro[prop] = value;
         }
     }

@@ -47,6 +47,7 @@ export default class PathEditor {
     private pathData!: Coordinate[];
     private pointElems!: ExtendedSVGCircleElement[];
     private addOrAbortFunc!: (e: MouseEvent) => void;
+    private svgMouseMoveFunc!: (e: MouseEvent) => void;
     private currentDragging: ExtendedSVGCircleElement | ExtendedSVGPathElement | null = null;
 
     constructor(pathElem: SVGPathElement, svgContainer: SVGElement, onFinish: (pathElem: SVGPathElement | null) => void) {
@@ -91,6 +92,7 @@ export default class PathEditor {
     cleanup(): void {
         this.editorContainer.remove();
         this.svgContainer.removeEventListener('mousedown', this.addOrAbortFunc);
+        this.svgContainer.removeEventListener('mousemove', this.svgMouseMoveFunc);
     }
 
     reset(): void {
@@ -107,7 +109,7 @@ export default class PathEditor {
             this.pathOverlayElem.y = e.clientY;
         });
 
-        this.svgContainer.addEventListener('mousemove', (e: MouseEvent) => {
+        this.svgMouseMoveFunc = (e: MouseEvent) => {
             if (this.currentDragging === this.pathOverlayElem) {
                 e.stopPropagation();
                 const deltaX = e.clientX - (this.pathOverlayElem.x || 0);
@@ -123,8 +125,11 @@ export default class PathEditor {
                 this.pathOverlayElem.x = e.clientX;
                 this.pathOverlayElem.y = e.clientY;
                 this.pathDataToD();
+            } else {
+                this.onMouseMove(e);
             }
-        });
+        };
+        this.svgContainer.addEventListener('mousemove', this.svgMouseMoveFunc);
 
         this.pathOverlayElem.addEventListener('mouseup', (e: MouseEvent) => {
             if (this.currentDragging === this.pathOverlayElem) {
@@ -247,7 +252,6 @@ export default class PathEditor {
 
             point.addEventListener('mousedown', (e: MouseEvent) => this.onPointClick(e, point));
             point.addEventListener('mouseup', (e: MouseEvent) => this.onPointRelease(e, point));
-            this.svgContainer.addEventListener('mousemove', (e: MouseEvent) => this.onMouseMove(e));
         });
 
         this.computePointParts();

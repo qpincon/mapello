@@ -53,9 +53,11 @@ export function orderFeaturesByLayer(features: RenderedFeature[]): void {
         const rankB = b.properties['sort_rank'] ?? 0;
         if (rankA === rankB) {
             // @ts-expect-error
-            const layerIdA = MICRO_LAYERS.indexOf(a.properties.mapLayerId!);
+            const idxA = MICRO_LAYERS.indexOf(a.properties.mapLayerId!);
             // @ts-expect-error
-            const layerIdB = MICRO_LAYERS.indexOf(b.properties.mapLayerId!);
+            const idxB = MICRO_LAYERS.indexOf(b.properties.mapLayerId!);
+            const layerIdA = idxA === -1 ? MICRO_LAYERS.length : idxA;
+            const layerIdB = idxB === -1 ? MICRO_LAYERS.length : idxB;
             return layerIdA - layerIdB;
         }
         return rankA - rankB;
