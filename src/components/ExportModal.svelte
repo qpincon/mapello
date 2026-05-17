@@ -123,7 +123,7 @@
         const compressedBlob = await new Response(stream).blob();
         const gzKB = (compressedBlob.size / 1024).toFixed(1);
         sizeText = `${rawKB} KB (${gzKB} KB gzipped)`;
-
+        if (!previewContainer) return;
         await loadSvgString(svgString, previewContainer);
         const svgEl = previewContainer.querySelector("svg");
         let mapWidth = 0;

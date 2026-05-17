@@ -14,7 +14,7 @@ export function addTooltipListener(
 ): void {
     const tooltip: Tooltip = { shapeId: null, element: document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') };
     map.append(tooltip.element);
-    tooltip.element.style.display = 'none';
+    tooltip.element.style.opacity = '0';
     tooltip.element.style.pointerEvents = 'none';
 
     let hoveredPath: SVGPathElement | null = null;
@@ -69,7 +69,6 @@ export function addTooltipListener(
 }
 
 function hideTooltip(tooltip: Tooltip): void {
-    tooltip.element.style.display = 'none';
     tooltip.element.style.opacity = '0';
     tooltip.shapeId = null;
 }
@@ -121,7 +120,6 @@ function onMouseMove(
         tooltip.element.setAttribute('x', (posX / sx).toString());
         tooltip.element.setAttribute('y', (posY / sy).toString());
         tooltip.element.setAttribute('transform', `scale(${1 / sx},${1 / sy})`);
-        tooltip.element.style.display = 'block';
         tooltip.element.style.opacity = '1';
     } else {
         // New tooltip — create hidden, measure via rAF, then reveal at correct position
@@ -171,6 +169,7 @@ function showElementAnnotationTooltip(
         elem.setAttribute('height', '1');
         elem.style.overflow = 'visible';
         elem.style.pointerEvents = 'none';
+        elem.style.opacity = '0';
 
         const body = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
         body.style.cssText = 'display:inline-block;width:max-content;pointer-events:none;';
@@ -185,7 +184,6 @@ function showElementAnnotationTooltip(
         tooltip.element.setAttribute('x', (posX / sx).toString());
         tooltip.element.setAttribute('y', (posY / sy).toString());
         tooltip.element.setAttribute('transform', `scale(${1 / sx},${1 / sy})`);
-        tooltip.element.style.display = 'block';
         tooltip.element.style.opacity = '0';
         tooltip.measuring = true;
         requestAnimationFrame(() => {
@@ -209,7 +207,6 @@ function showElementAnnotationTooltip(
         tooltip.element.setAttribute('x', (posX / sx).toString());
         tooltip.element.setAttribute('y', (posY / sy).toString());
         tooltip.element.setAttribute('transform', `scale(${1 / sx},${1 / sy})`);
-        tooltip.element.style.display = 'block';
         tooltip.element.style.opacity = '1';
     }
 }
@@ -220,7 +217,7 @@ export function addElementAnnotationListener(
 ): void {
     const tooltip: Tooltip = { shapeId: null, element: document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') };
     map.append(tooltip.element);
-    tooltip.element.style.display = 'none';
+    tooltip.element.style.opacity = '0';
     tooltip.element.style.pointerEvents = 'none';
 
     map.addEventListener('mouseleave', () => hideTooltip(tooltip));
@@ -254,6 +251,7 @@ function instanciateTooltip(
     elem.setAttribute('height', '1');
     elem.style.overflow = 'visible';
     elem.style.pointerEvents = 'none';
+    elem.style.opacity = '0';
 
     const body = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
     body.classList.add('body');
