@@ -2,6 +2,9 @@ import { handleErrorWithSentry, replayIntegration } from "@sentry/sveltekit";
 import * as Sentry from '@sentry/sveltekit';
 import { PUBLIC_SENTRY_DSN } from '$env/static/public';
 
+const host = window.location.hostname;
+window.__DEBUG__ = host === 'localhost' || host === '127.0.0.1';
+
 Sentry.init({
   dsn: PUBLIC_SENTRY_DSN,
 

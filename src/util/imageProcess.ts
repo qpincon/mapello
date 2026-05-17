@@ -1,4 +1,5 @@
 import RgbQuant from 'rgbquant';
+import { log } from './log';
 
 const MAX_DIMENSION = 512;
 const JPEG_QUALITY = 0.82;
@@ -42,7 +43,7 @@ export async function processUploadedImage(file: File): Promise<string> {
     const beforeKB = (file.size / 1024).toFixed(1);
     const afterBytes = Math.round(content.length * 0.75);
     const afterKB = (afterBytes / 1024).toFixed(1);
-    console.log(`[imageProcess] ${file.name}: ${beforeKB} KB → ${afterKB} KB (${width}×${height}px, ${hasAlpha ? 'png' : 'jpeg'})`);
+    log(`[imageProcess] ${file.name}: ${beforeKB} KB → ${afterKB} KB (${width}×${height}px, ${hasAlpha ? 'png' : 'jpeg'})`);
 
     if (afterBytes > MAX_OUTPUT_BYTES) {
         throw new Error(`Image is too large. Please use a smaller or simpler image.`);

@@ -1,4 +1,5 @@
 import bbox from "@turf/bbox";
+import { log } from './log';
 import bboxPolygon from "@turf/bbox-polygon";
 import booleanDisjoint from "@turf/boolean-disjoint";
 import { featureCollection, point, polygon, lineString } from "@turf/helpers";
@@ -359,7 +360,7 @@ export async function stitch(renderedFeatures: RenderedFeature[], tiles: Tiles, 
     if (clipped) clipped.id = polygon.id;
     return clipped;
   }).filter(p => p);
-  console.log(nbClipped, 'geometries clipped');
+  log(nbClipped, 'geometries clipped');
   // @ts-expect-error
   return [
     ...explodeGeometry(finalPolygons, "Polygon") as RenderedFeature<Polygon>[],

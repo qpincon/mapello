@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onDestroy, onMount, tick } from "svelte";
+    import { log } from '../../util/log';
     import Accordions from "../../components/Accordions.svelte";
     import {
         extractTemplateVariables,
@@ -121,7 +122,7 @@
 
     let drawDebounced = debounce(draw, 100);
     onMount(() => {
-        console.log("macro onmount");
+        log("macro onmount");
         commonStyleSheetElem = document.createElement("style");
         commonStyleSheetElem.setAttribute("id", "style-sheet-macro");
         document.head.appendChild(commonStyleSheetElem);
@@ -403,7 +404,7 @@
     }
 
     function autoSelectColors() {
-        console.log("autoSelectColors");
+        log("autoSelectColors");
         if (!macroState.zonesData[currentMacroLayerTab]) return;
         if (curDataDefs.colorScale === null) {
             if (curDataDefs.colorColumn !== null) {
@@ -451,7 +452,7 @@
     }
 
     async function colorizeAndLegend(svg: SvgSelection): Promise<void> {
-        console.log("colorizeAndLegend");
+        log("colorizeAndLegend");
         await tick();
         initTooltips();
         let legendSelection: SvgGSelection = select("#svg-map-legend")! as unknown as SvgGSelection;

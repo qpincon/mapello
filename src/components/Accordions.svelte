@@ -4,6 +4,7 @@
   import ColorPickerPreview from "./ColorPickerPreview.svelte";
   import RangeInput from "./RangeInput.svelte";
   import { camelCaseToSentence } from "../util/common";
+  import { log } from "../util/log";
   import type { OtherParams, ParamDefinitions, ParamKey } from "src/params";
   import type { Color } from "src/types";
   import { Collapse } from "bootstrap";
@@ -22,14 +23,14 @@
 
   onMount(() => {
     const collapses = document.querySelectorAll(".collapse");
-    console.log(collapses);
+    log(collapses);
     collapses.forEach((collapseElement) => {
       new Collapse(collapseElement, { toggle: false });
     });
   });
 
   function propChanged(prop: string, value: string | number | boolean) {
-    console.log("propChanged", prop, value);
+    log("propChanged", prop, value);
     const payload = { prop, value };
     dispatch("change", payload);
   }
@@ -40,7 +41,7 @@
   }
 
   function sectionTitles(): ParamKey[] {
-    console.log(sections);
+    log(sections);
     return Object.keys(sections) as ParamKey[];
   }
 </script>

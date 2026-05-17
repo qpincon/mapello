@@ -3,6 +3,7 @@
     import PatternPicker from "./PatternPicker.svelte";
     import RangeInput from "./RangeInput.svelte";
     import { camelCaseToSentence, initTooltips, pascalCaseToSentence } from "../util/common";
+    import { log } from "../util/log";
     import type { Color, MicroLayerId, MicroPalette, MicroPaletteWithBorder } from "src/types";
 
     interface Props {
@@ -25,7 +26,7 @@
         Object.entries(layerDefinitions).filter(([layerId, _]) => layerId !== "borderParams"),
     );
     function updated(layer: MicroLayerId, key: string | string[], value: number | Color | string | boolean) {
-        console.log(layer, key, value);
+        log(layer, key, value);
         onUpdate(layer, key, value);
         if (key[0] === "active") {
             layerDefinitions[layer].menuOpened = layerDefinitions[layer].active;

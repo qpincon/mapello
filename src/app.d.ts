@@ -1,6 +1,9 @@
 import type { Session, User } from 'better-auth';
 
 declare global {
+	interface Window {
+		__DEBUG__?: boolean;
+	}
 	namespace App {
 		interface Locals {
 			user: User | null;

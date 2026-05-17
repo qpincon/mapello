@@ -1,4 +1,5 @@
 import { color, hsl } from "d3";
+import { log } from 'src/util/log';
 import { debounce, last, set } from "lodash-es";
 import { generateCssFromState } from "src/micro/drawing";
 import { patternGenerator } from "src/svg/patternGenerator";
@@ -14,7 +15,7 @@ export function onMicroParamChange(
     value: any,
     layerState: MicroPalette
 ): boolean {
-    console.log('onMicroParamChange', layer, prop, value);
+    log('onMicroParamChange', layer, prop, value);
     if (prop.includes("pattern")) {
         updateSvgPatterns(document.getElementById('static-svg-map') as unknown as SVGSVGElement, layerState);
         replaceCssSheetContent(layerState);
@@ -60,7 +61,7 @@ export function syncLayerStateWithCss(
     value: string | null,
     layerState: MicroPalette
 ): boolean {
-    console.log(eventType, cssProp, value, layerState);
+    log(eventType, cssProp, value, layerState);
     // Prevent removing value
     if (value === null) return false;
     if (eventType === "inline") return false;

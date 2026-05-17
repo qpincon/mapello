@@ -11,6 +11,7 @@
     import Geocoding from "./components/Geocoding.svelte";
     import {  initTooltips, pascalCaseToSentence, sleep } from "./util/common";
     import { processUploadedImage } from "./util/imageProcess";
+    import { log } from "./util/log";
     import * as shapes from "./svg/shapeDefs";
     import * as markers from "./svg/markerDefs";
     import {
@@ -276,7 +277,7 @@
     });
 
     onMount(async () => {
-        console.log("App onmount");
+        log("App onmount");
         registerServerSync({
             getProjectId: () => activeProjectId,
             getProjectJson,
@@ -308,7 +309,7 @@
                     requestAnimationFrame(() => refreshOverlay());
                 },
                 getElems: (el: HTMLElement) => {
-                    console.log(el);
+                    log(el);
                     if (el.closest(".tooltip-preview")) {
                         return [
                             [el, "Clicked"],
@@ -384,7 +385,7 @@
                     },
                 },
                 cssRuleFilter: (el: HTMLElement, cssSelector: string) => {
-                    console.log(el, cssSelector);
+                    log(el, cssSelector);
                     if (el.closest("foreignObject")) return false;
                     if (el.closest(".tooltip-preview") && cssSelector !== "inline") return false;
                     if (el.id === "micro-background" && cssSelector === "inline") return false;
@@ -547,7 +548,7 @@
         isDrawing = true;
         hidePopover();
         clearSelection();
-        console.log("draw", simplified);
+        log("draw", simplified);
         const container = select("#map-container");
         container.html("");
         svg = container.select("svg") as unknown as SvgSelection;
@@ -1116,7 +1117,7 @@
         document.addEventListener("mouseup", onPathDrawMouseUp);
         addMapCursorListeners();
         freeHandDrawPath(svg.node() as SVGSVGElement, (finishedElem) => {
-            console.log("finishedElem", finishedElem);
+            log("finishedElem", finishedElem);
             const d = finishedElem.getAttribute("d");
             if (!d) return;
             cleanupPathDrawListeners();
@@ -1217,7 +1218,7 @@
             if (!d) return;
             const parsed = parseAndUnprojectPath(d, appState.projection!);
             unprojected.push(parsed);
-            console.log(parsed);
+            log(parsed);
         });
         if (unprojected.length) commonState.providedFreeHand.push(unprojected);
         // Remove the drawer's temporary group before re-rendering
@@ -1227,7 +1228,7 @@
     }
 
     async function beginAddLink(elemId: string): Promise<void> {
-        console.log("adding link to", elemId);
+        log("adding link to", elemId);
         linkTargetId = elemId;
         linkInputValue = commonState.elementLinks?.[elemId] ?? "";
         menuStates.pointSelected = false;

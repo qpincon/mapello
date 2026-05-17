@@ -1,4 +1,5 @@
 import { random } from 'lodash-es';
+import { log } from 'src/util/log';
 import { MercatorCoordinate, type Map as MapLibreMap } from 'maplibre-gl';
 import type { MicroLayerDefinition, SvgSelection } from 'src/types';
 import type { RenderedFeaturePoly } from 'src/util/geometryStitch';
@@ -417,5 +418,5 @@ export function renderBuildingsToSvgImproved(
 
         svgContainer.appendChild(g);
     }
-    console.log('Elements culled:', nbCulled);
+    log('Elements culled:', nbCulled);
 }

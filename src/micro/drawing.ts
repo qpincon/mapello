@@ -1,4 +1,5 @@
 import svgoConfig from '../svgoExport.config';
+import { log, logTime, logTimeEnd } from '../util/log';
 import { select, type Selection } from "d3-selection";
 import { bboxContains, bboxIntersects, getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
 import { cloneDeep, kebabCase, random, size } from "lodash-es";
@@ -72,7 +73,7 @@ export async function drawPrettyMap(
     layerDefinitions: MicroPalette,
     generalParams: MicroParams,
 ): Promise<void> {
-    console.log('layerDefinitions=', layerDefinitions);
+    log('layerDefinitions=', layerDefinitions);
     select("#map-container").style("width", null).style('height', null);
     const mapLibreContainer = select('#maplibre-map');
     const layersToQuery = [
@@ -182,8 +183,8 @@ export async function drawPrettyMap(
     if (layerDefinitions.buildings['3dBuildings']) {
 
         const { normalFeatures, groupedFeatures } = groupBuildingFeatures(buildings);
-        console.log('normalFeatures=', normalFeatures);
-        console.log('groupedFeatures=', groupedFeatures);
+        log('normalFeatures=', normalFeatures);
+        log('groupedFeatures=', groupedFeatures);
         renderBuildingsToSvgImproved(
             [...normalFeatures, ...groupedFeatures],
             maplibreMap,
@@ -203,8 +204,8 @@ export async function drawPrettyMap(
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, false, outerFrameRx);
     mapLibreContainer.style('opacity', 0);
     setTimeout(() => {
-        // postClip(generalParams);
-        // if (buildingPaths.length > 0) removeNotRenderedElements(buildingPaths);
+        postClip(generalParams);
+        if (buildingPaths.length > 0) removeNotRenderedElements(buildingPaths);
     }, 200);
 }
 
@@ -263,7 +264,7 @@ function postClip(generalParams: MicroParams): void {
             toRemove.push(el);
         }
     });
-    console.log('toRemove', toRemove);
+    log('toRemove', toRemove);
     toRemove.forEach(el => el.remove());
 }
 
@@ -360,7 +361,7 @@ export function drawMicroFrame(
  */
 export function groupBuildingFeatures(features: RenderedFeaturePoly[]): GroupBuildingResult {
 
-    console.time('grouping buildings');
+    logTime('grouping buildings');
     // Step 1: Separate features into parts and non-parts
     const parts: RenderedFeaturePoly[] = [];
     const nonParts: GroupedFeature[] = [];
@@ -511,10 +512,10 @@ export function groupBuildingFeatures(features: RenderedFeaturePoly[]): GroupBui
             groupedFeatures.push(nonPart);
         }
     }
-    console.timeEnd('grouping buildings');
-    console.time('determining heights');
+    logTimeEnd('grouping buildings');
+    logTime('determining heights');
     computeBaseHeights(groupedFeatures);
-    console.timeEnd('determining heights');
+    logTimeEnd('determining heights');
     return { normalFeatures, groupedFeatures };
 }
 
@@ -655,7 +656,7 @@ function darken(c: string, quantity: number = 0.4): Color {
 }
 
 export function generateCssFromState(state: MicroPalette): string | null {
-    console.log('generateCssFromState');
+    log('generateCssFromState');
     const [sheet, _] = findStyleSheet("#micro .line");
     let css = `
     #micro .line { 

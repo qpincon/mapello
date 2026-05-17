@@ -1,6 +1,7 @@
 <script lang="ts">
     import { clamp } from "lodash-es";
     import { tapHold } from "../util/common";
+    import { log } from "../util/log";
 
     interface Props {
         value: number;
@@ -78,7 +79,7 @@
             {max}
             {step}
             onchange={(e) => {
-                console.log("slider change", e);
+                log("slider change", e);
                 if (e.target && e.target instanceof HTMLInputElement) {
                     if (onChange) onChange!(parseFloat(e.target.value));
                 }

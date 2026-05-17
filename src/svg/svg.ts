@@ -2,6 +2,7 @@ import type { GeoProjection } from "d3-geo";
 import type { Coords, ParsedPath, Point } from "../types";
 import { DOM_PARSER } from "../util/dom";
 import { commonState } from "src/state.svelte";
+import { log } from '../util/log';
 import { select } from "d3-selection";
 
 export function postClipSimple(): void {
@@ -15,7 +16,7 @@ export function postClipSimple(): void {
             toRemove.push(el);
         }
     });
-    console.log("simple post clip:", toRemove);
+    log("simple post clip:", toRemove);
     toRemove.forEach(el => el.remove());
     cleanupOrphanedPathImages();
 }
@@ -37,7 +38,7 @@ export function cleanupOrphanedPathImages(): void {
         }
     });
 
-    if (toRemove.length) console.log("orphaned path-images removed:", toRemove.length);
+    if (toRemove.length) log("orphaned path-images removed:", toRemove.length);
     toRemove.forEach(el => el.remove());
 }
 

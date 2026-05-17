@@ -1,3 +1,5 @@
+import { log, logTime, logTimeEnd } from 'src/util/log';
+
 // Minimum number of canvas pixels an element must occupy to be considered visible.
 // This filters out fully-occluded quads (0 pixels) and anti-aliased edge slivers
 // while keeping any meaningfully visible wall.
@@ -44,7 +46,7 @@ export function removeNotRenderedElements(pathElements: SVGPathElement[], scale 
 	const h = Math.ceil(svgRect.height * scale);
 	if (w === 0 || h === 0) return 0;
 
-	console.time('Remove not rendered elements');
+	logTime('Remove not rendered elements');
 	const canvas = new OffscreenCanvas(w, h);
 	const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
 	const originX = svgRect.left;
@@ -118,13 +120,13 @@ export function removeNotRenderedElements(pathElements: SVGPathElement[], scale 
 		const count = colorCounts.get(key) ?? 0;
 
 		if (count < PIXEL_THRESHOLD) {
-			if (enableDebug) console.log(`removing quad idx=${idx}, color=[${colors[idx * 3]},${colors[idx * 3 + 1]},${colors[idx * 3 + 2]}], pixels=${count}`);
+			if (enableDebug) log(`removing quad idx=${idx}, color=[${colors[idx * 3]},${colors[idx * 3 + 1]},${colors[idx * 3 + 2]}], pixels=${count}`);
 			toRemove.push(el);
 		}
 	}
 
-	console.log(`removing ${toRemove.length} not rendered elements`);
+	log(`removing ${toRemove.length} not rendered elements`);
 	for (const el of toRemove) el.remove();
-	console.timeEnd('Remove not rendered elements');
+	logTimeEnd('Remove not rendered elements');
 	return toRemove.length;
 }

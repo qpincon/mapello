@@ -1,5 +1,6 @@
 <script lang="ts">
     import type InlineStyleEditor from "inline-style-editor";
+    import { log } from 'src/util/log';
     import Accordions from "src/components/Accordions.svelte";
     import MicroLayerParams from "src/components/MicroLayerParams.svelte";
     import { drawPrettyMap, generateCssFromState, initLayersState } from "src/micro/drawing";
@@ -117,7 +118,7 @@
         if (!maplibreMap) return;
         const rect = maplibreMap.getContainer().getBoundingClientRect();
         const point = new Point(e.clientX - rect.left, e.clientY - rect.top);
-        console.log(maplibreMap.queryRenderedFeatures(point));
+        log(maplibreMap.queryRenderedFeatures(point));
     }
 
     export function onStyleChanged(
@@ -151,7 +152,7 @@
     }
 
     export function applyMapPosition(): void {
-        console.log(microState.inlinePropsMicro.center);
+        log(microState.inlinePropsMicro.center);
         maplibreMap?.jumpTo({
             center: microState.inlinePropsMicro.center,
             zoom: microState.inlinePropsMicro.zoom,
@@ -186,7 +187,7 @@
     });
 
     function createMaplibreMap() {
-        console.log("createMaplibreMap!!!", maplibreMap);
+        log("createMaplibreMap!!!", maplibreMap);
         if (!select(".maplibregl-canvas-container").empty()) return;
         maplibreMap = new Map({
             container: "maplibre-map",

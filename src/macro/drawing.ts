@@ -1,4 +1,5 @@
 import { appState, commonState, macroState } from "src/state.svelte";
+import { log } from 'src/util/log';
 import { select } from "d3-selection";
 import { geoGraticule, geoPath } from "d3-geo";
 import { GEO_META_KEYS, geometriesState, initializeAdms, resolvedAdmGeometry, updateLayerSimplification } from "./geometry-data";
@@ -17,7 +18,7 @@ import { changeAltitudeScale } from "./interactions";
 import { updateZonesDataFormatters } from "./formatting";
 
 export async function drawMacroBase(svg: SvgSelection, simplified = false): Promise<void> {
-    console.log("drawMacroBase", simplified);
+    log("drawMacroBase", simplified);
     if (!svg || svg.empty()) return;
     const computedOrderedTabs = macroState.orderedTabs.filter((x) => {
         if (x === "countries") return macroState.inlinePropsMacro.showCountries;
@@ -313,7 +314,7 @@ export function projectAndDraw(svg: SvgSelection, simplified = false): void {
 }
 
 export function handleChangeProp(event: CustomEvent<{ prop: string; value: unknown }> | string, drawSimplifyThenReal: () => void): void {
-    console.log('handleChangeProp', event)
+    log('handleChangeProp', event)
     let prop: string;
     let value: unknown;
     if (typeof event === "string") {

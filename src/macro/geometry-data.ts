@@ -1,4 +1,5 @@
 import { extractFileName, getNumericCols, indexBy, sortBy } from "src/util/common";
+import { log } from 'src/util/log';
 import iso3Data from "../assets/data/iso3_filtered.json";
 import disputedData from "../assets/data/disputed_territories.json";
 import { appState, commonState, macroState } from "src/state.svelte";
@@ -58,7 +59,7 @@ function resolveAdm(name: string): Promise<any> {
 
 export async function updateLayerSimplification(): Promise<void> {
     if (!adm0Topo) await initWorldData();
-    console.log('macroState.visibleArea=', macroState.visibleArea);
+    log('macroState.visibleArea=', macroState.visibleArea);
     updateAdm0LandAndCountriesSimplification();
     Object.keys(resolvedAdmTopo).forEach((countryAdm) => {
         const simplified = simplify(resolvedAdmTopo[countryAdm], macroState.visibleArea);
@@ -92,7 +93,7 @@ function updateAdm0LandAndCountriesSimplification(): void {
 }
 
 export async function initWorldData() {
-    console.log("initWorldData");
+    log("initWorldData");
     const topoAdm0 = await import("../assets/layers/world_adm0_simplified_topo.json");
     adm0Topo = presimplify(topoAdm0 as unknown as TopoJSON.Topology<{}>);
     const verySimpleLandTopo = await import("../assets/layers/world_land_very_simplified_topo.json") as unknown as TopoJSON.Topology;
