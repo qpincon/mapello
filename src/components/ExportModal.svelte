@@ -55,6 +55,7 @@
     });
     let sizeText = $state("");
     let isLargeExport = $state(false);
+    let previewLoading = $state(false);
     let modalWidth = $state("600px");
     let previewContainer: HTMLDivElement;
 
@@ -78,6 +79,7 @@
     }
 
     async function updatePreview(isOpening = false) {
+        previewLoading = true;
         const validAttributions = customAttributions.filter((a) => a.text.trim());
         const options: ExportOptions = {
             animate,
@@ -111,35 +113,39 @@
                 commonState.elementAnnotations,
             );
         }
-        if (!svgString) return;
+        try {
+            if (!svgString) return;
 
-        const rawBytes = new TextEncoder().encode(svgString).byteLength;
-        isLargeExport = rawBytes > 500 * 1024;
-        if (isLargeExport && isOpening) animate = false;
-        const rawKB = (rawBytes / 1024).toFixed(1);
-        const blob = new Blob([svgString]);
-        const cs = new CompressionStream("gzip");
-        const stream = blob.stream().pipeThrough(cs);
-        const compressedBlob = await new Response(stream).blob();
-        const gzKB = (compressedBlob.size / 1024).toFixed(1);
-        sizeText = `${rawKB} KB (${gzKB} KB gzipped)`;
-        if (!previewContainer) return;
-        await loadSvgString(svgString, previewContainer);
-        const svgEl = previewContainer.querySelector("svg");
-        let mapWidth = 0;
-        if (svgEl) {
-            const vb = svgEl.getAttribute("viewBox");
-            const w = svgEl.getAttribute("width");
-            if (vb) {
-                mapWidth = +vb.split(/[\s,]+/)[2];
-            } else if (w) {
-                mapWidth = parseFloat(w);
+            const rawBytes = new TextEncoder().encode(svgString).byteLength;
+            isLargeExport = rawBytes > 500 * 1024;
+            if (isLargeExport && isOpening) animate = false;
+            const rawKB = (rawBytes / 1024).toFixed(1);
+            const blob = new Blob([svgString]);
+            const cs = new CompressionStream("gzip");
+            const stream = blob.stream().pipeThrough(cs);
+            const compressedBlob = await new Response(stream).blob();
+            const gzKB = (compressedBlob.size / 1024).toFixed(1);
+            sizeText = `${rawKB} KB (${gzKB} KB gzipped)`;
+            if (!previewContainer) return;
+            await loadSvgString(svgString, previewContainer);
+            const svgEl = previewContainer.querySelector("svg");
+            let mapWidth = 0;
+            if (svgEl) {
+                const vb = svgEl.getAttribute("viewBox");
+                const w = svgEl.getAttribute("width");
+                if (vb) {
+                    mapWidth = +vb.split(/[\s,]+/)[2];
+                } else if (w) {
+                    mapWidth = parseFloat(w);
+                }
             }
+            const overhead = 400;
+            const needed = mapWidth + overhead;
+            const maxWidth = window.innerWidth * 0.9;
+            modalWidth = `${Math.max(600, Math.min(needed, maxWidth))}px`;
+        } finally {
+            previewLoading = false;
         }
-        const overhead = 400;
-        const needed = mapWidth + overhead;
-        const maxWidth = window.innerWidth * 0.9;
-        modalWidth = `${Math.max(600, Math.min(needed, maxWidth))}px`;
     }
 
     async function onExportClicked() {
@@ -359,7 +365,7 @@
             {#if localRemaining !== null}
                 <span class="quota-msg">{localRemaining} free export{localRemaining === 1 ? "" : "s"} remaining</span>
             {/if}
-            <button type="button" class="btn btn-success" onclick={onExportClicked} disabled={exportLoading}>
+            <button type="button" class="btn btn-success" onclick={onExportClicked} disabled={exportLoading || previewLoading}>
                 {exportLoading ? "Exporting…" : "Export"}
             </button>
         {/if}
