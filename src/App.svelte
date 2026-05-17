@@ -738,6 +738,10 @@
     // Note: for selectable entities (shapes/paths/freehand), onSvgMouseDown runs first and
     // calls stopPropagation, so this handler only fires for non-selectable elements.
     function onSvgClick(e: MouseEvent): void {
+        if (e.ctrlKey && commonState.currentMode === 'micro') {
+            microSidebar?.queryFeaturesAt(e);
+            return;
+        }
         if ((e.target as Element).closest("a")) e.preventDefault();
         if (contextualMenu?.opened) {
             closeMenu();

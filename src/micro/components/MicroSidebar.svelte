@@ -17,7 +17,7 @@
     import { onMicroParamChange, replaceCssSheetContent, syncLayerStateWithCss, updateSvgPatterns } from "../change";
     import { saveState } from "src/util/save";
     import { exportStyleSheet } from "src/util/dom";
-    import { addProtocol, Map, type StyleSpecification } from "maplibre-gl";
+    import { addProtocol, Map, Point, type StyleSpecification } from "maplibre-gl";
     import { cancelStitch } from "src/util/geometryStitch";
     import { select, selectAll } from "d3-selection";
     import { onDestroy, onMount } from "svelte";
@@ -111,6 +111,13 @@
         appState.projection = createD3ProjectionFromMapLibre(maplibreMap, translateAmount);
         appState.path = geoPath(appState.projection);
         return drawPrettyMap(maplibreMap, svg, appState.path, microState.microLayerDefinitions, microState.microParams);
+    }
+
+    export function queryFeaturesAt(e: MouseEvent): void {
+        if (!maplibreMap) return;
+        const rect = maplibreMap.getContainer().getBoundingClientRect();
+        const point = new Point(e.clientX - rect.left, e.clientY - rect.top);
+        console.log(maplibreMap.queryRenderedFeatures(point));
     }
 
     export function onStyleChanged(
@@ -216,11 +223,6 @@
             selectAll("#static-svg-map g, #static-svg-map rect").remove();
         });
 
-        maplibreMap.on("click", (event) => {
-            console.log(event);
-            console.log(maplibreMap!.queryRenderedFeatures(event.point));
-            console.log(maplibreMap!.getStyle());
-        });
         mapLoadedPromise = new Promise((resolve) => {
             maplibreMap!.once("load", resolve);
         });

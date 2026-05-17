@@ -212,8 +212,8 @@ export async function getRenderedFeatures(map: MaplibreMap, options: any, threeD
 
   const renderedFeatures: RenderedFeature[] = map.queryRenderedFeatures(options).map((f: any) => {
     f.properties.id = f.id;
-    f.properties.x = f._vectorTileFeature._x;
-    f.properties.y = f._vectorTileFeature._y;
+    f.properties.x = f._x;
+    f.properties.y = f._y;
     f.properties.sourceLayer = f.sourceLayer;
     return {
       id: f.id,
@@ -529,11 +529,9 @@ async function stitchPolygons(allPolygons: RenderedFeaturePoly[], cuts: Cuts, de
         if (cutDirection !== curCutDirection) return false;
 
         const areCut = polygonsAreCutByTile(segmentsToProcess[i], segment, layerPolygons, deadZones);
-        return areCut;
-        // if (areCut) {
-        //   return bboxIntersects(layerPolygons[polygonIndex].boundingBox, layerPolygons[curPolygonIndex].boundingBox) &&
-        //     booleanOverlap(layerPolygons[polygonIndex], layerPolygons[curPolygonIndex]);
-        // }
+        if (!areCut) return false;
+        return bboxIntersects(layerPolygons[polygonIndex].boundingBox!, layerPolygons[curPolygonIndex].boundingBox!) &&
+          booleanOverlap(layerPolygons[polygonIndex], layerPolygons[curPolygonIndex]);
       });
       if (matching.length) {
         for (const m of matching) {
@@ -575,12 +573,21 @@ async function stitchPolygons(allPolygons: RenderedFeaturePoly[], cuts: Cuts, de
       for (const polygonIndex of groupArr) {
         Object.assign(mergedProperties, layerPolygons[polygonIndex].properties);
       }
-      const stitched = union(polygons, { properties: mergedProperties }) as RenderedFeaturePolyOrMutli;
-      stitched.id = layerPolygons[groupArr[0]].id;
+      let stitched: RenderedFeaturePolyOrMutli | null = null;
+      try {
+        stitched = union(polygons, { properties: mergedProperties }) as RenderedFeaturePolyOrMutli | null;
+      } catch (err) {
+        console.warn('stitchPolygons: union threw, keeping originals', err);
+      }
       await yieldToMain();
       if (currentProcessId !== processCounter) return null;
-      computeFeatureUuid(stitched);
-      finalPolygons.push(stitched)
+      if (stitched && stitched.geometry) {
+        stitched.id = layerPolygons[groupArr[0]].id;
+        computeFeatureUuid(stitched);
+        finalPolygons.push(stitched);
+      } else {
+        for (const polygonIndex of groupArr) finalPolygons.push(layerPolygons[polygonIndex]);
+      }
     }
 
     // console.log('finalPolygons=', finalPolygons);
