@@ -5,8 +5,19 @@ export default {
   preprocess: vitePreprocess(),
   kit: {
     adapter: adapter(),
+
     files: {
       assets: 'public'
+    },
+
+    experimental: {
+      tracing: {
+        server: false
+      },
+
+      instrumentation: {
+        server: true
+      }
     }
   },
   compilerOptions: {

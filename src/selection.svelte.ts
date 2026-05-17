@@ -14,6 +14,7 @@ export interface SelectedEntity {
 interface ClipboardItem {
     type: SelectableEntityType;
     data: any;
+    sourceId: string;
     styles?: Record<string, string>;
 }
 
@@ -245,6 +246,17 @@ function nextShapeId(prefix: string): string {
     return `${prefix}-${commonState.shapeCount++}`;
 }
 
+function copyEntityMetadata(sourceId: string, destId: string): void {
+    if (commonState.elementLinks?.[sourceId]) {
+        if (!commonState.elementLinks) commonState.elementLinks = {};
+        commonState.elementLinks[destId] = commonState.elementLinks[sourceId];
+    }
+    if (commonState.elementAnnotations?.[sourceId]) {
+        if (!commonState.elementAnnotations) commonState.elementAnnotations = {};
+        commonState.elementAnnotations[destId] = cloneDeep(commonState.elementAnnotations[sourceId]);
+    }
+}
+
 export function copySelected(): void {
     if (selectionState.selected.length === 0) return;
     const items: ClipboardItem[] = [];
@@ -256,6 +268,7 @@ export function copySelected(): void {
             items.push({
                 type: "shape",
                 data: cloneDeep(shapeDef),
+                sourceId: sel.id,
                 styles: commonState.inlineStyles[shapeDef.id]
                     ? { ...commonState.inlineStyles[shapeDef.id] }
                     : undefined,
@@ -266,6 +279,7 @@ export function copySelected(): void {
             items.push({
                 type: "path",
                 data: cloneDeep(pathDef),
+                sourceId: sel.id,
                 styles: commonState.inlineStyles[sel.id]
                     ? { ...commonState.inlineStyles[sel.id] }
                     : undefined,
@@ -276,6 +290,7 @@ export function copySelected(): void {
             items.push({
                 type: "freehand",
                 data: cloneDeep(freehandGroup),
+                sourceId: sel.id,
                 styles: commonState.inlineStyles[sel.id]
                     ? { ...commonState.inlineStyles[sel.id] }
                     : undefined,
@@ -302,6 +317,7 @@ export function pasteFromClipboard(redrawCallback: () => void): void {
             if (item.styles) {
                 commonState.inlineStyles[newId] = { ...item.styles };
             }
+            copyEntityMetadata(item.sourceId, newId);
             shapeDef.id = newId;
             const newIndex = commonState.providedShapes.length;
             commonState.providedShapes.push(shapeDef);
@@ -314,6 +330,7 @@ export function pasteFromClipboard(redrawCallback: () => void): void {
             if (item.styles) {
                 commonState.inlineStyles[newId] = { ...item.styles };
             }
+            copyEntityMetadata(item.sourceId, newId);
             commonState.providedPaths.push(pathDef);
             newEntities.push({ type: "path", index: newIndex, id: newId });
         } else if (item.type === "freehand") {
@@ -326,6 +343,7 @@ export function pasteFromClipboard(redrawCallback: () => void): void {
             if (item.styles) {
                 commonState.inlineStyles[newId] = { ...item.styles };
             }
+            copyEntityMetadata(item.sourceId, newId);
             commonState.providedFreeHand.push(offsetGroup);
             newEntities.push({ type: "freehand", index: newIndex, id: newId });
         }
@@ -366,12 +384,18 @@ export function deleteSelected(redrawCallback: () => void): void {
     for (const sel of sorted) {
         if (sel.type === "shape") {
             delete commonState.inlineStyles[sel.id];
+            if (commonState.elementLinks) delete commonState.elementLinks[sel.id];
+            if (commonState.elementAnnotations) delete commonState.elementAnnotations[sel.id];
             commonState.providedShapes.splice(sel.index, 1);
         } else if (sel.type === "path") {
             delete commonState.inlineStyles[sel.id];
+            if (commonState.elementLinks) delete commonState.elementLinks[sel.id];
+            if (commonState.elementAnnotations) delete commonState.elementAnnotations[sel.id];
             commonState.providedPaths.splice(sel.index, 1);
         } else if (sel.type === "freehand") {
             delete commonState.inlineStyles[sel.id];
+            if (commonState.elementLinks) delete commonState.elementLinks[sel.id];
+            if (commonState.elementAnnotations) delete commonState.elementAnnotations[sel.id];
             commonState.providedFreeHand.splice(sel.index, 1);
         }
     }

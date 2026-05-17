@@ -2,6 +2,7 @@ import { geoMercator, geoEqualEarth, geoAlbersUsa, geoNaturalEarth1, geoTransfor
 import { geoSatellite, geoBaker } from 'd3-geo-projection';
 import { geoClipCircle, geoClipRectangle } from 'd3';
 import { LngLat, Point, Map } from 'maplibre-gl';
+import { clamp } from 'lodash-es';
 import type { ProjectionParams } from 'src/types';
 
 const degrees = 180 / Math.PI;
@@ -203,7 +204,7 @@ export function getProjection(params: ProjectionParams): any {
 
 export function createD3ProjectionFromMapLibre(map: Map, offset: number = 0): any {
     const projection = function (coordinates: [number, number]): [number, number] {
-        const lngLat = new LngLat(coordinates[0], coordinates[1]);
+        const lngLat = new LngLat(coordinates[0], clamp(coordinates[1], -90, 90));
         const point = map.project(lngLat);
         return [point.x + offset, point.y + offset];
     };
@@ -211,7 +212,7 @@ export function createD3ProjectionFromMapLibre(map: Map, offset: number = 0): an
     projection.stream = function (stream: any): any {
         return geoTransform({
             point: function (x: number, y: number) {
-                const lngLat = new LngLat(x, y);
+                const lngLat = new LngLat(x, clamp(y, -90, 90));
                 const point = map.project(lngLat);
                 stream.point(point.x + offset, point.y + offset);
             }

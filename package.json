@@ -43,6 +43,7 @@
     "@paddle/paddle-node-sdk": "^3.8.0",
     "@popperjs/core": "^2.11.8",
     "@protomaps/basemaps": "^5.5.1",
+    "@sentry/sveltekit": "^10",
     "@turf/area": "^7.2.0",
     "@turf/bbox": "^7.2.0",
     "@turf/bbox-clip": "^7.2.0",

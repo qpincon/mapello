@@ -529,6 +529,7 @@
             mapLibreContainer.style("display", "block");
             draw();
         } else {
+            mapLibreContainer.style("display", "none");
             macroSidebar!.applyStateAndDraw();
         }
         setTimeout(() => initTooltips(), 0);
@@ -635,7 +636,7 @@
             if (!macroState.baseCss) macroState.baseCss = defaultState.stateMacro.baseCss;
             Object.assign(microState, state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro);
             await tick();
-            switchMode(state.stateCommon.currentMode);
+            await switchMode(state.stateCommon.currentMode);
             if (state.stateCommon.currentMode === "micro") {
                 microSidebar?.applyLayerStyles();
                 microSidebar?.applyMapPosition();
@@ -661,13 +662,10 @@
         // @ts-expect-error
         const file = e.target.files[0];
         const reader = new FileReader();
-        reader.addEventListener("load", () => {
+        reader.addEventListener("load", async () => {
             try {
                 const providedState: GlobalState = JSON.parse(reader.result as string);
-                applyState(providedState);
-                if (commonState.currentMode === "macro") {
-                    macroSidebar!.applyStateAndDraw();
-                }
+                await applyState(providedState);
             } catch (e) {
                 console.error("Unable to parse provided file. Should be valid JSON.");
             }
@@ -1057,6 +1055,8 @@
         try {
             const parsed = JSON.parse(snapshot);
             Object.assign(commonState, parsed);
+            commonState.elementLinks = parsed.elementLinks ?? {};
+            commonState.elementAnnotations = parsed.elementAnnotations ?? {};
             restoreStyleState(parsed);
             redrawEntities();
             refreshOverlay();
@@ -1073,6 +1073,8 @@
         try {
             const parsed = JSON.parse(snapshot);
             Object.assign(commonState, parsed);
+            commonState.elementLinks = parsed.elementLinks ?? {};
+            commonState.elementAnnotations = parsed.elementAnnotations ?? {};
             restoreStyleState(parsed);
             redrawEntities();
             refreshOverlay();

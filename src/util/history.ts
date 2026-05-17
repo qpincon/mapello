@@ -11,6 +11,8 @@ function serializeDrawingState(): string {
         providedPaths: commonState.providedPaths,
         providedFreeHand: commonState.providedFreeHand,
         inlineStyles: commonState.inlineStyles,
+        elementLinks: commonState.elementLinks,
+        elementAnnotations: commonState.elementAnnotations,
         shapeCount: commonState.shapeCount,
         lastUsedLabelProps: commonState.lastUsedLabelProps,
         baseCss: macroState.baseCss,
