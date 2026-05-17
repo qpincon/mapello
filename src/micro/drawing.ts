@@ -323,7 +323,7 @@ export function drawMicroFrame(
     const innerFrameY = outerFrameY + outerFrameHalfWidth;
     const innerFrameWidth = outerFrameWidth - borderPadding;
     const innerFrameHeight = outerFrameHeight - borderPadding;
-    const innerFrameRx = outerFrameRx - borderPadding;
+    const innerFrameRx = Math.max(0, outerFrameRx - borderPadding);
 
     // Draw the inner frame (border width)
     const frame = svg.append('rect')
@@ -917,7 +917,7 @@ export async function exportMicro(
     let shadowPadded = false;
 
     if (frameShadow) {
-        const outerFrameRx = (borderRadius / 100) * Math.min(width - borderPadding, height - borderPadding);
+        const outerFrameRx = Math.max(0, (borderRadius / 100) * Math.min(width - borderPadding, height - borderPadding));
         addFrameShadow(svgElement, mapId, {
             x: 0,
             y: 0,
