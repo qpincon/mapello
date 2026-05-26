@@ -519,7 +519,7 @@
         container.call(zoomFunc);
     }
 
-    async function switchMode(newMode: Mode): Promise<void> {
+    async function switchMode(newMode: Mode, redrawAfter=true): Promise<void> {
         // if (commonState.currentMode === newMode) return;
         track('mode_switch', { to: newMode });
         commonState.currentMode = newMode;
@@ -528,7 +528,7 @@
         const mapLibreContainer = select("#maplibre-map");
         if (commonState.currentMode === "micro") {
             mapLibreContainer.style("display", "block");
-            draw();
+            if (redrawAfter) draw();
         } else {
             mapLibreContainer.style("display", "none");
             macroSidebar!.applyStateAndDraw();
@@ -549,6 +549,7 @@
         hidePopover();
         clearSelection();
         log("draw", simplified);
+        console.trace('draw');
         const container = select("#map-container");
         container.html("");
         svg = container.select("svg") as unknown as SvgSelection;
@@ -637,14 +638,15 @@
             if (!macroState.baseCss) macroState.baseCss = defaultState.stateMacro.baseCss;
             Object.assign(microState, state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro);
             await tick();
-            await switchMode(state.stateCommon.currentMode);
+            await switchMode(state.stateCommon.currentMode, false);
             if (state.stateCommon.currentMode === "micro") {
                 microSidebar?.applyLayerStyles();
                 microSidebar?.applyMapPosition();
             }
             changeProjection();
             await updateLayerSimplification();
-            draw();
+            /** On micro mode, the drawing will from the maplibre listeners */
+            if (state.stateCommon.currentMode === "macro") draw();
             saveState();
         } finally {
             setRestoring(false);
