@@ -88,7 +88,7 @@ export async function drawPrettyMap(
 
     svg.attr("width", `${width}`).attr("height", `${height}`);
     const use3d = layerDefinitions.buildings['3dBuildings'];
-    console.time('getRenderedFeatures')
+    logTime('getRenderedFeatures')
     const geometries = (await getRenderedFeatures(maplibreMap, { layers: layersToQuery }, use3d!))
     ?.filter(geom => {
             if (geom.properties['kind_detail'] === 'corridor') return false;
@@ -99,7 +99,7 @@ export async function drawPrettyMap(
         });
         // console.log('geometries=', geometries)
         // Process got interrupted, a new call to this function is coming soon
-    console.timeEnd('getRenderedFeatures')
+    logTimeEnd('getRenderedFeatures')
         if (geometries == null) return;
     const geometries2d = geometries.filter(geom =>
         geom.properties.mapLayerId !== "buildings" || !layerDefinitions.buildings['3dBuildings']
@@ -110,34 +110,40 @@ export async function drawPrettyMap(
     const cutoutFeatures = geometries2d.filter(g => BACKGROUND_LAYERS.includes(g.properties.mapLayerId!));
     const mainFeatures = geometries2d.filter(g => !BACKGROUND_LAYERS.includes(g.properties.mapLayerId!));
 
-    console.time('Cutout water')
-    // Subtract cutout geometries from water polygons
+    logTime('Cutout water');
+    let nbDifferenceCall = 0;
     if (cutoutFeatures.length > 0) {
-        // Pre-compute bboxes for cutout features (cheap, avoids recomputing per water polygon)
         const cutoutBboxes = cutoutFeatures.map(c => bbox(c));
 
         for (let i = mainFeatures.length - 1; i >= 0; i--) {
             const f = mainFeatures[i];
             if (f.properties.mapLayerId !== 'water') continue;
-            let waterBbox = bbox(f);
+            const waterBbox = bbox(f);
 
+            const relevant: Feature<Polygon>[] = [];
             for (let j = 0; j < cutoutFeatures.length; j++) {
-                // Skip if bboxes don't intersect — no overlap possible
-                if (!bboxIntersects(waterBbox, cutoutBboxes[j])) continue;
-                // Skip if geometries are disjoint (bboxes overlap but polygons don't)
-                if (booleanDisjoint(f as Feature<Polygon>, cutoutFeatures[j] as Feature<Polygon>)) continue;
-                
-                const diff = difference(featureCollection([f as Feature<Polygon>, cutoutFeatures[j] as Feature<Polygon>]));
-                if (diff == null) {
-                    mainFeatures.splice(i, 1);
-                    break;
+                if (bboxIntersects(waterBbox, cutoutBboxes[j])) {
+                    relevant.push(cutoutFeatures[j] as Feature<Polygon>);
                 }
+            }
+            if (relevant.length === 0) continue;
+
+            // One polyclip sweep per water polygon: @turf/difference forwards
+            // variadic clips to polyclip.difference(water, c1, c2, ...).
+            const diff = difference(featureCollection([
+                f as Feature<Polygon>,
+                ...relevant,
+            ]));
+            nbDifferenceCall += 1;
+            if (diff == null) {
+                mainFeatures.splice(i, 1);
+            } else {
                 (f as Feature).geometry = diff.geometry;
-                waterBbox = bbox(f); // Recompute after geometry changed
             }
         }
     }
-    console.timeEnd('Cutout water')
+    logTimeEnd('Cutout water');
+    log(nbDifferenceCall, 'difference calls');
     
     const borderWidth = generalParams.Border.borderWidth;
     const borderPadding = generalParams.Border.borderPadding;
