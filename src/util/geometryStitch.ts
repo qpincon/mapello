@@ -519,20 +519,31 @@ async function stitchPolygons(allPolygons: RenderedFeaturePoly[], cuts: Cuts, de
     // - checking if pairwise segments are closeby together
     // - if yes, checking that the geometries overlap
     const stitchGroups: Set<number>[] = [];
+    const overlapCache = new Map<number, boolean>();
+    const overlapKey = (a: number, b: number) => {
+      const lo = a < b ? a : b;
+      const hi = a < b ? b : a;
+      return lo * (1 << 20) + hi;
+    };
     for (let i = 0; i < segmentsToProcess.length; ++i) {
       const [polygonIndex, ringIndex, coordIndex, cutDirection] = segmentsToProcess[i];
       if (polygonCutIndexExclude.has(polygonIndex)) continue;
       // console.log('finding match for', segmentsToProcess[i]);
       const matching = segmentsToProcess.filter(segment => {
         const [curPolygonIndex, curRingIndex, curCoordIndex, curCutDirection] = segment;
-        if (polygonCutIndexExclude.has(curPolygonIndex)) return;
+        if (polygonCutIndexExclude.has(curPolygonIndex)) return false;
         if (curPolygonIndex === polygonIndex) return false;
         if (cutDirection !== curCutDirection) return false;
+        if (!bboxIntersects(layerPolygons[polygonIndex].boundingBox!, layerPolygons[curPolygonIndex].boundingBox!)) return false;
+        if (!polygonsAreCutByTile(segmentsToProcess[i], segment, layerPolygons, deadZones)) return false;
 
-        const areCut = polygonsAreCutByTile(segmentsToProcess[i], segment, layerPolygons, deadZones);
-        if (!areCut) return false;
-        return bboxIntersects(layerPolygons[polygonIndex].boundingBox!, layerPolygons[curPolygonIndex].boundingBox!) &&
-          booleanOverlap(layerPolygons[polygonIndex], layerPolygons[curPolygonIndex]);
+        const key = overlapKey(polygonIndex, curPolygonIndex);
+        let overlap = overlapCache.get(key);
+        if (overlap === undefined) {
+          overlap = booleanOverlap(layerPolygons[polygonIndex], layerPolygons[curPolygonIndex]);
+          overlapCache.set(key, overlap);
+        }
+        return overlap;
       });
       if (matching.length) {
         for (const m of matching) {
