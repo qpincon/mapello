@@ -1,229 +1,162 @@
 import type { Feature, LineString, GeoJsonProperties, Position } from "geojson";
 
-const SCALE = 10000000; // 10^7 for 7 decimal places
+const SCALE = 10000000;
+
+const pointToKey = (p: Position): string =>
+  `${Math.round(p[0] * SCALE)}|${Math.round(p[1] * SCALE)}`;
 
 /**
- * Merges GeoJSON LineString Features that share their first or last points
- * with optimized O(n) performance using an endpoint index
+ * Merges GeoJSON LineString Features that share their first or last points.
+ * Single-pass O(N + total_coords) graph walk — finds maximal degree-2 paths in
+ * the endpoint graph and stops at junctions (degree ≥ 3) and dead ends (degree 1).
  */
 export function mergeLineStrings(features: Array<Feature<LineString>>): Array<Feature<LineString>> {
-    if (!features || features.length === 0) {
-        return [];
+  if (!features || features.length === 0) return [];
+
+  const valid: Array<Feature<LineString>> = [];
+  for (const f of features) {
+    if (f && f.geometry?.type === 'LineString' &&
+        Array.isArray(f.geometry.coordinates) && f.geometry.coordinates.length > 0) {
+      valid.push(f);
+    }
+  }
+  if (valid.length === 0) return [];
+
+  const N = valid.length;
+  const firstKeys: string[] = new Array(N);
+  const lastKeys: string[] = new Array(N);
+  for (let i = 0; i < N; i++) {
+    const c = valid[i].geometry.coordinates;
+    firstKeys[i] = pointToKey(c[0]);
+    lastKeys[i] = pointToKey(c[c.length - 1]);
+  }
+
+  // adjacency: endpoint key -> packed entries where entry = (lineIdx << 1) | isLast
+  // isLast=0 means the line connects here via its FIRST endpoint
+  // isLast=1 means the line connects here via its LAST endpoint
+  const adj = new Map<string, number[]>();
+  for (let i = 0; i < N; i++) {
+    let l = adj.get(firstKeys[i]);
+    if (!l) { l = []; adj.set(firstKeys[i], l); }
+    l.push(i << 1);           // isLast=0
+
+    l = adj.get(lastKeys[i]);
+    if (!l) { l = []; adj.set(lastKeys[i], l); }
+    l.push((i << 1) | 1);     // isLast=1
+  }
+
+  const visited = new Uint8Array(N);
+  const out: Array<Feature<LineString>> = [];
+
+  // Reuse piece arrays across iterations to avoid GC pressure
+  const rightPieces: Array<{ idx: number; reversed: boolean }> = [];
+  const leftPieces: Array<{ idx: number; reversed: boolean }> = [];
+
+  for (let i = 0; i < N; i++) {
+    if (visited[i]) continue;
+    visited[i] = 1;
+    rightPieces.length = 0;
+    leftPieces.length = 0;
+    let ringClosed = false;
+
+    // Walk RIGHT: extend the chain from lastKeys[i] outward
+    let curKey = lastKeys[i];
+    while (true) {
+      const cands = adj.get(curKey);
+      if (!cands || cands.length !== 2) break;   // dead end or junction — stop
+      let enc = -1;
+      for (let k = 0; k < cands.length; k++) {
+        if (!visited[cands[k] >>> 1]) { enc = cands[k]; break; }
+      }
+      if (enc < 0) break;                        // both neighbors already visited
+      const oIdx = enc >>> 1;
+      const oIsLast = (enc & 1) === 1;
+      visited[oIdx] = 1;
+      // oIsLast=false: neighbor connects via its first endpoint → walk it forward (not reversed)
+      // oIsLast=true:  neighbor connects via its last endpoint  → walk it backward (reversed)
+      rightPieces.push({ idx: oIdx, reversed: oIsLast });
+      curKey = oIsLast ? firstKeys[oIdx] : lastKeys[oIdx];
+      if (curKey === firstKeys[i]) { ringClosed = true; break; }
     }
 
-    // Validate and extract LineStrings
-    const validFeatures = features.filter(feature =>
-        feature &&
-        feature.geometry &&
-        feature.geometry.type === 'LineString' &&
-        Array.isArray(feature.geometry.coordinates) &&
-        feature.geometry.coordinates.length > 0
-    );
-
-    if (validFeatures.length === 0) {
-        return [];
+    // Walk LEFT: extend the chain from firstKeys[i] outward (skip if ring already closed)
+    if (!ringClosed) {
+      curKey = firstKeys[i];
+      while (true) {
+        const cands = adj.get(curKey);
+        if (!cands || cands.length !== 2) break;
+        let enc = -1;
+        for (let k = 0; k < cands.length; k++) {
+          if (!visited[cands[k] >>> 1]) { enc = cands[k]; break; }
+        }
+        if (enc < 0) break;
+        const oIdx = enc >>> 1;
+        const oIsLast = (enc & 1) === 1;
+        visited[oIdx] = 1;
+        // For prepending we need the "away" direction of the neighbor:
+        // oIsLast=false: neighbor's first endpoint is here → prepend it reversed so its last becomes leftmost
+        // oIsLast=true:  neighbor's last endpoint is here  → prepend it in natural order so its first becomes leftmost
+        leftPieces.push({ idx: oIdx, reversed: !oIsLast });
+        curKey = oIsLast ? firstKeys[oIdx] : lastKeys[oIdx];
+      }
     }
 
-    // Helper function to create a string key from a point
-    const pointToKey = (point: Position): number => {
-        return Math.round(point[0] * SCALE) * 1e8 + Math.round(point[1] * SCALE);
-    };
-
-    // Create an index of endpoints to LineString features
-    const endpointIndex = new Map<number, Array<{ index: number; isFirst: boolean }>>();
-
-    // Initialize with all features
-    const result: Array<Feature<LineString> | null> = [...validFeatures];
-
-    // Build the initial endpoint index
-    for (let i = 0; i < result.length; i++) {
-        const feature = result[i]!;
-        const coords = feature.geometry.coordinates;
-        const firstPoint = coords[0];
-        const lastPoint = coords[coords.length - 1];
-
-        const firstKey = pointToKey(firstPoint);
-        const lastKey = pointToKey(lastPoint);
-
-        // Add endpoints to index
-        if (!endpointIndex.has(firstKey)) {
-            endpointIndex.set(firstKey, []);
-        }
-        endpointIndex.get(firstKey)!.push({ index: i, isFirst: true });
-
-        if (!endpointIndex.has(lastKey)) {
-            endpointIndex.set(lastKey, []);
-        }
-        endpointIndex.get(lastKey)!.push({ index: i, isFirst: false });
+    if (rightPieces.length === 0 && leftPieces.length === 0) {
+      out.push(valid[i]);
+      continue;
     }
 
-    // Helper function to merge two LineString Features
-    const mergeTwoFeatures = (
-        feature1: Feature<LineString>,
-        feature2: Feature<LineString>,
-        connect1IsFirst: boolean,
-        connect2IsFirst: boolean
-    ): Feature<LineString> => {
-        const coords1 = feature1.geometry.coordinates;
-        const coords2 = feature2.geometry.coordinates;
-        let mergedCoords: Position[] = [];
+    // Compute total coordinate count so we allocate exactly once
+    const startCoords = valid[i].geometry.coordinates;
+    let total = startCoords.length;
+    for (let k = 0; k < leftPieces.length; k++)  total += valid[leftPieces[k].idx].geometry.coordinates.length - 1;
+    for (let k = 0; k < rightPieces.length; k++) total += valid[rightPieces[k].idx].geometry.coordinates.length - 1;
 
-        // Handle different connection scenarios
-        if (connect1IsFirst && connect2IsFirst) {
-            const reversedCoords1 = [...coords1].reverse();
-            mergedCoords = [...reversedCoords1, ...coords2.slice(1)];
-        } else if (connect1IsFirst && !connect2IsFirst) {
-            mergedCoords = [...coords2, ...coords1.slice(1)];
-        } else if (!connect1IsFirst && connect2IsFirst) {
-            mergedCoords = [...coords1, ...coords2.slice(1)];
-        } else {
-            const reversedCoords2 = [...coords2].reverse();
-            mergedCoords = [...coords1, ...reversedCoords2.slice(1)];
-        }
+    const merged: Position[] = new Array(total);
+    let w = 0;
 
-        // Create a new merged feature with combined properties
-        const mergedFeature: Feature<LineString> = {
-            type: "Feature",
-            geometry: {
-                type: "LineString",
-                coordinates: mergedCoords
-            },
-            properties: {
-                ...feature1.properties,
-                ...feature2.properties,
-                merged: true
-            } as GeoJsonProperties
-        };
-
-        return mergedFeature;
-    };
-
-    // Function to update the index after merging
-    const updateIndexAfterMerge = (newFeature: Feature<LineString>, replacedIndices: number[]): void => {
-        // Remove the replaced features from our endpoint index
-        replacedIndices.forEach(idx => {
-            const feature = result[idx]!;
-            const coords = feature.geometry.coordinates;
-            const firstPoint = coords[0];
-            const lastPoint = coords[coords.length - 1];
-
-            const firstKey = pointToKey(firstPoint);
-            const lastKey = pointToKey(lastPoint);
-
-            // Filter out the references to the replaced features
-            if (endpointIndex.has(firstKey)) {
-                endpointIndex.set(
-                    firstKey,
-                    endpointIndex.get(firstKey)!.filter(entry => !replacedIndices.includes(entry.index))
-                );
-                if (endpointIndex.get(firstKey)!.length === 0) {
-                    endpointIndex.delete(firstKey);
-                }
-            }
-
-            if (endpointIndex.has(lastKey)) {
-                endpointIndex.set(
-                    lastKey,
-                    endpointIndex.get(lastKey)!.filter(entry => !replacedIndices.includes(entry.index))
-                );
-                if (endpointIndex.get(lastKey)!.length === 0) {
-                    endpointIndex.delete(lastKey);
-                }
-            }
-        });
-
-        // Add the new feature to our index
-        const newIndex = result.length - 1;
-        const newCoords = newFeature.geometry.coordinates;
-        const newFirstPoint = newCoords[0];
-        const newLastPoint = newCoords[newCoords.length - 1];
-
-        const newFirstKey = pointToKey(newFirstPoint);
-        const newLastKey = pointToKey(newLastPoint);
-
-        if (!endpointIndex.has(newFirstKey)) {
-            endpointIndex.set(newFirstKey, []);
-        }
-        endpointIndex.get(newFirstKey)!.push({ index: newIndex, isFirst: true });
-
-        if (!endpointIndex.has(newLastKey)) {
-            endpointIndex.set(newLastKey, []);
-        }
-        endpointIndex.get(newLastKey)!.push({ index: newIndex, isFirst: false });
-    };
-
-    // Process all features and merge where possible
-    let mergeFound = true;
-    while (mergeFound) {
-        mergeFound = false;
-
-        for (let i = 0; i < result.length; i++) {
-            const feature = result[i];
-            if (!feature) continue;
-
-            const coords = feature.geometry.coordinates;
-            const firstPoint = coords[0];
-            const lastPoint = coords[coords.length - 1];
-
-            // Check for connections at the first point
-            const firstPointKey = pointToKey(firstPoint);
-            const connectionsAtFirst = endpointIndex.get(firstPointKey) || [];
-
-            for (const connection of connectionsAtFirst) {
-                if (connection.index === i) continue;
-
-                const otherFeature = result[connection.index];
-                if (!otherFeature) continue;
-
-                mergeFound = true;
-
-                const mergedFeature = mergeTwoFeatures(
-                    feature,
-                    otherFeature,
-                    true,
-                    connection.isFirst
-                );
-
-                result.push(mergedFeature);
-                updateIndexAfterMerge(mergedFeature, [i, connection.index]);
-                result[i] = null;
-                result[connection.index] = null;
-
-                break;
-            }
-
-            if (mergeFound) break;
-
-            // Check for connections at the last point
-            const lastPointKey = pointToKey(lastPoint);
-            const connectionsAtLast = endpointIndex.get(lastPointKey) || [];
-
-            for (const connection of connectionsAtLast) {
-                if (connection.index === i) continue;
-
-                const otherFeature = result[connection.index];
-                if (!otherFeature) continue;
-
-                mergeFound = true;
-
-                const mergedFeature = mergeTwoFeatures(
-                    feature,
-                    otherFeature,
-                    false,
-                    connection.isFirst
-                );
-
-                result.push(mergedFeature);
-                updateIndexAfterMerge(mergedFeature, [i, connection.index]);
-                result[i] = null;
-                result[connection.index] = null;
-
-                break;
-            }
-
-            if (mergeFound) break;
-        }
+    // Emit left pieces in reverse walk order (farthest from start comes first in the output)
+    for (let k = leftPieces.length - 1; k >= 0; k--) {
+      const oc = valid[leftPieces[k].idx].geometry.coordinates;
+      const n = oc.length;
+      if (leftPieces[k].reversed) {
+        // Connected via first endpoint, stored reversed → emit coords[n-1..1] (skip shared first)
+        for (let j = n - 1; j >= 1; j--) merged[w++] = oc[j];
+      } else {
+        // Connected via last endpoint, natural order → emit coords[0..n-2] (skip shared last)
+        for (let j = 0; j < n - 1; j++) merged[w++] = oc[j];
+      }
     }
 
-    return result.filter(feature => feature !== null) as Array<Feature<LineString>>;
+    // Emit start coords in full (includes both shared endpoints)
+    for (let j = 0; j < startCoords.length; j++) merged[w++] = startCoords[j];
+
+    // Emit right pieces in walk order
+    for (let k = 0; k < rightPieces.length; k++) {
+      const oc = valid[rightPieces[k].idx].geometry.coordinates;
+      const n = oc.length;
+      if (rightPieces[k].reversed) {
+        // Connected via last endpoint, stored reversed → emit coords[n-2..0] (skip shared last)
+        for (let j = n - 2; j >= 0; j--) merged[w++] = oc[j];
+      } else {
+        // Connected via first endpoint, natural order → emit coords[1..n-1] (skip shared first)
+        for (let j = 1; j < n; j++) merged[w++] = oc[j];
+      }
+    }
+
+    // Build merged properties once in final chain order (left-to-right)
+    const props: GeoJsonProperties = {};
+    for (let k = leftPieces.length - 1; k >= 0; k--) Object.assign(props as object, valid[leftPieces[k].idx].properties);
+    Object.assign(props as object, valid[i].properties);
+    for (let k = 0; k < rightPieces.length; k++) Object.assign(props as object, valid[rightPieces[k].idx].properties);
+    (props as any).merged = true;
+
+    out.push({
+      type: "Feature",
+      geometry: { type: "LineString", coordinates: merged },
+      properties: props,
+    });
+  }
+
+  return out;
 }
