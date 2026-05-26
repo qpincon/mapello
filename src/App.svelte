@@ -1902,27 +1902,33 @@
         styleEditor?.close();
     }}
 >
-    <div slot="header">
-        {annotationEditingType === "tooltip" ? "Tooltip" : "Popover"} for <code>{annotationEditingElemId}</code>
-    </div>
-    <div slot="content">
-        <QuillEditor
-            bind:this={annotationQuillEditor}
-            bind:value={annotationEditorContent}
-            bind:containerStyle={annotationContainerStyle}
-            placeholder=""
-            fonts={commonState.providedFonts.map((f) => f.name)}
-        />
-    </div>
-    <div slot="footer">
-        <button
-            class="btn btn-primary btn-sm"
-            onclick={() => {
-                saveAnnotation();
-                annotationEditorOpen = false;
-            }}>Save</button
-        >
-    </div>
+    {#snippet header()}
+        <div>
+            {annotationEditingType === "tooltip" ? "Tooltip" : "Popover"} for <code>{annotationEditingElemId}</code>
+        </div>
+    {/snippet}
+    {#snippet content()}
+        <div>
+            <QuillEditor
+                bind:this={annotationQuillEditor}
+                bind:value={annotationEditorContent}
+                bind:containerStyle={annotationContainerStyle}
+                placeholder=""
+                fonts={commonState.providedFonts.map((f) => f.name)}
+            />
+        </div>
+    {/snippet}
+    {#snippet footer()}
+        <div>
+            <button
+                class="btn btn-primary btn-sm"
+                onclick={() => {
+                    saveAnnotation();
+                    annotationEditorOpen = false;
+                }}>Save</button
+            >
+        </div>
+    {/snippet}
 </Modal>
 
 {#if (isDrawingFreeHand || (isDrawingPath && !isActivelyDrawingPath)) && isCursorInsideMap}
@@ -1987,6 +1993,7 @@
     </aside>
     <div class="w-auto d-flex flex-grow-1 flex-column align-items-center h-100" style="position: relative;">
         <Navbar>
+            {#snippet children()}
             <div class="d-flex align-items-center justify-content-between w-100 px-3">
                 <!-- LEFT: brand -->
                 <div class="d-flex align-items-center gap-2">
@@ -2078,7 +2085,9 @@
                     {/if}
                 </div>
             </div>
-            <div slot="bottom-left" class="bottom-buttons">
+            {/snippet}
+            {#snippet bottomLeft()}
+            <div class="bottom-buttons">
                 <button
                     id="instructions-btn"
                     class="instructions-btn"
@@ -2104,6 +2113,7 @@
                     </button>
                 {/if}
             </div>
+            {/snippet}
         </Navbar>
         <div class="d-flex flex-column justify-content-center align-items-center h-100 position-relative">
             {#if serverSyncError}
@@ -2180,8 +2190,9 @@
     onClosed={handleLoginModalClosed}
     modalWidth="480px"
 >
-    <div slot="header"><h5 class="modal-title">Welcome back</h5></div>
-    <div slot="content">
+    {#snippet header()}<div><h5 class="modal-title">Welcome back</h5></div>{/snippet}
+    {#snippet content()}
+    <div>
         <div class="mb-4">
             <p class="fw-semibold mb-2">Save your current work</p>
             <div class="d-flex gap-2">
@@ -2222,7 +2233,7 @@
             {/each}
         </div>
     </div>
-    <div slot="footer"></div>
+    {/snippet}
 </Modal>
 
 <style lang="scss" scoped>
@@ -2297,13 +2308,6 @@
         white-space: nowrap;
     }
 
-    .navbar-user-email {
-        font-size: 0.85rem;
-        max-width: 160px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
 
     .navbar-brand-link {
         display: inline-flex;

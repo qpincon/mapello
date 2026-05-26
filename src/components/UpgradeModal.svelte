@@ -101,8 +101,11 @@
 </script>
 
 <Modal {open} modalWidth="380px" {onClosed}>
-    <div slot="header"><strong>Upgrade to Pro</strong></div>
-    <div slot="content">
+    {#snippet header()}
+        <div><strong>Upgrade to Pro</strong></div>
+    {/snippet}
+    {#snippet content()}
+    <div>
         <p>Unlock unlimited SVG exports. Choose your billing period:</p>
         {#if errorMsg}
             <p class="error">{errorMsg}</p>
@@ -133,6 +136,7 @@
             </button>
         </div>
     </div>
+    {/snippet}
 </Modal>
 
 <style>

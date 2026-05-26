@@ -2546,14 +2546,6 @@
     gap: 1.65rem;
     max-width: 720px;
   }
-  .hero-eyebrow {
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--color-gold);
-    opacity: 0.75;
-  }
   .hero-headline {
     font-family: var(--font-serif);
     font-size: clamp(3rem, 5.5vw, 5.5rem);
@@ -3246,13 +3238,6 @@
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.38);
     line-height: 1.6;
-  }
-  .footer-coords {
-    font-size: 0.68rem;
-    letter-spacing: 0.16em;
-    color: rgba(201, 148, 58, 0.4);
-    margin-top: 0.4rem;
-    font-variant-numeric: tabular-nums;
   }
   .footer-links-col {
     display: flex;

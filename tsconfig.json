@@ -7,13 +7,7 @@
     "checkJs": true,
     "types": [
       "vite/client"
-    ],
-    "baseUrl": ".",
-    "paths": {
-      "src/*": ["./src/*"],
-      "$lib": ["./src/lib"],
-      "$lib/*": ["./src/lib/*"]
-    }
+    ]
   },
   "include": [
     "src/**/*"

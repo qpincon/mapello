@@ -165,10 +165,11 @@
 </button>
 
 <Modal open={showModal} onClosed={closePicker} modalWidth="600px">
-    <div slot="header">
-        <h2 class="fs-4 p-2 m-0">Font picker</h2>
-    </div>
-    <div slot="content">
+    {#snippet header()}
+        <div><h2 class="fs-4 p-2 m-0">Font picker</h2></div>
+    {/snippet}
+    {#snippet content()}
+    <div>
         {#if loading}
             <div class="text-center py-4">Loading font catalog...</div>
         {:else if error}
@@ -255,4 +256,5 @@
             </div>
         {/if}
     </div>
+    {/snippet}
 </Modal>

@@ -2,7 +2,7 @@ import bbox from "@turf/bbox";
 import { log } from './log';
 import bboxPolygon from "@turf/bbox-polygon";
 import booleanDisjoint from "@turf/boolean-disjoint";
-import { featureCollection, point, polygon, lineString } from "@turf/helpers";
+import { featureCollection, polygon, lineString } from "@turf/helpers";
 import intersect from "@turf/intersect";
 import union from "@turf/union";
 import center from "@turf/center";

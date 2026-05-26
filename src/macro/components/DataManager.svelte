@@ -256,8 +256,9 @@
 </script>
 
 <Modal {open} onClosed={handleClose} modalWidth="90%">
-    <h5 slot="header">Data Manager - {layerName}</h5>
-    <div slot="content">
+    {#snippet header()}<h5>Data Manager - {layerName}</h5>{/snippet}
+    {#snippet content()}
+    <div>
         <!-- Toolbar -->
         <div class="d-flex gap-2 mb-3 align-items-center flex-wrap position-relative">
             <label class="btn btn-outline-primary btn-sm mb-0">
@@ -376,23 +377,30 @@
             </div>
         {/if}
     </div>
-    <div slot="footer">
+    {/snippet}
+    {#snippet footer()}
+    <div>
         <button class="btn btn-primary" onclick={handleClose}>OK</button>
     </div>
+    {/snippet}
 </Modal>
 
 <!-- Import reconciliation dialog -->
 {#if importDialogMessage}
     <Modal open={!!importDialogMessage} onClosed={() => (importDialogMessage = null)} modalWidth="40%">
-        <h6 slot="header">Import adjustments</h6>
-        <div slot="content">
+        {#snippet header()}<h6>Import adjustments</h6>{/snippet}
+        {#snippet content()}
+        <div>
             {#each importDialogMessage.split("\n\n") as msg}
                 <p>{msg}</p>
             {/each}
         </div>
-        <div slot="footer">
+        {/snippet}
+        {#snippet footer()}
+        <div>
             <button class="btn btn-primary btn-sm" onclick={() => (importDialogMessage = null)}>OK</button>
         </div>
+        {/snippet}
     </Modal>
 {/if}
 

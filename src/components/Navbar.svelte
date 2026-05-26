@@ -1,16 +1,19 @@
 <script lang="ts">
   import githubLogo from "../assets/img/github.svg?raw";
+  import type { Snippet } from "svelte";
   interface Props {
     activeTitle?: string;
+    children?: Snippet;
+    bottomLeft?: Snippet;
   }
 
-  let { activeTitle = "index.html" }: Props = $props();
+  let { activeTitle = "index.html", children, bottomLeft }: Props = $props();
 </script>
 
 <div id="navbar">
-  <slot></slot>
+  {@render children?.()}
 </div>
-<slot name="bottom-left"></slot>
+{@render bottomLeft?.()}
 <a
   class="p-2 github"
   target="_blank"
@@ -27,13 +30,6 @@
     min-height: 50px;
     display: flex;
     align-items: center;
-    > a {
-      text-decoration: none;
-      font-size: 14px;
-      color: black;
-      margin-right: 10px;
-      font-weight: bold;
-    }
   }
   .github {
     position: absolute;

@@ -140,11 +140,14 @@
 </script>
 
 <Modal {open} onClosed={close} modalWidth="420px">
-    <div slot="header">
-        <h5 class="modal-title">{mode === 'login' ? 'Sign in' : mode === 'register' ? 'Create account' : mode === 'verify' ? 'Verify your email' : 'Reset password'}</h5>
-    </div>
+    {#snippet header()}
+        <div>
+            <h5 class="modal-title">{mode === 'login' ? 'Sign in' : mode === 'register' ? 'Create account' : mode === 'verify' ? 'Verify your email' : 'Reset password'}</h5>
+        </div>
+    {/snippet}
 
-    <div slot="content" class="auth-modal">
+    {#snippet content()}
+    <div class="auth-modal">
         {#if mode === 'verify'}
             <div class="text-center py-2">
                 <p class="mb-2">We sent a verification link to <strong>{email}</strong>.</p>
@@ -313,8 +316,8 @@
             </button>
         {/if}
     </div>
+    {/snippet}
 
-    <div slot="footer"></div>
 </Modal>
 
 <style>

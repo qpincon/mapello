@@ -51,11 +51,11 @@
 </script>
 
 <Modal {open} onClosed={close} modalWidth="460px">
-    <div slot="header">
-        <h5 class="modal-title">Send feedback</h5>
-    </div>
-
-    <div slot="content">
+    {#snippet header()}
+        <div><h5 class="modal-title">Send feedback</h5></div>
+    {/snippet}
+    {#snippet content()}
+    <div>
         {#if sent}
             <div class="alert alert-success py-2 px-3 mb-0">
                 Thanks for your feedback! We'll get back to you shortly.
@@ -97,6 +97,5 @@
             </form>
         {/if}
     </div>
-
-    <div slot="footer"></div>
+    {/snippet}
 </Modal>

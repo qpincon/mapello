@@ -88,17 +88,19 @@ export async function drawPrettyMap(
 
     svg.attr("width", `${width}`).attr("height", `${height}`);
     const use3d = layerDefinitions.buildings['3dBuildings'];
+    console.time('getRenderedFeatures')
     const geometries = (await getRenderedFeatures(maplibreMap, { layers: layersToQuery }, use3d!))
-        ?.filter(geom => {
+    ?.filter(geom => {
             if (geom.properties['kind_detail'] === 'corridor') return false;
             const layer = geom.properties['layer'];
             /** Remove below ground buildings */
             if (layer != null && layer < 0) return false;
             return true;
         });
-    // console.log('geometries=', geometries)
-    // Process got interrupted, a new call to this function is coming soon
-    if (geometries == null) return;
+        // console.log('geometries=', geometries)
+        // Process got interrupted, a new call to this function is coming soon
+    console.timeEnd('getRenderedFeatures')
+        if (geometries == null) return;
     const geometries2d = geometries.filter(geom =>
         geom.properties.mapLayerId !== "buildings" || !layerDefinitions.buildings['3dBuildings']
     ) as RenderedFeaturePoly[];
@@ -108,6 +110,7 @@ export async function drawPrettyMap(
     const cutoutFeatures = geometries2d.filter(g => BACKGROUND_LAYERS.includes(g.properties.mapLayerId!));
     const mainFeatures = geometries2d.filter(g => !BACKGROUND_LAYERS.includes(g.properties.mapLayerId!));
 
+    console.time('Cutout water')
     // Subtract cutout geometries from water polygons
     if (cutoutFeatures.length > 0) {
         // Pre-compute bboxes for cutout features (cheap, avoids recomputing per water polygon)
@@ -123,7 +126,7 @@ export async function drawPrettyMap(
                 if (!bboxIntersects(waterBbox, cutoutBboxes[j])) continue;
                 // Skip if geometries are disjoint (bboxes overlap but polygons don't)
                 if (booleanDisjoint(f as Feature<Polygon>, cutoutFeatures[j] as Feature<Polygon>)) continue;
-
+                
                 const diff = difference(featureCollection([f as Feature<Polygon>, cutoutFeatures[j] as Feature<Polygon>]));
                 if (diff == null) {
                     mainFeatures.splice(i, 1);
@@ -134,7 +137,8 @@ export async function drawPrettyMap(
             }
         }
     }
-
+    console.timeEnd('Cutout water')
+    
     const borderWidth = generalParams.Border.borderWidth;
     const borderPadding = generalParams.Border.borderPadding;
     const borderRadius = generalParams.Border.borderRadius;

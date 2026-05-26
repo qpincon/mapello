@@ -2,6 +2,7 @@
     import { fade, fly } from "svelte/transition";
     import { quintOut } from "svelte/easing";
     import { initTooltips } from "../util/common";
+    import type { Snippet } from "svelte";
 
     // Types
     interface EventRemover {
@@ -23,6 +24,9 @@
         labelledby?: string;
         onOpened?: NoopFunction;
         onClosed?: NoopFunction;
+        header?: Snippet;
+        content?: Snippet;
+        footer?: Snippet;
     }
 
     let {
@@ -36,6 +40,9 @@
         labelledby = "",
         onOpened = noop,
         onClosed = noop,
+        header,
+        content,
+        footer,
     }: Props = $props();
 
     let _keyboardEvent: EventRemover | null = null;
@@ -130,7 +137,7 @@
         >
             <div class="modal-content">
                 <div class="modal-header p-3">
-                    <slot name="header" />
+                    {@render header?.()}
                     <button
                         type="button"
                         class="btn-close me-2"
@@ -140,10 +147,10 @@
                     ></button>
                 </div>
                 <div class="modal-body p-3">
-                    <slot name="content" />
+                    {@render content?.()}
                 </div>
                 <div class="modal-footer">
-                    <slot name="footer" />
+                    {@render footer?.()}
                 </div>
             </div>
         </div>

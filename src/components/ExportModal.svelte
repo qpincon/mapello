@@ -24,7 +24,7 @@
 
     let { open = $bindable(), mode, svgNode, inlineFontUsed, computeMacroCss, onExport, onClosed, onUpgrade, exportsRemaining }: Props = $props();
 
-    let localRemaining = $state(exportsRemaining);
+    let localRemaining: number | null = $state(null);
     let exportLoading = $state(false);
 
     $effect(() => {
@@ -186,10 +186,11 @@
 </script>
 
 <Modal {open} {onClosed} {modalWidth}>
-    <div slot="header">
-        <h2 class="fs-3 p-2 m-0">Export options</h2>
-    </div>
-    <div slot="content">
+    {#snippet header()}
+        <div><h2 class="fs-3 p-2 m-0">Export options</h2></div>
+    {/snippet}
+    {#snippet content()}
+    <div>
         <div class="export-layout">
             <div class="export-options">
                 <div class="mb-3">
@@ -357,7 +358,9 @@
             </div>
         </div>
     </div>
-    <div slot="footer" class="footer-row">
+    {/snippet}
+    {#snippet footer()}
+    <div class="footer-row">
         {#if localRemaining === 0}
             <span class="quota-msg">You've used all your free exports.</span>
             <button type="button" class="btn btn-primary" onclick={onUpgrade}>Upgrade to Pro</button>
@@ -370,6 +373,7 @@
             </button>
         {/if}
     </div>
+    {/snippet}
 </Modal>
 
 <style>
@@ -439,8 +443,5 @@
     .quota-msg {
         font-size: 0.85rem;
         color: #6c757d;
-    }
-    .quota-msg a {
-        color: #0d6efd;
     }
 </style>

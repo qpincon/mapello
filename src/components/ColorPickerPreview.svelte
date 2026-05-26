@@ -20,7 +20,7 @@
         return v?.length === 9 && v.endsWith("ff") ? v.slice(0, 7) : (v ?? "");
     }
 
-    let displayValue = $state(trimAlpha(value));
+    let displayValue = $state("");
     $effect(() => {
         displayValue = trimAlpha(value);
     });

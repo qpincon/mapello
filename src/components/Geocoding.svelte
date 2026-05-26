@@ -33,7 +33,7 @@
     let resultsContainer: HTMLDivElement | null = $state(null);
 
     // Create debounced search function
-    const debouncedSearch = debounce(async (query: string): Promise<void> => {
+    const debouncedSearch = $derived(debounce(async (query: string): Promise<void> => {
         if (!query || query.length < 3) {
             searchResults = [];
             isResultsVisible = false;
@@ -61,7 +61,7 @@
         } finally {
             isLoading = false;
         }
-    }, debounceTime);
+    }, debounceTime));
 
     $effect(() => {
         if (searchQuery !== undefined) {

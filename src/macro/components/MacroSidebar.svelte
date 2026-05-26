@@ -120,7 +120,7 @@
 
     let { styleEditor, svg, draw }: Props = $props();
 
-    let drawDebounced = debounce(draw, 100);
+    let drawDebounced = debounce((simplified?: boolean) => draw(simplified), 100);
     onMount(() => {
         log("macro onmount");
         commonStyleSheetElem = document.createElement("style");

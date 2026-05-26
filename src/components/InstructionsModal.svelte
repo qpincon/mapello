@@ -32,10 +32,11 @@
 </script>
 
 <Modal {open} {onClosed} modalWidth="880px">
-  <div slot="header">
-    <h2 class="fs-4 p-2 m-0">Instructions</h2>
-  </div>
-  <div slot="content" class="inst-layout">
+  {#snippet header()}
+    <div><h2 class="fs-4 p-2 m-0">Instructions</h2></div>
+  {/snippet}
+  {#snippet content()}
+  <div class="inst-layout">
     <nav class="inst-tabs">
       {#each tabs as tab}
         <button
@@ -357,7 +358,9 @@
       {/if}
     </div>
   </div>
-  <div slot="footer" class="footer-row">
+  {/snippet}
+  {#snippet footer()}
+  <div class="footer-row">
     {#if onStartTour}
       <button
         type="button"
@@ -369,6 +372,7 @@
     {/if}
     <button type="button" class="btn btn-primary" onclick={onClosed}>OK</button>
   </div>
+  {/snippet}
 </Modal>
 
 <style>

@@ -7,7 +7,11 @@ export default {
     adapter: adapter(),
 
     files: {
-      assets: 'public'
+      assets: 'public',
+    },
+
+    alias: {
+      src: './src',
     },
 
     experimental: {

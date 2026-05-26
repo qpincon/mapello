@@ -20,19 +20,23 @@
 </script>
 
 <Modal {open} {onClosed} modalWidth="520px">
-    <div slot="header">
-        <h2 class="fs-4 p-2 m-0">Your map is ready</h2>
-    </div>
-    <div slot="content" class="post-export-content">
-        <p class="text-muted mb-3">Here's how to use it in an HTML page.</p>
-        <ExportInstructions />
-    </div>
-    <div slot="footer" class="footer-row">
-        <button type="button" class="btn btn-link text-muted dont-show-btn" onclick={dontShowAgain}>
-            Don't show again
-        </button>
-        <button type="button" class="btn btn-primary" onclick={dismiss}>OK</button>
-    </div>
+    {#snippet header()}
+        <div><h2 class="fs-4 p-2 m-0">Your map is ready</h2></div>
+    {/snippet}
+    {#snippet content()}
+        <div class="post-export-content">
+            <p class="text-muted mb-3">Here's how to use it in an HTML page.</p>
+            <ExportInstructions />
+        </div>
+    {/snippet}
+    {#snippet footer()}
+        <div class="footer-row">
+            <button type="button" class="btn btn-link text-muted dont-show-btn" onclick={dontShowAgain}>
+                Don't show again
+            </button>
+            <button type="button" class="btn btn-primary" onclick={dismiss}>OK</button>
+        </div>
+    {/snippet}
 </Modal>
 
 <style>
