@@ -86,6 +86,7 @@ export type RenderedFeature<T extends Geometry | null = Polygon | LineString | M
     min_height?: number;
     kind_detail?: 'yes' | 'no' | 'corridor';
     kind?: string;  // "building_part" for parts, undefined or other for non-parts
+    removedByCutout?: boolean;
   };
   layer?: {
     id: string;

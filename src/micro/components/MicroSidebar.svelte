@@ -3,7 +3,7 @@
     import { log } from 'src/util/log';
     import Accordions from "src/components/Accordions.svelte";
     import MicroLayerParams from "src/components/MicroLayerParams.svelte";
-    import { drawPrettyMap, generateCssFromState, initLayersState } from "src/micro/drawing";
+    import { cancelPendingCutout, drawPrettyMap, generateCssFromState, initLayersState } from "src/micro/drawing";
     import { helpParams, paramDefs, type MicroParams } from "src/params";
     import { appState, microState } from "src/state.svelte";
     import type {
@@ -220,6 +220,7 @@
         maplibreMap.on("movestart", (event) => {
             onMapMoveStart?.();
             cancelStitch();
+            cancelPendingCutout();
             select("#maplibre-map").style("opacity", 1);
             selectAll("#static-svg-map g, #static-svg-map rect").remove();
         });

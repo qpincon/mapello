@@ -28,6 +28,7 @@ import area from '@turf/area';
 import center from '@turf/center';
 import { transitionCssMicro } from 'src/svg/transition';
 import { removeNotRenderedElements } from './remove-not-rendered-canvas';
+import { yieldToMain } from '../util/polyfills';
 
 
 // Interfaces for building grouping
@@ -64,7 +65,98 @@ export function orderFeaturesByLayer(features: RenderedFeature[]): void {
         return rankA - rankB;
     });
 }
+// Layers whose polygons act as cutout sources: they sit visually on top of
+// water/grass/forest and should punch holes in those layers rather than simply
+// overlapping them.  This avoids a z-order artifact where the "under" layer
+// bleeds through the fill of the "over" layer when both use semi-transparent or
+// patterned styles.
 const BACKGROUND_LAYERS = ['landuse_pedestrian', 'landuse_pier'];
+// Layers that receive the cutouts.
+const CUTOUT_TARGET_LAYERS = ['water', 'grass', 'forest'];
+
+let cutoutProcessId = 0;
+let pendingCutout: Promise<void> | null = null;
+
+export function cancelPendingCutout(): void { cutoutProcessId += 1; }
+export function awaitPendingCutout(): Promise<void> { return pendingCutout ?? Promise.resolve(); }
+
+/**
+ * Schedules the cutout sweep to run asynchronously after the initial paint.
+ * For each feature in `mainFeatures` whose layer is in CUTOUT_TARGET_LAYERS,
+ * subtracts all geometrically-overlapping `cutoutFeatures` (BACKGROUND_LAYERS)
+ * from it. Yields to the main thread every 8 polygons so the browser stays
+ * responsive, and checks a cancellation token so a new draw can interrupt a
+ * stale run. On completion patches the `d` attribute of the affected <path>
+ * elements and removes any that vanished entirely.
+ */
+async function applyCutoutsDeferred(
+    svg: SvgSelection,
+    d3PathFunction: D3PathFunction,
+    mainFeatures: RenderedFeaturePoly[],
+    cutoutFeatures: RenderedFeaturePoly[],
+): Promise<void> {
+    if (cutoutFeatures.length === 0) return;
+    const myId = ++cutoutProcessId;
+    logTime('Cutout layers');
+    try {
+        const cutoutBboxes = cutoutFeatures.map(c => bbox(c));
+        let nbDifferenceCall = 0;
+        let yieldCounter = 0;
+
+        for (let i = mainFeatures.length - 1; i >= 0; i--) {
+            const f = mainFeatures[i];
+            if (!CUTOUT_TARGET_LAYERS.includes(f.properties.mapLayerId!)) continue;
+            const featureBbox = bbox(f);
+
+            const relevant: Feature<Polygon>[] = [];
+            for (let j = 0; j < cutoutFeatures.length; j++) {
+                if (bboxIntersects(featureBbox, cutoutBboxes[j])) {
+                    relevant.push(cutoutFeatures[j] as Feature<Polygon>);
+                }
+            }
+            if (relevant.length === 0) continue;
+
+            // One polyclip sweep per polygon: @turf/difference forwards
+            // variadic clips to polyclip.difference(subject, c1, c2, ...).
+            const diff = difference(featureCollection([
+                f as Feature<Polygon>,
+                ...relevant,
+            ]));
+            nbDifferenceCall += 1;
+            if (diff == null) {
+                f.properties.removedByCutout = true;
+            } else {
+                (f as Feature).geometry = diff.geometry;
+            }
+
+            if (++yieldCounter % 8 === 0) {
+                await yieldToMain();
+                if (myId !== cutoutProcessId) return;
+            }
+        }
+        log(nbDifferenceCall, 'difference calls');
+
+        // Patch the DOM: update d attribute or remove vanished paths.
+        const microGroup = svg.node()?.querySelector('#micro');
+        if (!microGroup) return;
+        microGroup.querySelectorAll<SVGPathElement>('path.water, path.grass, path.forest')
+            .forEach(el => {
+                const d = (el as any).__data__ as RenderedFeaturePoly | undefined;
+                if (!d) return;
+                if (d.properties.removedByCutout) {
+                    el.remove();
+                } else {
+                    const path = d3PathFunction(d.geometry);
+                    if (path) el.setAttribute('d', path);
+                    el.removeAttribute('mask');
+                }
+            });
+        svg.node()?.querySelector('#cutoutMask')?.remove();
+    } finally {
+        logTimeEnd('Cutout layers');
+        if (myId === cutoutProcessId) pendingCutout = null;
+    }
+}
 
 export async function drawPrettyMap(
     maplibreMap: MapLibreMap,
@@ -76,12 +168,9 @@ export async function drawPrettyMap(
     log('layerDefinitions=', layerDefinitions);
     select("#map-container").style("width", null).style('height', null);
     const mapLibreContainer = select('#maplibre-map');
-    const layersToQuery = [
-        ...MICRO_LAYERS.filter(layer => {
-            return layerDefinitions[kebabCase(layer) as MicroLayerId]?.active !== false;
-        }),
-        ...BACKGROUND_LAYERS,
-    ];
+    const layersToQuery = MICRO_LAYERS.filter(layer => {
+        return layerDefinitions[kebabCase(layer) as MicroLayerId]?.active !== false;
+    });
     updateSvgPatterns(svg.node() as SVGElement, layerDefinitions);
     const width = generalParams.General.width;
     const height = generalParams.General.height;
@@ -97,7 +186,6 @@ export async function drawPrettyMap(
             if (layer != null && layer < 0) return false;
             return true;
         });
-        // console.log('geometries=', geometries)
         // Process got interrupted, a new call to this function is coming soon
     logTimeEnd('getRenderedFeatures')
         if (geometries == null) return;
@@ -106,45 +194,29 @@ export async function drawPrettyMap(
     ) as RenderedFeaturePoly[];
     orderFeaturesByLayer(geometries2d);
 
-    // Separate water-cutout layers (punch holes in water instead of rendering on top)
-    const cutoutFeatures = geometries2d.filter(g => BACKGROUND_LAYERS.includes(g.properties.mapLayerId!));
-    const mainFeatures = geometries2d.filter(g => !BACKGROUND_LAYERS.includes(g.properties.mapLayerId!));
+    // Query background layer features separately so they are never mixed with MICRO_LAYERS
+    // inside getRenderedFeatures/stitchPolygons. Both can share the same computedId (same
+    // sourceLayer + class on the underlying OSM feature), which would cause one to overwrite
+    // the other's mapLayerId during the stitch union. Raw unstitched geometries are fine here
+    // because tile-boundary fragments still punch holes correctly.
+    const cutoutFeatures = maplibreMap.queryRenderedFeatures({ layers: BACKGROUND_LAYERS })
+        .filter(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon')
+        .map(f => ({ type: 'Feature' as const, id: f.id, properties: { ...f.properties, mapLayerId: f.layer.id }, geometry: f.geometry })) as RenderedFeaturePoly[];
+    const mainFeatures = geometries2d;
 
-    logTime('Cutout water');
-    let nbDifferenceCall = 0;
     if (cutoutFeatures.length > 0) {
-        const cutoutBboxes = cutoutFeatures.map(c => bbox(c));
-
-        for (let i = mainFeatures.length - 1; i >= 0; i--) {
-            const f = mainFeatures[i];
-            if (f.properties.mapLayerId !== 'water') continue;
-            const waterBbox = bbox(f);
-
-            const relevant: Feature<Polygon>[] = [];
-            for (let j = 0; j < cutoutFeatures.length; j++) {
-                if (bboxIntersects(waterBbox, cutoutBboxes[j])) {
-                    relevant.push(cutoutFeatures[j] as Feature<Polygon>);
-                }
-            }
-            if (relevant.length === 0) continue;
-
-            // One polyclip sweep per water polygon: @turf/difference forwards
-            // variadic clips to polyclip.difference(water, c1, c2, ...).
-            const diff = difference(featureCollection([
-                f as Feature<Polygon>,
-                ...relevant,
-            ]));
-            nbDifferenceCall += 1;
-            if (diff == null) {
-                mainFeatures.splice(i, 1);
-            } else {
-                (f as Feature).geometry = diff.geometry;
-            }
-        }
+        let defs = svg.select('defs');
+        if (defs.empty()) defs = svg.append('defs') as any;
+        const mask = defs.append('mask')
+            .attr('id', 'cutoutMask')
+            .attr('maskUnits', 'userSpaceOnUse');
+        mask.append('rect').attr('x', 0).attr('y', 0).attr('width', width).attr('height', height).attr('fill', 'white');
+        cutoutFeatures.forEach(f => {
+            const d = d3PathFunction(f.geometry);
+            if (d) mask.append('path').attr('d', d).attr('fill', 'black');
+        });
     }
-    logTimeEnd('Cutout water');
-    log(nbDifferenceCall, 'difference calls');
-    
+
     const borderWidth = generalParams.Border.borderWidth;
     const borderPadding = generalParams.Border.borderPadding;
     const borderRadius = generalParams.Border.borderRadius;
@@ -186,7 +258,12 @@ export async function drawPrettyMap(
             return classes.join(' ');
         })
         .attr("stroke-width", d => d.properties.paint!['line-width'] ?? null)
-        .attr("id", d => d.properties.uuid!);
+        .attr("id", d => d.properties.uuid!)
+        .attr("mask", d =>
+            cutoutFeatures.length > 0 && CUTOUT_TARGET_LAYERS.includes(d.properties.mapLayerId!)
+                ? 'url(#cutoutMask)'
+                : null
+        );
 
     const buildings = geometries.filter(geom => geom.properties.mapLayerId === "buildings") as RenderedFeaturePoly[];
     // console.log('buildings features=', featureCollection(buildings));
@@ -217,6 +294,7 @@ export async function drawPrettyMap(
         postClip(generalParams);
         if (buildingPaths.length > 0) removeNotRenderedElements(buildingPaths);
     }, 200);
+    pendingCutout = applyCutoutsDeferred(svg, d3PathFunction, mainFeatures, cutoutFeatures);
 }
 
 export function resizeMaplibreMap(generalParams: MicroParams, mapLibreMap: MapLibreMap): void {
@@ -801,6 +879,7 @@ export async function exportMicro(
     downloadExport: boolean = true,
     elementAnnotations?: ElementAnnotations,
 ): Promise<string | void> {
+    await awaitPendingCutout();
     const {
         exportFonts = exportFontChoices.convertToPath,
         animate = false,
