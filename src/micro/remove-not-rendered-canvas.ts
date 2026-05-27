@@ -35,10 +35,20 @@ function showDebugCanvas(canvas: OffscreenCanvas, svgRect: DOMRect) {
 	document.body.appendChild(visible);
 }
 
-export function removeNotRenderedElements(pathElements: SVGPathElement[], scale = 6, enableDebug = false) {
-	if (pathElements.length === 0) return 0;
+// lines and buildings are passed as separate arrays so the function can apply the
+// correct paint mode and removal filter per kind. Internally they are concatenated
+// in DOM order (lines from #micro first, then buildings from #buildings on top)
+// so that buildings occlude lines on the canvas exactly as they do on screen.
+export function removeNotRenderedElements(
+	lines: SVGPathElement[],
+	buildings: SVGPathElement[],
+	scale = 6,
+	enableDebug = false
+) {
+	if (lines.length + buildings.length === 0) return 0;
 
-	const svg = pathElements[0].ownerSVGElement;
+	const firstEl = lines[0] ?? buildings[0];
+	const svg = firstEl.ownerSVGElement;
 	if (!svg) return 0;
 
 	const svgRect = svg.getBoundingClientRect();
@@ -52,17 +62,19 @@ export function removeNotRenderedElements(pathElements: SVGPathElement[], scale 
 	const originX = svgRect.left;
 	const originY = svgRect.top;
 
+	// Combine in DOM order: lines (#micro) are below buildings (#buildings).
+	type Tagged = { el: SVGPathElement; kind: 'line' | 'building' };
+	const all: Tagged[] = [
+		...lines.map(el => ({ el, kind: 'line' as const })),
+		...buildings.map(el => ({ el, kind: 'building' as const })),
+	];
+
 	// Assign a random color to each element and paint in DOM order (painter's algorithm).
 	// Elements painted later overwrite earlier ones, so an occluded element's color
 	// will have zero (or very few) pixels remaining after all elements are drawn.
-	const colors = new Uint8Array(pathElements.length * 3);
-	for (let idx = 0; idx < pathElements.length; idx++) {
-		const [r, g, b] = randomColor();
-		colors[idx * 3] = r;
-		colors[idx * 3 + 1] = g;
-		colors[idx * 3 + 2] = b;
-
-		const el = pathElements[idx];
+	const colors = new Uint8Array(all.length * 3);
+	for (let idx = 0; idx < all.length; idx++) {
+		const { el, kind } = all[idx];
 		const d = el.getAttribute("d");
 		if (!d) continue;
 
@@ -73,13 +85,31 @@ export function removeNotRenderedElements(pathElements: SVGPathElement[], scale 
 		const ctm = el.getScreenCTM();
 		if (!ctm) continue;
 
+		const [r, g, b] = randomColor();
+		colors[idx * 3] = r;
+		colors[idx * 3 + 1] = g;
+		colors[idx * 3 + 2] = b;
+
 		ctx.setTransform(
 			ctm.a * scale, ctm.b * scale,
 			ctm.c * scale, ctm.d * scale,
 			(ctm.e - originX) * scale, (ctm.f - originY) * scale,
 		);
-		ctx.fillStyle = `rgb(${r},${g},${b})`;
-		ctx.fill(new Path2D(d));
+
+		if (kind === 'line') {
+			const stroke = style.stroke;
+			if (!stroke || stroke === 'none') continue;
+			const swRaw = parseFloat(style.strokeWidth) || parseFloat(el.getAttribute("stroke-width") ?? "") || 1;
+			if (swRaw <= 0) continue;
+			ctx.strokeStyle = `rgb(${r},${g},${b})`;
+			ctx.lineWidth = swRaw;
+			ctx.lineCap = 'round';
+			ctx.lineJoin = 'round';
+			ctx.stroke(new Path2D(d));
+		} else {
+			ctx.fillStyle = `rgb(${r},${g},${b})`;
+			ctx.fill(new Path2D(d));
+		}
 	}
 
 	// Count how many canvas pixels each color occupies in a single pass.
@@ -95,13 +125,12 @@ export function removeNotRenderedElements(pathElements: SVGPathElement[], scale 
 
 	if (enableDebug) showDebugCanvas(canvas, svgRect);
 
-	// Remove quads whose color has fewer than PIXEL_THRESHOLD pixels on the canvas,
-	// meaning they are fully (or almost fully) occluded by elements drawn on top.
-	// Non-quads (roofs, polygons with more or fewer than 4 vertices) are always kept.
 	const toRemove: SVGPathElement[] = [];
+	let removedLines = 0;
+	let removedBuildings = 0;
 
-	for (let idx = 0; idx < pathElements.length; idx++) {
-		const el = pathElements[idx];
+	for (let idx = 0; idx < all.length; idx++) {
+		const { el, kind } = all[idx];
 		const d = el.getAttribute("d");
 		if (!d) {
 			toRemove.push(el);
@@ -114,18 +143,21 @@ export function removeNotRenderedElements(pathElements: SVGPathElement[], scale 
 			continue;
 		}
 
-		if (countMAndL(d) !== 4) continue; // not a quad, keep it
+		if (kind === 'building' && countMAndL(d) !== 4) continue; // not a quad, keep it
 
 		const key = (colors[idx * 3] << 16) | (colors[idx * 3 + 1] << 8) | colors[idx * 3 + 2];
+		// An element whose color was never painted (e.g. no-stroke line) has key 0 in colors array → skip.
+		if (key === 0) continue;
 		const count = colorCounts.get(key) ?? 0;
 
 		if (count < PIXEL_THRESHOLD) {
-			if (enableDebug) log(`removing quad idx=${idx}, color=[${colors[idx * 3]},${colors[idx * 3 + 1]},${colors[idx * 3 + 2]}], pixels=${count}`);
+			if (enableDebug) log(`removing ${kind} idx=${idx}, color=[${colors[idx * 3]},${colors[idx * 3 + 1]},${colors[idx * 3 + 2]}], pixels=${count}`);
 			toRemove.push(el);
+			if (kind === 'line') removedLines++; else removedBuildings++;
 		}
 	}
 
-	log(`removing ${toRemove.length} not rendered elements`);
+	log(`removing ${toRemove.length} not rendered elements (lines: ${removedLines}, buildings: ${removedBuildings})`);
 	for (const el of toRemove) el.remove();
 	logTimeEnd('Remove not rendered elements');
 	return toRemove.length;
