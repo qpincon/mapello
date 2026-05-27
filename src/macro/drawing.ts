@@ -313,7 +313,7 @@ export function projectAndDraw(svg: SvgSelection, simplified = false): void {
     drawMacroBase(svg, simplified);
 }
 
-export function handleChangeProp(event: CustomEvent<{ prop: string; value: unknown }> | string, drawSimplifyThenReal: () => void): void {
+export function handleChangeProp(event: CustomEvent<{ prop: string; value: unknown }> | string, drawSimplifyThenReal?: () => void): void {
     log('handleChangeProp', event)
     let prop: string;
     let value: unknown;
@@ -354,5 +354,5 @@ export function handleChangeProp(event: CustomEvent<{ prop: string; value: unkno
     }
     changeProjection();
     updateLayerSimplification();
-    drawSimplifyThenReal();
+    if (drawSimplifyThenReal) drawSimplifyThenReal();
 }

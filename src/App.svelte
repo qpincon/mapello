@@ -66,9 +66,10 @@
     import { addElementAnnotationListener } from "./tooltip";
     import { showElementPopover, hidePopover, getActivePopoverId, setupPopoverCursors } from "./popover";
     import { Dropdown } from "bootstrap";
-    import { applyInlineStyles, changeProjection } from "./macro/drawing";
+    import { applyInlineStyles, changeProjection, handleChangeProp } from "./macro/drawing";
     import { updateLayerSimplification } from "./macro/geometry-data";
     import MacroSidebar from "./macro/components/MacroSidebar.svelte";
+    import ResizeHandles from "./components/ResizeHandles.svelte";
     import { appState, commonState, macroState, microState } from "./state.svelte";
     import { icons } from "./shared/icons";
     import { defaultState } from "./stateDefaults";
@@ -549,7 +550,6 @@
         hidePopover();
         clearSelection();
         log("draw", simplified);
-        console.trace('draw');
         const container = select("#map-container");
         container.html("");
         svg = container.select("svg") as unknown as SvgSelection;
@@ -626,6 +626,20 @@
             setTimeout(() => postClipSimple(), 100);
         }
         isDrawing = false;
+    }
+
+    function onSvgResize(w: number, h: number) {
+        if (commonState.currentMode === "macro") {
+            macroState.macroParams.General.width = w;
+            macroState.macroParams.General.height = h;
+            handleChangeProp(
+                new CustomEvent("change", { detail: { prop: "width", value: w } }),
+            );
+        } else {
+            microState.microParams.General.width = w;
+            microState.microParams.General.height = h;
+        }
+        draw();
     }
 
     async function applyState(state: GlobalState): Promise<void> {
@@ -2136,6 +2150,7 @@
             <div id="map-content" style="position: relative;">
                 <div id="map-container" class="col mx-4"></div>
                 <div id="maplibre-map"></div>
+                <ResizeHandles onResize={onSvgResize} />
             </div>
             {#if commonState.currentMode === "micro"}
                 <div class="ms-auto me-4 mt-2">
