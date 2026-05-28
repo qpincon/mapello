@@ -1,6 +1,11 @@
 <svelte:head>
   <title>Privacy Policy — Mapello</title>
   <meta name="description" content="Mapello privacy policy — what data we collect, how we use it, and your rights." />
+  <link rel="canonical" href="https://mapello.net/privacy" />
+  <meta property="og:title" content="Privacy Policy — Mapello" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mapello.net/privacy" />
+  <meta name="robots" content="noindex" />
   <link rel="preconnect" href="https://fonts.bunny.net" />
   <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
   <link href="https://fonts.bunny.net/css?family=cormorant-garamond:400,400i,600,600i&display=swap" rel="stylesheet" />

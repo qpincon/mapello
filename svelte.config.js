@@ -6,10 +6,6 @@ export default {
   kit: {
     adapter: adapter(),
 
-    files: {
-      assets: 'public',
-    },
-
     alias: {
       src: './src',
     },

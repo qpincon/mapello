@@ -196,13 +196,36 @@
     name="description"
     content="Design beautiful, interactive maps and export them as a single file you can drop into any website — no coding required."
   />
+  <link rel="canonical" href="https://mapello.net/" />
+
   <meta property="og:title" content="Mapello — SVG Map Designer" />
   <meta
     property="og:description"
     content="Design beautiful maps and embed them anywhere with a simple copy-paste."
   />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="/og-cover.png" />
+  <meta property="og:url" content="https://mapello.net/" />
+  <meta property="og:image" content="https://mapello.net/og-cover.png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Mapello — SVG Map Designer" />
+  <meta
+    name="twitter:description"
+    content="Design beautiful maps and embed them anywhere with a simple copy-paste."
+  />
+  <meta name="twitter:image" content="https://mapello.net/og-cover.png" />
+
+  {@html `<script type="application/ld+json">${JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "Mapello",
+    url: "https://mapello.net",
+    description: "Design beautiful, interactive maps and export them as a single file you can drop into any website — no coding required.",
+    applicationCategory: "DesignApplication",
+    operatingSystem: "Web",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  })}</script>`}
+
   <link rel="preconnect" href="https://fonts.bunny.net" />
   <link
     href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800&display=swap"

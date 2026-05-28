@@ -1,6 +1,14 @@
 <svelte:head>
   <title>Contact — Mapello</title>
   <meta name="description" content="Get in touch with the Mapello team." />
+  <link rel="canonical" href="https://mapello.net/contact" />
+  <meta property="og:title" content="Contact — Mapello" />
+  <meta property="og:description" content="Get in touch with the Mapello team." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mapello.net/contact" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Contact — Mapello" />
+  <meta name="twitter:description" content="Get in touch with the Mapello team." />
   <link rel="preconnect" href="https://fonts.bunny.net" />
   <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
   <link href="https://fonts.bunny.net/css?family=cormorant-garamond:400,400i,600,600i&display=swap" rel="stylesheet" />

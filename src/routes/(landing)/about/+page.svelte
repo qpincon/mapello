@@ -1,6 +1,14 @@
 <svelte:head>
   <title>About — Mapello</title>
   <meta name="description" content="Mapello is a browser-based SVG map designer built to make beautiful, embeddable maps accessible to everyone." />
+  <link rel="canonical" href="https://mapello.net/about" />
+  <meta property="og:title" content="About — Mapello" />
+  <meta property="og:description" content="Mapello is a browser-based SVG map designer built to make beautiful, embeddable maps accessible to everyone." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mapello.net/about" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="About — Mapello" />
+  <meta name="twitter:description" content="Mapello is a browser-based SVG map designer built to make beautiful, embeddable maps accessible to everyone." />
   <link rel="preconnect" href="https://fonts.bunny.net" />
   <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
   <link href="https://fonts.bunny.net/css?family=cormorant-garamond:400,400i,600,600i&display=swap" rel="stylesheet" />

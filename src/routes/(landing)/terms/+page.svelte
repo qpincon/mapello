@@ -1,6 +1,11 @@
 <svelte:head>
   <title>Terms of Service — Mapello</title>
   <meta name="description" content="Mapello terms of service." />
+  <link rel="canonical" href="https://mapello.net/terms" />
+  <meta property="og:title" content="Terms of Service — Mapello" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mapello.net/terms" />
+  <meta name="robots" content="noindex" />
   <link rel="preconnect" href="https://fonts.bunny.net" />
   <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
   <link href="https://fonts.bunny.net/css?family=cormorant-garamond:400,400i,600,600i&display=swap" rel="stylesheet" />
