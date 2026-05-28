@@ -768,7 +768,7 @@
       <div class="hero-trust lp-reveal">
         <span>Free to start</span>
         <span class="trust-dot">·</span>
-        <span>Works forever</span>
+        <span>Exports work forever</span>
       </div>
     </div>
   </div>
@@ -2181,7 +2181,7 @@
       <h2>Your first 3 maps are on us.</h2>
       <p>Open the editor and begin.<br /><em>No account needed.</em></p>
       <a href="/app" class="btn-primary btn-large">Start designing</a>
-      <span class="cta-note">Free · Works forever</span>
+      <span class="cta-note">Free · Exports work forever</span>
     </div>
   </div>
 </section>
@@ -2206,10 +2206,10 @@
     </div>
     <div class="footer-links-col">
       <span class="footer-col-title">Company</span>
-      <a href="#">About</a>
-      <a href="#">Privacy</a>
-      <a href="#">Terms</a>
-      <a href="#">Contact</a>
+      <a href="/about">About</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/contact">Contact</a>
     </div>
   </div>
   <div class="l-container footer-bottom">

@@ -56,7 +56,8 @@ function ndcToScreen(ndc: { x: number; y: number }, width: number, height: numbe
  * Project a lng/lat/height into screen and NDC coordinates.
  */
 export function projectWithHeightUsingMainMatrix(
-    map: MapLibreMap,
+    canvasWidth: number,
+    canvasHeight: number,
     mainMatrix: number[],
     lng: number,
     lat: number,
@@ -66,8 +67,7 @@ export function projectWithHeightUsingMainMatrix(
     const merc = MercatorCoordinate.fromLngLat([lng, lat], heightMeters);
     const clip = applyMatrixToMerc(mainMatrix, merc);
     const ndc = clipToNDC(clip);
-    const canvas = map.getCanvas();
-    const screen = ndcToScreen(ndc, canvas.clientWidth, canvas.clientHeight, offset);
+    const screen = ndcToScreen(ndc, canvasWidth, canvasHeight, offset);
 
     return {
         screen,
@@ -143,7 +143,8 @@ function createPolygonPathWithHoles(
  */
 function renderExtrudedBuildingImproved(
     feature: RenderedFeaturePoly,
-    map: MapLibreMap,
+    canvasWidth: number,
+    canvasHeight: number,
     mainMatrix: number[],
     defaultHeight: number = MIN_BUILDING_HEIGHT,
     offset: number = 0
@@ -170,13 +171,13 @@ function renderExtrudedBuildingImproved(
     // Project all rings (outer + holes) for bottom and top
     const projectedBottomRings = allRings.map(ring =>
         ring.map(([lng, lat]) =>
-            projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, baseHeight, offset)
+            projectWithHeightUsingMainMatrix(canvasWidth, canvasHeight, mainMatrix, lng, lat, baseHeight, offset)
         )
     );
 
     const projectedTopRings = allRings.map(ring =>
         ring.map(([lng, lat]) =>
-            projectWithHeightUsingMainMatrix(map, mainMatrix, lng, lat, heightMeters, offset)
+            projectWithHeightUsingMainMatrix(canvasWidth, canvasHeight, mainMatrix, lng, lat, heightMeters, offset)
         )
     );
 
@@ -267,12 +268,15 @@ export function renderBuildingsToSvgImproved(
     animated: boolean = false,
 ) {
     nbCulled = 0;
-    const svgContainer = svg.append('g')
-        .attr('id', 'buildings')
-        .attr("clip-path", "url(#clipMapBorder)")
-        .node()!;
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const svgContainer = document.createElementNS(SVG_NS, 'g');
+    svgContainer.setAttribute('id', 'buildings');
+    svgContainer.setAttribute('clip-path', 'url(#clipMapBorder)');
 
     const mainMatrix = map.transform.getProjectionDataForCustomLayer(false).mainMatrix as number[];
+    const canvas = map.getCanvas();
+    const canvasWidth = canvas.clientWidth;
+    const canvasHeight = canvas.clientHeight;
 
     // Structure to hold all elements from all buildings with their depths
     type ElementWithDepth = {
@@ -302,7 +306,8 @@ export function renderBuildingsToSvgImproved(
                 // Process main feature
                 const mainResult = renderExtrudedBuildingImproved(
                     feature,
-                    map,
+                    canvasWidth,
+                    canvasHeight,
                     mainMatrix,
                     layerState.defaultBuildingHeight ?? MIN_BUILDING_HEIGHT,
                     translateAmount
@@ -335,7 +340,8 @@ export function renderBuildingsToSvgImproved(
                 for (const part of groupedFeature.parts) {
                     const partResult = renderExtrudedBuildingImproved(
                         part,
-                        map,
+                        canvasWidth,
+                        canvasHeight,
                         mainMatrix,
                         layerState.defaultBuildingHeight ?? MIN_BUILDING_HEIGHT,
                         translateAmount
@@ -395,9 +401,6 @@ export function renderBuildingsToSvgImproved(
         (a, b) => buildingMinVertexDepths.get(b)! - buildingMinVertexDepths.get(a)!
     );
 
-    // Create groups and append elements in building-sorted order
-    const SVG_NS = 'http://www.w3.org/2000/svg';
-
     for (const buildingId of sortedBuildingIds) {
         const elements = buildingGroups.get(buildingId)!;
 
@@ -418,5 +421,6 @@ export function renderBuildingsToSvgImproved(
 
         svgContainer.appendChild(g);
     }
+    svg.node()!.appendChild(svgContainer);
     log('Elements culled:', nbCulled);
 }
