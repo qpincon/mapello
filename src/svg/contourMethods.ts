@@ -1,7 +1,6 @@
-import svgoConfig from '../svgoExport.config';
 import { select } from 'd3-selection'
 import { duplicateContourCleanFirst } from './svg';
-import { appendGlow } from './svgDefs';
+import { appendGlow, glowFilterId } from './svgDefs';
 import type { ContourParams, D3Selection, InlineStyles, SvgSelection } from 'src/types';
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from 'geojson';
 import type { GlowParams } from 'src/params';
@@ -47,9 +46,9 @@ export function imageFromSpecialGElem(gElem: SVGGElement) {
 }
 export const imageFromSpecialGElemStr = imageFromSpecialGElem.toString();
 
-export function appendLandImageNew(this: SVGGElement, showSource: boolean, zonesFilter: { [id: string]: string },
+export function appendLandImageNew(this: SVGGElement, showSource: boolean,
     width: number, height: number, borderWidth: number, contourParams: ContourParams, land: FeatureCollection<Polygon> | Polygon,
-    pathLarger: GeoPath, glowParams: GlowParams, animate: boolean) {
+    pathLarger: GeoPath, glowParams: GlowParams | undefined, animate: boolean) {
     // for not having glow effect on sides of view where there is land
     const offCanvasWithBorder = 20 - (borderWidth / 2);
     select(this).attr('id', 'land')
@@ -79,10 +78,10 @@ export function appendLandImageNew(this: SVGGElement, showSource: boolean, zones
             .attr('pathLength', 1)
             // @ts-expect-error
             .attr('d', (d) => { return pathLarger(d) });
-        let filterName = zonesFilter['land'];
-        if (filterName) {
+        if (glowParams) {
+            let filterName = glowFilterId('land');
             if (showSource) {
-                filterName = `${zonesFilter['land']}-with-source`;
+                filterName = `${glowFilterId('land')}-with-source`;
                 appendGlow(select('#static-svg-map') as unknown as SvgSelection, filterName, showSource, glowParams);
             }
             gElem.attr('image-filter-name', filterName);

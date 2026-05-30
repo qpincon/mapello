@@ -4,7 +4,7 @@ import { select } from "d3-selection";
 import { geoGraticule, geoPath } from "d3-geo";
 import { GEO_META_KEYS, geometriesState, initializeAdms, resolvedAdmGeometry, updateLayerSimplification } from "./geometry-data";
 import type { FrameSelection, MacroGroupData, SvgSelection } from "src/types";
-import { appendBgPattern, appendClip, appendGlow } from "src/svg/svgDefs";
+import { appendBgPattern, appendClip, appendGlow, glowFilterId } from "src/svg/svgDefs";
 import type { MultiLineString } from "geojson";
 import { appendCountryImageNew, appendLandImageNew } from "src/svg/contourMethods";
 import { getNumericCols, sortBy } from "src/util/common";
@@ -63,9 +63,8 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     container.style("width", `${width}px`).style("height", `${height}px`);
 
     const groupData: MacroGroupData[] = [];
-    Object.values(macroState.zonesFilter).forEach((filterName) => {
-        if (!filterName) return;
-        appendGlow(svg, filterName, false, macroState.macroParams[filterName as 'firstGlow' | 'secondGlow']);
+    Object.entries(macroState.zonesGlow).forEach(([layer, glowParams]) => {
+        appendGlow(svg, glowFilterId(layer), false, glowParams);
     });
     mapLibreContainer.style("display", "none");
     container.style("display", "block");
@@ -125,7 +124,7 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
         filter: null,
     });
     computedOrderedTabs.forEach((layer, i) => {
-        const filter = macroState.zonesFilter[layer] ?? null;
+        const filter = macroState.zonesGlow[layer] ? glowFilterId(layer) : null;
         if (layer === "countries" && macroState.inlinePropsMacro.showCountries && geometriesState.countries) {
             if (!("countries" in macroState.zonesData) && !macroState.zonesData["countries"]?.provided) {
                 const countryProps = geometriesState.countries.features.map((f) => {
@@ -198,14 +197,13 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
             return appendLandImageNew.call(
                 this,
                 data.showSource ?? false,
-                macroState.zonesFilter,
                 width,
                 height,
                 borderWidth,
                 macroState.contourParams,
                 geometriesState.land,
                 appState.pathLarger!,
-                macroState.macroParams[macroState.zonesFilter["land"] as 'firstGlow' | 'secondGlow'],
+                macroState.zonesGlow["land"],
                 false,
             );
         if (data.type === "filterImg")

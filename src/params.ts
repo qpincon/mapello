@@ -38,8 +38,6 @@ export interface MacroParams {
     General: MacroGeneralParams;
     Border: MacroBorderParams;
     Background: MacroBackgroundParams;
-    firstGlow: GlowParams;
-    secondGlow: GlowParams;
 }
 
 export interface MicroGeneralParams {
@@ -98,7 +96,6 @@ export const paramDefs: ParamDefinitions = {
     borderRadius: { type: 'range', min: 0, max: 50, step: 0.5 },
     borderWidth: { type: 'range', min: 0, max: 10, step: 0.2 },
     borderPadding: { type: 'range', min: 0, max: 30 },
-    filter: { type: 'select', choices: ['none', 'firstGlow', 'secondGlow'] },
     projection: { type: 'select', choices: ['satellite', 'mercator', 'equalEarth', 'geoNaturalEarth', 'geoAlbersUsa', 'geoBaker'] }
 };
 
@@ -116,14 +113,11 @@ export const noSatelliteParams: OtherParams = {
         rename: 'scale',
     }
 };
-export type ParamKey = Prettify<keyof Flatten<MacroParams> | keyof MacroParams>;
+export type ParamKey = Prettify<keyof Flatten<MacroParams> | keyof MacroParams | keyof GlowParams>;
 export type HelpParams = Partial<Record<ParamKey, string>>;
-const glowHelpGeneral = `The glow effect is used by default on the "land" layer. You can tweak the parameters on how the inner and outer effect are achieved.`;
 const blurHelp = "The quantity of blur applied on the glow.";
 const strengthHelp = "The thickness of the glow effect.";
 export const helpParams: HelpParams = {
-    firstGlow: glowHelpGeneral,
-    secondGlow: glowHelpGeneral,
     innerBlur: blurHelp,
     innerStrength: strengthHelp,
     showGraticule: "A graticule is the grid of latitude and longitude lines overlaid on the map.",

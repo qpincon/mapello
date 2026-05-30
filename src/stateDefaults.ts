@@ -1,5 +1,5 @@
 import { initLayersState } from "./micro/drawing";
-import type { MacroParams, MicroParams } from "./params";
+import type { GlowParams, MacroParams, MicroParams } from "./params";
 import type { InlinePropsMacro, InlinePropsMicro, LegendDef, ColorDef, ContourParams, GlobalState, Color } from "./types";
 import { playful } from './micro/microPalettes'
 import defaultBaseCssMacro from "./assets/pagestyleMacro.css?raw";
@@ -23,19 +23,6 @@ const defaultMacroParams: MacroParams = {
         graticuleWidth: 0.5,
         seaColor: "#dde2eeff",
         backgroundNoise: true,
-    },
-
-    firstGlow: {
-        innerStrength: 0.3,
-        innerBlur: 4.8,
-        innerColor: "#ffbc6eff",
-        outerBlur: 3.5,
-        outerStrength: 0.2,
-        outerColor: "#ffffffff"
-    },
-    secondGlow: {
-        innerStrength: 1.5, innerBlur: 0.2, innerColor: "#ffffff",
-        outerBlur: 3, outerStrength: 0.1, outerColor: '#2d2626ff',
     },
 };
 
@@ -71,7 +58,16 @@ const defaultInlinePropsMicro: InlinePropsMicro = {
     bearing: 0,
 };
 
-const defaultZonesFilter: Record<string, string> = { land: "firstGlow" };
+export const defaultGlowParams: GlowParams = {
+    innerStrength: 0.3,
+    innerBlur: 4.8,
+    innerColor: "#ffbc6eff",
+    outerBlur: 3.5,
+    outerStrength: 0.2,
+    outerColor: "#ffffffff",
+};
+
+const defaultZonesGlow: Record<string, GlowParams> = { land: { ...defaultGlowParams } };
 
 const defaultLastUsedLabelProps: Record<string, string> = { "font-size": "14px" };
 
@@ -149,7 +145,7 @@ export const defaultState: GlobalState = {
         inlinePropsMacro: defaultInlinePropsMacro,
         chosenCountriesAdm: [],
         zonesData: {},
-        zonesFilter: defaultZonesFilter,
+        zonesGlow: defaultZonesGlow,
         contourParams: defaultContourParams,
         colorDataDefs: { countries: defaultColorDef },
         legendDefs: { "countries": defaultLegendDef },

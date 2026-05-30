@@ -1,5 +1,5 @@
 import type { DataType } from 'csstype';
-import type { MacroParams, MicroBorderParams, MicroParams } from './params';
+import type { GlowParams, MacroParams, MicroBorderParams, MicroParams } from './params';
 import * as markers from './svg/markerDefs';
 import * as shapes from './svg/shapeDefs';
 import type { Feature, FeatureCollection, Geometry, MultiLineString, Polygon } from 'geojson';
@@ -277,7 +277,7 @@ export interface StateMacro {
     orderedTabs: string[];
     chosenCountriesAdm: string[];
     zonesData: ZonesData;
-    zonesFilter: Record<string, string>;
+    zonesGlow: Record<string, GlowParams>;
     // Use for land contour
     contourParams: ContourParams;
     // TODO: check what this is actually

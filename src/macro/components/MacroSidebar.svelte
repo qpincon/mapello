@@ -31,7 +31,9 @@
     } from "src/types";
     import { color as d3Color } from "d3-color";
     import { formatLocale } from "d3-format";
-    import { paramDefs } from "../../params";
+    import { paramDefs, type RangeDefinition } from "../../params";
+
+    const glowRange = (key: string) => paramDefs[key] as RangeDefinition;
 
     import { saveState } from "src/util/save";
     import DataManager from "./DataManager.svelte";
@@ -55,6 +57,8 @@
     import dataExplanation from "../../assets/dataColor.svg";
     import { applyInlineStyles, drawMacroBase, handleChangeProp, projectAndDraw } from "../drawing";
     import { appendCountryImageNew } from "src/svg/contourMethods";
+    import { glowFilterId } from "src/svg/svgDefs";
+    import { defaultGlowParams } from "src/stateDefaults";
     import { dragged, updateVisibleAreaScale, zoomed } from "../interactions";
     import Modal from "src/components/Modal.svelte";
     import PaletteEditor from "src/components/PaletteEditor.svelte";
@@ -215,7 +219,7 @@
         ) {
             computedOrderedTabs.forEach((tab) => {
                 if (tab.substring(0, tab.length - 5) !== elemId) return;
-                const filter = macroState.zonesFilter[tab];
+                const filter = macroState.zonesGlow[tab] ? glowFilterId(tab) : null;
                 const countryData = geometriesState.countries.features.find(
                     (country) => country.properties?.name === elemId,
                 )!;
@@ -309,6 +313,7 @@
         delete macroState.legendDefs[country];
         delete macroState.colorDataDefs[country];
         delete macroState.zonesData[country];
+        delete macroState.zonesGlow[country];
         if (drawAfter) draw();
     }
 
@@ -740,29 +745,6 @@
                 </li>
             </ul>
             <div class="p-2">
-                {#if currentMacroLayerTab !== "countries"}
-                    <div class="d-flex m-1 align-items-center">
-                        <div class="form-floating flex-grow-1">
-                            <select
-                                id="choseFilter"
-                                class="form-select form-select-sm"
-                                bind:value={macroState.zonesFilter[currentMacroLayerTab]}
-                                onchange={() => draw()}
-                            >
-                                <option value={null}> None </option>
-                                <option value="firstGlow"> First glow </option>
-                                <option value="secondGlow"> Second glow </option>
-                            </select>
-                            <label for="choseFilter">Glow filter</label>
-                        </div>
-                        <span
-                            class="help-tooltip"
-                            data-bs-toggle="tooltip"
-                            data-bs-title="Two filters are available, that are customizable in the 'General' panel (first / second glow sections)."
-                            >?</span
-                        >
-                    </div>
-                {/if}
                 {#if currentMacroLayerTab === "land"}
                     <div>
                         <div class="field">
@@ -1067,6 +1049,66 @@
                         <label for="choseFormatLocale">Number formatting language</label>
                     </div>
                 {/if}
+                {#if currentMacroLayerTab !== "countries"}
+                    <div class="mx-2 form-check form-switch mt-2">
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            role="switch"
+                            id="glowToggle"
+                            checked={currentMacroLayerTab in macroState.zonesGlow}
+                            onchange={(e) => {
+                                if ((e.target as HTMLInputElement).checked) {
+                                    macroState.zonesGlow[currentMacroLayerTab] = { ...defaultGlowParams };
+                                } else {
+                                    delete macroState.zonesGlow[currentMacroLayerTab];
+                                }
+                                draw();
+                            }}
+                        />
+                        <label class="form-check-label" for="glowToggle">Glow</label>
+                    </div>
+                    {#if currentMacroLayerTab in macroState.zonesGlow}
+                        <div class="mx-2 mt-1">
+                            <p class="glow-section-label">Inner</p>
+                            <div class="field">
+                                <RangeInput id="ge-inner-blur" title="Blur"
+                                    bind:value={macroState.zonesGlow[currentMacroLayerTab].innerBlur}
+                                    min={glowRange("innerBlur").min} max={glowRange("innerBlur").max} step={glowRange("innerBlur").step ?? 1}
+                                    onChange={() => drawDebounced()} />
+                            </div>
+                            <div class="field">
+                                <RangeInput id="ge-inner-strength" title="Strength"
+                                    bind:value={macroState.zonesGlow[currentMacroLayerTab].innerStrength}
+                                    min={glowRange("innerStrength").min} max={glowRange("innerStrength").max} step={glowRange("innerStrength").step ?? 1}
+                                    onChange={() => drawDebounced()} />
+                            </div>
+                            <div class="field">
+                                <ColorPickerPreview id="ge-inner-color" title="Color" popup="right"
+                                    value={macroState.zonesGlow[currentMacroLayerTab].innerColor}
+                                    onChange={(c) => { macroState.zonesGlow[currentMacroLayerTab].innerColor = c; drawDebounced(); }} />
+                            </div>
+                            <p class="glow-section-label mt-2">Outer</p>
+                            <div class="field">
+                                <RangeInput id="ge-outer-blur" title="Blur"
+                                    bind:value={macroState.zonesGlow[currentMacroLayerTab].outerBlur}
+                                    min={glowRange("outerBlur").min} max={glowRange("outerBlur").max} step={glowRange("outerBlur").step ?? 1}
+                                    onChange={() => drawDebounced()} />
+                            </div>
+                            <div class="field">
+                                <RangeInput id="ge-outer-strength" title="Strength"
+                                    bind:value={macroState.zonesGlow[currentMacroLayerTab].outerStrength}
+                                    min={glowRange("outerStrength").min} max={glowRange("outerStrength").max} step={glowRange("outerStrength").step ?? 1}
+                                    onChange={() => drawDebounced()} />
+                            </div>
+                            <div class="field">
+                                <ColorPickerPreview id="ge-outer-color" title="Color" popup="right"
+                                    value={macroState.zonesGlow[currentMacroLayerTab].outerColor}
+                                    onChange={(c) => { macroState.zonesGlow[currentMacroLayerTab].outerColor = c; drawDebounced(); }} />
+                            </div>
+                        </div>
+                    {/if}
+                {/if}
             </div>
         </div>
     {/if}
@@ -1128,6 +1170,15 @@
 
     .layers {
         background-color: white;
+    }
+
+    .glow-section-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #506784;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 2px;
     }
 
 </style>

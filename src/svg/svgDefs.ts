@@ -5,6 +5,9 @@ import type {Color, DefsSelection, SvgSelection} from '../types';
 import type { GlowParams } from "src/params";
 // import plaid from '../assets/img/plaid.jpg';
 
+/** Returns the SVG filter element id for a given layer name (sanitized to be a valid XML/CSS id) */
+export const glowFilterId = (layer: string) => `glow-${layer.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
 export function appendGlow(selection: SvgSelection, id = "glows", displaySource = false,
     {
         innerBlur, innerStrength, innerColor,

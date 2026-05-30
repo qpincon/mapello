@@ -34,6 +34,7 @@
     import Icon from "./components/Icon.svelte";
     import { exportStyleSheet, getUsedInlineFonts, fontsToCss, applyStyles } from "./util/dom";
     import { getState, saveState, registerServerSync, saveProjectToServer } from "./util/save";
+    import { defaultGlowParams } from "./stateDefaults";
     import { undo, redo, setRestoring, clearHistory } from "./util/history";
     import { type ExportOptions } from "./svg/export";
     import ExportModal from "./components/ExportModal.svelte";
@@ -639,6 +640,17 @@
         macroSidebar?.resetTabSelection();
         try {
             Object.assign(commonState, state.stateCommon);
+            // Migration: states saved before per-layer glow used zonesFilter (string) + macroParams.firstGlow/secondGlow
+            if (state.stateMacro && !state.stateMacro.zonesGlow && (state.stateMacro as any).zonesFilter) {
+                const oldFilter: Record<string, string> = (state.stateMacro as any).zonesFilter;
+                const oldParams: Record<string, any> = (state.stateMacro as any).macroParams ?? {};
+                state.stateMacro.zonesGlow = Object.fromEntries(
+                    Object.entries(oldFilter).map(([layer, presetName]) => [
+                        layer,
+                        { ...defaultGlowParams, ...(oldParams[presetName] ?? {}) },
+                    ])
+                );
+            }
             Object.assign(macroState, state.stateMacro.macroParams ? state.stateMacro : defaultState.stateMacro);
             if (!macroState.baseCss) macroState.baseCss = defaultState.stateMacro.baseCss;
             Object.assign(microState, state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro);
