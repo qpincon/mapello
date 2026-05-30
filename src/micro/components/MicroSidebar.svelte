@@ -15,7 +15,7 @@
         SvgSelection,
     } from "src/types";
     import * as _microPalettes from "../microPalettes";
-    import { onMicroParamChange, replaceCssSheetContent, syncLayerStateWithCss, updateSvgPatterns } from "../change";
+    import { onMicroParamChange, replaceCssSheetContent, updateSvgPatterns } from "../change";
     import { saveState } from "src/util/save";
     import { exportStyleSheet } from "src/util/dom";
     import { addProtocol, Map, Point, type StyleSpecification } from "maplibre-gl";
@@ -131,9 +131,6 @@
         if (eventType === "inline" && target.hasAttribute("id")) {
             handleInlineStyleChange(elemId, target, cssProp, value);
         }
-        const layerDefChanged = syncLayerStateWithCss(eventType, cssProp, value, microState.microLayerDefinitions);
-        if (layerDefChanged) microState.microLayerDefinitions = microState.microLayerDefinitions;
-        microState.baseCss = exportStyleSheet("#micro .line") ?? '';
         saveState();
     }
 

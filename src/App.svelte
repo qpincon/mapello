@@ -9,7 +9,7 @@
     import { drawCustomPaths, parseAndUnprojectPath } from "./svg/paths";
     import PathEditor from "./svg/pathEditor";
     import Geocoding from "./components/Geocoding.svelte";
-    import {  initTooltips, pascalCaseToSentence, sleep } from "./util/common";
+    import { initTooltips, sleep } from "./util/common";
     import { processUploadedImage } from "./util/imageProcess";
     import { log } from "./util/log";
     import * as shapes from "./svg/shapeDefs";
@@ -394,11 +394,6 @@
                     if (cssSelector.includes("#static-svg-map")) return false;
                     // if (cssSelector.includes(".hovered")) return false;
                     if (cssSelector.includes("ssc-")) return false;
-                    if (cssSelector.includes("#micro path")) return false;
-                    if (cssSelector.includes("#micro .poly")) return false;
-                    if (cssSelector.includes("#micro .line")) return false;
-                    /** Only edit buildings via menu */
-                    if (cssSelector.includes("#buildings")) return false;
                     return true;
                 },
                 inlineDeletable: () => false,
@@ -409,11 +404,7 @@
                     if (ruleName.includes("#freehand-drawings > .freehand")) return "All freehand";
                     let isHover = ruleName.includes(":hover") || ruleName.includes(".hovered");
                     let finalStr = "";
-                    if (ruleName.includes("#micro")) {
-                        const layerId = ruleName.match(/#micro \.(.*?)(\:|$)/)?.[1];
-                        if (!layerId) return ruleName;
-                        finalStr = pascalCaseToSentence(layerId);
-                    } else if (ruleName.includes(".adm")) finalStr = "Region";
+                    if (ruleName.includes(".adm")) finalStr = "Region";
                     else if (ruleName.includes(".country")) finalStr = "Countries";
                     if (finalStr.length) {
                         if (isHover) return `${finalStr} hover`;
