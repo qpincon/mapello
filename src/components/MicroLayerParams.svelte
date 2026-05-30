@@ -51,6 +51,28 @@
         layerDefinitions = layerDefinitions;
         setTimeout(() => initTooltips(), 0);
     }
+
+    function swatchColor(def: any): string | null {
+        if (def.fill && def.fill !== 'none') return def.fill as string;
+        if (def.fills?.length) return def.fills[0] as string;
+        if (def.stroke && def.stroke !== 'none') return def.stroke as string;
+        return null;
+    }
+
+    function highlightLayer(layer: MicroLayerId, active?: boolean) {
+        if (!active) return;
+        const svg = document.getElementById("static-svg-map");
+        if (!svg) return;
+        svg.classList.forEach((c) => c.startsWith("hover-") && svg.classList.remove(c));
+        svg.classList.add("layer-hover", `hover-${layer}`);
+    }
+
+    function clearHighlight() {
+        const svg = document.getElementById("static-svg-map");
+        if (!svg) return;
+        svg.classList.remove("layer-hover");
+        svg.classList.forEach((c) => c.startsWith("hover-") && svg.classList.remove(c));
+    }
 </script>
 
 <div class="py-2 mb-4 pe-2 border rounded-1 bg-light">
@@ -73,8 +95,13 @@
     </div>
 
     {#each layers as [title, def], i (title)}
-        <div class="d-flex align-items-center">
-            <div class="mx-2 form-check form-switch">
+        <div
+            class="d-flex align-items-center layer-row"
+            onclick={() => { if (def.active && !def.disabled) collapseLayer(title as MicroLayerId); }}
+            onmouseenter={() => highlightLayer(title as MicroLayerId, def.active)}
+            onmouseleave={clearHighlight}
+        >
+            <div class="mx-2 form-check form-switch" onclick={(e) => e.stopPropagation()}>
                 <input
                     type="checkbox"
                     role="switch"
@@ -84,16 +111,15 @@
                     bind:checked={def.active}
                     onchange={() => updated(title as MicroLayerId, ["active"], def.active!)}
                 />
-                <label for={title} class="form-check-label">
+                <label for={title} class="form-check-label d-flex align-items-center gap-2">
                     {pascalCaseToSentence(title)}
+                    {#if swatchColor(def)}
+                        <span class="layer-swatch" style="background-color: {swatchColor(def)};"></span>
+                    {/if}
                 </label>
             </div>
             {#if def.active}
-                <div
-                    class="toggle"
-                    class:opened={def.menuOpened === true}
-                    onclick={() => collapseLayer(title as MicroLayerId)}
-                ></div>
+                <div class="toggle" class:opened={def.menuOpened === true}></div>
             {/if}
         </div>
 
@@ -255,6 +281,25 @@
 </div>
 
 <style lang="scss">
+    .layer-row {
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        transition: background-color 0.1s ease;
+        cursor: pointer;
+        &:hover {
+            background-color: rgba(13, 110, 253, 0.08);
+        }
+    }
+
+    .layer-swatch {
+        display: inline-block;
+        width: 11px;
+        height: 11px;
+        border-radius: 2px;
+        border: 1px solid rgba(0, 0, 0, 0.18);
+        flex-shrink: 0;
+    }
+
     .toggle {
         width: 1rem;
         height: 1rem;
@@ -268,6 +313,33 @@
     :global(.wrap-params > div) {
         flex: 1 0 9rem;
     }
+
+    /* Smooth transition on all map layer elements so hover-in and hover-out both fade */
+    :global(#static-svg-map #micro > path),
+    :global(#static-svg-map #micro-background),
+    :global(#static-svg-map #buildings) {
+        transition: opacity 0.15s ease;
+    }
+
+    /* Dim everything when any layer row is hovered */
+    :global(#static-svg-map.layer-hover #micro > path),
+    :global(#static-svg-map.layer-hover #micro-background),
+    :global(#static-svg-map.layer-hover #buildings) {
+        opacity: 0.12;
+    }
+
+    /* Keep the hovered layer at full opacity */
+    :global(#static-svg-map.hover-water    #micro > path.water)    { opacity: 1; }
+    :global(#static-svg-map.hover-sand     #micro > path.sand)     { opacity: 1; }
+    :global(#static-svg-map.hover-grass    #micro > path.grass)    { opacity: 1; }
+    :global(#static-svg-map.hover-forest   #micro > path.forest)   { opacity: 1; }
+    :global(#static-svg-map.hover-roads    #micro > path.roads)    { opacity: 1; }
+    :global(#static-svg-map.hover-railways #micro > path.railways) { opacity: 1; }
+    :global(#static-svg-map.hover-paths    #micro > path.paths)    { opacity: 1; }
+    :global(#static-svg-map.hover-background #micro-background),
+    :global(#static-svg-map.hover-background #micro > path.background) { opacity: 1; }
+    :global(#static-svg-map.hover-buildings #micro > path.buildings),
+    :global(#static-svg-map.hover-buildings #buildings) { opacity: 1; }
 
     .three-dimensions {
         flex: 1 0 100%;
