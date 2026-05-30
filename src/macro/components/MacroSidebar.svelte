@@ -90,6 +90,9 @@
     let availablePalettes = $state<string[]>([]);
     let showCustomPalette = $state<boolean>(false);
     let legendSample: SVGGElement | null = $state(null);
+    let tooltipMenuOpenedByTab = $state<Record<string, boolean>>({});
+    let colorDataMenuOpenedByTab = $state<Record<string, boolean>>({});
+    let glowMenuOpenedByTab = $state<Record<string, boolean>>({});
     let commonStyleSheetElem: HTMLStyleElement;
 
     $effect(() => {
@@ -817,23 +820,32 @@
                             {/each}
                         </div>
                     </button>
-                    <div class="mx-2 form-check form-switch">
-                        <input
-                            type="checkbox"
-                            role="switch"
-                            class="form-check-input"
-                            id="showTooltip"
-                            bind:checked={macroState.tooltipDefs[currentMacroLayerTab].enabled}
-                            onclick={() =>
-                                setTimeout(() => {
-                                    initTooltips();
-                                    saveState();
-                                    applyStylesToLegend();
-                                }, 0)}
-                        />
-                        <label for="showTooltip" class="form-check-label"> Show tooltip on hover </label>
+                    <div
+                        class="d-flex align-items-center layer-row"
+                        onclick={() => { if (macroState.tooltipDefs[currentMacroLayerTab].enabled) { const cur = tooltipMenuOpenedByTab[currentMacroLayerTab] ?? true; tooltipMenuOpenedByTab[currentMacroLayerTab] = !cur; } }}
+                    >
+                        <div class="mx-2 form-check form-switch" onclick={(e) => e.stopPropagation()}>
+                            <input
+                                type="checkbox"
+                                role="switch"
+                                class="form-check-input"
+                                id="showTooltip"
+                                bind:checked={macroState.tooltipDefs[currentMacroLayerTab].enabled}
+                                onclick={() =>
+                                    setTimeout(() => {
+                                        initTooltips();
+                                        saveState();
+                                        applyStylesToLegend();
+                                        if (macroState.tooltipDefs[currentMacroLayerTab].enabled) tooltipMenuOpenedByTab[currentMacroLayerTab] = true;
+                                    }, 0)}
+                            />
+                            <label for="showTooltip" class="form-check-label"> Show tooltip on hover </label>
+                        </div>
+                        {#if macroState.tooltipDefs[currentMacroLayerTab].enabled}
+                            <div class="toggle" class:opened={tooltipMenuOpenedByTab[currentMacroLayerTab] !== false}></div>
+                        {/if}
                     </div>
-                    {#if macroState.tooltipDefs[currentMacroLayerTab].enabled}
+                    {#if macroState.tooltipDefs[currentMacroLayerTab].enabled && (tooltipMenuOpenedByTab[currentMacroLayerTab] ?? true)}
                         <div class="m-2 has-validation">
                             <label for="templatetooltip" class="form-label">
                                 Tooltip template
@@ -859,18 +871,26 @@
                         </div>
                     {/if}
                     <!-- COLORING -->
-                    <div class="mx-2 form-check form-switch">
-                        <input
-                            type="checkbox"
-                            role="switch"
-                            class="form-check-input"
-                            id="colorData"
-                            bind:checked={curDataDefs.enabled}
-                            onchange={() => autoSelectColors()}
-                        />
-                        <label for="colorData" class="form-check-label"> Color using data </label>
+                    <div
+                        class="d-flex align-items-center layer-row"
+                        onclick={() => { if (curDataDefs.enabled) { const cur = colorDataMenuOpenedByTab[currentMacroLayerTab] ?? true; colorDataMenuOpenedByTab[currentMacroLayerTab] = !cur; } }}
+                    >
+                        <div class="mx-2 form-check form-switch" onclick={(e) => e.stopPropagation()}>
+                            <input
+                                type="checkbox"
+                                role="switch"
+                                class="form-check-input"
+                                id="colorData"
+                                bind:checked={curDataDefs.enabled}
+                                onchange={() => { autoSelectColors(); if (curDataDefs.enabled) colorDataMenuOpenedByTab[currentMacroLayerTab] = true; }}
+                            />
+                            <label for="colorData" class="form-check-label"> Color using data </label>
+                        </div>
+                        {#if curDataDefs.enabled}
+                            <div class="toggle" class:opened={colorDataMenuOpenedByTab[currentMacroLayerTab] !== false}></div>
+                        {/if}
                     </div>
-                    {#if curDataDefs.enabled}
+                    {#if curDataDefs.enabled && (colorDataMenuOpenedByTab[currentMacroLayerTab] ?? true)}
                         <div class="d-flex m-1 align-items-center">
                             <div class="form-floating flex-grow-1">
                                 <select
@@ -995,7 +1015,7 @@
                             </label>
                         </div>
                     {/if}
-                    {#if curDataDefs.legendEnabled}
+                    {#if curDataDefs.legendEnabled && (colorDataMenuOpenedByTab[currentMacroLayerTab] ?? true)}
                         <Legend
                             bind:definition={macroState.legendDefs[currentMacroLayerTab]}
                             on:change={(e) => colorizeAndLegend(svg)}
@@ -1050,25 +1070,34 @@
                     </div>
                 {/if}
                 {#if currentMacroLayerTab !== "countries"}
-                    <div class="mx-2 form-check form-switch mt-2">
-                        <input
-                            class="form-check-input"
-                            type="checkbox"
-                            role="switch"
-                            id="glowToggle"
-                            checked={currentMacroLayerTab in macroState.zonesGlow}
-                            onchange={(e) => {
-                                if ((e.target as HTMLInputElement).checked) {
-                                    macroState.zonesGlow[currentMacroLayerTab] = { ...defaultGlowParams };
-                                } else {
-                                    delete macroState.zonesGlow[currentMacroLayerTab];
-                                }
-                                draw();
-                            }}
-                        />
-                        <label class="form-check-label" for="glowToggle">Glow</label>
+                    <div
+                        class="d-flex align-items-center layer-row mt-2"
+                        onclick={() => { if (currentMacroLayerTab in macroState.zonesGlow) { const cur = glowMenuOpenedByTab[currentMacroLayerTab] ?? true; glowMenuOpenedByTab[currentMacroLayerTab] = !cur; } }}
+                    >
+                        <div class="mx-2 form-check form-switch" onclick={(e) => e.stopPropagation()}>
+                            <input
+                                class="form-check-input"
+                                type="checkbox"
+                                role="switch"
+                                id="glowToggle"
+                                checked={currentMacroLayerTab in macroState.zonesGlow}
+                                onchange={(e) => {
+                                    if ((e.target as HTMLInputElement).checked) {
+                                        macroState.zonesGlow[currentMacroLayerTab] = { ...defaultGlowParams };
+                                        glowMenuOpenedByTab[currentMacroLayerTab] = true;
+                                    } else {
+                                        delete macroState.zonesGlow[currentMacroLayerTab];
+                                    }
+                                    draw();
+                                }}
+                            />
+                            <label class="form-check-label" for="glowToggle">Glow</label>
+                        </div>
+                        {#if currentMacroLayerTab in macroState.zonesGlow}
+                            <div class="toggle" class:opened={glowMenuOpenedByTab[currentMacroLayerTab] !== false}></div>
+                        {/if}
                     </div>
-                    {#if currentMacroLayerTab in macroState.zonesGlow}
+                    {#if currentMacroLayerTab in macroState.zonesGlow && (glowMenuOpenedByTab[currentMacroLayerTab] ?? true)}
                         <div class="mx-2 mt-1">
                             <p class="glow-section-label">Inner</p>
                             <div class="field">
@@ -1179,6 +1208,27 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
         margin-bottom: 2px;
+    }
+
+    .layer-row {
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        transition: background-color 0.1s ease;
+        cursor: pointer;
+        &:hover {
+            background-color: rgba(13, 110, 253, 0.08);
+        }
+    }
+
+    .toggle {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+        background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%32dee2e6'><path fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/></svg>");
+        transition: transform 0.15s ease;
+        &.opened {
+            transform: rotate(180deg);
+        }
     }
 
 </style>
