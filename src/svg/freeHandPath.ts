@@ -28,7 +28,8 @@ export function cancelFreeHandDrawPath(): void {
 function onMouseDown(): void {
     rawLineData = [];
     fittedCurve = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    const pathsContainer = document.getElementById('paths');
+    // Use svgElem.querySelector to avoid matching non-SVG elements with the same id (e.g. layer checkboxes in the sidebar)
+    const pathsContainer = svgElem?.querySelector('#paths');
     if (pathsContainer && fittedCurve) {
         pathsContainer.append(fittedCurve);
     }
