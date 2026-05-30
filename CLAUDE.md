@@ -118,7 +118,7 @@ This mode allows for the creation of detailed maps of smaller areas, such as cit
 
 The `drawPrettyMap` function in `src/micro/drawing.ts` is responsible for rendering the map. It reads the rendered features from MapLibre, and uses D3.js to render them as SVG paths. The user can customize the appearance of the different layers by changing their color, stroke width, and other properties.
 
-Layers available in micro mode: `grass`, `forest`, `sand`, `water`, `roads`, `railways`, `paths`, `buildings` (plus `background` and `other`). Layer styling is CSS-based and managed in `src/micro/change.ts`. Palettes (preset color themes) are defined in `src/micro/microPalettes.ts`. 3D buildings rendering is handled in `src/micro/3d.ts`.
+Layers available in micro mode: `grass`, `forest`, `sand`, `water`, `roads`, `railways`, `paths`, `buildings` (plus `background`). Layer styling is CSS-based and managed in `src/micro/change.ts`. Palettes (preset color themes) are defined in `src/micro/microPalettes.ts`. 3D buildings rendering is handled in `src/micro/3d.ts`.
 
 The `onMicroParamChange` function is responsible for handling changes to the parameters, and it will update the CSS rules for the different layers accordingly.
 

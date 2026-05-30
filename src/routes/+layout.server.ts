@@ -4,7 +4,7 @@ import { getActiveSubscription } from '$lib/server/subscription';
 import { db } from '$lib/server/db';
 import { user } from '$lib/server/auth-schema';
 import { eq } from 'drizzle-orm';
-import { FREE_EXPORT_LIMIT } from '$lib/billing-constants';
+import { FREE_EXPORT_LIMIT, SUPER_USER_EMAILS } from '$lib/billing-constants';
 
 export const load: LayoutServerLoad = async ({ request }) => {
 	const session = await auth.api.getSession({ headers: request.headers });
@@ -26,10 +26,14 @@ export const load: LayoutServerLoad = async ({ request }) => {
 		exportsRemaining = subscription ? null : Math.max(0, FREE_EXPORT_LIMIT - exportCount);
 	}
 
+	const isSuperUser = SUPER_USER_EMAILS.includes(currentUser?.email ?? '');
+
+	if (isSuperUser) exportsRemaining = null;
+
 	return {
 		user: currentUser,
 		session: session?.session ?? null,
-		isSuperUser: currentUser?.email === 'pinconquentin@gmail.com',
+		isSuperUser,
 		subscription,
 		exportsRemaining,
 	};
