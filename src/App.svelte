@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { mount, onMount, tick } from "svelte";
+    import { onMount, tick } from "svelte";
     import type { GlobalState } from "./types";
     import { select, pointer } from "d3-selection";
     import { drag } from "d3-drag";
     import { zoom } from "d3-zoom";
-    import InlineStyleEditor from "inline-style-editor";
+    import StylePanel from "./components/StylePanel.svelte";
     import {  debounce } from "lodash-es";
     import { drawCustomPaths, parseAndUnprojectPath } from "./svg/paths";
     import PathEditor from "./svg/pathEditor";
@@ -97,6 +97,7 @@
     let macroSidebar: MacroSidebar | null = $state(null);
     let microSidebar: MicroSidebar | null = $state(null);
     let labelEditor: LabelEditor | null = $state(null);
+    let fontPicker: FontPicker | null = $state(null);
     let svg: SvgSelection = $state(select("#map-container") as unknown as SvgSelection);
     let isDrawing = $state(false);
 
@@ -146,12 +147,7 @@
     let linkTargetId: string | null = $state(null);
     let linkInput: HTMLInputElement | null = $state(null);
     let genericSelectedId: string | null = $state(null);
-    let styleEditor: InlineStyleEditor | null = $state(null);
-    // Element on which we force-added .hovered when opening the style editor from
-    // the context menu. Needed because the mouse leaves the element to reach the
-    // menu, which removes the .hovered class before the editor can discover
-    // .hovered CSS rules (e.g. .country.hovered, .adm.hovered).
-    let forceHoveredElement: Element | null = null;
+    let stylePanel: StylePanel | null = $state(null);
     let contextualMenu: (HTMLDivElement & { opened?: boolean }) | null = $state(null);
     let showExportConfirm = $state(false);
     let showPostExportInfo = $state(false);
@@ -292,139 +288,6 @@
             new Dropdown(dropdownToggleEl);
         });
 
-        // @ts-expect-error
-        styleEditor = mount(InlineStyleEditor, {
-            target: document.body,
-            props: {
-                ignoredProps: ["stroke-linejoin"],
-                onStyleChanged: (
-                    target: HTMLElement,
-                    eventType: "inline" | CSSStyleRule,
-                    cssProp: string,
-                    value: string,
-                ) => {
-                    if (commonState.currentMode === "macro") {
-                        macroSidebar!.onStyleChanged(target, eventType, cssProp, value);
-                    } else if (commonState.currentMode === "micro") {
-                        microSidebar!.onStyleChanged(target, eventType, cssProp, value);
-                    }
-                    requestAnimationFrame(() => refreshOverlay());
-                },
-                getElems: (el: HTMLElement) => {
-                    log(el);
-                    if (el.closest(".tooltip-preview")) {
-                        return [
-                            [el, "Clicked"],
-                            [el.parentElement, "All tooltip"],
-                        ];
-                    }
-                    if (el.parentElement?.classList.contains("freehand")) {
-                        return [
-                            [el, "Clicked"],
-                            [el.parentElement, "Group"],
-                        ];
-                    }
-                    if (el.parentElement?.parentElement?.id === "buildings") {
-                        return [[el.parentElement, "Selected building"]];
-                    }
-                    if (el.classList.contains("adm")) {
-                        const parent = el.parentNode as HTMLElement;
-                        const parentCountry = parent?.getAttribute("id")?.replace(/ ADM(1|2)/, "") || "";
-                        const parentCountryIso3 = iso3Data.find((row) => row.name === parentCountry)?.["name"];
-                        if (!parentCountryIso3) return [[el, "Clicked"]];
-                        const countryElem = document.getElementById(parentCountryIso3);
-                        if (!countryElem) return [[el, "Clicked"]];
-                        return [
-                            [el, "Clicked"],
-                            [countryElem, parentCountryIso3],
-                        ];
-                    }
-                    if (el.tagName === "tspan") {
-                        return [
-                            [el.parentNode, "text"],
-                            [el, "text part"],
-                        ];
-                    }
-                    return [[el, "Clicked"]];
-                },
-                customProps: {
-                    scale: {
-                        type: "slider",
-                        min: 0.5,
-                        max: 5,
-                        step: 0.1,
-                        getter: (el: HTMLElement) => {
-                            if (el.closest("#points-labels") == null) return null;
-                            const transform = el.getAttribute("transform");
-                            if (!transform) return 1;
-                            else {
-                                const scaleValue = transform.match(/scale\(([0-9\.]+)\)/);
-                                if (scaleValue && scaleValue.length > 1) return parseFloat(scaleValue[1]);
-                            }
-                            return 1;
-                        },
-                        setter: (el: SVGElement, val: number) => {
-                            const scaleStr = `scale(${val})`;
-                            setTransformScale(el, scaleStr);
-                        },
-                    },
-                    rotation: {
-                        type: "slider",
-                        min: -180,
-                        max: 180,
-                        step: 1,
-                        getter: (el: HTMLElement) => {
-                            if (el.closest("#points-labels") == null) return null;
-                            if (el.tagName.toLowerCase() !== "text") return null;
-                            const transform = el.getAttribute("transform");
-                            if (!transform) return 0;
-                            const match = transform.match(/rotate\(([\-0-9.]+)\)/);
-                            return match ? parseFloat(match[1]) : 0;
-                        },
-                        setter: (el: SVGElement, val: number) => {
-                            setTransformRotation(el, `rotate(${val})`);
-                        },
-                    },
-                },
-                cssRuleFilter: (el: HTMLElement, cssSelector: string) => {
-                    log(el, cssSelector);
-                    if (el.closest("foreignObject")) return false;
-                    if (el.closest(".tooltip-preview") && cssSelector !== "inline") return false;
-                    if (el.id === "micro-background" && cssSelector === "inline") return false;
-                    if (cssSelector.includes("#freehand-drawings > g")) return false;
-                    if (cssSelector.includes("#static-svg-map")) return false;
-                    // if (cssSelector.includes(".hovered")) return false;
-                    if (cssSelector.includes("ssc-")) return false;
-                    return true;
-                },
-                inlineDeletable: () => false,
-                getCssRuleName: (ruleName: string, el: HTMLElement) => {
-                    if (ruleName.includes("#paths > path")) return "All curves";
-                    if (ruleName.includes(".text")) return "All texts";
-                    if (ruleName.includes(".shape")) return "All shapes";
-                    if (ruleName.includes("#freehand-drawings > .freehand")) return "All freehand";
-                    let isHover = ruleName.includes(":hover") || ruleName.includes(".hovered");
-                    let finalStr = "";
-                    if (ruleName.includes(".adm")) finalStr = "Region";
-                    else if (ruleName.includes(".country")) finalStr = "Countries";
-                    if (finalStr.length) {
-                        if (isHover) return `${finalStr} hover`;
-                        return finalStr;
-                    }
-                    if (ruleName === "inline") return "Selected element";
-                    return ruleName;
-                },
-            },
-        });
-        // Wrap close() to remove the .hovered class we force-added in editStyles()
-        const originalClose = styleEditor!.close.bind(styleEditor);
-        styleEditor!.close = () => {
-            if (forceHoveredElement) {
-                forceHoveredElement.classList.remove("hovered");
-                forceHoveredElement = null;
-            }
-            originalClose();
-        };
         document.body.append(contextualMenu!);
         contextualMenu!.style.display = "none";
         contextualMenu!.style.position = "absolute";
@@ -438,8 +301,8 @@
                     closeMenu();
                     return;
                 }
-                if (styleEditor!.isOpened()) {
-                    styleEditor!.close();
+                if (stylePanel?.isOpen()) {
+                    stylePanel.close();
                     return;
                 }
                 if (isSelectionActive()) {
@@ -495,7 +358,7 @@
             })
             .on("start", () => {
                 if (menuStates.addingLabel) validateLabel();
-                styleEditor!.close();
+                stylePanel?.close();
                 closeMenu();
             });
 
@@ -514,6 +377,7 @@
 
     async function switchMode(newMode: Mode, redrawAfter=true): Promise<void> {
         // if (commonState.currentMode === newMode) return;
+        stylePanel?.close();
         track('mode_switch', { to: newMode });
         commonState.currentMode = newMode;
         select("#map-container").html("");
@@ -694,7 +558,7 @@
     }
 
     function openEditor(e: MouseEvent): void {
-        styleEditor!.open(e.target as HTMLElement, e.pageX, e.pageY);
+        stylePanel?.open(e.target as Element);
     }
 
     function onSvgContextMenu(e: MouseEvent): void {
@@ -753,10 +617,10 @@
         if (shouldOpenMenu) showMenu(e, target);
     }
 
-    // Handles left-click on the SVG map. Checks (in order): link clicks, open menus/editors,
-    // popover annotations on non-selectable elements (e.g. map regions), then selection.
+    // Handles left-click on the SVG map. Opens style panel for clicked element,
+    // handles link/popover/selection as secondary concerns.
     // Note: for selectable entities (shapes/paths/freehand), onSvgMouseDown runs first and
-    // calls stopPropagation, so this handler only fires for non-selectable elements.
+    // calls stopPropagation, so this handler only fires for non-selectable map elements.
     function onSvgClick(e: MouseEvent): void {
         if (e.ctrlKey && commonState.currentMode === 'micro') {
             microSidebar?.queryFeaturesAt(e);
@@ -765,10 +629,6 @@
         if ((e.target as Element).closest("a")) e.preventDefault();
         if (contextualMenu?.opened) {
             closeMenu();
-            return;
-        }
-        if (styleEditor!.isOpened()) {
-            styleEditor!.close();
             return;
         }
         if (!iseOnClickEnabled) return;
@@ -788,6 +648,7 @@
         }
         if (clickedId && commonState.elementAnnotations?.[clickedId]?.popover) {
             showElementPopover(clickedId, svg.node() as SVGSVGElement, commonState.elementAnnotations ?? {});
+            stylePanel?.open(e.target as Element);
             return;
         }
 
@@ -800,24 +661,19 @@
         } else {
             if (getActivePopoverId()) hidePopover();
             clearSelection();
+            // Open style panel for the clicked element (skip the SVG root itself)
+            const target = e.target as Element;
+            if (target.id !== "static-svg-map") {
+                stylePanel?.open(target);
+            }
         }
     }
 
-    // Double-click opens InlineStyleEditor on the targeted entity, or the Quill text editor if empty space.
+    // Double-click on the SVG opens the text editor for empty-space clicks.
+    // Selectable entities now use single-click (onSvgMouseDown) to open the style panel.
     function onSvgDblClick(e: MouseEvent): void {
         if (!iseOnClickEnabled) return;
-        let entity = identifyClickedEntity(e.target as Element) ?? identifyClickedPath(e);
-        // Fallback: if clicking on the overlay, use the single selected entity
-        if (!entity && (e.target as Element).closest?.("#selection-overlay") && selectionState.selected.length === 1) {
-            entity = selectionState.selected[0];
-        }
-        if (entity) {
-            const el = document.getElementById(entity.id);
-            if (el) {
-                styleEditor!.open(el as HTMLElement, e.pageX, e.pageY);
-                return;
-            }
-        }
+        // Open Quill editor for text editing on double-click empty space
         openEditor(e);
     }
 
@@ -884,6 +740,8 @@
                     toggleSelection(savedEntity, savedEvent.shiftKey);
                     getOverlay()?.beginDrag(savedEvent);
                     setupLabelOverlayCallbacks(savedEntity.id, savedEntity.index);
+                    const draggedText = document.getElementById(savedEntity.id);
+                    if (draggedText) stylePanel?.open(draggedText);
                 }
             }
             function onUp() {
@@ -893,7 +751,10 @@
                     toggleSelection(savedEntity, savedEvent.shiftKey);
                     setupLabelOverlayCallbacks(savedEntity.id, savedEntity.index);
                     const svgText = document.getElementById(savedEntity.id) as SVGTextElement | null;
-                    if (svgText) labelEditor?.enter(savedEntity.id, savedEntity.index, svgText);
+                    if (svgText) {
+                        labelEditor?.enter(savedEntity.id, savedEntity.index, svgText);
+                        stylePanel?.open(svgText);
+                    }
                     if (commonState.elementAnnotations?.[savedEntity.id]?.popover) {
                         showElementPopover(
                             savedEntity.id,
@@ -908,12 +769,13 @@
             return;
         }
         // Non-labels: select and begin drag tracking.
-        // Since stopPropagation prevents onSvgClick from firing, popover display for
-        // selectable entities is handled here via the overlay's onSimpleClick callback
-        // (fires on mouseup without drag movement).
+        // Since stopPropagation prevents onSvgClick from firing, popover display and
+        // style panel are handled here via the overlay's onSimpleClick callback.
         toggleSelection(entity, e.shiftKey);
+        const eid = entity.id;
+        const entityEl = document.getElementById(eid);
+        if (entityEl) stylePanel?.open(entityEl);
         if (commonState.elementAnnotations?.[entity.id]?.popover) {
-            const eid = entity.id;
             getOverlay()?.setCallbacks({
                 onSimpleClick: () => {
                     showElementPopover(eid, svg.node() as SVGSVGElement, commonState.elementAnnotations ?? {});
@@ -1439,15 +1301,6 @@
         saveState();
     }
 
-    function editStyles(): void {
-        closeMenu();
-        // Re-add .hovered so the InlineStyleEditor can discover .hovered CSS rules.
-        // The class was lost when the mouse moved from the element to the context menu.
-        const target = openContextMenuInfo.target;
-        target.classList.add("hovered");
-        forceHoveredElement = target;
-        styleEditor!.open(target, openContextMenuInfo.event.pageX, openContextMenuInfo.event.pageY);
-    }
     function addPoint(): void {
         menuStates.chosingPoint = true;
     }
@@ -1574,7 +1427,7 @@
             const lastShape = document.getElementById(
                 commonState.providedShapes[commonState.providedShapes.length - 1].id,
             )!;
-            styleEditor!.open(lastShape, openContextMenuInfo.event.pageX, openContextMenuInfo.event.pageY);
+            stylePanel?.open(lastShape);
         }, 0);
     }
 
@@ -1685,7 +1538,7 @@
         closeMenu();
         stopDrawFreeHand();
         cancelDrawPath();
-        styleEditor?.close();
+        stylePanel?.close();
 
         if (currentUser) {
             openExportModal();
@@ -1711,9 +1564,9 @@
     bind:this={labelEditor}
     onCommit={onLabelCommit}
     onCancel={onLabelCancel}
-    onStyleEdit={(id, x, y) => {
+    onStyleEdit={(id, _x, _y) => {
         const el = document.getElementById(id);
-        if (el) styleEditor!.open(el as HTMLElement, x, y);
+        if (el) stylePanel?.open(el);
     }}
 />
 
@@ -1792,21 +1645,18 @@
     {:else if menuStates.addingLabel}
         <textarea bind:this={textInput} bind:value={typedText}> </textarea>
     {:else if menuStates.pointSelected}
-        <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>
         <div role="button" class="px-2 py-1" onclick={copySelection}>Copy</div>
         {@render linkMenuItem(selectedShapeId!)}
         {@render annotationMenuItem(selectedShapeId!)}
         <div role="button" class="px-2 py-1" onclick={deleteSelection}>Delete</div>
     {:else if menuStates.pathSelected}
         <div role="button" class="px-2 py-1" onclick={editPath}>Edit curve</div>
-        <div role="button" class="px-2 py-1" onclick={editStyles}>Edit style</div>
         {@render linkMenuItem(`path-${selectedPathIndex}`)}
         {@render annotationMenuItem(`path-${selectedPathIndex}`)}
         <div role="button" class="px-2 py-1" onclick={deletePath}>Delete curve</div>
         <div role="button" class="px-2 py-1" onclick={addImageToPath}>Image along curve</div>
         <div role="button" class="px-2 py-1" onclick={choseMarker}>Chose curve marker</div>
     {:else if menuStates.freehandSelected}
-        <div role="button" class="px-2 py-1" onclick={editStyles}>Edit style</div>
         {@render linkMenuItem(`freehand-${selectedFreehandIndex}`)}
         {@render annotationMenuItem(`freehand-${selectedFreehandIndex}`)}
         <div role="button" class="px-2 py-1" onclick={deleteFreehand}>Delete drawing</div>
@@ -1898,7 +1748,6 @@
             <label class="form-check-label" for="image-rotate-path">Rotate with curve</label>
         </div>
     {:else}
-        <div role="button" class="px-2 py-1" onclick={editStyles}>Edit styles</div>
         {#if genericSelectedId}
             {@render linkMenuItem(genericSelectedId!)}
             {@render annotationMenuItem(genericSelectedId!)}
@@ -1918,7 +1767,7 @@
     onClosed={() => {
         annotationEditorOpen = false;
         annotationEditingElemId = null;
-        styleEditor?.close();
+        stylePanel?.close();
     }}
 >
     {#snippet header()}
@@ -1994,13 +1843,12 @@
             </div>
             <div id="main-menu" class="mt-4">
                 {#if commonState.currentMode === "macro"}
-                    <MacroSidebar bind:this={macroSidebar} {draw} {svg} {styleEditor}></MacroSidebar>
+                    <MacroSidebar bind:this={macroSidebar} {draw} {svg} openStylePanel={(el) => stylePanel?.open(el)}></MacroSidebar>
                 {:else}
                     <MicroSidebar
                         bind:this={microSidebar}
                         {draw}
                         {svg}
-                        {styleEditor}
                         onMapMoveStart={() => {
                             closeMenu();
                             stopDrawFreeHand();
@@ -2010,7 +1858,7 @@
             </div>
         </div>
     </aside>
-    <div class="w-auto d-flex flex-grow-1 flex-column align-items-center h-100" style="position: relative;">
+    <div class="w-auto d-flex flex-grow-1 flex-column h-100" style="position: relative;">
         <Navbar>
             {#snippet children()}
             <div class="d-flex align-items-center justify-content-between w-100 px-3">
@@ -2040,6 +1888,7 @@
                         />
                     {/if}
                     <FontPicker
+                        bind:this={fontPicker}
                         onFontSelected={handleFontSelected}
                         existingFontNames={commonState.providedFonts.map((f) => f.name)}
                         iconOnly={true}
@@ -2134,7 +1983,8 @@
             </div>
             {/snippet}
         </Navbar>
-        <div class="d-flex flex-column justify-content-center align-items-center h-100 position-relative">
+        <div class="d-flex flex-grow-1" style="min-height:0;overflow:hidden;">
+        <div class="d-flex flex-column justify-content-center align-items-center flex-grow-1 position-relative" style="overflow:hidden;min-width:0;">
             {#if serverSyncError}
                 <div
                     class="alert alert-warning mb-0 py-1 px-3 small"
@@ -2165,8 +2015,48 @@
                 </div>
             {/if}
         </div>
-    </div>
-</div>
+        <StylePanel
+        bind:this={stylePanel}
+        suppressRing={selectionState.selected.length > 0}
+        availableFonts={commonState.providedFonts.map((f) => f.name)}
+        onOpenFontPicker={() => fontPicker?.openPicker()}
+        cssRuleFilter={(el, cssSelector) => {
+            if (el.closest("foreignObject")) return false;
+            if (el.closest(".tooltip-preview") && cssSelector !== "inline") return false;
+            if (el.id === "micro-background" && cssSelector === "inline") return false;
+            if (cssSelector.includes("#freehand-drawings > g")) return false;
+            if (cssSelector.includes("#static-svg-map")) return false;
+            if (cssSelector.includes("ssc-")) return false;
+            // Micro layer styles are managed by MicroSidebar — hide from style panel
+            if (cssSelector.includes("#micro ")) return false;
+            if (cssSelector.includes("#buildings .")) return false;
+            return true;
+        }}
+        getCssRuleName={(ruleName, _el) => {
+            if (ruleName.includes("#paths > path")) return "All curves";
+            if (ruleName.includes(".text")) return "All texts";
+            if (ruleName.includes(".shape")) return "All shapes";
+            if (ruleName.includes("#freehand-drawings > .freehand")) return "All freehand";
+            const isHover = ruleName.includes(":hover") || ruleName.includes(".hovered");
+            let finalStr = "";
+            if (ruleName.includes(".adm")) finalStr = "Region";
+            else if (ruleName.includes(".country")) finalStr = "Countries";
+            if (finalStr.length) return isHover ? `${finalStr} hover` : finalStr;
+            if (ruleName === "inline") return "This element";
+            return ruleName;
+        }}
+        onStyleChanged={(target, eventType, cssProp, value) => {
+            if (commonState.currentMode === "macro") {
+                macroSidebar!.onStyleChanged(target as HTMLElement, eventType, cssProp, value);
+            } else if (commonState.currentMode === "micro") {
+                microSidebar!.onStyleChanged(target as HTMLElement, eventType, cssProp, value);
+            }
+            requestAnimationFrame(() => refreshOverlay());
+        }}
+    />
+        </div><!-- end below-navbar row -->
+    </div><!-- end right column -->
+</div><!-- end outer flex -->
 <input
     type="file"
     bind:this={customImageInput}

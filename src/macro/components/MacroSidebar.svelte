@@ -37,7 +37,6 @@
 
     import { saveState } from "src/util/save";
     import DataManager from "./DataManager.svelte";
-    import type InlineStyleEditor from "inline-style-editor";
     import Legend from "src/components/Legend.svelte";
     import { select } from "d3-selection";
     import { scaleOrdinal, scaleQuantize, scaleQuantile } from "d3-scale";
@@ -120,12 +119,12 @@
     );
 
     interface Props {
-        styleEditor: InlineStyleEditor | null;
+        openStylePanel: (el: Element) => void;
         svg: SvgSelection;
         draw: (simplified?: boolean) => void;
     }
 
-    let { styleEditor, svg, draw }: Props = $props();
+    let { openStylePanel, svg, draw }: Props = $props();
 
     let drawDebounced = debounce((simplified?: boolean) => draw(simplified), 100);
     onMount(() => {
@@ -254,7 +253,7 @@
     const saveDebounced = debounce(saveState, 200);
 
     function openEditor(e: MouseEvent): void {
-        styleEditor!.open(e.target as HTMLElement, e.pageX, e.pageY);
+        openStylePanel(e.target as Element);
     }
 
     function applyStylesToLegend(): void {

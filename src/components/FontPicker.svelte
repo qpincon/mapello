@@ -116,7 +116,7 @@
         }
     }
 
-    function openPicker(): void {
+    export function openPicker(): void {
         showModal = true;
         fetchCatalog();
     }

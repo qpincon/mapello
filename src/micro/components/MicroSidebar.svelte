@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type InlineStyleEditor from "inline-style-editor";
     import { log } from 'src/util/log';
     import Accordions from "src/components/Accordions.svelte";
     import MicroLayerParams from "src/components/MicroLayerParams.svelte";
@@ -77,7 +76,6 @@
     );
 
     interface Props {
-        styleEditor: InlineStyleEditor | null;
         svg: SvgSelection;
         draw: (simplified?: boolean) => void;
         /** Not passed, we just need to access it from the parent*/
@@ -85,7 +83,7 @@
         onMapMoveStart?: () => void;
     }
 
-    let { styleEditor, svg, draw, maplibreMap, onMapMoveStart }: Props = $props();
+    let { svg, draw, maplibreMap, onMapMoveStart }: Props = $props();
 
     let mainMenuSelection = $state<string>("general");
     let additionalCss = $derived(computeCss(microState.microParams));
