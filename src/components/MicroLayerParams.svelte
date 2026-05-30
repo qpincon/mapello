@@ -5,6 +5,7 @@
     import { camelCaseToSentence, initTooltips, pascalCaseToSentence } from "../util/common";
     import { log } from "../util/log";
     import type { Color, MicroLayerId, MicroPalette, MicroPaletteWithBorder } from "src/types";
+    import { buildPalettePreviewSvg } from "src/micro/palettePreview";
 
     interface Props {
         layerDefinitions: MicroPalette;
@@ -41,6 +42,26 @@
         onPaletteChange(paletteId);
     }
 
+    // --- Palette dropdown state ----------------------------------------------
+    let paletteOpen = $state(false);
+    let paletteDropdownEl: HTMLElement | null = $state(null);
+
+    const previews = $derived.by(() => {
+        if (typeof document === "undefined") return {} as Record<string, string>;
+        return Object.fromEntries(
+            Object.keys(availablePalettes).map((id) => [
+                id,
+                buildPalettePreviewSvg(id, availablePalettes[id]),
+            ]),
+        ) as Record<string, string>;
+    });
+
+    function handleWindowClick(e: MouseEvent) {
+        if (paletteOpen && paletteDropdownEl && !paletteDropdownEl.contains(e.target as Node)) {
+            paletteOpen = false;
+        }
+    }
+
     function collapseLayer(layer: MicroLayerId) {
         layerDefinitions[layer].menuOpened = !layerDefinitions[layer].menuOpened;
         setTimeout(() => initTooltips(), 0);
@@ -75,23 +96,44 @@
     }
 </script>
 
+<svelte:window onclick={handleWindowClick} />
+
 <div class="py-2 mb-4 pe-2 border rounded-1 bg-light">
-    <div class="row my-3 mx-1">
-        <label class="col-4 col-form-label" for="palette-select"> Preset palette</label>
-        <select
-            id="palette-select"
-            class="form-select form-select-sm me-4 col"
-            value={currentPaletteId}
-            onchange={(e) => {
-                const val = (e.target as HTMLSelectElement).value;
-                if (val) paletteChanged(val);
-            }}
-        >
-            <option value="">Custom</option>
-            {#each Object.keys(availablePalettes) as paletteId}
-                <option value={paletteId}> {camelCaseToSentence(paletteId)} </option>
-            {/each}
-        </select>
+    <div class="row my-3 mx-1 align-items-center">
+        <label class="col-4 col-form-label">Color palette</label>
+        <div class="col position-relative palette-dropdown-wrapper" bind:this={paletteDropdownEl}>
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center gap-2 palette-trigger"
+                onclick={() => (paletteOpen = !paletteOpen)}
+                aria-haspopup="listbox"
+                aria-expanded={paletteOpen}
+            >
+                {#if currentPaletteId && previews[currentPaletteId]}
+                    <span class="palette-thumb">{@html previews[currentPaletteId]}</span>
+                    <span class="palette-name">{camelCaseToSentence(currentPaletteId)}</span>
+                {:else}
+                    <span class="palette-name text-muted">Custom</span>
+                {/if}
+                <span class="toggle ms-auto flex-shrink-0" class:opened={paletteOpen}></span>
+            </button>
+            {#if paletteOpen}
+                <ul class="palette-menu list-unstyled mb-0" role="listbox">
+                    {#each Object.keys(availablePalettes) as paletteId}
+                        <li
+                            class="palette-menu-item"
+                            class:active={paletteId === currentPaletteId}
+                            role="option"
+                            aria-selected={paletteId === currentPaletteId}
+                            onclick={() => { paletteChanged(paletteId); paletteOpen = false; }}
+                        >
+                            <span class="palette-thumb">{@html previews[paletteId]}</span>
+                            <span>{camelCaseToSentence(paletteId)}</span>
+                        </li>
+                    {/each}
+                </ul>
+            {/if}
+        </div>
     </div>
 
     {#each layers as [title, def], i (title)}
@@ -281,6 +323,85 @@
 </div>
 
 <style lang="scss">
+    // --- Palette dropdown ----------------------------------------------------
+
+    .palette-trigger {
+        text-align: left;
+        min-height: 2.1rem;
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+    }
+
+    .palette-thumb {
+        width: 2rem;
+        height: 2rem;
+        flex: 0 0 2rem;
+        border-radius: 3px;
+        overflow: hidden;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #f0f0f0;
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    }
+
+    .palette-menu .palette-thumb {
+        width: 4.5rem;
+        height: 4.5rem;
+        flex: 0 0 4.5rem;
+        border-radius: 4px;
+    }
+
+    .palette-name {
+        flex: 1;
+        text-align: left;
+        font-size: 0.82rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .palette-menu {
+        position: absolute;
+        top: calc(100% + 3px);
+        left: 0;
+        right: 0;
+        z-index: 1050;
+        background: #fff;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 5px;
+        max-height: 340px;
+        overflow-y: auto;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.13);
+        padding: 3px 0;
+    }
+
+    .palette-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.4rem 0.6rem;
+        cursor: pointer;
+        font-size: 0.85rem;
+        border-radius: 3px;
+        margin: 1px 3px;
+
+        &:hover {
+            background-color: rgba(13, 110, 253, 0.08);
+        }
+
+        &.active {
+            background-color: rgba(13, 110, 253, 0.13);
+            font-weight: 500;
+        }
+    }
+
+    // --- Layer rows ----------------------------------------------------------
     .layer-row {
         padding: 0.2rem 0.4rem;
         border-radius: 4px;
