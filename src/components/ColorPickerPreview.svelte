@@ -1,5 +1,6 @@
 <script lang="ts">
     import StyleColorPicker from "./StyleColorPicker.svelte";
+    import { rgbToHex } from "../util/colorMath";
     import type { Color } from "src/types";
 
     interface Props {
@@ -14,15 +15,11 @@
 
     let { value, title, id, onChange, additionalClasses = "", labelAbove = false }: Props = $props();
 
-    // Display the color as a short hex string (strip opaque alpha suffix)
     function toDisplay(v: Color): string {
         if (!v || v === "none") return "";
         const s = String(v);
         if (s.length === 9 && s.toLowerCase().endsWith("ff")) return s.slice(0, 7);
-        if (s.startsWith("rgba")) {
-            const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-            if (m) return "#" + [m[1], m[2], m[3]].map((n) => parseInt(n).toString(16).padStart(2, "0")).join("");
-        }
+        if (s.startsWith("rgba")) return rgbToHex(s);
         return s;
     }
 

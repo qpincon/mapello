@@ -44,8 +44,7 @@ interface TransformedTexts {
 
 // Enums and constants
 
-export const rgb2hex = (rgb: string): string =>
-    `#${rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)!.slice(1).map(n => parseInt(n, 10).toString(16).padStart(2, '0')).join('')}`;
+export { rgbToHex as rgb2hex } from "../util/colorMath";
 
 export function isHexColor(hex: string): boolean {
     return (hex.length === 6 || hex.length === 3 || hex.length === 8) && !isNaN(Number('0x' + hex));

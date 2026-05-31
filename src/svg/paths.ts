@@ -1,6 +1,6 @@
 import parsePath from 'parse-svg-path';
 import * as markers from './markerDefs';
-import { RGBAToHexA } from '../util/common';
+import { rgbToHex } from '../util/colorMath';
 import { pathStringFromParsed, createSvgAnchor } from './svg';
 import { select } from 'd3-selection';
 import type { D3Selection, InlineStyles, MarkerName, ParsedPath, PathDef, SvgSelection } from 'src/types';
@@ -54,7 +54,7 @@ export function drawCustomPaths(
             if (!color) {
                 const node = svg.select(`#path-${index}`).node();
                 if (node) {
-                    color = RGBAToHexA(getComputedStyle(node as Element)['stroke']);
+                    color = rgbToHex(getComputedStyle(node as Element)['stroke']);
                 }
             }
             const markerId = appendMarkerDef(svg, pathDef.marker, color);
