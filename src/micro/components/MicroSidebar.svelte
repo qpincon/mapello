@@ -1,9 +1,8 @@
 <script lang="ts">
     import { log } from 'src/util/log';
-    import Accordions from "src/components/Accordions.svelte";
     import MicroLayerParams from "src/components/MicroLayerParams.svelte";
     import { cancelPendingCutout, drawPrettyMap, generateCssFromState, initLayersState } from "src/micro/drawing";
-    import { helpParams, paramDefs, type MicroParams } from "src/params";
+    import { type MicroParams } from "src/params";
     import { appState, microState } from "src/state.svelte";
     import type {
         Color,
@@ -85,12 +84,9 @@
 
     let { svg, draw, maplibreMap, onMapMoveStart }: Props = $props();
 
-    let mainMenuSelection = $state<string>("general");
     let additionalCss = $derived(computeCss(microState.microParams));
 
-    $effect(() => {
-        if (mainMenuSelection) setTimeout(() => initTooltips(), 10);
-    });
+    onMount(() => setTimeout(() => initTooltips(), 10));
 
     /**
      * Map used for drawing zoomed-in cities as SVG using custom palette
@@ -268,50 +264,13 @@
     {@html `<${""}style> ${additionalCss} </${""}style>`}
 </svelte:head>
 
-<div class="w-100">
-    <ul class="nav nav-tabs align-items-center justify-content-center">
-        <li class="nav-item d-flex align-items-center mx-1">
-            <a
-                href="javascript:;"
-                class="nav-link d-flex align-items-center position-relative fs-5"
-                onclick={() => (mainMenuSelection = "general")}
-                class:active={mainMenuSelection === "general"}
-            >
-                General
-            </a>
-        </li>
-        <li class="nav-item d-flex align-items-center mx-1">
-            <a
-                href="javascript:;"
-                class="nav-link d-flex align-items-center position-relative fs-5"
-                onclick={() => (mainMenuSelection = "layers")}
-                class:active={mainMenuSelection === "layers"}
-            >
-                Layers
-            </a>
-        </li>
-    </ul>
-</div>
-
-{#if mainMenuSelection === "general"}
-    <Accordions
-        bind:sections={microState.microParams as unknown as Record<string, Record<string, number>>}
-        {paramDefs}
-        {helpParams}
-        sectionLabels={{ General: "Dimensions" }}
-        on:change={(e) => {
-            draw();
-        }}
-    ></Accordions>
-{:else if mainMenuSelection === "layers"}
-    <MicroLayerParams
-        bind:layerDefinitions={microState.microLayerDefinitions}
-        onUpdate={handleMicroParamChange}
-        availablePalettes={microPalettes}
-        onPaletteChange={handleMicroPaletteChange}
-        {currentPaletteId}
-    ></MicroLayerParams>
-{/if}
+<MicroLayerParams
+    bind:layerDefinitions={microState.microLayerDefinitions}
+    onUpdate={handleMicroParamChange}
+    availablePalettes={microPalettes}
+    onPaletteChange={handleMicroPaletteChange}
+    {currentPaletteId}
+></MicroLayerParams>
 
 <style lang="scss">
 </style>

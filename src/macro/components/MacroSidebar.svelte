@@ -1,8 +1,7 @@
 <script lang="ts">
     import { onDestroy, onMount, tick } from "svelte";
     import { log } from '../../util/log';
-    import Accordions from "../../components/Accordions.svelte";
-    import {
+        import {
         extractTemplateVariables,
         getColumns,
         getNumericCols,
@@ -10,8 +9,7 @@
         initTooltips,
     } from "../../util/common";
     import { exportStyleSheet, reportStyle } from "../../util/dom";
-    import { helpParams, noSatelliteParams } from "../../params";
-    import { appState, commonState, macroState } from "../../state.svelte";
+        import { appState, commonState, macroState } from "../../state.svelte";
     import Icon from "../../components/Icon.svelte";
     import { icons } from "../../shared/icons";
     import { track } from "../../util/analytics";
@@ -77,7 +75,6 @@
 </div>
 `;
 
-    let mainMenuSelection = $state<string>("general");
     let hoveringTab = $state<number>(-1);
     let dragStartIndex = $state<number>(-1);
     let currentMacroLayerTab = $state<string>("land");
@@ -94,12 +91,6 @@
     let glowMenuOpenedByTab = $state<Record<string, boolean>>({});
     let commonStyleSheetElem: HTMLStyleElement;
 
-    $effect(() => {
-        const _ = mainMenuSelection;
-        initTooltips();
-        applyStylesToLegend();
-    });
-
     let computedOrderedTabs = $derived(
         macroState.orderedTabs.filter((x) => {
             if (x === "countries") return macroState.inlinePropsMacro.showCountries;
@@ -113,9 +104,6 @@
         macroState.zonesData[currentMacroLayerTab]?.numericCols?.length
             ? ["category", "quantile", "quantize"]
             : ["category"],
-    );
-    let accordionVisiblityParams = $derived(
-        macroState.macroParams.General.projection !== "satellite" ? noSatelliteParams : {},
     );
 
     interface Props {
@@ -136,6 +124,7 @@
         initWorldData().then(() => {
             updateVisibleAreaScale();
             draw();
+            setTimeout(() => { initTooltips(); applyStylesToLegend(); }, 200);
         });
     });
 
@@ -628,46 +617,7 @@
     {@html `<${""}style> ${commonCss} </${""}style>`}
 </svelte:head>
 
-<div class="w-100">
-    <ul class="nav nav-tabs align-items-center justify-content-center m-1">
-        <li class="nav-item d-flex align-items-center mx-1">
-            <a
-                href="javascript:;"
-                class="nav-link d-flex align-items-center position-relative fs-5"
-                data-tour="macro-tab-general"
-                onclick={() => (mainMenuSelection = "general")}
-                class:active={mainMenuSelection === "general"}
-            >
-                General
-            </a>
-        </li>
-        <li class="nav-item d-flex align-items-center mx-1">
-            <a
-                href="javascript:;"
-                class="nav-link d-flex align-items-center position-relative fs-5"
-                data-tour="macro-tab-layers"
-                onclick={() => (mainMenuSelection = "layers")}
-                class:active={mainMenuSelection === "layers"}
-            >
-                Layers
-            </a>
-        </li>
-    </ul>
-</div>
-<div id="main-menu" class="mt-4">
-    {#if mainMenuSelection === "general"}
-        <Accordions
-            bind:sections={macroState.macroParams as unknown as Record<string, Record<string, number>>}
-            {paramDefs}
-            {helpParams}
-            otherParams={accordionVisiblityParams}
-            sectionLabels={{ General: "Dimensions & Projection" }}
-            on:change={(e) => {
-                handleChangeProp(e, drawSimplifyThenReal);
-            }}
-        ></Accordions>
-    {:else if mainMenuSelection === "layers"}
-        <div class="border border-primary rounded layers">
+<div class="border border-primary rounded layers">
             <div class="p-2">
                 <div class="form-check form-switch">
                     <input
@@ -1139,8 +1089,6 @@
                 {/if}
             </div>
         </div>
-    {/if}
-</div>
 
 {#if macroState.zonesData[currentMacroLayerTab]?.data}
     <DataManager
