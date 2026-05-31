@@ -8,9 +8,10 @@
         onFontSelected: (font: ProvidedFont) => void;
         existingFontNames: string[];
         iconOnly?: boolean;
+        hidden?: boolean;
     }
 
-    let { onFontSelected, existingFontNames, iconOnly = false }: Props = $props();
+    let { onFontSelected, existingFontNames, iconOnly = false, hidden = false }: Props = $props();
 
     let showModal = $state(false);
     let searchQuery = $state("");
@@ -160,9 +161,11 @@
     }
 </script>
 
+{#if !hidden}
 <button class="navbar-btn" onclick={openPicker} title={iconOnly ? "Add font" : undefined}>
     <Icon svg={icons["font"]} />{#if !iconOnly} Add font{/if}
 </button>
+{/if}
 
 <Modal open={showModal} onClosed={closePicker} modalWidth="600px">
     {#snippet header()}

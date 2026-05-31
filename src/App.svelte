@@ -76,6 +76,7 @@
     import { defaultState } from "./stateDefaults";
     import { exportMacro } from "./macro/export";
     import MicroSidebar from "./micro/components/MicroSidebar.svelte";
+    import SettingsStrip from "./components/SettingsStrip.svelte";
     import { exportMicro } from "./micro/drawing";
     import { replaceCssSheetContent, updateSvgPatterns } from "./micro/change";
     import {
@@ -648,7 +649,8 @@
         }
         if (clickedId && commonState.elementAnnotations?.[clickedId]?.popover) {
             showElementPopover(clickedId, svg.node() as SVGSVGElement, commonState.elementAnnotations ?? {});
-            stylePanel?.open(e.target as Element);
+            const annotTarget = e.target as Element;
+            if (annotTarget.id !== "micro-background") stylePanel?.open(annotTarget);
             return;
         }
 
@@ -661,9 +663,9 @@
         } else {
             if (getActivePopoverId()) hidePopover();
             clearSelection();
-            // Open style panel for the clicked element (skip the SVG root itself)
+            // Open style panel for the clicked element (skip SVG root and micro background)
             const target = e.target as Element;
-            if (target.id !== "static-svg-map") {
+            if (target.id !== "static-svg-map" && target.id !== "micro-background") {
                 stylePanel?.open(target);
             }
         }
@@ -1891,7 +1893,7 @@
                         bind:this={fontPicker}
                         onFontSelected={handleFontSelected}
                         existingFontNames={commonState.providedFonts.map((f) => f.name)}
-                        iconOnly={true}
+                        hidden={true}
                     />
                     <button id="export-btn" class="navbar-btn navbar-btn-cta" type="button" onclick={onExportSvgClicked}>
                         <Icon fillColor="none" svg={icons["download"]} /> Export
@@ -1984,7 +1986,7 @@
             {/snippet}
         </Navbar>
         <div class="d-flex flex-grow-1" style="min-height:0;overflow:hidden;">
-        <div class="d-flex flex-column justify-content-center align-items-center flex-grow-1 position-relative" style="overflow:hidden;min-width:0;">
+        <div id="map-area" class="d-flex flex-column justify-content-center align-items-center flex-grow-1 position-relative" style="overflow:hidden;min-width:0;">
             {#if serverSyncError}
                 <div
                     class="alert alert-warning mb-0 py-1 px-3 small"
@@ -2001,6 +2003,7 @@
             {/if}
 
             <div id="map-content" style="position: relative;">
+                <SettingsStrip {draw} />
                 <div id="map-container" class="col mx-4"></div>
                 <div id="maplibre-map"></div>
                 <ResizeHandles onResize={onSvgResize} />

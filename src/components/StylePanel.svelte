@@ -1,7 +1,16 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { Tooltip } from "bootstrap";
     import { getMatchedCSSRules, getRuleValue, setRuleValue, type StyleRule } from "../util/cssRules";
     import StyleColorPicker from "./StyleColorPicker.svelte";
+
+    function bsTooltip(el: HTMLElement, title: string) {
+        let t = new Tooltip(el, { title, placement: "top", trigger: "hover" });
+        return {
+            update(newTitle: string) { t.dispose(); t = new Tooltip(el, { title: newTitle, placement: "top", trigger: "hover" }); },
+            destroy() { t.dispose(); },
+        };
+    }
 
     interface Props {
         cssRuleFilter?: (el: Element, cssSelector: string) => boolean;
@@ -72,6 +81,50 @@
     function cleanFontName(v: string) { return v.trim().replace(/^['"]|['"]$/g, "").trim(); }
     function applyFont(name: string) { apply("font-family", name.includes(" ") ? `'${name}'` : name); }
 
+    // ── Computed / inherited values ──────────────────────────────────
+    // Read the effective value from the cascade (what the element actually displays),
+    // so we can show it when the selected rule does not explicitly set that property.
+    function computedVal(prop: string): string {
+        if (!element) return "";
+        try {
+            const cs = window.getComputedStyle(element as Element);
+            switch (prop) {
+                case "fill":          return cs.fill          ?? "";
+                case "stroke":        return cs.stroke        ?? "";
+                case "stroke-width":  return cs.strokeWidth   ?? "";
+                case "stroke-dasharray": {
+                    const v = cs.strokeDasharray;
+                    return !v || v === "none" ? "" : v.replace(/px/g, "").trim();
+                }
+                case "font-family":   return cs.fontFamily    ?? "";
+            }
+        } catch { /* cross-origin stylesheet */ }
+        return "";
+    }
+
+    function rgbToHex(rgb: string): string {
+        const m = rgb.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+        if (!m) return "";
+        return "#" + [m[1], m[2], m[3]].map((n) => parseInt(n).toString(16).padStart(2, "0")).join("").toUpperCase();
+    }
+
+    function inheritedColor(prop: string): string {
+        const raw = computedVal(prop);
+        if (!raw || raw === "none") return "";
+        return raw.startsWith("rgb") ? rgbToHex(raw) : raw;
+    }
+
+    function inheritedWidth(): string {
+        const v = computedVal("stroke-width");
+        if (!v) return "";
+        const n = parseFloat(v);
+        return isNaN(n) ? "" : `${n}px`;
+    }
+
+    function inheritedDash(): string {
+        return computedVal("stroke-dasharray");
+    }
+
     $effect(() => { selectedRule; element; refreshValues(); });
 
     $effect(() => {
@@ -131,7 +184,7 @@
             if (fontOpen && !fontDropEl?.contains(t)) fontOpen = false;
             if (!element || panelEl?.contains(t)) return;
             if (document.getElementById("static-svg-map")?.contains(t)) return;
-            if (!document.getElementById("map-content")?.contains(t)) return;
+            if (!document.getElementById("map-area")?.contains(t)) return;
             element = null; ringVisible = false;
         }
         document.addEventListener("mousedown", handleDocMousedown);
@@ -260,11 +313,20 @@
             {/if}
 
             <!-- Fill -->
-            <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:38px">
+            <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentFill} style="min-height:38px">
                 <span class="sp-icon" onmouseenter={(e) => showTip(e, 'Fill')} onmouseleave={hideTip}>{@html IC.fill}</span>
                 <div class="d-flex align-items-center flex-grow-1 gap-2 overflow-hidden">
                     <StyleColorPicker value={currentFill} onChange={(c) => apply("fill", c)} />
-                    <span class="font-monospace text-secondary text-truncate flex-grow-1" style="font-size:11px">{currentFill || "—"}</span>
+                    {#if currentFill}
+                        <span class="font-monospace text-secondary text-truncate flex-grow-1" style="font-size:11px">{currentFill}</span>
+                    {:else}
+                        <span class="flex-grow-1"></span>
+                        {@const ic = inheritedColor("fill")}
+                        <span class="sp-cascade" use:bsTooltip={"Not set here — applied automatically from another style. Click to override."}>
+                            {#if ic}<span class="sp-inherited-swatch" style="background:{ic}"></span>{/if}
+                            <em class="font-monospace text-muted" style="font-size:10px">{ic || "—"}</em>
+                        </span>
+                    {/if}
                 </div>
                 {#if currentFill}
                     <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none p-0 lh-1" onclick={() => apply("fill", "")}>×</button>
@@ -272,11 +334,20 @@
             </div>
 
             <!-- Stroke -->
-            <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:38px">
+            <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentStroke} style="min-height:38px">
                 <span class="sp-icon" onmouseenter={(e) => showTip(e, 'Stroke color')} onmouseleave={hideTip}>{@html IC.stroke}</span>
                 <div class="d-flex align-items-center flex-grow-1 gap-2 overflow-hidden">
                     <StyleColorPicker value={currentStroke} onChange={(c) => apply("stroke", c)} />
-                    <span class="font-monospace text-secondary text-truncate flex-grow-1" style="font-size:11px">{currentStroke || "—"}</span>
+                    {#if currentStroke}
+                        <span class="font-monospace text-secondary text-truncate flex-grow-1" style="font-size:11px">{currentStroke}</span>
+                    {:else}
+                        <span class="flex-grow-1"></span>
+                        {@const ic = inheritedColor("stroke")}
+                        <span class="sp-cascade" use:bsTooltip={"Not set here — applied automatically from another style. Click to override."}>
+                            {#if ic}<span class="sp-inherited-swatch" style="background:{ic}"></span>{/if}
+                            <em class="font-monospace text-muted" style="font-size:10px">{ic || "—"}</em>
+                        </span>
+                    {/if}
                 </div>
                 {#if currentStroke}
                     <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none p-0 lh-1" onclick={() => apply("stroke", "")}>×</button>
@@ -284,7 +355,7 @@
             </div>
 
             <!-- Stroke width -->
-            <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:38px">
+            <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentStrokeWidth} style="min-height:38px">
                 <span class="sp-icon" onmouseenter={(e) => showTip(e, 'Stroke width')} onmouseleave={hideTip}>{@html IC.width}</span>
                 <div class="dropdown flex-grow-1" bind:this={widthDropEl}>
                     <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center gap-1"
@@ -292,7 +363,14 @@
                         <svg class="sp-preview" viewBox="0 0 52 14" width="52" height="14" aria-hidden="true">
                             <line x1="2" y1="7" x2="50" y2="7" stroke="#506784" stroke-width={currentWidthNum()} stroke-linecap="round"/>
                         </svg>
-                        <span class="flex-grow-1 text-start" style="font-size:11px">{currentWidthDisplay()}</span>
+                        {#if currentStrokeWidth}
+                            <span class="flex-grow-1 text-start" style="font-size:11px">{currentWidthDisplay()}</span>
+                        {:else}
+                            {@const iw = inheritedWidth()}
+                            <span class="flex-grow-1"></span>
+                            <em class="text-muted me-1" style="font-size:10px"
+                                use:bsTooltip={"Not set here — applied automatically from another style. Click to override."}>{iw || "—"}</em>
+                        {/if}
                         <span class="text-muted" style="font-size:10px">▾</span>
                     </button>
                     {#if widthOpen}
@@ -316,7 +394,7 @@
             </div>
 
             <!-- Dash style -->
-            <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:38px">
+            <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentDasharray || !normalizeDash(currentDasharray)} style="min-height:38px">
                 <span class="sp-icon" onmouseenter={(e) => showTip(e, 'Dash style')} onmouseleave={hideTip}>{@html IC.dash}</span>
                 <div class="dropdown flex-grow-1" bind:this={dashDropEl}>
                     <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center gap-1"
@@ -325,7 +403,14 @@
                             <line x1="2" y1="7" x2="50" y2="7" stroke="#506784" stroke-width="2"
                                 stroke-dasharray={normalizeDash(currentDasharray) || "none"} stroke-linecap="round"/>
                         </svg>
-                        <span class="flex-grow-1 text-start" style="font-size:11px">{currentDashPreset()?.label ?? "—"}</span>
+                        {#if currentDasharray && normalizeDash(currentDasharray)}
+                            <span class="flex-grow-1 text-start" style="font-size:11px">{currentDashPreset()?.label ?? "—"}</span>
+                        {:else}
+                            {@const id = inheritedDash()}
+                            <span class="flex-grow-1"></span>
+                            <em class="text-muted me-1" style="font-size:10px"
+                                use:bsTooltip={"Not set here — applied automatically from another style. Click to override."}>{id || "—"}</em>
+                        {/if}
                         <span class="text-muted" style="font-size:10px">▾</span>
                     </button>
                     {#if dashOpen}
@@ -408,6 +493,22 @@
     .sp-icon:hover { color: #506784; }
 
     .sp-preview { display: block; flex-shrink: 0; }
+
+    .sp-inherited-row { background: #f8f9fa; }
+
+    .sp-cascade {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+    .sp-inherited-swatch {
+        width: 13px;
+        height: 13px;
+        border-radius: 2px;
+        border: 1.5px dashed #adb5bd;
+        flex-shrink: 0;
+    }
 
     .sp-tip {
         position: fixed; pointer-events: none; z-index: 99999;
