@@ -383,6 +383,7 @@
                 if (commonState.currentMode === "macro") macroSidebar!.onZoom(e);
             })
             .on("start", () => {
+                stylePanel?.close();
                 closeMenu();
             });
         container.call(dragFunc);
@@ -1995,6 +1996,7 @@
                         {draw}
                         {svg}
                         onMapMoveStart={() => {
+                            stylePanel?.close();
                             closeMenu();
                             stopDrawFreeHand();
                         }}
@@ -2007,15 +2009,18 @@
         <Navbar>
             {#snippet children()}
             <div class="d-flex align-items-center justify-content-between w-100 px-3">
-                <!-- LEFT: drawing tools -->
-                <ToolStrip
-                    {activeTool}
-                    onDrawCurve={toolDrawCurve}
-                    onDrawFreehand={toolDrawFreehand}
-                    onPickShape={onToolPickShape}
-                    onCustomImage={onToolCustomImage}
-                    onAddLabel={onToolAddLabel}
-                />
+                <!-- LEFT: drawing tools + map settings -->
+                <div class="d-flex align-items-center gap-2">
+                    <SettingsStrip {draw} />
+                    <ToolStrip
+                        {activeTool}
+                        onDrawCurve={toolDrawCurve}
+                        onDrawFreehand={toolDrawFreehand}
+                        onPickShape={onToolPickShape}
+                        onCustomImage={onToolCustomImage}
+                        onAddLabel={onToolAddLabel}
+                    />
+                </div>
                 <!-- RIGHT: tools + user -->
                 <div class="d-flex align-items-center gap-2">
                     {#if currentUser}
@@ -2155,7 +2160,6 @@
                 ondragover={(e) => { if (e.dataTransfer?.types.includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } }}
                 ondrop={onMapDrop}
             >
-                <SettingsStrip {draw} />
                 <div id="map-container" class="col mx-4"></div>
                 <div id="maplibre-map"></div>
                 <ResizeHandles onResize={onSvgResize} />

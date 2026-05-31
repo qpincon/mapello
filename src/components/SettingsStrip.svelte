@@ -47,7 +47,7 @@
 
 <svelte:document onclick={closePanel} />
 
-<button class="settings-btn" onclick={toggle}>
+<button class="navbar-btn" onclick={toggle}>
     Map settings
     <svg class="chevron" class:open width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
         <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -206,32 +206,6 @@
 {/if}
 
 <style lang="scss">
-.settings-btn {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    z-index: 10;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 10px;
-    background: white;
-    border: 1px solid #c8d4e3;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    color: #506784;
-    cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    transition: box-shadow 0.15s, border-color 0.15s, color 0.15s;
-
-    &:hover {
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-        border-color: #9ab0ca;
-        color: #2a3d5c;
-    }
-}
-
 .chevron {
     opacity: 0.5;
     transition: transform 0.15s;

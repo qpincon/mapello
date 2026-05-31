@@ -438,14 +438,20 @@
     /* Smooth transition on all map layer elements so hover-in and hover-out both fade */
     :global(#static-svg-map #micro > path),
     :global(#static-svg-map #micro-background),
-    :global(#static-svg-map #buildings) {
+    :global(#static-svg-map #buildings),
+    :global(#static-svg-map #points-labels),
+    :global(#static-svg-map #paths),
+    :global(#static-svg-map .freehand) {
         transition: opacity 0.15s ease;
     }
 
     /* Dim everything when any layer row is hovered */
     :global(#static-svg-map.layer-hover #micro > path),
     :global(#static-svg-map.layer-hover #micro-background),
-    :global(#static-svg-map.layer-hover #buildings) {
+    :global(#static-svg-map.layer-hover #buildings),
+    :global(#static-svg-map.layer-hover #points-labels),
+    :global(#static-svg-map.layer-hover #paths),
+    :global(#static-svg-map.layer-hover .freehand) {
         opacity: 0.12;
     }
 

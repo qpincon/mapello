@@ -758,7 +758,7 @@ export function generateCssFromState(state: MicroPalette): string | null {
     #micro .poly { 
         stroke-linejoin: round;
     }
-    #paths > path {
+    #paths path {
         stroke: ${state['roads']?.stroke ?? '#6D4C41'};
         fill: none;
         stroke-width: 2px;
