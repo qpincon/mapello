@@ -44,8 +44,8 @@
 
     const IC = {
         font:   `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="currentColor"><text x="1" y="13" font-size="13" font-weight="700" font-family="serif">A</text></svg>`,
-        fill:   `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2" fill="currentColor"/></svg>`,
-        stroke: `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>`,
+        fill:   `<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="currentColor"><path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15a1.49 1.49 0 000 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/></svg>`,
+        stroke: `<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`,
         width:  `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="currentColor"><rect x="2" y="3" width="12" height="1.5" rx="0.75"/><rect x="2" y="7" width="12" height="2.5" rx="1.25"/><rect x="2" y="12" width="12" height="3" rx="1.5"/></svg>`,
         dash:   `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="currentColor"><rect x="1" y="7" width="4" height="2" rx="1"/><rect x="6.5" y="7" width="4" height="2" rx="1"/><rect x="12" y="7" width="3" height="2" rx="1"/></svg>`,
     };
@@ -246,8 +246,14 @@
 
 <!-- Full color property row (fill / stroke) -->
 {#snippet colorField(prop: string, currentVal: string, icon: string, tipLabel: string)}
+{@const effectiveColor = currentVal || inheritedColor(prop)}
 <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentVal} style="min-height:38px">
-    <span class="sp-icon" onmouseenter={(e) => showTip(e, tipLabel)} onmouseleave={hideTip}>{@html icon}</span>
+    <span class="sp-icon sp-icon-color" onmouseenter={(e) => showTip(e, tipLabel)} onmouseleave={hideTip}>
+        {@html icon}
+        <span class="sp-color-bar"
+            class:sp-color-bar--inherited={!currentVal}
+            style="background:{effectiveColor && effectiveColor !== 'none' ? effectiveColor : 'transparent'}"></span>
+    </span>
     <div class="d-flex align-items-center flex-grow-1 gap-2 overflow-hidden">
         <StyleColorPicker value={currentVal} onChange={(c) => apply(prop, c)} />
         {#if currentVal}
@@ -446,6 +452,13 @@
         color: #8da5be; cursor: default;
     }
     .sp-icon:hover { color: #506784; }
+    /* Fill / stroke icons: stack icon above colour bar */
+    .sp-icon-color { flex-direction: column; gap: 2px; }
+    .sp-color-bar {
+        width: 16px; height: 3px; border-radius: 2px;
+        border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0;
+    }
+    .sp-color-bar--inherited { opacity: 0.45; }
 
     .sp-preview { display: block; flex-shrink: 0; }
 

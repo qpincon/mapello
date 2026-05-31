@@ -13,6 +13,7 @@
     import { processUploadedImage } from "./util/imageProcess";
     import { log } from "./util/log";
     import * as shapes from "./svg/shapeDefs";
+    import { shapeViewBoxes } from "./svg/shapeDefs";
     import * as markers from "./svg/markerDefs";
     import {
         setTransformScale,
@@ -77,6 +78,7 @@
     import { exportMacro } from "./macro/export";
     import MicroSidebar from "./micro/components/MicroSidebar.svelte";
     import SettingsStrip from "./components/SettingsStrip.svelte";
+    import ToolStrip from "./components/ToolStrip.svelte";
     import { exportMicro } from "./micro/drawing";
     import { replaceCssSheetContent, updateSvgPatterns } from "./micro/change";
     import {
@@ -106,15 +108,16 @@
 
     // ==== End state =====
 
-    const shapeViewBoxes: Record<string, string> = {
-        circle: "-4 -4 8 8",
-        rectangle: "0 0 8 8",
-        star: "-1 -1 14 14",
-        cross: "0 0 12 13",
-        heart: "0 -1 8 10",
-        location: "-9 -22 18 23",
-        pin: "-8 -24 16 25",
-    };
+    // shapeViewBoxes moved to src/svg/shapeDefs.ts and imported above.
+
+    // ==== Toolbar / placement state ====
+    type ActiveTool = null | 'curve' | 'freehand' | 'point' | 'label';
+    type PendingPlacement = null | { kind: 'shape'; shapeName: ShapeName } | { kind: 'label' };
+    let activeTool = $state<ActiveTool>(null);
+    let pendingPlacement = $state<PendingPlacement>(null);
+    let placementSvgNode: SVGSVGElement | null = null;
+    let isDraggingImage = $state(false);
+    // ==== End toolbar state ====
 
     let commonCss: string | undefined = $state(undefined);
     const menuStates: MenuState = $state({
@@ -348,6 +351,16 @@
             }
         });
         setTimeout(() => maybeStartTour({ loggedIn: !!currentUser }), 600);
+
+        // Show the drop overlay as soon as a file is dragged anywhere on the page.
+        document.addEventListener('dragenter', (e: DragEvent) => {
+            if (e.dataTransfer?.types.includes('Files')) isDraggingImage = true;
+        });
+        document.addEventListener('dragleave', (e: DragEvent) => {
+            // relatedTarget is null when the drag leaves the browser window entirely.
+            if (!e.relatedTarget) isDraggingImage = false;
+        });
+        document.addEventListener('drop', () => { isDraggingImage = false; });
     });
 
     function attachListeners(): void {
@@ -686,6 +699,7 @@
     function onSvgMouseDown(e: MouseEvent): void {
         // if (commonState.currentMode !== "macro") return;
         if (e.button !== 0) return;
+        if (isDrawingFreeHand || isDrawingPath || editingPath) return;
         const entity = identifyClickedEntity(e.target as Element) ?? identifyClickedPath(e);
         if (!entity) {
             if (commonState.currentMode === "micro" && !isDrawingFreeHand && !isDrawingPath && !editingPath) {
@@ -988,6 +1002,121 @@
         saveState();
     }
 
+    // ==== Toolbar handlers ====
+
+    function toolDrawCurve(): void {
+        activeTool = 'curve';
+        addPath();
+    }
+
+    function toolDrawFreehand(): void {
+        activeTool = 'freehand';
+        drawFreeHand();
+    }
+
+    function teardownPlacement(): void {
+        if (placementSvgNode) {
+            placementSvgNode.removeEventListener('click', onPlacementClick, true);
+            placementSvgNode = null;
+        }
+        window.removeEventListener('keydown', onPlacementEscape);
+        attachListeners();
+    }
+
+    function onPlacementEscape(e: KeyboardEvent): void {
+        if (e.key === 'Escape') {
+            teardownPlacement();
+            pendingPlacement = null;
+            activeTool = null;
+        }
+    }
+
+    function onPlacementClick(e: MouseEvent): void {
+        e.stopPropagation();
+        e.preventDefault();
+        const position = appState.projection!.invert!(pointer(e))!;
+        const captured = pendingPlacement;
+        teardownPlacement();
+        pendingPlacement = null;
+        if (captured?.kind === 'shape') {
+            openContextMenuInfo = { event: e, position, target: e.target as SVGPathElement };
+            activeTool = null;
+            addShape(captured.shapeName);
+        } else if (captured?.kind === 'label') {
+            // showMenu positions the hidden #contextmenu at the click point and sets openContextMenuInfo
+            showMenu(e);
+            addLabel();
+            // activeTool will be cleared in validateLabel / closeMenu
+        }
+    }
+
+    function getViewportCenterPosition(): [number, number] {
+        const svgNode = svg.node() as SVGSVGElement;
+        const w = svgNode.width.baseVal.value;
+        const h = svgNode.height.baseVal.value;
+        return appState.projection!.invert!([w / 2, h / 2])!;
+    }
+
+    function armPlacement(p: NonNullable<PendingPlacement>): void {
+        closeMenu();
+        clearSelection();
+        detachListeners();
+        pendingPlacement = p;
+        activeTool = p.kind === 'shape' ? 'point' : 'label';
+        placementSvgNode = svg.node() as SVGSVGElement;
+        placementSvgNode.addEventListener('click', onPlacementClick, true);
+        window.addEventListener('keydown', onPlacementEscape);
+    }
+
+    function onToolPickShape(shapeName: ShapeName): void {
+        armPlacement({ kind: 'shape', shapeName });
+    }
+
+    function onToolCustomImage(): void {
+        if (!svg?.node() || !appState.projection?.invert) return;
+        openContextMenuInfo = {
+            event: new MouseEvent('click'),
+            position: getViewportCenterPosition(),
+            target: svg.node() as unknown as SVGPathElement,
+        };
+        startImportCustomImageShape();
+    }
+
+    function onToolAddLabel(): void {
+        armPlacement({ kind: 'label' });
+    }
+
+    async function onMapDrop(e: DragEvent): Promise<void> {
+        isDraggingImage = false;
+        e.preventDefault();
+        const file = e.dataTransfer?.files[0];
+        if (!file) return;
+        const isImage = file.type.startsWith('image/') || file.name.endsWith('.svg');
+        if (!isImage) return;
+        if (!svg?.node() || !appState.projection?.invert) return;
+        let content: string;
+        try {
+            content = await processUploadedImage(file);
+        } catch (err) {
+            alert((err as Error).message);
+            return;
+        }
+        const position = getViewportCenterPosition();
+        const shapeId = `custom-image-${commonState.shapeCount++}`;
+        const newIndex = commonState.providedShapes.length;
+        commonState.providedShapes.push({
+            id: shapeId,
+            pos: position,
+            scale: 1,
+            customImage: { name: file.name, content, width: 30, height: 40 },
+        });
+        drawAndSetupShapes();
+        requestAnimationFrame(() => toggleSelection({ type: 'shape', index: newIndex, id: shapeId }, false));
+        saveState();
+    }
+
+    // ==== End toolbar handlers ====
+
     function addPath(): void {
         track('element_add', { type: 'path' });
         closeMenu();
@@ -1014,6 +1143,7 @@
             setTimeout(() => {
                 isDrawingPath = false;
                 isActivelyDrawingPath = false;
+                activeTool = null;
             }, 0);
         });
     }
@@ -1040,6 +1170,7 @@
         attachListeners();
         isDrawingPath = false;
         isActivelyDrawingPath = false;
+        activeTool = null;
     }
 
     function onMapMouseEnter(): void {
@@ -1073,6 +1204,11 @@
         drawingTooltip.style.top = e.clientY + 15 + "px";
     }
 
+    function onFreehandPointerUp(): void {
+        // Let FreehandDrawer.handlePointerUp finalize the stroke first, then commit.
+        setTimeout(() => stopDrawFreeHand(), 0);
+    }
+
     function drawFreeHand(): void {
         track('element_add', { type: 'freehand' });
         isDrawingFreeHand = true;
@@ -1082,15 +1218,20 @@
         detachListeners();
         freeHandDrawer.start(svg.node() as SVGSVGElement);
         document.addEventListener("mousemove", updateDrawingTooltip);
+        // One-shot: exit after the first stroke (pointer release).
+        document.addEventListener("pointerup", onFreehandPointerUp, { once: true });
         addMapCursorListeners();
     }
 
     function stopDrawFreeHand(): void {
         if (!isDrawingFreeHand) return;
         document.removeEventListener("mousemove", updateDrawingTooltip);
+        // Defensive removal in case stopDrawFreeHand was called via right-click before one-shot fired.
+        document.removeEventListener("pointerup", onFreehandPointerUp);
         removeMapCursorListeners();
         attachListeners();
         isDrawingFreeHand = false;
+        activeTool = null;
         const newGroup = freeHandDrawer.stop();
         const paths = newGroup.querySelectorAll("path");
         if (!paths.length) return;
@@ -1331,6 +1472,7 @@
             commonState.inlineStyles[labelId] = { ...commonState.lastUsedLabelProps };
             typedText = "";
         }
+        activeTool = null;
         drawAndSetupShapes();
         closeMenu();
     }
@@ -1407,12 +1549,13 @@
         contextualMenu!.style.top = e.pageY + "px";
     }
 
-    async function addShape(shapeName: ShapeName): Promise<void> {
+    function addShape(shapeName: ShapeName): void {
         track('element_add', { type: 'shape' });
         const shapeId = `${shapeName}-${commonState.shapeCount++}`;
         const lastPoint = [...commonState.providedShapes]
             .reverse()
             .find((s) => s.name !== undefined || s.customImage !== undefined);
+        const newIndex = commonState.providedShapes.length;
         commonState.providedShapes.push({
             name: shapeName,
             pos: openContextMenuInfo.position,
@@ -1424,13 +1567,11 @@
         }
         drawAndSetupShapes();
         closeMenu();
-        await tick();
-        setTimeout(() => {
-            const lastShape = document.getElementById(
-                commonState.providedShapes[commonState.providedShapes.length - 1].id,
-            )!;
-            stylePanel?.open(lastShape);
-        }, 0);
+        requestAnimationFrame(() => {
+            toggleSelection({ type: 'shape', index: newIndex, id: shapeId }, false);
+            const el = document.getElementById(shapeId);
+            if (el) stylePanel?.open(el);
+        });
     }
 
     function startImportCustomImageShape(): void {
@@ -1449,6 +1590,7 @@
             return;
         }
         const shapeId = `custom-image-${commonState.shapeCount++}`;
+        const newIndex = commonState.providedShapes.length;
         commonState.providedShapes.push({
             id: shapeId,
             pos: openContextMenuInfo.position,
@@ -1462,6 +1604,7 @@
         });
         drawAndSetupShapes();
         closeMenu();
+        requestAnimationFrame(() => toggleSelection({ type: 'shape', index: newIndex, id: shapeId }, false));
         saveState();
     }
 
@@ -1864,12 +2007,15 @@
         <Navbar>
             {#snippet children()}
             <div class="d-flex align-items-center justify-content-between w-100 px-3">
-                <!-- LEFT: brand -->
-                <div class="d-flex align-items-center gap-2">
-                    <a href="/" class="navbar-brand-link" aria-label="Mapello home">
-                        <img src="/wordmark_combined_transparent.png" alt="Mapello" height="32" />
-                    </a>
-                </div>
+                <!-- LEFT: drawing tools -->
+                <ToolStrip
+                    {activeTool}
+                    onDrawCurve={toolDrawCurve}
+                    onDrawFreehand={toolDrawFreehand}
+                    onPickShape={onToolPickShape}
+                    onCustomImage={onToolCustomImage}
+                    onAddLabel={onToolAddLabel}
+                />
                 <!-- RIGHT: tools + user -->
                 <div class="d-flex align-items-center gap-2">
                     {#if currentUser}
@@ -2002,11 +2148,27 @@
                 </div>
             {/if}
 
-            <div id="map-content" style="position: relative;">
+            <div
+                id="map-content"
+                class:placing={!!pendingPlacement}
+                style="position: relative;"
+                ondragover={(e) => { if (e.dataTransfer?.types.includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } }}
+                ondrop={onMapDrop}
+            >
                 <SettingsStrip {draw} />
                 <div id="map-container" class="col mx-4"></div>
                 <div id="maplibre-map"></div>
                 <ResizeHandles onResize={onSvgResize} />
+                {#if isDraggingImage}
+                    <div class="drop-overlay">
+                        <div class="drop-label">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                            Drop image to add to map
+                        </div>
+                    </div>
+                {/if}
             </div>
             {#if commonState.currentMode === "micro"}
                 <div class="ms-auto me-4 mt-2">
@@ -2209,6 +2371,38 @@
         z-index: 1;
     }
 
+    #map-content.placing,
+    #map-content.placing :global(svg) {
+        cursor: crosshair;
+    }
+
+    .drop-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 200;
+        background: rgba(74, 127, 193, 0.1);
+        border: 2px dashed #4a7fc1;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+    }
+
+    .drop-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 20px 32px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1.5px dashed #4a7fc1;
+        border-radius: 10px;
+        color: #2a5fa8;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
     .drawing-tooltip {
         position: fixed;
         background: rgba(0, 0, 0, 0.75);
@@ -2221,20 +2415,6 @@
         white-space: nowrap;
     }
 
-
-    .navbar-brand-link {
-        display: inline-flex;
-        align-items: center;
-        text-decoration: none;
-        transition: opacity 0.2s ease;
-        flex-shrink: 0;
-    }
-    .navbar-brand-link:hover { opacity: 0.75; }
-    .navbar-brand-link img {
-        height: 32px;
-        width: auto;
-        display: block;
-    }
 
     :global(.bottom-buttons) {
         position: absolute;

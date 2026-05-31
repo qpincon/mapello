@@ -183,7 +183,7 @@ export async function drawPrettyMap(
             if (geom.properties['kind_detail'] === 'corridor') return false;
             const layer = geom.properties['layer'];
             /** Remove below ground buildings */
-            if (layer != null && layer < 0) return false;
+            if (geom.properties.mapLayerId === "buildings" && layer != null && layer < 0) return false;
             return true;
         });
         // Process got interrupted, a new call to this function is coming soon

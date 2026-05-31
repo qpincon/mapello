@@ -6,3 +6,14 @@ export const heart = `<path stroke-width="0" transform-origin="6 6" d="M3.7 1.3C
 export const location = `<path fill-rule="evenodd" stroke-width="0" d="M0 0C-4-4-8-7-8-13A8 8 0 0 1 8-13C8-7 4-4 0 0Z M-3.5-13A3.5 3.5 0 1 0 3.5-13A3.5 3.5 0 1 0-3.5-13Z"/>`;
 export const pin = `<path stroke-width="0" d="M-1.2-9 L-1.2 0 L1.2 0 L1.2-9 Z M-7-16 A7 7 0 1 0 7-16 A7 7 0 1 0-7-16 Z"/>`;
 
+/** SVG viewBox string per shape name — shared between App.svelte and ToolStrip.svelte. */
+export const shapeViewBoxes: Record<string, string> = {
+    circle: "-4 -4 8 8",
+    rectangle: "0 0 8 8",
+    star: "-1 -1 14 14",
+    cross: "0 0 12 13",
+    heart: "0 -1 8 10",
+    location: "-9 -22 18 23",
+    pin: "-8 -24 16 25",
+};
+
