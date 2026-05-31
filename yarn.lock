@@ -680,6 +680,11 @@
   resolved "https://registry.npmjs.org/@parcel/watcher-linux-x64-glibc/-/watcher-linux-x64-glibc-2.5.6.tgz"
   integrity sha512-kbT5wvNQlx7NaGjzPFu8nVIW1rWqV780O7ZtkjuWaPUgpv2NMFpjYERVi0UYj1msZNyCzGlaCWEtzc+exjMGbQ==
 
+"@parcel/watcher-linux-x64-musl@2.5.6":
+  version "2.5.6"
+  resolved "https://registry.npmjs.org/@parcel/watcher-linux-x64-musl/-/watcher-linux-x64-musl-2.5.6.tgz"
+  integrity sha512-1JRFeC+h7RdXwldHzTsmdtYR/Ku8SylLgTU/reMuqdVD7CtLwf0VR1FqeprZ0eHQkO0vqsbvFLXUmYm/uNKJBg==
+
 "@parcel/watcher@^2.4.1":
   version "2.5.6"
   resolved "https://registry.npmjs.org/@parcel/watcher/-/watcher-2.5.6.tgz"
@@ -949,6 +954,11 @@
   resolved "https://registry.npmjs.org/@rollup/rollup-linux-x64-gnu/-/rollup-linux-x64-gnu-4.59.0.tgz"
   integrity sha512-3AHmtQq/ppNuUspKAlvA8HtLybkDflkMuLK4DPo77DfthRb71V84/c4MlWJXixZz4uruIH4uaa07IqoAkG64fg==
 
+"@rollup/rollup-linux-x64-musl@4.59.0":
+  version "4.59.0"
+  resolved "https://registry.npmjs.org/@rollup/rollup-linux-x64-musl/-/rollup-linux-x64-musl-4.59.0.tgz"
+  integrity sha512-2UdiwS/9cTAx7qIUZB/fWtToJwvt0Vbo0zmnYt7ED35KPg13Q0ym1g442THLC7VyI6JfYTP4PiSOWyoMdV2/xg==
+
 "@sentry-internal/browser-utils@10.53.1":
   version "10.53.1"
   resolved "https://registry.npmjs.org/@sentry-internal/browser-utils/-/browser-utils-10.53.1.tgz"
@@ -1136,11 +1146,6 @@
   dependencies:
     "@sentry/bundler-plugin-core" "5.3.0"
     "@sentry/rollup-plugin" "5.3.0"
-
-"@sphinxxxx/color-conversion@^2.2.2":
-  version "2.2.2"
-  resolved "https://registry.npmjs.org/@sphinxxxx/color-conversion/-/color-conversion-2.2.2.tgz"
-  integrity sha512-XExJS3cLqgrmNBIP3bBw6+1oQ1ksGjFh0+oClDKFYpCCqx/hlqwWO5KO/S63fzUo67SxI9dMrF0y5T/Ey7h8Zw==
 
 "@stablelib/base64@^1.0.0":
   version "1.0.1"
@@ -4635,6 +4640,11 @@ safe-regex-test@^1.1.0:
   resolved "https://registry.npmjs.org/safer-buffer/-/safer-buffer-2.1.2.tgz"
   integrity sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==
 
+sass-embedded-linux-musl-x64@1.97.3:
+  version "1.97.3"
+  resolved "https://registry.npmjs.org/sass-embedded-linux-musl-x64/-/sass-embedded-linux-musl-x64-1.97.3.tgz"
+  integrity sha512-/oWJ+OVrDg7ADDQxRLC/4g1+Nsz1g4mkYS2t6XmyMJKFTFK50FVI2t5sOdFH+zmMp+nXHKM036W94y9m4jjEcw==
+
 sass-embedded-linux-x64@1.97.3:
   version "1.97.3"
   resolved "https://registry.npmjs.org/sass-embedded-linux-x64/-/sass-embedded-linux-x64-1.97.3.tgz"
@@ -5209,13 +5219,6 @@ valibot@1.2.0:
   version "1.2.0"
   resolved "https://registry.npmjs.org/valibot/-/valibot-1.2.0.tgz"
   integrity sha512-mm1rxUsmOxzrwnX5arGS+U4T25RdvpPjPN4yR0u9pUBov9+zGVtO84tif1eY4r6zWxVxu3KzIyknJy3rxfRZZg==
-
-vanilla-picker@^2.12.1:
-  version "2.12.3"
-  resolved "https://registry.npmjs.org/vanilla-picker/-/vanilla-picker-2.12.3.tgz"
-  integrity sha512-qVkT1E7yMbUsB2mmJNFmaXMWE2hF8ffqzMMwe9zdAikd8u2VfnsVY2HQcOUi2F38bgbxzlJBEdS1UUhOXdF9GQ==
-  dependencies:
-    "@sphinxxxx/color-conversion" "^2.2.2"
 
 varint@^6.0.0:
   version "6.0.0"

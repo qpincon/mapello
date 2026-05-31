@@ -134,13 +134,6 @@ body {
     border: none;
 }
 
-.accordion-item .picker_sample {
-    display: none;
-}
-
-.accordion-item .picker_editor {
-    display: none;
-}
 
 .range-label {
     min-width: 3rem;
@@ -204,9 +197,6 @@ aside .nav-link.active {
     font-weight: 500 !important;
 }
 
-.picker_wrapper.popup {
-    z-index: 9999;
-}
 
 .col-form-label {
     font-weight: initial;

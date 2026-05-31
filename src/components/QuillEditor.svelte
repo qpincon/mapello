@@ -5,7 +5,7 @@
     import { StyleAttributor, Scope } from "parchment";
     import QuillResizeImage from "quill-resize-image";
     import "quill/dist/quill.snow.css";
-    import ColorPicker from "./ColorPicker.svelte";
+    import StyleColorPicker from "./StyleColorPicker.svelte";
     import type { Color } from "src/types";
 
     // Override Block to use <div> instead of <p>
@@ -76,12 +76,12 @@
     let isInternalUpdate = false;
 
     // ColorPicker instances for toolbar buttons that need color selection
-    let containerBgPicker: ColorPicker | null = $state(null);
-    let containerBorderPicker: ColorPicker | null = $state(null);
-    let blockBorderPicker: ColorPicker | null = $state(null);
-    let borderBottomPicker: ColorPicker | null = $state(null);
-    let textColorPicker: ColorPicker | null = $state(null);
-    let textBgPicker: ColorPicker | null = $state(null);
+    let containerBgPicker: StyleColorPicker | null = $state(null);
+    let containerBorderPicker: StyleColorPicker | null = $state(null);
+    let blockBorderPicker: StyleColorPicker | null = $state(null);
+    let borderBottomPicker: StyleColorPicker | null = $state(null);
+    let textColorPicker: StyleColorPicker | null = $state(null);
+    let textBgPicker: StyleColorPicker | null = $state(null);
 
     // Current color values for the pickers
     let containerBgColor = $state<Color>("#ffffffff");
@@ -468,19 +468,15 @@
 
 <div class="quill-wrapper" class:is-invalid={hasError}>
     <div bind:this={editorContainer}></div>
-    <!-- Hidden ColorPicker instances used by toolbar handlers -->
+    <!-- Hidden StyleColorPicker instances used by toolbar handlers (open/setColor called imperatively) -->
     <div class="color-pickers-container">
-        <ColorPicker bind:this={textColorPicker} value={textColorValue} onChange={onTextColorChange} />
-        <ColorPicker bind:this={textBgPicker} value={textBgValue} onChange={onTextBgChange} />
+        <StyleColorPicker bind:this={textColorPicker} value={textColorValue} onChange={onTextColorChange} />
+        <StyleColorPicker bind:this={textBgPicker} value={textBgValue} onChange={onTextBgChange} />
         {#if containerStyle}
-            <ColorPicker bind:this={containerBgPicker} value={containerBgColor} onChange={onContainerBgChange} />
-            <ColorPicker
-                bind:this={containerBorderPicker}
-                value={containerBorderColor}
-                onChange={onContainerBorderChange}
-            />
-            <ColorPicker bind:this={blockBorderPicker} value={blockBorderColor} onChange={onBlockBorderChange} />
-            <ColorPicker bind:this={borderBottomPicker} value={borderBottomColor} onChange={onBorderBottomChange} />
+            <StyleColorPicker bind:this={containerBgPicker} value={containerBgColor} onChange={onContainerBgChange} />
+            <StyleColorPicker bind:this={containerBorderPicker} value={containerBorderColor} onChange={onContainerBorderChange} />
+            <StyleColorPicker bind:this={blockBorderPicker} value={blockBorderColor} onChange={onBlockBorderChange} />
+            <StyleColorPicker bind:this={borderBottomPicker} value={borderBottomColor} onChange={onBorderBottomChange} />
         {/if}
     </div>
 </div>
@@ -502,9 +498,17 @@
         top: 0;
         left: 0;
         pointer-events: none;
+        overflow: hidden;
+        width: 0;
+        height: 0;
     }
-    .color-pickers-container :global(div) {
-        pointer-events: auto;
+    /* Buttons are zero-size/hidden; popovers use position:fixed so they escape */
+    .color-pickers-container :global(button) {
+        width: 0;
+        height: 0;
+        padding: 0;
+        border: none;
+        overflow: hidden;
     }
 
     .quill-wrapper :global(.ql-container) {

@@ -189,29 +189,27 @@
     <div class="style-ring" style={ringStyle}></div>
 {/if}
 
-<aside class="style-panel d-flex flex-column border-start shadow-sm" bind:this={panelEl}>
+<aside class="style-panel d-flex flex-column border-start" bind:this={panelEl}>
 
     <!-- Header -->
-    <div class="d-flex align-items-center justify-content-between px-3 bg-primary text-white flex-shrink-0" style="min-height:38px">
-        <span class="fw-semibold text-uppercase" style="font-size:11px;letter-spacing:.04em">Styles</span>
+    <div class="d-flex align-items-center justify-content-between px-3 border-bottom flex-shrink-0 bg-white" style="min-height:36px">
         {#if element}
-            <button type="button" class="btn-close btn-close-white" onclick={close} aria-label="Close"></button>
+            <span class="font-monospace text-secondary text-truncate flex-grow-1" style="font-size:11px">{getElementInfo()}</span>
+            <button type="button" class="btn-close ms-2 flex-shrink-0" onclick={close} aria-label="Close" style="font-size:0.6rem"></button>
+        {:else}
+            <span class="text-secondary fw-semibold text-uppercase" style="font-size:11px;letter-spacing:.04em">Styles</span>
         {/if}
     </div>
 
     {#if element}
-        <!-- Element info -->
-        <div class="px-3 py-1 border-bottom font-monospace text-secondary text-truncate" style="font-size:11px">{getElementInfo()}</div>
 
         <!-- Rule tabs -->
         {#if matchedRules.length > 1}
-            <div class="d-flex flex-wrap gap-1 px-2 py-2 border-bottom">
+            <div class="d-flex border-bottom">
                 {#each matchedRules as rule, i}
                     <button type="button"
-                        class="btn btn-sm rounded-pill py-0 px-2"
-                        class:btn-primary={i === selectedRuleIndex}
-                        class:btn-outline-secondary={i !== selectedRuleIndex}
-                        style="font-size:11px"
+                        class="sp-rule-tab"
+                        class:active={i === selectedRuleIndex}
                         onmouseenter={() => highlightRule(rule)}
                         onmouseleave={clearHighlight}
                         onclick={() => { selectedRuleIndex = i; closeDropdowns(); }}>
@@ -387,6 +385,20 @@
     @keyframes march { to { background-position: 0 -10px, 10px 0, 100% 10px, -10px 100%; } }
 
     .style-panel { width: 248px; }
+
+    .sp-rule-tab {
+        padding: 5px 12px;
+        border: none;
+        border-bottom: 2px solid transparent;
+        background: none;
+        font-size: 11px;
+        color: #8da5be;
+        cursor: pointer;
+        margin-bottom: -1px;
+        white-space: nowrap;
+    }
+    .sp-rule-tab:hover { color: #506784; }
+    .sp-rule-tab.active { color: #506784; font-weight: 600; border-bottom-color: #506784; }
 
     .sp-icon {
         width: 24px; flex-shrink: 0;

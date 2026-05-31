@@ -140,6 +140,35 @@
     });
 
     const currentHex = $derived(hexVal ? "#"+hexVal : "#000000");
+
+    // ── Imperative API (used by QuillEditor hidden pickers) ─────────
+    export function open() {
+        if (!buttonEl) return;
+        const rect = buttonEl.getBoundingClientRect();
+        let top: number, left: number;
+        if (rect.width === 0 || rect.height === 0) {
+            // Hidden button — centre on viewport
+            top = Math.max(4, window.innerHeight / 2 - POPOVER_H / 2);
+            left = Math.max(4, window.innerWidth / 2 - POPOVER_W / 2);
+        } else {
+            top = rect.bottom + 6;
+            left = rect.left;
+            if (top + POPOVER_H > window.innerHeight) top = rect.top - POPOVER_H - 6;
+            if (left + POPOVER_W > window.innerWidth) left = rect.right - POPOVER_W;
+            top = Math.max(4, top);
+            left = Math.max(4, left);
+        }
+        popTop = top; popLeft = left;
+        popoverOpen = true;
+    }
+
+    export function setColor(hex: string) {
+        const { hex: h, alpha: a } = parseValue(hex);
+        if (!h) return;
+        hexVal = h; alpha = a;
+        const hsv = hexToHsv("#" + h);
+        hue = hsv.h; sat = hsv.s; bri = hsv.v;
+    }
 </script>
 
 <div class="scp-wrap">
