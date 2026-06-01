@@ -1030,6 +1030,7 @@
     function teardownPlacement(): void {
         if (placementSvgNode) {
             placementSvgNode.removeEventListener('click', onPlacementClick, true);
+            placementSvgNode.removeEventListener('mousedown', onPlacementMouseDown, true);
             placementSvgNode = null;
         }
         window.removeEventListener('keydown', onPlacementEscape);
@@ -1044,6 +1045,24 @@
         }
     }
 
+    function onPlacementMouseDown(e: MouseEvent): void {
+        if (e.button !== 0) return;
+        e.stopPropagation();
+        e.preventDefault();
+        const position = appState.projection!.invert!(pointer(e))!;
+        const captured = pendingPlacement;
+        teardownPlacement();
+        pendingPlacement = null;
+        activeTool = null;
+        if (captured?.kind !== 'shape') return;
+        const { id, index } = placeShape(captured.shapeName, position);
+        toggleSelection({ type: 'shape', index, id }, false);
+        getOverlay()?.beginCreationResize(e, () => {
+            const el = document.getElementById(id);
+            if (el) stylePanel?.open(el);
+        });
+    }
+
     function onPlacementClick(e: MouseEvent): void {
         e.stopPropagation();
         e.preventDefault();
@@ -1051,11 +1070,7 @@
         const captured = pendingPlacement;
         teardownPlacement();
         pendingPlacement = null;
-        if (captured?.kind === 'shape') {
-            openContextMenuInfo = { event: e, position, target: e.target as SVGPathElement };
-            activeTool = null;
-            addShape(captured.shapeName);
-        } else if (captured?.kind === 'label') {
+        if (captured?.kind === 'label') {
             // showMenu positions the hidden #contextmenu at the click point and sets openContextMenuInfo
             showMenu(e);
             addLabel();
@@ -1077,7 +1092,11 @@
         pendingPlacement = p;
         activeTool = p.kind === 'shape' ? 'point' : 'label';
         placementSvgNode = svg.node() as SVGSVGElement;
-        placementSvgNode.addEventListener('click', onPlacementClick, true);
+        if (p.kind === 'shape') {
+            placementSvgNode.addEventListener('mousedown', onPlacementMouseDown, true);
+        } else {
+            placementSvgNode.addEventListener('click', onPlacementClick, true);
+        }
         window.addEventListener('keydown', onPlacementEscape);
     }
 
@@ -1551,7 +1570,7 @@
         contextualMenu!.style.top = e.pageY + "px";
     }
 
-    function addShape(shapeName: ShapeName): void {
+    function placeShape(shapeName: ShapeName, position: [number, number]): { id: string; index: number } {
         track('element_add', { type: 'shape' });
         const shapeId = `${shapeName}-${commonState.shapeCount++}`;
         const lastPoint = [...commonState.providedShapes]
@@ -1560,7 +1579,7 @@
         const newIndex = commonState.providedShapes.length;
         commonState.providedShapes.push({
             name: shapeName,
-            pos: openContextMenuInfo.position,
+            pos: position,
             scale: 1,
             id: shapeId,
         });
@@ -1568,6 +1587,11 @@
             commonState.inlineStyles[shapeId] = { ...commonState.inlineStyles[lastPoint.id] };
         }
         drawAndSetupShapes();
+        return { id: shapeId, index: newIndex };
+    }
+
+    function addShape(shapeName: ShapeName): void {
+        const { id: shapeId, index: newIndex } = placeShape(shapeName, openContextMenuInfo.position);
         closeMenu();
         requestAnimationFrame(() => {
             toggleSelection({ type: 'shape', index: newIndex, id: shapeId }, false);

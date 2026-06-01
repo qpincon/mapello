@@ -27,6 +27,7 @@ interface DragState {
     centerX?: number;
     centerY?: number;
     origRotation?: number;
+    creation?: boolean;
 }
 
 export class SelectionOverlay {
@@ -54,6 +55,7 @@ export class SelectionOverlay {
     private pendingRaf: number | null = null;
     private pendingClientX: number = 0;
     private pendingClientY: number = 0;
+    private onCreationDone: (() => void) | null = null;
 
     constructor(
         svg: SVGSVGElement,
@@ -278,6 +280,44 @@ export class SelectionOverlay {
 
     public beginDrag(e: MouseEvent): void {
         this.startDrag(e, "move");
+    }
+
+    // Starts a resize drag anchored at the element's own placement point so the shape
+    // grows in-place as the user drags away. Used for the topbar placement flow.
+    public beginCreationResize(e: MouseEvent, onDone?: () => void): void {
+        this.cachedInverseScreenCTM = this.svg.getScreenCTM()?.inverse() ?? null;
+        const pt = this.svgPoint(e.clientX, e.clientY);
+        const bbox = this.computeUnifiedBbox();
+        if (!bbox) return;
+
+        this.onCreationDone = onDone ?? null;
+
+        // Anchor at the top-left of the bbox: the shape grows toward the bottom-right as the user drags.
+        const anchorX = bbox.x;
+        const anchorY = bbox.y;
+
+        const origDiag = Math.max(1, Math.sqrt(bbox.width ** 2 + bbox.height ** 2));
+
+        const origPositions = new Map<string, { x: number; y: number }>();
+        for (const elem of this.elements) {
+            const c = getTranslateFromTransform(elem);
+            origPositions.set(elem.id, c ? { x: c[0], y: c[1] } : { x: 0, y: 0 });
+        }
+
+        this.dragState = {
+            mode: "resize",
+            creation: true,
+            startX: pt.x,
+            startY: pt.y,
+            corner: "se",
+            anchorX,
+            anchorY,
+            origDiag,
+            origPositions,
+        };
+
+        document.addEventListener("mousemove", this.boundMouseMove);
+        document.addEventListener("mouseup", this.boundMouseUp);
     }
 
     // onDragConfirmed: called when a drag actually starts (movement > threshold).
@@ -576,10 +616,26 @@ export class SelectionOverlay {
             const newDiag = Math.sqrt((pt.x - ax) ** 2 + (pt.y - ay) ** 2);
             const scaleFactor = Math.max(0.1, newDiag / state.origDiag!);
 
+            // Creation resize: if the pointer never moved, keep scale: 1 as-is.
+            if (state.creation && !state.started) {
+                this.dragState = null;
+                this.restoreOriginalTransforms(state);
+                this.suppressNextClick();
+                const done = this.onCreationDone;
+                this.onCreationDone = null;
+                done?.();
+                return;
+            }
+
             if (Math.abs(scaleFactor - 1) < 0.01) {
                 this.dragState = null;
                 // Restore transforms
                 this.restoreOriginalTransforms(state);
+                if (state.creation) {
+                    const done = this.onCreationDone;
+                    this.onCreationDone = null;
+                    done?.();
+                }
                 return;
             }
 
@@ -601,6 +657,11 @@ export class SelectionOverlay {
 
             // For paths/freehand, we need special handling: scale coords around anchor
             this.commitResize(deltas, scaleFactor, ax, ay);
+            if (state.creation) {
+                const done = this.onCreationDone;
+                this.onCreationDone = null;
+                done?.();
+            }
         }
 
         this.dragState = null;
