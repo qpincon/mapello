@@ -199,7 +199,7 @@
         const dim = DIM_TAGS.map((t) => `#static-svg-map.sp-hl ${t}`).join(", ");
         _hoverStyle = document.createElement("style");
         _hoverStyle.dataset.stylePanelHover = "";
-        _hoverStyle.textContent = `${dim}{opacity:.12;transition:opacity .1s}#static-svg-map.sp-hl ${selector}{opacity:1!important}`;
+        _hoverStyle.textContent = `${dim}{opacity:.12;transition:opacity .1s}#static-svg-map.sp-hl ${selector},#static-svg-map.sp-hl ${selector} *{opacity:1!important}`;
         document.head.appendChild(_hoverStyle);
     }
 

@@ -70,6 +70,7 @@
     import { Dropdown } from "bootstrap";
     import { applyInlineStyles, changeProjection, handleChangeProp } from "./macro/drawing";
     import { updateLayerSimplification } from "./macro/geometry-data";
+    import { altMin } from "./macro/interactions";
     import MacroSidebar from "./macro/components/MacroSidebar.svelte";
     import ResizeHandles from "./components/ResizeHandles.svelte";
     import { appState, commonState, macroState, microState } from "./state.svelte";
@@ -156,6 +157,13 @@
     let showExportConfirm = $state(false);
     let showPostExportInfo = $state(false);
     const POST_EXPORT_INFO_HIDDEN_KEY = "mapello-hide-post-export-info";
+    const MICRO_HINT_DISMISSED_KEY = "mapello-micro-hint-dismissed";
+    let microHintDismissed = $state(localStorage.getItem(MICRO_HINT_DISMISSED_KEY) === "1");
+    const showMicroHint = $derived(
+        commonState.currentMode === "macro" &&
+        !microHintDismissed &&
+        macroState.inlinePropsMacro.altitude <= altMin + 5
+    );
     let showInstructionsModal = $state(false);
     let showFeedbackModal = $state(false);
     let showAuthModal = $state(false);
@@ -1011,6 +1019,10 @@
     }
 
     function toolDrawFreehand(): void {
+        if (isDrawingFreeHand) {
+            stopDrawFreeHand();
+            return;
+        }
         activeTool = 'freehand';
         drawFreeHand();
     }
@@ -1205,11 +1217,6 @@
         drawingTooltip.style.top = e.clientY + 15 + "px";
     }
 
-    function onFreehandPointerUp(): void {
-        // Let FreehandDrawer.handlePointerUp finalize the stroke first, then commit.
-        setTimeout(() => stopDrawFreeHand(), 0);
-    }
-
     function drawFreeHand(): void {
         track('element_add', { type: 'freehand' });
         isDrawingFreeHand = true;
@@ -1218,17 +1225,11 @@
         clearSelection();
         detachListeners();
         freeHandDrawer.start(svg.node() as SVGSVGElement);
-        document.addEventListener("mousemove", updateDrawingTooltip);
-        // One-shot: exit after the first stroke (pointer release).
-        document.addEventListener("pointerup", onFreehandPointerUp, { once: true });
         addMapCursorListeners();
     }
 
     function stopDrawFreeHand(): void {
         if (!isDrawingFreeHand) return;
-        document.removeEventListener("mousemove", updateDrawingTooltip);
-        // Defensive removal in case stopDrawFreeHand was called via right-click before one-shot fired.
-        document.removeEventListener("pointerup", onFreehandPointerUp);
         removeMapCursorListeners();
         attachListeners();
         isDrawingFreeHand = false;
@@ -1945,13 +1946,9 @@
     {/snippet}
 </Modal>
 
-{#if (isDrawingFreeHand || (isDrawingPath && !isActivelyDrawingPath)) && isCursorInsideMap}
+{#if (isDrawingPath && !isActivelyDrawingPath) && isCursorInsideMap}
     <div id="drawing-tooltip" bind:this={drawingTooltip} class="drawing-tooltip">
-        {#if isDrawingPath}
-            Left-click and hold to draw a curve
-        {:else}
-            Right-click or press Enter to finish
-        {/if}
+        Left-click and hold to draw a curve
     </div>
 {/if}
 
@@ -2174,6 +2171,22 @@
                     </div>
                 {/if}
             </div>
+            {#if showMicroHint}
+                <div class="micro-hint-banner">
+                    <span>Want a detailed town view? Switch to <strong>Detailed mode</strong></span>
+                    <div class="micro-hint-actions">
+                        <button class="micro-hint-btn micro-hint-btn-primary" onclick={() => switchMode("micro")}>
+                            Go to Detailed
+                        </button>
+                        <button class="micro-hint-btn micro-hint-btn-dismiss" onclick={() => {
+                            microHintDismissed = true;
+                            localStorage.setItem(MICRO_HINT_DISMISSED_KEY, "1");
+                        }}>
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+            {/if}
             {#if commonState.currentMode === "micro"}
                 <div class="ms-auto me-4 mt-2">
                     Map data:
@@ -2407,6 +2420,47 @@
         font-weight: 500;
     }
 
+    .micro-hint-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 8px;
+        padding: 8px 16px;
+        background: #f0f6ff;
+        border: 1px solid #c2d9f8;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #2a5fa8;
+    }
+
+    .micro-hint-actions {
+        display: flex;
+        gap: 6px;
+    }
+
+    .micro-hint-btn {
+        border: none;
+        border-radius: 5px;
+        padding: 4px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .micro-hint-btn-primary {
+        background: #2a5fa8;
+        color: white;
+        &:hover { background: #1e4a8a; }
+    }
+
+    .micro-hint-btn-dismiss {
+        background: transparent;
+        color: #6b7280;
+        border: 1px solid #d1d5db;
+        &:hover { background: #f3f4f6; }
+    }
+
     .drawing-tooltip {
         position: fixed;
         background: rgba(0, 0, 0, 0.75);
@@ -2431,6 +2485,7 @@
         border-radius: 8px 8px 0 0;
         background: #f4f7fb;
         overflow: hidden;
+        z-index: 10;
     }
     :global(.instructions-btn) {
         background: none;

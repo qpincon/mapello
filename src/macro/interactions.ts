@@ -1,6 +1,6 @@
 import { appState, macroState } from "src/state.svelte";
 
-let altMin = 100;
+export let altMin = 100;
 let altMax = 10000;
 
 // Exponential simplification: area = minArea * (maxArea/minArea) ^ (t^curve)

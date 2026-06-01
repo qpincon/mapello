@@ -66,139 +66,149 @@
         {#if commonState.currentMode === 'macro'}
 
             <p class="section-label">Canvas</p>
-            <div class="field">
-                <RangeInput id="sp-width" title="Width"
-                    bind:value={macroState.macroParams.General.width}
-                    min={r('width').min} max={r('width').max} step={r('width').step ?? 1}
-                    onChange={() => onMacroChange('width')} />
-            </div>
-            <div class="field">
-                <RangeInput id="sp-height" title="Height"
-                    bind:value={macroState.macroParams.General.height}
-                    min={r('height').min} max={r('height').max} step={r('height').step ?? 1}
-                    onChange={() => onMacroChange('height')} />
-            </div>
-            <div class="field row align-items-center">
-                <label class="col-4 col-form-label" for="sp-projection">Projection</label>
-                <select id="sp-projection" class="form-select form-select-sm col"
-                    bind:value={macroState.macroParams.General.projection}
-                    onchange={() => onMacroChange('projection')}>
-                    {#each s('projection').choices as opt}
-                        <option value={opt}>{opt}</option>
-                    {/each}
-                </select>
-            </div>
-            {#if isSatellite}
+            <div class="section-card">
                 <div class="field">
-                    <RangeInput id="sp-fov" title="Field of view"
-                        bind:value={macroState.macroParams.General.fieldOfView}
-                        min={r('fieldOfView').min} max={r('fieldOfView').max} step={r('fieldOfView').step ?? 1}
-                        onChange={() => onMacroChange('fieldOfView')} />
+                    <RangeInput id="sp-width" title="Width"
+                        bind:value={macroState.macroParams.General.width}
+                        min={r('width').min} max={r('width').max} step={r('width').step ?? 1}
+                        onChange={() => onMacroChange('width')} />
                 </div>
-            {/if}
-            <div class="field">
-                <RangeInput id="sp-altitude" title={isSatellite ? 'Altitude' : 'Scale'}
-                    bind:value={macroState.macroParams.General.altitude}
-                    min={r('altitude').min} max={r('altitude').max} step={r('altitude').step ?? 1}
-                    onChange={() => onMacroChange('altitude')} />
+                <div class="field">
+                    <RangeInput id="sp-height" title="Height"
+                        bind:value={macroState.macroParams.General.height}
+                        min={r('height').min} max={r('height').max} step={r('height').step ?? 1}
+                        onChange={() => onMacroChange('height')} />
+                </div>
+                <div class="field row align-items-center">
+                    <label class="col-4 col-form-label" for="sp-projection">Projection</label>
+                    <select id="sp-projection" class="form-select form-select-sm col"
+                        bind:value={macroState.macroParams.General.projection}
+                        onchange={() => onMacroChange('projection')}>
+                        {#each s('projection').choices as opt}
+                            <option value={opt}>{opt}</option>
+                        {/each}
+                    </select>
+                </div>
+                {#if isSatellite}
+                    <div class="field">
+                        <RangeInput id="sp-fov" title="Field of view"
+                            bind:value={macroState.macroParams.General.fieldOfView}
+                            min={r('fieldOfView').min} max={r('fieldOfView').max} step={r('fieldOfView').step ?? 1}
+                            onChange={() => onMacroChange('fieldOfView')} />
+                    </div>
+                {/if}
+                <div class="field">
+                    <RangeInput id="sp-altitude" title={isSatellite ? 'Altitude' : 'Scale'}
+                        bind:value={macroState.macroParams.General.altitude}
+                        min={r('altitude').min} max={r('altitude').max} step={r('altitude').step ?? 1}
+                        onChange={() => onMacroChange('altitude')} />
+                </div>
             </div>
 
             <p class="section-label">Border</p>
-            <div class="field">
-                <RangeInput id="sp-bdr" title="Radius"
-                    bind:value={macroState.macroParams.Border.borderRadius}
-                    min={r('borderRadius').min} max={r('borderRadius').max} step={r('borderRadius').step ?? 1}
-                    onChange={() => onMacroChange('borderRadius')} />
-            </div>
-            <div class="field">
-                <RangeInput id="sp-bw" title="Width"
-                    bind:value={macroState.macroParams.Border.borderWidth}
-                    min={r('borderWidth').min} max={r('borderWidth').max} step={r('borderWidth').step ?? 1}
-                    onChange={() => onMacroChange('borderWidth')} />
-            </div>
-            <div class="field">
-                <ColorPickerPreview id="sp-bc" title="Color"
-                    value={macroState.macroParams.Border.borderColor}
-                    onChange={(c) => { macroState.macroParams.Border.borderColor = c; drawSimplifyThenReal(); }} />
+            <div class="section-card">
+                <div class="field">
+                    <RangeInput id="sp-bdr" title="Radius"
+                        bind:value={macroState.macroParams.Border.borderRadius}
+                        min={r('borderRadius').min} max={r('borderRadius').max} step={r('borderRadius').step ?? 1}
+                        onChange={() => onMacroChange('borderRadius')} />
+                </div>
+                <div class="field">
+                    <RangeInput id="sp-bw" title="Width"
+                        bind:value={macroState.macroParams.Border.borderWidth}
+                        min={r('borderWidth').min} max={r('borderWidth').max} step={r('borderWidth').step ?? 1}
+                        onChange={() => onMacroChange('borderWidth')} />
+                </div>
+                <div class="field">
+                    <ColorPickerPreview id="sp-bc" title="Color"
+                        value={macroState.macroParams.Border.borderColor}
+                        onChange={(c) => { macroState.macroParams.Border.borderColor = c; drawSimplifyThenReal(); }} />
+                </div>
             </div>
 
             <p class="section-label">Background</p>
-            <div class="field">
-                <ColorPickerPreview id="sp-sea" title="Sea color"
-                    value={macroState.macroParams.Background.seaColor}
-                    onChange={(c) => { macroState.macroParams.Background.seaColor = c; drawSimplifyThenReal(); }} />
-            </div>
-            <div class="field form-check form-switch ps-0 d-flex align-items-center justify-content-between">
-                <label class="form-check-label" for="sp-noise">Background noise</label>
-                <input class="form-check-input" type="checkbox" role="switch" id="sp-noise"
-                    bind:checked={macroState.macroParams.Background.backgroundNoise}
-                    onchange={() => drawSimplifyThenReal()} />
-            </div>
-            <div class="field form-check form-switch ps-0 d-flex align-items-center justify-content-between">
-                <label class="form-check-label" for="sp-grat">Graticule</label>
-                <input class="form-check-input" type="checkbox" role="switch" id="sp-grat"
-                    bind:checked={macroState.macroParams.Background.showGraticule}
-                    onchange={() => drawSimplifyThenReal()} />
-            </div>
-            {#if macroState.macroParams.Background.showGraticule}
+            <div class="section-card">
                 <div class="field">
-                    <RangeInput id="sp-gstep" title="Step"
-                        bind:value={macroState.macroParams.Background.graticuleStep}
-                        min={r('graticuleStep').min} max={r('graticuleStep').max} step={r('graticuleStep').step ?? 1}
-                        onChange={() => drawSimplifyThenReal()} />
+                    <ColorPickerPreview id="sp-sea" title="Sea color"
+                        value={macroState.macroParams.Background.seaColor}
+                        onChange={(c) => { macroState.macroParams.Background.seaColor = c; drawSimplifyThenReal(); }} />
                 </div>
-                <div class="field">
-                    <ColorPickerPreview id="sp-gcol" title="Color"
-                        value={macroState.macroParams.Background.graticuleColor}
-                        onChange={(c) => { macroState.macroParams.Background.graticuleColor = c; drawSimplifyThenReal(); }} />
+                <div class="field form-check form-switch ps-0 d-flex align-items-center justify-content-between">
+                    <label class="form-check-label" for="sp-noise">Background noise</label>
+                    <input class="form-check-input" type="checkbox" role="switch" id="sp-noise"
+                        bind:checked={macroState.macroParams.Background.backgroundNoise}
+                        onchange={() => drawSimplifyThenReal()} />
                 </div>
-                <div class="field">
-                    <RangeInput id="sp-gw" title="Width"
-                        bind:value={macroState.macroParams.Background.graticuleWidth}
-                        min={r('graticuleWidth').min} max={r('graticuleWidth').max} step={r('graticuleWidth').step ?? 1}
-                        onChange={() => drawSimplifyThenReal()} />
+                <div class="field form-check form-switch ps-0 d-flex align-items-center justify-content-between">
+                    <label class="form-check-label" for="sp-grat">Graticule</label>
+                    <input class="form-check-input" type="checkbox" role="switch" id="sp-grat"
+                        bind:checked={macroState.macroParams.Background.showGraticule}
+                        onchange={() => drawSimplifyThenReal()} />
                 </div>
-            {/if}
+                {#if macroState.macroParams.Background.showGraticule}
+                    <div class="field">
+                        <RangeInput id="sp-gstep" title="Step"
+                            bind:value={macroState.macroParams.Background.graticuleStep}
+                            min={r('graticuleStep').min} max={r('graticuleStep').max} step={r('graticuleStep').step ?? 1}
+                            onChange={() => drawSimplifyThenReal()} />
+                    </div>
+                    <div class="field">
+                        <ColorPickerPreview id="sp-gcol" title="Color"
+                            value={macroState.macroParams.Background.graticuleColor}
+                            onChange={(c) => { macroState.macroParams.Background.graticuleColor = c; drawSimplifyThenReal(); }} />
+                    </div>
+                    <div class="field">
+                        <RangeInput id="sp-gw" title="Width"
+                            bind:value={macroState.macroParams.Background.graticuleWidth}
+                            min={r('graticuleWidth').min} max={r('graticuleWidth').max} step={r('graticuleWidth').step ?? 1}
+                            onChange={() => drawSimplifyThenReal()} />
+                    </div>
+                {/if}
+            </div>
 
         {:else}
 
             <p class="section-label">Canvas</p>
-            <div class="field">
-                <RangeInput id="sp-mw" title="Width"
-                    bind:value={microState.microParams.General.width}
-                    min={r('width').min} max={r('width').max} step={r('width').step ?? 1}
-                    onChange={() => draw()} />
-            </div>
-            <div class="field">
-                <RangeInput id="sp-mh" title="Height"
-                    bind:value={microState.microParams.General.height}
-                    min={r('height').min} max={r('height').max} step={r('height').step ?? 1}
-                    onChange={() => draw()} />
+            <div class="section-card">
+                <div class="field">
+                    <RangeInput id="sp-mw" title="Width"
+                        bind:value={microState.microParams.General.width}
+                        min={r('width').min} max={r('width').max} step={r('width').step ?? 1}
+                        onChange={() => draw()} />
+                </div>
+                <div class="field">
+                    <RangeInput id="sp-mh" title="Height"
+                        bind:value={microState.microParams.General.height}
+                        min={r('height').min} max={r('height').max} step={r('height').step ?? 1}
+                        onChange={() => draw()} />
+                </div>
             </div>
 
             <p class="section-label">Border</p>
-            <div class="field">
-                <RangeInput id="sp-mbdr" title="Radius"
-                    bind:value={microState.microParams.Border.borderRadius}
-                    min={r('borderRadius').min} max={r('borderRadius').max} step={r('borderRadius').step ?? 1}
-                    onChange={() => draw()} />
-            </div>
-            <div class="field">
-                <RangeInput id="sp-mpad" title="Padding"
-                    bind:value={microState.microParams.Border.borderPadding}
-                    min={r('borderPadding').min} max={r('borderPadding').max} step={r('borderPadding').step ?? 1}
-                    onChange={() => draw()} />
-            </div>
-            <div class="field">
-                <RangeInput id="sp-mbw" title="Width"
-                    bind:value={microState.microParams.Border.borderWidth}
-                    min={r('borderWidth').min} max={r('borderWidth').max} step={r('borderWidth').step ?? 1}
-                    onChange={() => draw()} />
-            </div>
-            <div class="field">
-                <ColorPickerPreview id="sp-mbc" title="Color"
-                    value={microState.microParams.Border.borderColor}
-                    onChange={(c) => { microState.microParams.Border.borderColor = c; draw(); }} />
+            <div class="section-card">
+                <div class="field">
+                    <RangeInput id="sp-mbdr" title="Radius"
+                        bind:value={microState.microParams.Border.borderRadius}
+                        min={r('borderRadius').min} max={r('borderRadius').max} step={r('borderRadius').step ?? 1}
+                        onChange={() => draw()} />
+                </div>
+                <div class="field">
+                    <RangeInput id="sp-mpad" title="Padding"
+                        bind:value={microState.microParams.Border.borderPadding}
+                        min={r('borderPadding').min} max={r('borderPadding').max} step={r('borderPadding').step ?? 1}
+                        onChange={() => draw()} />
+                </div>
+                <div class="field">
+                    <RangeInput id="sp-mbw" title="Width"
+                        bind:value={microState.microParams.Border.borderWidth}
+                        min={r('borderWidth').min} max={r('borderWidth').max} step={r('borderWidth').step ?? 1}
+                        onChange={() => draw()} />
+                </div>
+                <div class="field">
+                    <ColorPickerPreview id="sp-mbc" title="Color"
+                        value={microState.microParams.Border.borderColor}
+                        onChange={(c) => { microState.microParams.Border.borderColor = c; draw(); }} />
+                </div>
             </div>
 
         {/if}
@@ -229,10 +239,18 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #8fa3bb;
-    margin: 10px 0 4px;
+    color: #5a7a9a;
+    margin: 14px 0 5px;
+    padding-left: 8px;
+    border-left: 3px solid #4a7fa5;
 
     &:first-child { margin-top: 2px; }
+}
+
+.section-card {
+    background: #f4f7fa;
+    border-radius: 6px;
+    padding: 6px 8px 2px;
 }
 
 .field {
