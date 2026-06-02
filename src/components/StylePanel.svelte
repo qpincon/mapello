@@ -1,20 +1,21 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { Tooltip } from "bootstrap";
-    import { rgbToHex, parseColorValue } from "../util/colorMath";
-    import { getMatchedCSSRules, getRuleValue, setRuleValue, type StyleRule } from "../util/cssRules";
+    import { rgbToHex, parseColorValue, resolveColorToHex } from "../util/colorMath";
+    import { getMatchedCSSRules, getRuleValue, setRuleValue, getElementsAffectedByProp, type StyleRule, type PropAffectResult } from "../util/cssRules";
     import StyleColorPicker from "./StyleColorPicker.svelte";
 
     // ── Bootstrap tooltip action ─────────────────────────────────────
     function bsTooltip(el: HTMLElement, title: string) {
-        let t = new Tooltip(el, { title, placement: "top", trigger: "hover" });
+        const opts = { placement: "top" as const, trigger: "hover", animation: false };
+        let t = new Tooltip(el, { ...opts, title });
         return {
-            update(newTitle: string) { t.dispose(); t = new Tooltip(el, { title: newTitle, placement: "top", trigger: "hover" }); },
+            update(newTitle: string) { t.dispose(); t = new Tooltip(el, { ...opts, title: newTitle }); },
             destroy() { t.dispose(); },
         };
     }
 
-    const TOOLTIP_CASCADE = "Not set here — applied automatically from another style.";
+    const TOOLTIP_CASCADE = "Using the value from a shared style.";
 
     interface Props {
         cssRuleFilter?: (el: Element, cssSelector: string) => boolean;
@@ -44,11 +45,15 @@
 
     const IC = {
         font:   `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="currentColor"><text x="1" y="13" font-size="13" font-weight="700" font-family="serif">A</text></svg>`,
-        fill:   `<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="currentColor"><path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15a1.49 1.49 0 000 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/></svg>`,
-        stroke: `<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`,
+        fill:   `<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="currentColor"><path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15a1.49 1.49 0 000 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/></svg>`,
+        stroke: `<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`,
         width:  `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="currentColor"><rect x="2" y="3" width="12" height="1.5" rx="0.75"/><rect x="2" y="7" width="12" height="2.5" rx="1.25"/><rect x="2" y="12" width="12" height="3" rx="1.5"/></svg>`,
         dash:   `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="currentColor"><rect x="1" y="7" width="4" height="2" rx="1"/><rect x="6.5" y="7" width="4" height="2" rx="1"/><rect x="12" y="7" width="3" height="2" rx="1"/></svg>`,
     };
+
+    import type StyleColorPickerType from "./StyleColorPicker.svelte";
+    let fillPicker:   StyleColorPickerType | null = $state(null);
+    let strokePicker: StyleColorPickerType | null = $state(null);
 
     let element: Element | null = $state(null);
     let matchedRules: StyleRule[] = $state([]);
@@ -78,6 +83,7 @@
     function apply(prop: string, value: string) {
         if (!element || !selectedRule) return;
         setRuleValue(element, selectedRule, prop, value);
+        _propCache.clear();
         refreshValues();
         onStyleChanged(element, selectedRule, prop, value);
     }
@@ -115,12 +121,13 @@
     /** Normalise any CSS color value to uppercase hex for display (#RRGGBB or #RRGGBBAA). */
     function displayColor(v: string): string {
         if (!v || v === "none") return v;
-        if (v.startsWith("#")) return v.toUpperCase();
-        const { hex, alpha } = parseColorValue(v);
+        const s = resolveColorToHex(v); // named colours → "#rrggbb"
+        if (/^rgb\s*\(/.test(s)) return (rgbToHex(s) || v).toUpperCase(); // rgb() → #RRGGBB
+        const { hex, alpha } = parseColorValue(s);                         // rgba() / #hex
         if (!hex) return v;
-        if (alpha >= 100) return "#" + hex;
+        if (alpha >= 100) return ("#" + hex).toUpperCase();
         const a = Math.round(alpha * 255 / 100).toString(16).padStart(2, "0").toUpperCase();
-        return "#" + hex + a;
+        return ("#" + hex + a).toUpperCase();
     }
 
     function cleanFontName(v: string) { return v.trim().replace(/^['"]|['"]$/g, "").trim(); }
@@ -141,7 +148,7 @@
     }
 
     // ── Effects ─────────────────────────────────────────────────────
-    $effect(() => { selectedRule; element; refreshValues(); });
+    $effect(() => { selectedRule; element; refreshValues(); _propCache.clear(); });
     $effect(() => {
         if (element) { matchedRules = getMatchedCSSRules(element, cssRuleFilter); selectedRuleIndex = 0; scheduleRingUpdate(); }
         else { matchedRules = []; ringVisible = false; clearHighlight(); }
@@ -183,31 +190,104 @@
     });
 
     // ── Rule hover highlight ─────────────────────────────────────────
-    const DIM_TAGS = ["path", "text", "use", "image", "circle", "rect", "polygon", "line", "ellipse"];
-    let _hoverStyle: HTMLStyleElement | null = null;
+    // A fixed <div> overlay is placed over the SVG viewport (outside the SVG DOM).
+    // Lit elements are punched through via clip-path so they appear at full brightness.
+    // This causes zero SVG DOM mutations → no SVG repaint for the dim effect.
+    let _overlayEl: HTMLDivElement | null = null;
+    let _propCache = new Map<string, PropAffectResult | null>();
+
+    const HL_NS = "http://www.w3.org/2000/svg";
+    const HL_CLIP_ID = "sp-hl-clip";
+
+    function clearHighlight() {
+        _overlayEl?.remove(); _overlayEl = null;
+        document.getElementById(HL_CLIP_ID)?.remove();
+    }
+
+    function addToMask(mask: Element, el: Element, sr: DOMRect): void {
+        if (el instanceof SVGPathElement) {
+            const d = el.getAttribute("d"), ctm = el.getScreenCTM();
+            if (d && ctm) {
+                const p = document.createElementNS(HL_NS, "path");
+                p.setAttribute("d", d);
+                p.setAttribute("fill", "black");
+                p.setAttribute("transform", `matrix(${ctm.a},${ctm.b},${ctm.c},${ctm.d},${ctm.e - sr.left},${ctm.f - sr.top})`);
+                mask.appendChild(p);
+                return;
+            }
+        } else if (el instanceof SVGGElement) {
+            for (const child of el.querySelectorAll("path"))
+                addToMask(mask, child, sr);
+            return;
+        }
+        // Fallback: bounding rect
+        const r = el.getBoundingClientRect();
+        const rect = document.createElementNS(HL_NS, "rect");
+        rect.setAttribute("x", String(r.left - sr.left));
+        rect.setAttribute("y", String(r.top - sr.top));
+        rect.setAttribute("width", String(r.width));
+        rect.setAttribute("height", String(r.height));
+        rect.setAttribute("fill", "black");
+        mask.appendChild(rect);
+    }
+
+    function showOverlay(svgEl: Element, litEls: Element[]): void {
+        const sr = svgEl.getBoundingClientRect();
+        _overlayEl = document.createElement("div");
+        _overlayEl.style.cssText = `position:fixed;left:${sr.left}px;top:${sr.top}px;width:${sr.width}px;height:${sr.height}px;background:rgba(255,255,255,0.88);pointer-events:none;z-index:9000`;
+        if (litEls.length > 0) {
+            // SVG <mask>: white = overlay visible (dims map), black = overlay hidden (lit element shows through)
+            const mask = document.createElementNS(HL_NS, "mask");
+            mask.id = HL_CLIP_ID;
+            const bg = document.createElementNS(HL_NS, "rect");
+            bg.setAttribute("x", "0"); bg.setAttribute("y", "0");
+            bg.setAttribute("width", String(sr.width)); bg.setAttribute("height", String(sr.height));
+            bg.setAttribute("fill", "white");
+            mask.appendChild(bg);
+            for (const el of litEls) addToMask(mask, el, sr);
+            let defs = svgEl.querySelector("defs");
+            if (!defs) { defs = document.createElementNS(HL_NS, "defs"); svgEl.insertBefore(defs, svgEl.firstChild); }
+            defs.appendChild(mask);
+            _overlayEl.style.mask = `url(#${HL_CLIP_ID})`;
+        }
+        document.body.appendChild(_overlayEl);
+    }
 
     function highlightRule(rule: StyleRule) {
         clearHighlight();
         if (!element) return;
-        let selector = rule === "inline"
-            ? (element.id ? `#${CSS.escape(element.id)}` : "")
-            : (rule as CSSStyleRule).selectorText.replace(/\.hovered/g, "").replace(/:hover/g, "").trim();
-        if (!selector) return;
         const svgEl = document.getElementById("static-svg-map");
         if (!svgEl) return;
-        svgEl.classList.add("sp-hl");
-        const dim = DIM_TAGS.map((t) => `#static-svg-map.sp-hl ${t}`).join(", ");
-        _hoverStyle = document.createElement("style");
-        _hoverStyle.dataset.stylePanelHover = "";
-        _hoverStyle.textContent = `${dim}{opacity:.12;transition:opacity .1s}#static-svg-map.sp-hl ${selector},#static-svg-map.sp-hl ${selector} *{opacity:1!important}`;
-        document.head.appendChild(_hoverStyle);
+        let lits: Element[];
+        if (rule === "inline") {
+            if (!element.id) return;
+            lits = [element];
+        } else {
+            const sel = (rule as CSSStyleRule).selectorText
+                .replace(/\.hovered/g, "").replace(/:hover\b/g, "").trim();
+            try { lits = Array.from(svgEl.querySelectorAll(sel)); } catch { return; }
+        }
+        if (!lits.length) return;
+        showOverlay(svgEl, lits);
     }
 
-    function clearHighlight() { document.getElementById("static-svg-map")?.classList.remove("sp-hl"); _hoverStyle?.remove(); _hoverStyle = null; }
+    function highlightProp(prop: string) {
+        clearHighlight();
+        if (!element || !selectedRule) return;
+        if (selectedRule === "inline") { highlightRule(selectedRule); return; }
+        const svgEl = document.getElementById("static-svg-map");
+        if (!svgEl) return;
+        const cached = _propCache.get(prop);
+        const result = cached !== undefined ? cached : getElementsAffectedByProp(selectedRule as CSSStyleRule, prop, { scope: svgEl });
+        if (cached === undefined) _propCache.set(prop, result);
+        if (!result || result.will.length === result.total) { highlightRule(selectedRule); return; }
+        showOverlay(svgEl, result.will); // empty will → overlay with no holes (nothing changes)
+    }
 
     export function open(el: Element) { element = el; closeDropdowns(); }
     export function close() { clearHighlight(); element = null; ringVisible = false; closeDropdowns(); }
     export function isOpen() { return element !== null; }
+    export function getElement() { return element; }
 </script>
 
 <!-- ── Snippets ──────────────────────────────────────────────────── -->
@@ -245,17 +325,15 @@
 {/snippet}
 
 <!-- Full color property row (fill / stroke) -->
-{#snippet colorField(prop: string, currentVal: string, icon: string, tipLabel: string)}
-{@const effectiveColor = currentVal || inheritedColor(prop)}
-<div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentVal} style="min-height:38px">
-    <span class="sp-icon sp-icon-color" onmouseenter={(e) => showTip(e, tipLabel)} onmouseleave={hideTip}>
+{#snippet colorField(prop: string, currentVal: string, icon: string, tipLabel: string, openPicker: (el: HTMLElement) => void)}
+<div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentVal} style="min-height:38px"
+    onmouseenter={() => highlightProp(prop)} onmouseleave={clearHighlight}>
+    <button type="button" class="sp-icon sp-icon-btn"
+        onclick={(e) => openPicker(e.currentTarget as HTMLElement)}
+        onmouseenter={(e) => showTip(e, tipLabel)} onmouseleave={hideTip}>
         {@html icon}
-        <span class="sp-color-bar"
-            class:sp-color-bar--inherited={!currentVal}
-            style="background:{effectiveColor && effectiveColor !== 'none' ? effectiveColor : 'transparent'}"></span>
-    </span>
+    </button>
     <div class="d-flex align-items-center flex-grow-1 gap-2 overflow-hidden">
-        <StyleColorPicker value={currentVal} onChange={(c) => apply(prop, c)} />
         {#if currentVal}
             <span class="font-monospace text-secondary text-truncate flex-grow-1" style="font-size:11px">{displayColor(currentVal)}</span>
         {:else}
@@ -265,6 +343,14 @@
     {@render resetBtn(prop, currentVal)}
 </div>
 {/snippet}
+
+<!-- ── Hidden color pickers for fill / stroke (triggered from icon buttons) ── -->
+{#if element}
+<div style="position:absolute;width:0;height:0;overflow:hidden">
+    <StyleColorPicker bind:this={fillPicker}   value={currentFill}   onChange={(c) => apply("fill", c)} />
+    <StyleColorPicker bind:this={strokePicker} value={currentStroke} onChange={(c) => apply("stroke", c)} />
+</div>
+{/if}
 
 <!-- ── Marching-ants ring ─────────────────────────────────────────── -->
 {#if ringVisible}
@@ -308,7 +394,8 @@
 
             <!-- Font family (text elements only) -->
             {#if isTextElement}
-            <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" style="min-height:38px">
+            <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" style="min-height:38px"
+                onmouseenter={() => highlightProp("font-family")} onmouseleave={clearHighlight}>
                 <span class="sp-icon" onmouseenter={(e) => showTip(e, 'Font family')} onmouseleave={hideTip}>{@html IC.font}</span>
                 <div class="dropdown flex-grow-1" bind:this={fontDropEl}>
                     <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center gap-1 text-start"
@@ -336,13 +423,14 @@
             {/if}
 
             <!-- Fill -->
-            {@render colorField("fill", currentFill, IC.fill, "Fill")}
+            {@render colorField("fill", currentFill, IC.fill, "Fill", (el) => fillPicker?.open(el))}
 
             <!-- Stroke -->
-            {@render colorField("stroke", currentStroke, IC.stroke, "Stroke color")}
+            {@render colorField("stroke", currentStroke, IC.stroke, "Stroke color", (el) => strokePicker?.open(el))}
 
             <!-- Stroke width -->
-            <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentStrokeWidth} style="min-height:38px">
+            <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentStrokeWidth} style="min-height:38px"
+                onmouseenter={() => highlightProp("stroke-width")} onmouseleave={clearHighlight}>
                 <span class="sp-icon" onmouseenter={(e) => showTip(e, 'Stroke width')} onmouseleave={hideTip}>{@html IC.width}</span>
                 <div class="dropdown flex-grow-1" bind:this={widthDropEl}>
                     <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center gap-1"
@@ -372,7 +460,8 @@
             </div>
 
             <!-- Dash style -->
-            <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentDasharray || !normalizeDash(currentDasharray)} style="min-height:38px">
+            <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentDasharray || !normalizeDash(currentDasharray)} style="min-height:38px"
+                onmouseenter={() => highlightProp("stroke-dasharray")} onmouseleave={clearHighlight}>
                 <span class="sp-icon" onmouseenter={(e) => showTip(e, 'Dash style')} onmouseleave={hideTip}>{@html IC.dash}</span>
                 <div class="dropdown flex-grow-1" bind:this={dashDropEl}>
                     <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center gap-1"
@@ -452,13 +541,9 @@
         color: #8da5be; cursor: default;
     }
     .sp-icon:hover { color: #506784; }
-    /* Fill / stroke icons: stack icon above colour bar */
-    .sp-icon-color { flex-direction: column; gap: 2px; }
-    .sp-color-bar {
-        width: 16px; height: 3px; border-radius: 2px;
-        border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0;
+    .sp-icon-btn {
+        background: none; border: none; padding: 0; cursor: pointer;
     }
-    .sp-color-bar--inherited { opacity: 0.45; }
 
     .sp-preview { display: block; flex-shrink: 0; }
 

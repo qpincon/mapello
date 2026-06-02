@@ -686,7 +686,9 @@
             if (getActivePopoverId()) hidePopover();
             clearSelection();
             // Open style panel for the clicked element (skip SVG root and micro background)
-            const target = e.target as Element;
+            let target = e.target as Element;
+            // For 3D buildings, redirect from individual wall/roof paths to the building <g>
+            target = target.closest("#buildings > g") ?? target;
             if (target.id !== "static-svg-map" && target.id !== "micro-background") {
                 stylePanel?.open(target);
             }
@@ -1007,8 +1009,17 @@
             }
         }
         commonState.lastUsedLabelProps["font-family"] = font.name;
+        const prevElId = stylePanel?.getElement()?.id;
         drawAndSetupShapes();
+        applyStyles(commonState.inlineStyles);
         saveState();
+        // drawAndSetupShapes recreates DOM elements; re-open the panel on the new node
+        if (prevElId) {
+            requestAnimationFrame(() => {
+                const newEl = document.getElementById(prevElId);
+                if (newEl) stylePanel?.open(newEl);
+            });
+        }
     }
 
     // ==== Toolbar handlers ====
@@ -1977,7 +1988,7 @@
 {/if}
 
 <div class="d-flex align-items-start h-100">
-    <aside id="params" class="h-100">
+    <aside id="params" class="h-100" onmousedown={() => clearSelection()}>
         <div id="main-panel" class="d-flex flex-column align-items-center pt-4 h-100">
             <div class="mode-selection" role="group">
                 <input
@@ -2158,7 +2169,8 @@
             {/snippet}
         </Navbar>
         <div class="d-flex flex-grow-1" style="min-height:0;overflow:hidden;">
-        <div id="map-area" class="d-flex flex-column justify-content-center align-items-center flex-grow-1 position-relative" style="overflow:hidden;min-width:0;">
+        <div id="map-area" class="d-flex flex-column justify-content-center align-items-center flex-grow-1 position-relative" style="overflow:hidden;min-width:0;"
+            onmousedown={(e) => { if (e.target === e.currentTarget) clearSelection(); }}>
             {#if serverSyncError}
                 <div
                     class="alert alert-warning mb-0 py-1 px-3 small"
@@ -2239,10 +2251,10 @@
             return true;
         }}
         getCssRuleName={(ruleName, _el) => {
-            if (ruleName.includes("#paths > path")) return "All curves";
+            if (ruleName.includes("#paths") && ruleName.includes("path")) return "All curves";
             if (ruleName.includes(".text")) return "All texts";
             if (ruleName.includes(".shape")) return "All shapes";
-            if (ruleName.includes("#freehand-drawings > .freehand")) return "All freehand";
+            if (ruleName.includes("#freehand-drawings") && ruleName.includes(".freehand")) return "All drawings";
             const isHover = ruleName.includes(":hover") || ruleName.includes(".hovered");
             let finalStr = "";
             if (ruleName.includes(".adm")) finalStr = "Region";

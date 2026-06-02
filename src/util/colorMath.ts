@@ -60,6 +60,24 @@ function channelsToHex(r: string, g: string, b: string): string {
     return [r, g, b].map(n => parseInt(n).toString(16).padStart(2, "0")).join("").toUpperCase();
 }
 
+/**
+ * Resolve any CSS color string to "#rrggbb" or "rgba(...)" form via a cached
+ * canvas context. Handles named colours ("red" → "#ff0000"), rgb(), rgba(), hex.
+ * Returns the original string unchanged if resolution fails.
+ */
+let _colorCtx: CanvasRenderingContext2D | null | undefined;
+export function resolveColorToHex(v: string): string {
+    if (!v || v === "none") return v;
+    if (v.startsWith("#") || v.startsWith("rgb")) return v;
+    if (_colorCtx === undefined) _colorCtx = document.createElement("canvas").getContext("2d");
+    if (!_colorCtx) return v;
+    try {
+        _colorCtx.fillStyle = "#000";
+        _colorCtx.fillStyle = v;
+        return _colorCtx.fillStyle; // "#rrggbb" or "rgba(r,g,b,a)" — never a name
+    } catch { return v; }
+}
+
 /** Compute a viewport-safe top/left for a fixed popover near a button. */
 export function popoverPosition(
     btn: HTMLElement,

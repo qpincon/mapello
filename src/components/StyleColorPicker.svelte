@@ -118,7 +118,13 @@
     const currentHex = $derived(hexVal ? "#" + hexVal : "#000000");
 
     // ── Imperative API (used by QuillEditor hidden pickers) ──────────
-    export function open() { openPopover(); }
+    export function open(anchor?: HTMLElement) {
+        const ref = anchor ?? buttonEl;
+        if (!ref) return;
+        const { top, left } = popoverPosition(ref, POPOVER_W, POPOVER_H);
+        popTop = top; popLeft = left;
+        popoverOpen = true;
+    }
     export function setColor(hex: string) {
         const { hex: h, alpha: a } = parseColorValue(hex);
         if (!h) return;
