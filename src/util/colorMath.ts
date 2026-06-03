@@ -87,8 +87,9 @@ export function popoverPosition(
     const rect = btn.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0)
         return { top: Math.max(4, window.innerHeight / 2 - popH / 2), left: Math.max(4, window.innerWidth / 2 - popW / 2) };
-    let top = rect.bottom + 6, left = rect.left;
+    let top = rect.bottom + 6;
     if (top + popH > window.innerHeight) top = rect.top - popH - 6;
+    let left = rect.left;
     if (left + popW > window.innerWidth) left = rect.right - popW;
     return { top: Math.max(4, top), left: Math.max(4, left) };
 }

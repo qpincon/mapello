@@ -83,6 +83,14 @@
     let textColorPicker: StyleColorPicker | null = $state(null);
     let textBgPicker: StyleColorPicker | null = $state(null);
 
+    // Toolbar button anchors — set in onMount so open() can position relative to the actual button
+    let textColorBtn: HTMLElement | null = null;
+    let textBgBtn: HTMLElement | null = null;
+    let containerBgBtn: HTMLElement | null = null;
+    let containerBorderBtn: HTMLElement | null = null;
+    let blockBorderBtn: HTMLElement | null = null;
+    let borderBottomBtn: HTMLElement | null = null;
+
     // Current color values for the pickers
     let containerBgColor = $state<Color>("#ffffffff");
     let containerBorderColor = $state<Color>("#000000ff");
@@ -149,7 +157,7 @@
         const newColor = cssColorToHex(containerStyle["background-color"], "#ffffffff");
         containerBgColor = newColor;
         containerBgPicker?.setColor(newColor);
-        containerBgPicker?.open();
+        containerBgPicker?.open(containerBgBtn ?? undefined, true);
     }
 
     function onContainerBgChange(color: Color): void {
@@ -164,7 +172,7 @@
         const newColor = extractColorFromBorder(containerStyle["border"]);
         containerBorderColor = newColor;
         containerBorderPicker?.setColor(newColor);
-        containerBorderPicker?.open();
+        containerBorderPicker?.open(containerBorderBtn ?? undefined, true);
     }
 
     function onContainerBorderChange(color: Color): void {
@@ -192,7 +200,7 @@
         if (format.blockBorder) {
             quillInstance.format("blockBorder", false);
         } else {
-            blockBorderPicker?.open();
+            blockBorderPicker?.open(blockBorderBtn ?? undefined, true);
         }
     }
 
@@ -206,7 +214,7 @@
         if (format.borderBottom) {
             quillInstance.format("borderBottom", false);
         } else {
-            borderBottomPicker?.open();
+            borderBottomPicker?.open(borderBottomBtn ?? undefined, true);
         }
     }
 
@@ -232,7 +240,7 @@
         const newColor = cssColorToHex((format.color as string) || "#000000", "#000000ff");
         textColorValue = newColor;
         textColorPicker?.setColor(newColor);
-        textColorPicker?.open();
+        textColorPicker?.open(textColorBtn ?? undefined, true);
     }
 
     function onTextColorChange(color: Color): void {
@@ -245,7 +253,7 @@
         const newColor = cssColorToHex((format.background as string) || "#ffffff", "#ffffffff");
         textBgValue = newColor;
         textBgPicker?.setColor(newColor);
-        textBgPicker?.open();
+        textBgPicker?.open(textBgBtn ?? undefined, true);
     }
 
     function onTextBgChange(color: Color): void {
@@ -321,6 +329,13 @@
 
         const toolbar = editorContainer.previousElementSibling;
         if (toolbar) {
+            textColorBtn = toolbar.querySelector(".ql-text-color") as HTMLElement | null;
+            textBgBtn = toolbar.querySelector(".ql-text-bg") as HTMLElement | null;
+            containerBgBtn = toolbar.querySelector(".ql-container-bg") as HTMLElement | null;
+            containerBorderBtn = toolbar.querySelector(".ql-container-border") as HTMLElement | null;
+            blockBorderBtn = toolbar.querySelector(".ql-blockBorder") as HTMLElement | null;
+            borderBottomBtn = toolbar.querySelector(".ql-borderBottom") as HTMLElement | null;
+
             // Inject SVG icons into custom toolbar buttons
             for (const [cls, svg] of Object.entries(toolbarIcons)) {
                 const btn = toolbar.querySelector(`.ql-${cls}`);

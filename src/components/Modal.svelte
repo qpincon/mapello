@@ -130,7 +130,7 @@
         style:--bs-modal-width={modalWidth}
     >
         <div
-            class="modal-dialog {dialogClasses}"
+            class="modal-dialog modal-dialog-centered {dialogClasses}"
             role="document"
             in:fly={{ y: -50, duration: 300 }}
             out:fly={{ y: -50, duration: 300, easing: quintOut }}

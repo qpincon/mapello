@@ -25,6 +25,8 @@
     let hueEl = $state<HTMLDivElement | null>(null);
     let alphaEl = $state<HTMLDivElement | null>(null);
     let popTop = $state(0); let popLeft = $state(0);
+    let popBottom = $state<number | null>(null); // non-null → use bottom instead of top
+    let popMaxHeight = $state<number | null>(null);
 
     const hasEyeDropper = typeof window !== "undefined" && "EyeDropper" in window;
 
@@ -77,7 +79,7 @@
     function openPopover() {
         if (!buttonEl) return;
         const { top, left } = popoverPosition(buttonEl, POPOVER_W, POPOVER_H);
-        popTop = top; popLeft = left;
+        popTop = top; popLeft = left; popBottom = null; popMaxHeight = null;
         popoverOpen = true;
     }
 
@@ -118,11 +120,23 @@
     const currentHex = $derived(hexVal ? "#" + hexVal : "#000000");
 
     // ── Imperative API (used by QuillEditor hidden pickers) ──────────
-    export function open(anchor?: HTMLElement) {
+    export function open(anchor?: HTMLElement, preferAbove = false) {
         const ref = anchor ?? buttonEl;
         if (!ref) return;
-        const { top, left } = popoverPosition(ref, POPOVER_W, POPOVER_H);
-        popTop = top; popLeft = left;
+        const rect = ref.getBoundingClientRect();
+        let left = rect.left;
+        if (left + POPOVER_W > window.innerWidth) left = rect.right - POPOVER_W;
+        popLeft = Math.max(4, left);
+        if (preferAbove) {
+            // Anchor picker bottom to button top; constrain height to available space
+            popBottom = window.innerHeight - rect.top + 6;
+            popMaxHeight = Math.max(80, rect.top - 6 - 4);
+            popTop = 0;
+        } else {
+            const pos = popoverPosition(ref, POPOVER_W, POPOVER_H);
+            popTop = pos.top; popLeft = pos.left;
+            popBottom = null; popMaxHeight = null;
+        }
         popoverOpen = true;
     }
     export function setColor(hex: string) {
@@ -144,7 +158,7 @@
 
 {#if popoverOpen}
     <div bind:this={popoverEl} class="scp-popover bg-white border rounded-3 shadow p-2"
-        style="top:{popTop}px;left:{popLeft}px;width:{POPOVER_W}px">
+        style="{popBottom !== null ? `bottom:${popBottom}px` : `top:${popTop}px`};left:{popLeft}px;width:{POPOVER_W}px;{popMaxHeight !== null ? `max-height:${popMaxHeight}px;overflow-y:auto` : ''}">
 
         <!-- Gradient square -->
         <div bind:this={sqEl} class="scp-sq mb-2" style="--h:{hue}"
@@ -223,7 +237,7 @@
         border: 1px solid #ddd;
     }
 
-    .scp-popover { position: fixed; z-index: 9999; }
+    .scp-popover { position: fixed; z-index: 9999; pointer-events: auto; }
 
     .scp-sq {
         position: relative; width: 100%; height: 110px; border-radius: 4px;
