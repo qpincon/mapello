@@ -46,8 +46,8 @@ export default class PathEditor {
     private pathOverlayElem!: ExtendedSVGPathElement;
     private pathData!: Coordinate[];
     private pointElems!: ExtendedSVGCircleElement[];
-    private addOrAbortFunc!: (e: MouseEvent) => void;
     private svgMouseMoveFunc!: (e: MouseEvent) => void;
+    private keydownFunc!: (e: KeyboardEvent) => void;
     private currentDragging: ExtendedSVGCircleElement | ExtendedSVGPathElement | null = null;
 
     constructor(pathElem: SVGPathElement, svgContainer: SVGElement, onFinish: (pathElem: SVGPathElement | null) => void) {
@@ -83,16 +83,21 @@ export default class PathEditor {
         }
 
         this.pointElems = [];
-        this.addOrAbortFunc = (e: MouseEvent) => this.addOrAbort(e);
-        this.svgContainer.addEventListener('mousedown', this.addOrAbortFunc);
+        this.keydownFunc = (e: KeyboardEvent) => { if (e.key === 'Escape' || e.key === 'Enter') this.finish(); };
+        document.addEventListener('keydown', this.keydownFunc);
         this.createPoints();
         this.setupPathOverlay();
     }
 
     cleanup(): void {
         this.editorContainer.remove();
-        this.svgContainer.removeEventListener('mousedown', this.addOrAbortFunc);
         this.svgContainer.removeEventListener('mousemove', this.svgMouseMoveFunc);
+        document.removeEventListener('keydown', this.keydownFunc);
+    }
+
+    finish(): void {
+        this.cleanup();
+        this.onFinish(this.pathElem);
     }
 
     reset(): void {

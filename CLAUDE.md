@@ -5,8 +5,6 @@
 
 This project is a web-based SVG map designer called Mapello. It allows users to create and customize Scalable Vector Graphics (SVG) maps with various features, including different map projections, layers, and data visualizations. The application is built using Svelte 5 for the frontend, and it leverages several libraries for mapping and geometry operations, such as D3.js, MapLibre GL, and Turf.js.
 
-It also uses the `InlineStyleEditor` library, which is a tool that enables direct CSS rules change using a small graphical interface. It can be opened on a given element, and some of this element's style can be changed dynamically (colors, stroke width...). It is mounted globally in `App.svelte` and delegates style changes to macro/micro sidebar `onStyleChanged` handlers.
-
 The main goal of the application is to create intuitively static SVG maps that can be exported to the user and included directly into a website (by pasting the exported SVG in an HTML page). It is different of the existing solutions by a few aspects:
 - Simple usage of the final map: simply paste the SVG, no need to load any Javascript, technical knowledge not required
 - The map is customizable to be stylish, in addition to being practical (showing data)
@@ -99,7 +97,7 @@ With the data that is bound, the user can show a tooltip when a region is hovere
 #### Tooltips
 If the user enables tooltip for a layer, a tooltip will display when a region of this layer is hovered. The logic is handled in `src/tooltip.ts`. What is displayed in the tooltip will depend on what is in a dedicated template (inside `macroState.tooltipDefs.<layer>.template`). This template is using HTML, and a variable name in the data bound to the layer between 2 underscores means to display this variable (for instance `<span>Country: __name__</span>` will display `Country: France` when France is hovered). The template is editable for the user.
 
-Using `InlineStyleEditor`, the user can edit the template style by clicking on a tooltip example in the sidebar. The style changes will be stored in `macroState.tooltipDefs.<layer>.content` and applied on the actual tooltip on hover.
+The user can edit the template style by clicking on a tooltip example in the sidebar, which opens the PropertiesPanel. The style changes will be stored in `macroState.tooltipDefs.<layer>.content` and applied on the actual tooltip on hover.
 
 
 #### Layer coloring
@@ -131,8 +129,18 @@ Some common features exist between the two modes, which are handled in `App.svel
 By right-clicking on the map, a menu opens, allowing the user to:
 - Draw / edit SVG `<path>` elements (see `src/svg/freeHandPath.ts` and `src/svg/pathEditor.ts`)
 - Draw freehand on the map (`src/svg/freeHandDraw.ts`)
-- Add labels on the map. It is possible to provide a font to the app, and use it using `InlineStyleEditor`. On export, we will give the choice to the user to embed or not the font as base64 in the final SVG, convert the `<text>` elements to `<path>` using `text-to-svg`, or the smallest file size of the 2 possibilities
+- Add labels on the map. It is possible to provide a font to the app. On export, we will give the choice to the user to embed or not the font as base64 in the final SVG, convert the `<text>` elements to `<path>` using `text-to-svg`, or the smallest file size of the 2 possibilities
 - Add icons on the map (points / squares and more), stored as `ShapeDefinition` in `commonState.providedShapes`
+
+### Properties panel (inspector)
+`src/components/PropertiesPanel.svelte` is a permanent panel on the right side of the map area. Clicking any SVG element opens it for that element. It exposes:
+- **Style editing**: fill, stroke colour, stroke width, stroke dash, font family. Edits CSS rules (shared selectors) or inline styles depending on which rule tab is selected. When editing inline styles, no overlay is shown on the map since the marching-ants ring already indicates the target. Style changes are dispatched via the `onStyleChanged` prop to `MacroSidebar.onStyleChanged` / `MicroSidebar.onStyleChanged`, which persist inline changes in `commonState.inlineStyles` via `handleInlineStyleChange` in `src/svg/svg.ts`. `applyStyles(commonState.inlineStyles)` re-applies them after every redraw.
+- **Interactions**: link (URL on click), tooltip and popover annotations (opens the QuillEditor modal).
+- **Path editing**: "Edit path" / "Exit editing" buttons for `path` entities.
+- **Delete**: removes the selected user entity.
+- **Bring to front** (macro mode only, for `.country` and `.adm` elements): moves the element to the end of its parent group so it renders on top of siblings. Persisted via `commonState.inlineStyles[id].bringtofront`. Only one element per parent group can be on top; promoting a new one clears the flag from its siblings. The button is disabled when the element already has the flag set. The tooltip hover behaviour in `src/tooltip.ts` temporarily raises hovered regions, so on-top detection must use `inlineStyles` rather than DOM position.
+
+The panel is opened programmatically via `propertiesPanel.open(el)` from SVG click handlers in `App.svelte`. `MacroSidebar` also opens it for legend sample clicks via the `openPropertiesPanel` prop.
 
 ### Selection system
 Shapes, paths, and freehand drawings can be selected, multi-selected, copied, pasted, and deleted. The selection state and operations are in `src/selection.svelte.ts`. A bounding box overlay is rendered by `src/svg/selectionOverlay.ts`.
@@ -145,6 +153,11 @@ Handled by `src/util/history.ts`.
 
 ### Saving
 The state of the application is periodically serialized to `localStorage`. The state is global in `src/state.svelte.ts` and used throughout the app. Persistence is via `src/util/save.ts`.
+
+### Layout
+The map area (`#map-area`) uses `justify-content-start` with `padding-top: clamp(2rem, 6vh, 5rem)` so the SVG map sits near the top of the viewport rather than being vertically centred. The padding scales with viewport height to stay proportional at different zoom levels.
+
+In micro mode, the "Search for a location" geocoding bar (`Geocoding.svelte`) is placed **below** the map (not above) to keep the map close to the top bar and improve feature discoverability.
 
 ## Backend
 

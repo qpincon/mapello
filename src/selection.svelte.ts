@@ -193,7 +193,7 @@ function onTransformCommit(
                 scale: newScale,
                 rotation: rotation !== undefined ? rotation : shapeDef.rotation,
             };
-            // Keep inline style scale in sync (used by InlineStyleEditor)
+            // Keep inline style scale in sync with shape scale state
             const inlineStyle = commonState.inlineStyles[shapeDef.id];
             if (inlineStyle && 'scale' in inlineStyle) {
                 inlineStyle.scale = String(newScale);

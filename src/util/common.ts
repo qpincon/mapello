@@ -98,8 +98,10 @@ export function getColumns(data: Record<string, any>[]): string[] {
 export function initTooltips(): void {
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     [...tooltipTriggerList].map(tooltipTriggerEl => {
+        Tooltip.getInstance(tooltipTriggerEl as HTMLElement)?.dispose();
         const isHtml = tooltipTriggerEl.hasAttribute('data-bs-html');
-        new Tooltip(tooltipTriggerEl as HTMLElement, { placement: 'top', html: isHtml, customClass: isHtml ? 'big-tooltip' : '' });
+        const trigger = (tooltipTriggerEl.getAttribute('data-bs-trigger') ?? 'hover focus') as 'hover focus' | 'hover' | 'focus' | 'click';
+        new Tooltip(tooltipTriggerEl as HTMLElement, { placement: 'top', html: isHtml, customClass: isHtml ? 'big-tooltip' : '', trigger });
     });
 }
 

@@ -107,12 +107,12 @@
     );
 
     interface Props {
-        openStylePanel: (el: Element) => void;
+        openPropertiesPanel: (el: Element) => void;
         svg: SvgSelection;
         draw: (simplified?: boolean) => void;
     }
 
-    let { openStylePanel, svg, draw }: Props = $props();
+    let { openPropertiesPanel, svg, draw }: Props = $props();
 
     let drawDebounced = debounce((simplified?: boolean) => draw(simplified), 100);
     onMount(() => {
@@ -241,8 +241,20 @@
 
     const saveDebounced = debounce(saveState, 200);
 
+    function handleLayerToggle(): void {
+        const newTabs = macroState.orderedTabs.filter((x) => {
+            if (x === "countries") return macroState.inlinePropsMacro.showCountries;
+            if (x === "land") return macroState.inlinePropsMacro.showLand;
+            return true;
+        });
+        if (newTabs.length > 0 && !newTabs.includes(currentMacroLayerTab)) {
+            onTabChanged(newTabs[0]);
+        }
+        drawMacroTotal();
+    }
+
     function openEditor(e: MouseEvent): void {
-        openStylePanel(e.target as Element);
+        openPropertiesPanel(e.target as Element);
     }
 
     function applyStylesToLegend(): void {
@@ -626,9 +638,14 @@
                         role="switch"
                         id="showLand"
                         bind:checked={macroState.inlinePropsMacro.showLand}
-                        onchange={() => drawMacroTotal()}
+                        onchange={handleLayerToggle}
                     />
-                    <label class="form-check-label" for="showLand"> Show land</label>
+                    <label class="form-check-label" for="showLand"
+                        data-bs-toggle="tooltip"
+                        data-bs-trigger="hover"
+                        data-bs-placement="right"
+                        title="Display a filled land layer underneath country borders. Useful as a base colour for the map."
+                    > Show land</label>
                 </div>
                 <div class="form-check form-switch">
                     <input
@@ -637,9 +654,14 @@
                         role="switch"
                         id="showCountries"
                         bind:checked={macroState.inlinePropsMacro.showCountries}
-                        onchange={() => drawMacroTotal()}
+                        onchange={handleLayerToggle}
                     />
-                    <label class="form-check-label" for="showCountries"> Show countries</label>
+                    <label class="form-check-label" for="showCountries"
+                        data-bs-toggle="tooltip"
+                        data-bs-trigger="hover"
+                        data-bs-placement="right"
+                        title="Display individual country shapes. Required for choropleth colouring and country-level data."
+                    > Show countries</label>
                 </div>
             </div>
 
@@ -696,6 +718,7 @@
                     </span>
                 </li>
             </ul>
+            {#if computedOrderedTabs.length > 0}
             <div class="p-2">
                 {#if currentMacroLayerTab === "land"}
                     <div>
@@ -1088,6 +1111,7 @@
                     {/if}
                 {/if}
             </div>
+            {/if}
         </div>
 
 {#if macroState.zonesData[currentMacroLayerTab]?.data}

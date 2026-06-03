@@ -4,7 +4,7 @@
     import { select, pointer } from "d3-selection";
     import { drag } from "d3-drag";
     import { zoom } from "d3-zoom";
-    import StylePanel from "./components/StylePanel.svelte";
+    import PropertiesPanel from "./components/PropertiesPanel.svelte";
     import {  debounce } from "lodash-es";
     import { drawCustomPaths, parseAndUnprojectPath } from "./svg/paths";
     import PathEditor from "./svg/pathEditor";
@@ -94,6 +94,7 @@
         deleteSelected,
         refreshOverlay,
         getOverlay,
+        type SelectedEntity,
     } from "./selection.svelte";
 
     let openContextMenuInfo: ContextMenuInfo;
@@ -142,6 +143,7 @@
     let annotationEditorContent = $state("");
     let annotationContainerStyle = $state<Record<string, string>>({});
     let annotationQuillEditor: ReturnType<typeof QuillEditor> | null = $state(null);
+    let annotationEditorKeyHandler: ((e: KeyboardEvent) => void) | null = null;
 
     let drawingTooltip: HTMLDivElement | null = $state(null);
     let textInput: HTMLTextAreaElement | null = $state(null);
@@ -152,7 +154,7 @@
     let linkTargetId: string | null = $state(null);
     let linkInput: HTMLInputElement | null = $state(null);
     let genericSelectedId: string | null = $state(null);
-    let stylePanel: StylePanel | null = $state(null);
+    let propertiesPanel: PropertiesPanel | null = $state(null);
     let contextualMenu: (HTMLDivElement & { opened?: boolean }) | null = $state(null);
     let showExportConfirm = $state(false);
     let showPostExportInfo = $state(false);
@@ -192,11 +194,24 @@
 
     // TODO: move in menuStates
     let editingPath = $state(false);
+    let currentPathEditor: PathEditor | null = $state(null);
+    let panelEntityDuringEdit = $state<SelectedEntity | null>(null);
     let isDrawingFreeHand = $state(false);
     let isDrawingPath = $state(false);
     let isCursorInsideMap = $state(false);
     let isActivelyDrawingPath = $state(false);
-    let iseOnClickEnabled = $derived(!editingPath && !isDrawingFreeHand && !isDrawingPath);
+
+    // ── Style panel entity context ───────────────────────────────────
+    const panelSelectedEntity = $derived(
+        selectionState.selected.length === 1 ? selectionState.selected[0] : null
+    );
+    const panelEntity = $derived(editingPath ? panelEntityDuringEdit : panelSelectedEntity);
+    function getPanelAnnotations(id: string) {
+        return commonState.elementAnnotations?.[id] ?? null;
+    }
+    function getPanelLink(id: string) {
+        return commonState.elementLinks?.[id] ?? null;
+    }
 
     let zoomFunc: d3.ZoomBehavior<any, any> | null = $state(null);
     let dragFunc: d3.DragBehavior<any, any, any> | null = $state(null);
@@ -313,8 +328,8 @@
                     closeMenu();
                     return;
                 }
-                if (stylePanel?.isOpen()) {
-                    stylePanel.close();
+                if (propertiesPanel?.isOpen()) {
+                    propertiesPanel.close();
                     return;
                 }
                 if (isSelectionActive()) {
@@ -380,7 +395,7 @@
             })
             .on("start", () => {
                 if (menuStates.addingLabel) validateLabel();
-                stylePanel?.close();
+                propertiesPanel?.close();
                 closeMenu();
             });
 
@@ -391,7 +406,7 @@
                 if (commonState.currentMode === "macro") macroSidebar!.onZoom(e);
             })
             .on("start", () => {
-                stylePanel?.close();
+                propertiesPanel?.close();
                 closeMenu();
             });
         container.call(dragFunc);
@@ -400,7 +415,7 @@
 
     async function switchMode(newMode: Mode, redrawAfter=true): Promise<void> {
         // if (commonState.currentMode === newMode) return;
-        stylePanel?.close();
+        propertiesPanel?.close();
         track('mode_switch', { to: newMode });
         commonState.currentMode = newMode;
         select("#map-container").html("");
@@ -442,7 +457,6 @@
         svg.append("defs");
         svg.on("contextmenu", onSvgContextMenu, false);
         svg.on("click", onSvgClick);
-        svg.on("dblclick", onSvgDblClick);
         svg.on("mousedown", onSvgMouseDown);
         svg.node()?.addEventListener(
             "wheel",
@@ -580,10 +594,6 @@
         reader.readAsText(file);
     }
 
-    function openEditor(e: MouseEvent): void {
-        stylePanel?.open(e.target as Element);
-    }
-
     function onSvgContextMenu(e: MouseEvent): void {
         if (editingPath) return;
         let shouldOpenMenu = true;
@@ -654,7 +664,7 @@
             closeMenu();
             return;
         }
-        if (!iseOnClickEnabled) return;
+        if (editingPath || isDrawingFreeHand || isDrawingPath) return;
 
         // Walk up from clicked element to find the nearest element with an id,
         // then check if it has a popover annotation
@@ -672,7 +682,7 @@
         if (clickedId && commonState.elementAnnotations?.[clickedId]?.popover) {
             showElementPopover(clickedId, svg.node() as SVGSVGElement, commonState.elementAnnotations ?? {});
             const annotTarget = e.target as Element;
-            if (annotTarget.id !== "micro-background") stylePanel?.open(annotTarget);
+            if (annotTarget.id !== "micro-background") propertiesPanel?.open(annotTarget);
             return;
         }
 
@@ -690,17 +700,9 @@
             // For 3D buildings, redirect from individual wall/roof paths to the building <g>
             target = target.closest("#buildings > g") ?? target;
             if (target.id !== "static-svg-map" && target.id !== "micro-background") {
-                stylePanel?.open(target);
+                propertiesPanel?.open(target);
             }
         }
-    }
-
-    // Double-click on the SVG opens the text editor for empty-space clicks.
-    // Selectable entities now use single-click (onSvgMouseDown) to open the style panel.
-    function onSvgDblClick(e: MouseEvent): void {
-        if (!iseOnClickEnabled) return;
-        // Open Quill editor for text editing on double-click empty space
-        openEditor(e);
     }
 
     // Intercepts mousedown on selectable entities before D3's drag handler.
@@ -768,7 +770,7 @@
                     getOverlay()?.beginDrag(savedEvent);
                     setupLabelOverlayCallbacks(savedEntity.id, savedEntity.index);
                     const draggedText = document.getElementById(savedEntity.id);
-                    if (draggedText) stylePanel?.open(draggedText);
+                    if (draggedText) propertiesPanel?.open(draggedText);
                 }
             }
             function onUp() {
@@ -780,7 +782,7 @@
                     const svgText = document.getElementById(savedEntity.id) as SVGTextElement | null;
                     if (svgText) {
                         labelEditor?.enter(savedEntity.id, savedEntity.index, svgText);
-                        stylePanel?.open(svgText);
+                        propertiesPanel?.open(svgText);
                     }
                     if (commonState.elementAnnotations?.[savedEntity.id]?.popover) {
                         showElementPopover(
@@ -801,7 +803,7 @@
         toggleSelection(entity, e.shiftKey);
         const eid = entity.id;
         const entityEl = document.getElementById(eid);
-        if (entityEl) stylePanel?.open(entityEl);
+        if (entityEl) propertiesPanel?.open(entityEl);
         if (commonState.elementAnnotations?.[entity.id]?.popover) {
             getOverlay()?.setCallbacks({
                 onSimpleClick: () => {
@@ -815,17 +817,18 @@
     let selectedPathIndex = $state<number>(0);
     let selectedFreehandIndex = $state<number>(0);
 
-    function editPath(): void {
-        closeMenu();
+    function startPathEditing(pathElem: SVGPathElement, pathIndex: number): void {
+        panelEntityDuringEdit = panelSelectedEntity ?? { type: "path", index: pathIndex, id: `path-${pathIndex}` };
         clearSelection();
-        const pathElem = openContextMenuInfo.target;
         detachListeners();
         editingPath = true;
-
-        new PathEditor(pathElem, svg.node() as SVGSVGElement, (editedPathElem) => {
-            // element was deleted
+        selectedPathIndex = pathIndex;
+        currentPathEditor = new PathEditor(pathElem, svg.node() as SVGSVGElement, (editedPathElem) => {
+            currentPathEditor = null;
+            panelEntityDuringEdit = null;
             if (!editedPathElem) {
                 commonState.providedPaths.splice(selectedPathIndex, 1);
+                propertiesPanel?.close();
             } else {
                 const parsed = parseAndUnprojectPath(editedPathElem, appState.projection!);
                 commonState.providedPaths[selectedPathIndex].d = parsed;
@@ -834,6 +837,78 @@
             editingPath = false;
             saveState();
         });
+    }
+
+    function editPath(): void {
+        closeMenu();
+        startPathEditing(openContextMenuInfo.target as SVGPathElement, selectedPathIndex);
+    }
+
+    function handlePanelEditPath(): void {
+        const entity = panelSelectedEntity;
+        if (!entity || entity.type !== "path") return;
+        const pathElem = document.getElementById(entity.id) as unknown as SVGPathElement | null;
+        if (!pathElem) return;
+        startPathEditing(pathElem, entity.index);
+    }
+
+    function handlePanelExitEditPath(): void {
+        currentPathEditor?.finish();
+    }
+
+    function handlePanelDelete(): void {
+        deleteSelected(() => redrawEntities());
+        propertiesPanel?.close();
+    }
+
+    function handlePanelBringToFront(): void {
+        const el = propertiesPanel?.getElement();
+        if (!el?.id) return;
+        // Clear bringtofront from all siblings in the same parent group
+        if (el.parentNode) {
+            for (const sibling of Array.from(el.parentNode.children)) {
+                const sid = sibling.getAttribute("id");
+                if (sid && sid !== el.id && commonState.inlineStyles[sid]) {
+                    delete commonState.inlineStyles[sid]["bringtofront"];
+                }
+            }
+        }
+        el.parentNode?.appendChild(el);
+        if (!commonState.inlineStyles[el.id]) commonState.inlineStyles[el.id] = {};
+        commonState.inlineStyles[el.id]["bringtofront"] = "true";
+        propertiesPanel?.notifyBroughtToFront();
+        saveState();
+    }
+
+    function handlePanelSaveLink(id: string, url: string): void {
+        if (!commonState.elementLinks) commonState.elementLinks = {};
+        if (url.trim()) {
+            commonState.elementLinks[id] = url.trim();
+        } else {
+            delete commonState.elementLinks[id];
+        }
+        drawAndSetupShapes();
+        drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks);
+        drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks);
+        applyInlineStyles();
+        applyGenericLinks();
+        saveState();
+    }
+
+    function handlePanelAddTooltip(id: string): void {
+        beginAddAnnotation(id, "tooltip");
+    }
+
+    function handlePanelRemoveTooltip(id: string): void {
+        removeAnnotation(id, "tooltip");
+    }
+
+    function handlePanelAddPopover(id: string): void {
+        beginAddAnnotation(id, "popover");
+    }
+
+    function handlePanelRemovePopover(id: string): void {
+        removeAnnotation(id, "popover");
     }
 
     function deletePath(): void {
@@ -1009,7 +1084,7 @@
             }
         }
         commonState.lastUsedLabelProps["font-family"] = font.name;
-        const prevElId = stylePanel?.getElement()?.id;
+        const prevElId = propertiesPanel?.getElement()?.id;
         drawAndSetupShapes();
         applyStyles(commonState.inlineStyles);
         saveState();
@@ -1017,7 +1092,7 @@
         if (prevElId) {
             requestAnimationFrame(() => {
                 const newEl = document.getElementById(prevElId);
-                if (newEl) stylePanel?.open(newEl);
+                if (newEl) propertiesPanel?.open(newEl);
             });
         }
     }
@@ -1070,7 +1145,7 @@
         toggleSelection({ type: 'shape', index, id }, false);
         getOverlay()?.beginCreationResize(e, () => {
             const el = document.getElementById(id);
-            if (el) stylePanel?.open(el);
+            if (el) propertiesPanel?.open(el);
         });
     }
 
@@ -1435,6 +1510,14 @@
 
     function initAnnotationEditor(): void {
         annotationQuillEditor?.focus();
+        annotationEditorKeyHandler = (e: KeyboardEvent) => {
+            if (e.key === "Enter" && e.ctrlKey) {
+                e.preventDefault();
+                saveAnnotation();
+                annotationEditorOpen = false;
+            }
+        };
+        document.addEventListener("keydown", annotationEditorKeyHandler);
     }
 
     // Merges QuillEditor content + containerStyle back into a single styled HTML string for storage.
@@ -1607,7 +1690,7 @@
         requestAnimationFrame(() => {
             toggleSelection({ type: 'shape', index: newIndex, id: shapeId }, false);
             const el = document.getElementById(shapeId);
-            if (el) stylePanel?.open(el);
+            if (el) propertiesPanel?.open(el);
         });
     }
 
@@ -1720,7 +1803,7 @@
         closeMenu();
         stopDrawFreeHand();
         cancelDrawPath();
-        stylePanel?.close();
+        propertiesPanel?.close();
 
         if (currentUser) {
             openExportModal();
@@ -1748,7 +1831,7 @@
     onCancel={onLabelCancel}
     onStyleEdit={(id, _x, _y) => {
         const el = document.getElementById(id);
-        if (el) stylePanel?.open(el);
+        if (el) propertiesPanel?.open(el);
     }}
 />
 
@@ -1949,7 +2032,10 @@
     onClosed={() => {
         annotationEditorOpen = false;
         annotationEditingElemId = null;
-        stylePanel?.close();
+        if (annotationEditorKeyHandler) {
+            document.removeEventListener("keydown", annotationEditorKeyHandler);
+            annotationEditorKeyHandler = null;
+        }
     }}
 >
     {#snippet header()}
@@ -1988,7 +2074,7 @@
 {/if}
 
 <div class="d-flex align-items-start h-100">
-    <aside id="params" class="h-100" onmousedown={() => clearSelection()}>
+    <aside id="params" class="h-100" inert={editingPath || undefined} onmousedown={() => clearSelection()}>
         <div id="main-panel" class="d-flex flex-column align-items-center pt-4 h-100">
             <div class="mode-selection" role="group">
                 <input
@@ -2021,14 +2107,14 @@
             </div>
             <div id="main-menu" class="mt-4">
                 {#if commonState.currentMode === "macro"}
-                    <MacroSidebar bind:this={macroSidebar} {draw} {svg} openStylePanel={(el) => stylePanel?.open(el)}></MacroSidebar>
+                    <MacroSidebar bind:this={macroSidebar} {draw} {svg} openPropertiesPanel={(el) => propertiesPanel?.open(el)}></MacroSidebar>
                 {:else}
                     <MicroSidebar
                         bind:this={microSidebar}
                         {draw}
                         {svg}
                         onMapMoveStart={() => {
-                            stylePanel?.close();
+                            propertiesPanel?.close();
                             closeMenu();
                             stopDrawFreeHand();
                         }}
@@ -2040,7 +2126,7 @@
     <div class="w-auto d-flex flex-grow-1 flex-column h-100" style="position: relative;">
         <Navbar>
             {#snippet children()}
-            <div class="d-flex align-items-center justify-content-between w-100 px-3">
+            <div class="d-flex align-items-center justify-content-between w-100 px-3" inert={editingPath || undefined}>
                 <!-- LEFT: drawing tools + map settings -->
                 <div class="d-flex align-items-center gap-2">
                     <SettingsStrip {draw} />
@@ -2169,7 +2255,7 @@
             {/snippet}
         </Navbar>
         <div class="d-flex flex-grow-1" style="min-height:0;overflow:hidden;">
-        <div id="map-area" class="d-flex flex-column justify-content-center align-items-center flex-grow-1 position-relative" style="overflow:hidden;min-width:0;"
+        <div id="map-area" class="d-flex flex-column justify-content-start align-items-center flex-grow-1 position-relative" style="overflow:hidden;min-width:0;padding-top:clamp(2rem, 6vh, 5rem);"
             onmousedown={(e) => { if (e.target === e.currentTarget) clearSelection(); }}>
             {#if serverSyncError}
                 <div
@@ -2180,12 +2266,6 @@
                     {serverSyncError}
                 </div>
             {/if}
-            {#if commonState.currentMode === "micro"}
-                <div class="micro-top mb-4 mx-auto d-flex align-items-center justify-content-between">
-                    <Geocoding onPlaceSelected={(res) => microSidebar!.onPlaceSelected(res)}></Geocoding>
-                </div>
-            {/if}
-
             <div
                 id="map-content"
                 class:placing={!!pendingPlacement}
@@ -2207,6 +2287,11 @@
                     </div>
                 {/if}
             </div>
+            {#if commonState.currentMode === "micro"}
+                <div class="micro-top mt-3 mx-auto d-flex align-items-center justify-content-between">
+                    <Geocoding onPlaceSelected={(res) => microSidebar!.onPlaceSelected(res)}></Geocoding>
+                </div>
+            {/if}
             {#if showMicroHint}
                 <div class="micro-hint-banner">
                     <span>Want a detailed town view? Switch to <strong>Detailed mode</strong></span>
@@ -2233,11 +2318,26 @@
                 </div>
             {/if}
         </div>
-        <StylePanel
-        bind:this={stylePanel}
-        suppressRing={selectionState.selected.length > 0}
+        <PropertiesPanel
+        bind:this={propertiesPanel}
+        suppressRing={editingPath || selectionState.selected.length > 0}
         availableFonts={commonState.providedFonts.map((f) => f.name)}
         onOpenFontPicker={() => fontPicker?.openPicker()}
+        entityType={panelEntity?.type ?? null}
+        entityId={panelEntity?.id ?? null}
+        isEditingPath={editingPath}
+        onEditPath={handlePanelEditPath}
+        onExitEditPath={handlePanelExitEditPath}
+        onDelete={handlePanelDelete}
+        onSaveLink={handlePanelSaveLink}
+        onAddTooltip={handlePanelAddTooltip}
+        onRemoveTooltip={handlePanelRemoveTooltip}
+        onAddPopover={handlePanelAddPopover}
+        onRemovePopover={handlePanelRemovePopover}
+        getAnnotations={getPanelAnnotations}
+        getLink={getPanelLink}
+        onBringToFront={handlePanelBringToFront}
+        isOnTop={(el) => !!el.id && commonState.inlineStyles[el.id]?.['bringtofront'] === 'true'}
         cssRuleFilter={(el, cssSelector) => {
             if (el.closest("foreignObject")) return false;
             if (el.closest(".tooltip-preview") && cssSelector !== "inline") return false;

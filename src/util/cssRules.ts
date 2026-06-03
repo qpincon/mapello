@@ -42,8 +42,11 @@ function normaliseValue(prop: string, v: string): string {
 function cleanRuleSelector(selectorText: string): string | null {
     if (!selectorText || selectorText.length > 50) return null;
     if (selectorText.split(",").some((s) => s.trim() === "*")) return null;
-    const sel = selectorText.replace(/\.hovered/g, "").replace(/:hover\b/g, "").trim();
-    return sel || null;
+    // Hover rules can't be probed via getComputedStyle in the resting state —
+    // return null so getElementsAffectedByProp bails out and the caller falls
+    // back to highlightRule(), which strips :hover before querying.
+    if (/\.hovered|:hover\b/.test(selectorText)) return null;
+    return selectorText.trim() || null;
 }
 
 // Sentinel values unique enough that no real content would produce them.
