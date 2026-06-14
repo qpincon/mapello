@@ -163,6 +163,34 @@
   let activeMacro = $state(0);
   let microKey = $state(0);
   let macroKey = $state(0);
+  let openFaq = $state<number | null>(null);
+
+  const faqs = [
+    {
+      q: "Do I need an account to start?",
+      a: "No. You can open the editor and design maps immediately — no sign-up required. You only need an account to export more than 3 maps.",
+    },
+    {
+      q: "What counts as an \"exported map\"?",
+      a: "Each time you download a finished SVG file, that uses one export credit.",
+    },
+    {
+      q: "Will my maps keep working if I cancel my subscription?",
+      a: "Yes, forever. Every SVG file you export is completely self-contained — it contains no link back to Mapello. Your maps will work the same way in 10 years as they do today.",
+    },
+    {
+      q: "Can I paste the map directly into my website?",
+      a: "Yes. Inline SVG in HTML is supported by every modern browser. Just open the exported file, copy its contents, and paste it into your page. Tooltips, popovers, and links will all work — no JavaScript library needed.",
+    },
+    {
+      q: "What file format is needed for the data coloring feature?",
+      a: "A standard spreadsheet file (CSV, Excel). One column should contain the country or region names; the other columns can hold any data you want to display or color by.",
+    },
+    {
+      q: "Can I use custom fonts in my map?",
+      a: "Yes. Chose any font file in the app and it becomes available for labels. On export, you can choose to embed the font as base64 inside the SVG, convert text to vector paths, or leave it as-is.",
+    },
+  ];
 
   function selectMicro(i: number) {
     if (i === activeMicro) return;
@@ -781,7 +809,7 @@
       </h1>
       <p class="hero-sub lp-reveal">
         Design a beautiful, interactive map in the browser. Export one
-        self-contained SVG and paste it anywhere — your site, your slides, your
+        self-contained <abbr class="svg-abbr" title="SVG (Scalable Vector Graphics) is a standard image format supported by all modern browsers and design tools. Unlike a PNG or JPG, it stays perfectly sharp at any size and can be interactive.">SVG</abbr> and paste it anywhere — your site, your slides, your
         favorite CMS. No code, no plugins, no upkeep.
       </p>
       <div class="hero-actions lp-reveal">
@@ -790,6 +818,8 @@
       </div>
       <div class="hero-trust lp-reveal">
         <span>Free to start</span>
+        <span class="trust-dot">·</span>
+        <span>No account needed</span>
         <span class="trust-dot">·</span>
         <span>Exports work forever</span>
       </div>
@@ -832,7 +862,7 @@
         <ValueCard
           number="04"
           title="Your spreadsheet becomes a map"
-          description="Drop in a CSV and Mapello colors your map automatically — by country, by region, by any column you choose. Add a legend in one click. No code required."
+          description="Drop in a spreadsheet and Mapello colors your map automatically — by country, by region, by any column you choose. Add a legend in one click. No code required."
         />
       </div>
       <div class="lp-reveal">
@@ -1248,7 +1278,7 @@
               >
             </tr>
             <tr>
-              <td class="compare-feature">Data-bound coloring from a CSV</td>
+              <td class="compare-feature">Data-bound coloring from a spreadsheet</td>
               <td class="compare-col-us"
                 ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
                   ><polyline
@@ -2049,7 +2079,7 @@
             >Priority support
           </li>
         </ul>
-        <a href="/app" class="btn-primary btn-wide">Start free trial</a>
+        <a href="/app" class="btn-primary btn-wide">Get started</a>
       </div>
 
       <!-- Annual -->
@@ -2088,6 +2118,36 @@
         </ul>
         <a href="/app" class="btn-outline">Choose annual</a>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ FAQ ════════════════════════════════════════ -->
+<section class="faq" id="faq">
+  <div class="l-container">
+    <div class="section-header lp-reveal">
+      <span class="section-tag">FAQ</span>
+      <h2>Common questions</h2>
+    </div>
+    <div class="faq-list">
+      {#each faqs as faq, i}
+        <div class="faq-item lp-reveal">
+          <button
+            class="faq-question"
+            class:open={openFaq === i}
+            onclick={() => openFaq = openFaq === i ? null : i}
+            aria-expanded={openFaq === i}
+          >
+            <span>{faq.q}</span>
+            <svg class="faq-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <polyline points="3 6 8 11 13 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          {#if openFaq === i}
+            <div class="faq-answer">{@html faq.a}</div>
+          {/if}
+        </div>
+      {/each}
     </div>
   </div>
 </section>
@@ -2219,13 +2279,14 @@
         class="footer-logo-img"
         height="36"
       />
-      <span class="footer-tagline">Maps you'll be proud to embed.</span>
+      <span class="footer-tagline">Maps you'll be proud to share.</span>
     </div>
     <div class="footer-links-col">
       <span class="footer-col-title">Product</span>
       <a href="/app">Editor</a>
       <a href="#showcase">Examples</a>
       <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
     </div>
     <div class="footer-links-col">
       <span class="footer-col-title">Company</span>
@@ -2253,6 +2314,12 @@
 </footer>
 
 <style>
+  abbr.svg-abbr {
+    text-decoration: underline dotted currentColor;
+    text-underline-offset: 3px;
+    cursor: help;
+  }
+
   /* ── Scroll animation ── */
   :global(.lp-reveal) {
     animation: scrollReveal 0.65s ease both;
@@ -3390,5 +3457,59 @@
     .compare-table tbody td {
       padding: 0.7rem 0.8rem;
     }
+  }
+
+  /* ── FAQ ── */
+  .faq {
+    padding: 6rem 0;
+    background: var(--color-surface, #fff);
+  }
+  .faq-list {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .faq-item {
+    border-bottom: 1px solid var(--color-border, #e5e7eb);
+  }
+  .faq-item:first-child {
+    border-top: 1px solid var(--color-border, #e5e7eb);
+  }
+  .faq-question {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 600;
+    color: inherit;
+    line-height: 1.4;
+  }
+  .faq-question:hover {
+    opacity: 0.75;
+  }
+  .faq-chevron {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+  .faq-question.open .faq-chevron {
+    transform: rotate(180deg);
+  }
+  .faq-answer {
+    padding: 0 0 1.25rem;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--color-text-muted, #6b7280);
+    max-width: 640px;
   }
 </style>

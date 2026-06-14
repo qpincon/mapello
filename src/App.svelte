@@ -856,6 +856,63 @@
         currentPathEditor?.finish();
     }
 
+    function getPanelPathImage(_id: string) {
+        const entity = panelSelectedEntity;
+        if (!entity || entity.type !== "path") return null;
+        const pathDef = commonState.providedPaths[entity.index];
+        if (!pathDef?.image) return null;
+        return {
+            name: pathDef.image.name,
+            duration: pathDef.duration,
+            width: pathDef.width,
+            height: pathDef.height,
+            imageRotate: pathDef.imageRotate,
+        };
+    }
+
+    async function handlePanelImportPathImage(file: File): Promise<void> {
+        const entity = panelSelectedEntity;
+        if (!entity || entity.type !== "path") return;
+        await setPathImageFromFile(file, entity.index);
+    }
+
+    function handlePanelDeletePathImage(): void {
+        const entity = panelSelectedEntity;
+        if (!entity || entity.type !== "path") return;
+        const idx = entity.index;
+        delete commonState.providedPaths[idx].image;
+        commonState.providedPaths[idx] = commonState.providedPaths[idx];
+        drawShapesAndSave();
+    }
+
+    function handlePanelChangePathImageDuration(v: number): void {
+        const entity = panelSelectedEntity;
+        if (!entity || entity.type !== "path") return;
+        commonState.providedPaths[entity.index].duration = v;
+        drawShapesAndSave();
+    }
+
+    function handlePanelChangePathImageWidth(v: number): void {
+        const entity = panelSelectedEntity;
+        if (!entity || entity.type !== "path") return;
+        commonState.providedPaths[entity.index].width = v;
+        drawShapesAndSave();
+    }
+
+    function handlePanelChangePathImageHeight(v: number): void {
+        const entity = panelSelectedEntity;
+        if (!entity || entity.type !== "path") return;
+        commonState.providedPaths[entity.index].height = v;
+        drawShapesAndSave();
+    }
+
+    function handlePanelTogglePathImageRotate(v: boolean): void {
+        const entity = panelSelectedEntity;
+        if (!entity || entity.type !== "path") return;
+        commonState.providedPaths[entity.index].imageRotate = v;
+        drawShapesAndSave();
+    }
+
     function handlePanelDelete(): void {
         deleteSelected(() => redrawEntities());
         propertiesPanel?.close();
@@ -937,9 +994,7 @@
         menuStates.chosingMarker = true;
     }
 
-    async function importImagePath(e: Event): Promise<void> {
-        // @ts-expect-error
-        const file = e.target.files[0];
+    async function setPathImageFromFile(file: File, pathIndex: number): Promise<void> {
         let content: string;
         try {
             content = await processUploadedImage(file);
@@ -948,21 +1003,19 @@
             return;
         }
         const newImage: PathDefImage = { name: file.name, content };
-        commonState.providedPaths[selectedPathIndex].image = newImage;
-        if (!commonState.providedPaths[selectedPathIndex].duration) {
-            commonState.providedPaths[selectedPathIndex].duration = 10;
-            commonState.providedPaths[selectedPathIndex].width = 20;
-            commonState.providedPaths[selectedPathIndex].height = 10;
+        commonState.providedPaths[pathIndex].image = newImage;
+        if (!commonState.providedPaths[pathIndex].duration) {
+            commonState.providedPaths[pathIndex].duration = 10;
+            commonState.providedPaths[pathIndex].width = 20;
+            commonState.providedPaths[pathIndex].height = 10;
         }
-        drawCustomPaths(
-            commonState.providedPaths,
-            svg,
-            appState.projection!,
-            commonState.inlineStyles,
-            commonState.elementLinks ?? {},
-        );
-        applyInlineStyles();
-        saveState();
+        drawShapesAndSave();
+    }
+
+    async function importImagePath(e: Event): Promise<void> {
+        // @ts-expect-error
+        const file = e.target.files[0];
+        await setPathImageFromFile(file, selectedPathIndex);
     }
 
     const saveDebounced = debounce(saveState, 200);
@@ -2329,6 +2382,13 @@
         onEditPath={handlePanelEditPath}
         onExitEditPath={handlePanelExitEditPath}
         onDelete={handlePanelDelete}
+        getPathImage={getPanelPathImage}
+        onImportPathImage={handlePanelImportPathImage}
+        onDeletePathImage={handlePanelDeletePathImage}
+        onChangePathImageDuration={handlePanelChangePathImageDuration}
+        onChangePathImageWidth={handlePanelChangePathImageWidth}
+        onChangePathImageHeight={handlePanelChangePathImageHeight}
+        onTogglePathImageRotate={handlePanelTogglePathImageRotate}
         onSaveLink={handlePanelSaveLink}
         onAddTooltip={handlePanelAddTooltip}
         onRemoveTooltip={handlePanelRemoveTooltip}

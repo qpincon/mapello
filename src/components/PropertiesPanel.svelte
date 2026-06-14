@@ -39,6 +39,13 @@
         getLink?: (id: string) => string | null;
         onBringToFront?: () => void;
         isOnTop?: (el: Element) => boolean;
+        getPathImage?: (id: string) => { name: string; duration?: number; width?: number; height?: number; imageRotate?: boolean } | null;
+        onImportPathImage?: (file: File) => void;
+        onDeletePathImage?: () => void;
+        onChangePathImageDuration?: (value: number) => void;
+        onChangePathImageWidth?: (value: number) => void;
+        onChangePathImageHeight?: (value: number) => void;
+        onTogglePathImageRotate?: (value: boolean) => void;
     }
 
     let {
@@ -48,6 +55,9 @@
         onEditPath, onExitEditPath, onDelete, onSaveLink,
         onAddTooltip, onRemoveTooltip, onAddPopover, onRemovePopover,
         getAnnotations, getLink, onBringToFront, isOnTop,
+        getPathImage, onImportPathImage, onDeletePathImage,
+        onChangePathImageDuration, onChangePathImageWidth,
+        onChangePathImageHeight, onTogglePathImageRotate,
     }: Props = $props();
 
     const STROKE_WIDTHS = ["0.5", "1", "2", "3", "4", "6", "8", "12"];
@@ -99,6 +109,9 @@
     const activeId = $derived(entityId ?? (element?.id || null));
     const resolvedAnnotations = $derived(activeId ? (getAnnotations?.(activeId) ?? null) : null);
     const resolvedLink = $derived(activeId ? (getLink?.(activeId) ?? null) : null);
+    const resolvedPathImage = $derived(entityType === "path" && activeId ? (getPathImage?.(activeId) ?? null) : null);
+
+    let pathImageInputEl: HTMLInputElement | null = $state(null);
 
     let ringStyle = $state(""); let ringVisible = $state(false); let ringRaf = 0;
 
@@ -490,6 +503,54 @@
                         <button type="button" class="sp-act-btn" onclick={() => activeId && onAddPopover?.(activeId)}>Add</button>
                     {/if}
                 </div>
+                {/if}
+
+                <!-- ── PATH IMAGE ──────────────────────────────────── -->
+                {#if entityType === "path"}
+                <div class="sp-section-head">Image</div>
+                <!-- Import / filename row -->
+                <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:38px">
+                    {#if resolvedPathImage}
+                        <span class="flex-grow-1 text-truncate" style="font-size:11px;color:#506784">{resolvedPathImage.name}</span>
+                        <button type="button" class="sp-act-btn" onclick={() => pathImageInputEl?.click()}>Change</button>
+                        <button type="button" class="sp-act-btn text-danger" onclick={() => onDeletePathImage?.()}>×</button>
+                    {:else}
+                        <span class="flex-grow-1 text-secondary" style="font-size:11px">Image along path</span>
+                        <button type="button" class="sp-act-btn" onclick={() => pathImageInputEl?.click()}>Import</button>
+                    {/if}
+                    <input bind:this={pathImageInputEl} type="file" accept=".png,.jpg,.svg" style="display:none"
+                        onchange={(e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file) onImportPathImage?.(file);
+                            (e.target as HTMLInputElement).value = "";
+                        }} />
+                </div>
+                {#if resolvedPathImage}
+                <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:34px">
+                    <span class="flex-grow-1 text-secondary" style="font-size:11px">Duration (s)</span>
+                    <input type="number" class="form-control form-control-sm" style="width:64px"
+                        value={resolvedPathImage.duration ?? 10}
+                        onchange={(e) => onChangePathImageDuration?.(parseInt((e.target as HTMLInputElement).value))} />
+                </div>
+                <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:34px">
+                    <span class="flex-grow-1 text-secondary" style="font-size:11px">Width</span>
+                    <input type="number" class="form-control form-control-sm" style="width:64px"
+                        value={resolvedPathImage.width ?? 20}
+                        onchange={(e) => onChangePathImageWidth?.(parseInt((e.target as HTMLInputElement).value))} />
+                </div>
+                <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:34px">
+                    <span class="flex-grow-1 text-secondary" style="font-size:11px">Height</span>
+                    <input type="number" class="form-control form-control-sm" style="width:64px"
+                        value={resolvedPathImage.height ?? 10}
+                        onchange={(e) => onChangePathImageHeight?.(parseInt((e.target as HTMLInputElement).value))} />
+                </div>
+                <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:34px">
+                    <span class="flex-grow-1 text-secondary" style="font-size:11px">Rotate with curve</span>
+                    <input type="checkbox" class="form-check-input"
+                        checked={resolvedPathImage.imageRotate !== false}
+                        onchange={(e) => onTogglePathImageRotate?.((e.target as HTMLInputElement).checked)} />
+                </div>
+                {/if}
                 {/if}
 
                 <!-- ── STYLE ──────────────────────────────────────── -->
