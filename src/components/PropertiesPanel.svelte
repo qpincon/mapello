@@ -390,12 +390,15 @@
 
 <!-- Full color property row (fill / stroke) -->
 {#snippet colorField(prop: string, currentVal: string, icon: string, tipLabel: string, openPicker: (el: HTMLElement) => void)}
+{@const barColor = inheritedColor(prop)}
 <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentVal} style="min-height:38px"
     onmouseenter={() => highlightProp(prop)} onmouseleave={clearHighlight}>
-    <button type="button" class="sp-icon sp-icon-btn"
+    <button type="button" class="sp-icon sp-icon-btn sp-color-icon-btn"
         onclick={(e) => openPicker(e.currentTarget as HTMLElement)}
         onmouseenter={(e) => showTip(e, tipLabel)} onmouseleave={hideTip}>
         {@html icon}
+        <span class="sp-color-bar" class:sp-color-bar-none={!barColor}
+            style={barColor ? `background:${barColor}` : ''}></span>
     </button>
     <div class="d-flex align-items-center flex-grow-1 gap-2 overflow-hidden">
         {#if currentVal}
@@ -737,6 +740,18 @@
     .sp-icon:hover { color: #506784; }
     .sp-icon-btn {
         background: none; border: none; padding: 0; cursor: pointer;
+    }
+    .sp-color-icon-btn {
+        flex-direction: column; gap: 2px; align-items: center; height: auto;
+    }
+    .sp-color-bar {
+        width: 20px; height: 3px; border-radius: 1.5px;
+        border: 1px solid rgba(0, 0, 0, 0.12); flex-shrink: 0;
+    }
+    .sp-color-bar-none {
+        background: repeating-linear-gradient(
+            -45deg, #f0f0f0, #f0f0f0 2px, white 2px, white 4px
+        ) !important;
     }
 
     .sp-preview { display: block; flex-shrink: 0; }

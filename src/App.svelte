@@ -563,8 +563,7 @@
             }
             changeProjection();
             await updateLayerSimplification();
-            /** On micro mode, the drawing will from the maplibre listeners */
-            if (state.stateCommon.currentMode === "macro") draw();
+            draw();
             saveState();
         } finally {
             setRestoring(false);

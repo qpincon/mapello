@@ -6,7 +6,7 @@ export function hsvToHex(h: number, s: number, v: number): string {
     const hi = Math.floor(h / 60) % 6;
     const f = h / 60 - Math.floor(h / 60);
     const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
-    const rows: [number, number, number][] = [[v,t,p],[t,v,p],[p,v,q],[p,t,v],[q,p,v],[v,p,t]];
+    const rows: [number, number, number][] = [[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]];
     return rows[hi].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join("").toUpperCase();
 }
 

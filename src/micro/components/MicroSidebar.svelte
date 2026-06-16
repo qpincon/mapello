@@ -217,7 +217,7 @@
         });
 
         mapLoadedPromise = new Promise((resolve) => {
-            maplibreMap!.once("load", resolve);
+            maplibreMap!.once("idle", resolve);
         });
         return mapLoadedPromise;
     }

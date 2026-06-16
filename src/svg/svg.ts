@@ -227,9 +227,15 @@ export function handleInlineStyleChange(elemId: string, target: HTMLElement, css
             if (shape) shape.fontManual = true;
         }
     }
-    if (target.classList?.[0]?.includes("buildings") && cssProp === "fill") {
-        cssProp = "--building-color";
-        target.style.setProperty(cssProp, value);
+    if (target.classList?.[0]?.includes("buildings") && cssProp === "fill" && target.closest('#buildings')) {
+        target.style.setProperty('--building-color', value);
+        // Store both so applyStyles restores the same state after redraw (walls inherit fill from
+        // the <g> inline style; relying solely on fill:var(--building-color) via CSS doesn't work)
+        const styleObj = elemId in commonState.inlineStyles ? commonState.inlineStyles[elemId] : {};
+        styleObj['--building-color'] = value;
+        styleObj['fill'] = value;
+        commonState.inlineStyles[elemId] = styleObj;
+        return;
     }
     if (elemId in commonState.inlineStyles) commonState.inlineStyles[elemId][cssProp] = value;
     else commonState.inlineStyles[elemId] = { [cssProp]: value };
