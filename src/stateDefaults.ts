@@ -22,7 +22,6 @@ const defaultMacroParams: MacroParams = {
         graticuleColor: "#777777",
         graticuleWidth: 0.5,
         seaColor: "#dde2eeff",
-        backgroundNoise: true,
     },
 };
 

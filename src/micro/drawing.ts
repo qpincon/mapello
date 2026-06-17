@@ -8,7 +8,7 @@ import { DOM_PARSER, findStyleSheet, fontsToCssMultiSubset, fontsToCssEmbedMulti
 import { patternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download, randomString, xhtmlifyHtml } from "../util/common";
-import { addAttribution, addFrameShadow, additionnalCssExport, changeIdAndReferences, exportFontChoices, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
+import { addAttribution, addFrameShadow, addTexture, additionnalCssExport, changeIdAndReferences, exportFontChoices, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.js?raw';
 import { createRoundedRectangleGeoJSON } from '../util/geometry';
@@ -891,6 +891,8 @@ export async function exportMicro(
         minifyJs = false,
         customAttributions,
         skipAttribution = false,
+        texture,
+        textureMode = 'overlay',
     } = options;
     const width = stateMicro.microParams.General.width;
     const height = stateMicro.microParams.General.height;
@@ -1046,6 +1048,33 @@ export async function exportMicro(
         const scriptContent = document.createTextNode(js);
         scriptElem.appendChild(scriptContent);
         svgElement.append(scriptElem);
+    }
+
+    if (texture) {
+        // Create a clip path that matches the micro map's outer frame (with border radius)
+        // so the texture never bleeds outside the frame edges.
+        const outerFrameRxTex = Math.max(0, (borderRadius / 100) * Math.min(width - borderPadding, height - borderPadding));
+        const texClipId = `${mapId}-tex-clip`;
+        let texDefs = svgElement.querySelector('defs');
+        if (!texDefs) {
+            texDefs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            svgElement.prepend(texDefs);
+        }
+        const texClip = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
+        texClip.setAttribute('id', texClipId);
+        const texClipRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        texClipRect.setAttribute('x', '0');
+        texClipRect.setAttribute('y', '0');
+        texClipRect.setAttribute('width', String(width));
+        texClipRect.setAttribute('height', String(height));
+        if (outerFrameRxTex > 0) texClipRect.setAttribute('rx', String(outerFrameRxTex));
+        texClip.appendChild(texClipRect);
+        texDefs.appendChild(texClip);
+
+        // For background mode: insert after #micro-background so the texture is visible
+        // on the background colour but stays below all map features.
+        const bgEl = svgElement.querySelector('#micro-background') as Element | null;
+        addTexture(svgElement, mapId, texture, textureMode, width, height, texClipId, bgEl);
     }
 
     if (!skipAttribution) addAttribution(svgElement, width, height, 'micro', customAttributions);

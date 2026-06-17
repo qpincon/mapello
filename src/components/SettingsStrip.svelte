@@ -134,12 +134,6 @@
                         onChange={(c) => { macroState.macroParams.Background.seaColor = c; drawSimplifyThenReal(); }} />
                 </div>
                 <div class="field form-check form-switch ps-0 d-flex align-items-center justify-content-between">
-                    <label class="form-check-label" for="sp-noise">Background noise</label>
-                    <input class="form-check-input" type="checkbox" role="switch" id="sp-noise"
-                        bind:checked={macroState.macroParams.Background.backgroundNoise}
-                        onchange={() => drawSimplifyThenReal()} />
-                </div>
-                <div class="field form-check form-switch ps-0 d-flex align-items-center justify-content-between">
                     <label class="form-check-label" for="sp-grat">Graticule</label>
                     <input class="form-check-input" type="checkbox" role="switch" id="sp-grat"
                         bind:checked={macroState.macroParams.Background.showGraticule}

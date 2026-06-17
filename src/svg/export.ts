@@ -5,6 +5,7 @@ import type { Config } from 'svgo/browser';
 import type { ProvidedFont } from 'src/types';
 import { detectRequiredSubsets, segmentTextBySubset } from '../util/unicode-subsets';
 import type TextToSVGClass from '../util/text-to-svg';
+import { TEXTURES } from './textures';
 
 
 export enum ExportFontChoice {
@@ -28,6 +29,10 @@ export interface ExportOptions {
     frameShadow?: boolean;
     customAttributions?: CustomAttribution[];
     skipAttribution?: boolean;
+    /** Texture preset key (from TEXTURES[].key). Falsy = no texture. */
+    texture?: string;
+    /** How the texture is composited: 'overlay' (mix-blend-mode on top) or 'background' (behind the map). Default 'overlay'. */
+    textureMode?: 'overlay' | 'background';
 }
 
 interface Position {
@@ -384,6 +389,110 @@ export function addFrameShadow(
     svgElement.prepend(rect);
 
     svgElement.setAttribute('overflow', 'visible');
+}
+
+/**
+ * Injects a paper/material texture into the exported SVG.
+ *
+ * @param svgElement         The root SVG element (post-SVGO, post-changeIdAndReferences).
+ * @param mapId              The random map id already stamped on the SVG.
+ * @param textureKey         One of TEXTURES[].key; no-op if not found.
+ * @param mode               'overlay' — textured rect on top with mix-blend-mode.
+ *                           'background' — textured rect placed just above the sea/background element.
+ * @param width              Map canvas width in user units.
+ * @param height             Map canvas height in user units.
+ * @param clipId             Optional clip-path id already in defs (e.g. `${mapId}-clipMapBorder`)
+ *                           so the texture rect doesn't bleed outside a non-rectangular map frame.
+ * @param backgroundAnchorEl Element to insert the texture AFTER in background mode
+ *                           (the sea rect in macro, #micro-background in micro).
+ *                           Falls back to the first visible child when null/undefined.
+ */
+export function addTexture(
+    svgElement: Element,
+    mapId: string,
+    textureKey: string,
+    mode: 'overlay' | 'background',
+    width: number,
+    height: number,
+    clipId?: string,
+    backgroundAnchorEl?: Element | null,
+): void {
+    const preset = TEXTURES.find(t => t.key === textureKey);
+    if (!preset) return;
+
+    const tid = `${mapId}-tex`;
+
+    // Ensure <defs> exists
+    let defs = svgElement.querySelector('defs');
+    if (!defs) {
+        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        svgElement.prepend(defs);
+    }
+
+    // Inject filter / pattern defs via innerHTML on a temporary container
+    if (preset.defs) {
+        const tmpDefs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        tmpDefs.innerHTML = preset.defs.replaceAll('{ID}', tid);
+        // Pin each filter to the exact map canvas. The SVG default expands the filter
+        // region by 10% on all sides, computing ~44% extra pixels for nothing.
+        tmpDefs.querySelectorAll('filter').forEach(f => {
+            if (!f.hasAttribute('filterUnits')) {
+                f.setAttribute('filterUnits', 'userSpaceOnUse');
+                f.setAttribute('x', '0');
+                f.setAttribute('y', '0');
+                f.setAttribute('width', String(width));
+                f.setAttribute('height', String(height));
+            }
+        });
+        while (tmpDefs.firstChild) defs.appendChild(tmpDefs.firstChild);
+    }
+
+    // Build the wrapping group.
+    // pointer-events:none  — texture must never intercept map interactions (clicks, hovers).
+    // will-change:transform — promotes to a GPU compositing layer so the browser can reuse
+    //                         the cached filter result during interactions without recomputing.
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    if (mode === 'overlay') {
+        g.setAttribute('style', `mix-blend-mode:${preset.blend ?? 'multiply'};pointer-events:none;will-change:transform`);
+        // Halve the blend intensity so the overlay doesn't over-darken the map.
+        g.setAttribute('opacity', '0.5');
+    } else {
+        // Background mode: multiply blends the texture with the sea/background fill rather
+        // than painting over it. This makes the texture visible without overriding the colour.
+        g.setAttribute('style', `mix-blend-mode:${preset.blend ?? 'multiply'};pointer-events:none;will-change:transform`);
+    }
+    if (clipId) {
+        g.setAttribute('clip-path', `url(#${clipId})`);
+    }
+
+    // Parse the elements markup and move children into the group
+    const elemHtml = preset.elements
+        .replaceAll('{ID}', tid)
+        .replaceAll('{W}', String(width))
+        .replaceAll('{H}', String(height));
+    const tmpG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    tmpG.innerHTML = elemHtml;
+    while (tmpG.firstChild) g.appendChild(tmpG.firstChild);
+
+    if (mode === 'overlay') {
+        // Append at the end; addAttribution() is called after us, so attribution
+        // will be stacked on top (correct: attribution must remain readable).
+        svgElement.appendChild(g);
+    } else {
+        // Background: insert AFTER the sea/background element so the texture is
+        // visible on the water area but stays below all map features.
+        // Fall back to the first visible child (after <defs>) if no anchor is given.
+        const anchor = backgroundAnchorEl
+            ?? (Array.from(svgElement.children).find(c => c.tagName.toLowerCase() !== 'defs') as Element | undefined)
+            ?? null;
+        if (anchor?.nextSibling) {
+            svgElement.insertBefore(g, anchor.nextSibling);
+        } else if (anchor) {
+            svgElement.appendChild(g);
+        } else {
+            svgElement.appendChild(g);
+        }
+    }
 }
 
 const urlUsingAttributes = ['marker-start', 'marker-mid', 'marker-end', 'clip-path', 'fill', 'filter', '*|href'];

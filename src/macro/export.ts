@@ -1,4 +1,4 @@
-import { addAttribution, addFrameShadow, additionnalCssExport, changeIdAndReferences, ExportFontChoice, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
+import { addAttribution, addFrameShadow, addTexture, additionnalCssExport, changeIdAndReferences, ExportFontChoice, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
 import type { ElementAnnotations, ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
 import { DOM_PARSER, fontsToCssMultiSubset, fontsToCssEmbedMultiSubset, getUsedInlineFonts } from 'src/util/dom';
 import svgoConfigBase from '../svgoExport.config';
@@ -42,6 +42,8 @@ export async function exportMacro(
         frameShadow = false,
         customAttributions,
         skipAttribution = false,
+        texture,
+        textureMode = 'overlay',
     } = options;
     // console.log('options', options);
     const svgNode = svg.node()!;
@@ -280,6 +282,17 @@ export async function exportMacro(
     const scriptContent = document.createTextNode(finalScript);
     scriptElem.appendChild(scriptContent);
     svgElement.append(scriptElem);
+
+    if (texture) {
+        // `${mapId}-clipMapBorder` is the clip path created by appendClip() in drawing.ts
+        // and scoped by changeIdAndReferences above. Applying it keeps the texture inside
+        // the map frame (important for globe / satellite projections).
+        //
+        // For background mode: the sea element is the <g id="outline"> group (first in
+        // render order). Find it by id — SVGO config has no cleanupIds so the id survives.
+        const seaEl = svgElement.querySelector('#outline') as Element | null;
+        addTexture(svgElement, mapId, texture, textureMode, w, h, `${mapId}-clipMapBorder`, seaEl);
+    }
 
     if (!skipAttribution) addAttribution(svgElement, w, h, 'macro', customAttributions);
 

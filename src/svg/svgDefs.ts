@@ -1,6 +1,5 @@
 import { rgb} from 'd3-color';
 import { select} from 'd3-selection';
-import bg from '../assets/img/bg.png?inline';
 import type {Color, DefsSelection, SvgSelection} from '../types';
 import type { GlowParams } from "src/params";
 // import plaid from '../assets/img/plaid.jpg';
@@ -92,7 +91,7 @@ export function appendGlow(selection: SvgSelection, id = "glows", displaySource 
     defs.append(() => filter.node());
 }
 
-export function appendBgPattern(selection: SvgSelection, id: string, seaColor: Color, backgroundNoise = false, imageSize = 60) {
+export function appendBgPattern(selection: SvgSelection, id: string, seaColor: Color) {
     let defs: DefsSelection = selection.select('defs');
     if (defs.empty()) defs = selection.append('defs');
     const existing = select(`#${id}`);
@@ -101,19 +100,13 @@ export function appendBgPattern(selection: SvgSelection, id: string, seaColor: C
     const pattern = defs.append('pattern')
         .attr('id', id)
         .attr('patternUnits', 'userSpaceOnUse')
-        .attr('width', imageSize)
-        .attr('height', imageSize);
+        .attr('width', 1)
+        .attr('height', 1);
 
     pattern.append('rect')
-        .attr('width', imageSize).attr('height', imageSize)
+        .attr('width', 1).attr('height', 1)
         .attr('fill', seaColor);
 
-    if (backgroundNoise) {
-        pattern.append('image')
-            .attr('href', bg)
-            .attr('x', 0).attr('y', 0)
-            .attr('width', imageSize).attr('height', imageSize);
-    }
     defs.append(() => pattern.node());
 }
 

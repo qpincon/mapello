@@ -75,7 +75,7 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     svg.select('#paths').raise();
     svg.select('#freehand-drawings').raise();
 
-    appendBgPattern(svg, "noise", macroState.macroParams.Background.seaColor, macroState.macroParams.Background.backgroundNoise);
+    appendBgPattern(svg, "noise", macroState.macroParams.Background.seaColor);
 
     select("#outline").style("fill", "url(#noise)");
 

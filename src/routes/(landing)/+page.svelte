@@ -117,7 +117,7 @@
       id: "ukraine",
       title: "Ukraine — Population by Region",
       description: "Population across Ukraine's regions.",
-      highlights: ["Continuous choropleth", "Graticule", "Background noise"],
+      highlights: ["Continuous choropleth", "Graticule"],
       src: "/showcase/macro/ukraine.svg",
       aspectRatio: "1 / 1",
       gradient:

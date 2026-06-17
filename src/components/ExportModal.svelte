@@ -1,6 +1,7 @@
 <script lang="ts">
     import Modal from "./Modal.svelte";
     import { ExportFontChoice, type ExportOptions, type CustomAttribution } from "../svg/export";
+    import { TEXTURES } from "../svg/textures";
     import { exportMacro } from "../macro/export";
     import { exportMicro } from "../micro/drawing";
     import { commonState, macroState, microState } from "../state.svelte";
@@ -35,6 +36,8 @@
     let animate = $state(false);
     let useViewBox = $state(false);
     let frameShadow = $state(true);
+    let texture = $state('');
+    let textureMode = $state<'overlay' | 'background'>('overlay');
     let fontUsedElsewhere = $state(false);
     let showAdvanced = $state(false);
     let minifyJs = $state(true);
@@ -75,6 +78,8 @@
             exportFonts: getExportFontChoice(),
             minifyJs: mode === "macro" || hasAnnotations ? minifyJs : undefined,
             customAttributions: validAttributions.length > 0 ? validAttributions : undefined,
+            texture: texture || undefined,
+            textureMode: texture ? textureMode : undefined,
         };
     }
 
@@ -88,6 +93,8 @@
             exportFonts: getExportFontChoice(),
             minifyJs,
             customAttributions: validAttributions.length > 0 ? validAttributions : undefined,
+            texture: texture || undefined,
+            textureMode: texture ? textureMode : undefined,
         };
         let svgString: string | void;
         if (mode === "macro") {
@@ -176,6 +183,8 @@
             animate;
             useViewBox;
             frameShadow;
+            texture;
+            textureMode;
             minifyJs;
             JSON.stringify(customAttributions);
             updatePreview(isOpening);
@@ -238,6 +247,39 @@
                         <label class="form-check-label" for="export-frame-shadow">Frame shadow</label>
                     </div>
                     <small class="text-muted d-block ms-4"> Add a drop shadow around the map frame </small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-medium mb-1" for="export-texture">Texture</label>
+                    <select id="export-texture" class="form-select form-select-sm" bind:value={texture}>
+                        <option value="">None</option>
+                        {#each TEXTURES as t}
+                            <option value={t.key}>{t.label}{t.dark ? ' ◐' : ''}</option>
+                        {/each}
+                    </select>
+                    <small class="text-muted d-block mt-1">Paper or material surface overlay on the exported map</small>
+                    {#if texture}
+                        <div class="mt-2">
+                            <small class="text-muted d-block mb-1">Apply to</small>
+                            <div class="btn-group btn-group-sm w-100" role="group" aria-label="Texture apply mode">
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary"
+                                    class:active={textureMode === 'overlay'}
+                                    onclick={() => (textureMode = 'overlay')}
+                                >Whole map</button>
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary"
+                                    class:active={textureMode === 'background'}
+                                    onclick={() => (textureMode = 'background')}
+                                >Background</button>
+                            </div>
+                            {#if TEXTURES.find(t => t.key === texture)?.dark}
+                                <small class="text-muted d-block mt-1">◐ Best suited to dark maps</small>
+                            {/if}
+                        </div>
+                    {/if}
                 </div>
 
                 {#if inlineFontUsed}

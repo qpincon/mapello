@@ -31,7 +31,6 @@ export interface MacroBackgroundParams {
     graticuleColor: Color;
     graticuleWidth: number;
     seaColor: Color;
-    backgroundNoise: boolean;
 }
 
 export interface MacroParams {
