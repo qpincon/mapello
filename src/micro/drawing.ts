@@ -832,13 +832,13 @@ export function generateCssFromState(state: MicroPalette): string | null {
                         'fill': 'var(--building-color)'
                     });
                     css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i} .roof`, {
-                        'fill': 'color-mix(in srgb, var(--building-color), white 20%);'
+                        'fill': 'color-mix(in srgb, var(--building-color), white 20%)'
                     });
                     css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}:hover .roof`, {
-                        'fill': 'color-mix(in srgb, var(--building-color), white 40%);'
+                        'fill': 'color-mix(in srgb, var(--building-color), white 40%)'
                     });
                     css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}:hover .wall`, {
-                        'fill': 'color-mix(in srgb, var(--building-color), white 20%);'
+                        'fill': 'color-mix(in srgb, var(--building-color), white 20%)'
                     });
                 });
             }

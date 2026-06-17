@@ -24,7 +24,9 @@ export function onMicroParamChange(
         return true;
     }
     if (prop.includes('3dBuildings')) {
-        replaceCssSheetContent(layerState);
+        // Generate CSS immediately so the draw sees correct 3D rules on first render,
+        // instead of waiting 500ms for the debounce.
+        generateCssFromState(layerState);
         return true;
     }
     if (prop.includes('defaultBuildingHeight')) {

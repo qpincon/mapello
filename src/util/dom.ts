@@ -230,6 +230,12 @@ export function applyStyles(inlineStyles: InlineStyles): void {
                 elem.style.removeProperty('stroke');
             } else {
                 elem.style.setProperty(cssProp, cssValue as string);
+                // In 3D mode, the roof CSS rule uses var(--building-color) rather than
+                // inheriting fill, so keep --building-color in sync with any inline fill
+                // override so the roof reflects the same colour as the walls.
+                if (cssProp === 'fill' && elem.closest?.('#buildings')) {
+                    elem.style.setProperty('--building-color', cssValue as string);
+                }
             }
         });
     });
