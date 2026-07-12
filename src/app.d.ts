@@ -15,6 +15,7 @@ declare global {
 			isSuperUser: boolean;
 			subscription: import('$lib/server/subscription-schema').Subscription | null;
 			exportsRemaining: number | null;
+			refundEligible: boolean;
 		}
 	}
 }

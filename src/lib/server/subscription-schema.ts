@@ -17,6 +17,7 @@ export const subscription = sqliteTable('subscription', {
 	currentPeriodEnd: integer('current_period_end', { mode: 'timestamp_ms' }).notNull(),
 	cancelAtPeriodEnd: integer('cancel_at_period_end', { mode: 'boolean' }).notNull().default(false),
 	canceledAt: integer('canceled_at', { mode: 'timestamp_ms' }),
+	refundRequestedAt: integer('refund_requested_at', { mode: 'timestamp_ms' }),
 	createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 });

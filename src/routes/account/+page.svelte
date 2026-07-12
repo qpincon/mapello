@@ -6,10 +6,16 @@
     const user = $derived(page.data.user!);
     const subscription = $derived(page.data.subscription);
     const exportsRemaining = $derived(page.data.exportsRemaining);
+    const refundEligible = $derived(page.data.refundEligible);
 
     let cancelLoading = $state(false);
     let cancelError = $state('');
     let cancelDone = $state(false);
+
+    let refundConfirm = $state(false);
+    let refundLoading = $state(false);
+    let refundError = $state('');
+    let refundDone = $state(false);
 
     let deleteConfirm = $state(false);
     let deleteLoading = $state(false);
@@ -40,6 +46,30 @@
             cancelError = 'Something went wrong. Please try again.';
         } finally {
             cancelLoading = false;
+        }
+    }
+
+    async function requestRefund() {
+        refundLoading = true;
+        refundError = '';
+        try {
+            const res = await fetch('/api/billing/refund', { method: 'POST' });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                if (data.reason === 'window_expired') {
+                    refundError = 'The 30-day refund window has expired. You can still cancel your subscription to stop future charges.';
+                } else {
+                    refundError = data.message || 'Could not process refund. Please try again.';
+                }
+                refundConfirm = false;
+                return;
+            }
+            refundDone = true;
+            await invalidateAll();
+        } catch {
+            refundError = 'Something went wrong. Please try again.';
+        } finally {
+            refundLoading = false;
         }
     }
 
@@ -99,7 +129,11 @@
                     <span class="value">{formatDate(subscription.currentPeriodEnd)}</span>
                 </div>
 
-                {#if subscription.cancelAtPeriodEnd || cancelDone}
+                {#if refundDone}
+                    <div class="info-box">
+                        Refund submitted — it will be reviewed and processed by our payment provider within 5–10 business days. Your Pro access has ended. See our <a href="/refund">refund policy</a> for details.
+                    </div>
+                {:else if subscription.cancelAtPeriodEnd || cancelDone}
                     <div class="info-box">
                         Cancellation scheduled. Your Pro access remains active until <strong>{formatDate(subscription.currentPeriodEnd)}</strong>, then your account reverts to the free plan. You will not be charged again.
                     </div>
@@ -117,6 +151,41 @@
                         </button>
                         <p class="hint">You keep Pro access until the end of the current billing period.</p>
                     </div>
+
+                    {#if refundEligible}
+                        <div class="refund-area">
+                            {#if refundError}
+                                <p class="error">{refundError}</p>
+                            {/if}
+                            {#if refundConfirm}
+                                <div class="refund-confirm">
+                                    <span class="confirm-label">This will end your Pro access immediately. Are you sure?</span>
+                                    <button
+                                        class="btn-danger"
+                                        onclick={requestRefund}
+                                        disabled={refundLoading}
+                                    >
+                                        {refundLoading ? 'Submitting…' : 'Yes, request refund'}
+                                    </button>
+                                    <button
+                                        class="btn-secondary"
+                                        onclick={() => (refundConfirm = false)}
+                                        disabled={refundLoading}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            {:else}
+                                <button
+                                    class="btn-refund"
+                                    onclick={() => (refundConfirm = true)}
+                                >
+                                    Request a refund
+                                </button>
+                                <p class="hint">Within the <a href="/refund">30-day money-back window</a>. Access ends immediately.</p>
+                            {/if}
+                        </div>
+                    {/if}
                 {/if}
             {:else}
                 <div class="field">
@@ -254,6 +323,38 @@
 
     .cancel-area {
         margin-top: 1rem;
+    }
+
+    .refund-area {
+        margin-top: 1.25rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .refund-confirm {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-refund {
+        background: none;
+        border: none;
+        color: #6c757d;
+        font-size: 0.85rem;
+        padding: 0;
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .btn-refund:hover {
+        color: #343a40;
+    }
+
+    .info-box a {
+        color: #5d4037;
     }
 
     .hint {

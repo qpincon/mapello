@@ -4,7 +4,7 @@ import { getActiveSubscription } from '$lib/server/subscription';
 import { db } from '$lib/server/db';
 import { user } from '$lib/server/auth-schema';
 import { eq } from 'drizzle-orm';
-import { FREE_EXPORT_LIMIT, SUPER_USER_EMAILS } from '$lib/billing-constants';
+import { FREE_EXPORT_LIMIT, REFUND_WINDOW_DAYS, SUPER_USER_EMAILS } from '$lib/billing-constants';
 
 export const load: LayoutServerLoad = async ({ request }) => {
 	const session = await auth.api.getSession({ headers: request.headers });
@@ -30,11 +30,18 @@ export const load: LayoutServerLoad = async ({ request }) => {
 
 	if (isSuperUser) exportsRemaining = null;
 
+	const refundWindowMs = REFUND_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+	const refundEligible =
+		subscription !== null &&
+		!subscription.refundRequestedAt &&
+		Date.now() - new Date(subscription.createdAt).getTime() <= refundWindowMs;
+
 	return {
 		user: currentUser,
 		session: session?.session ?? null,
 		isSuperUser,
 		subscription,
 		exportsRemaining,
+		refundEligible,
 	};
 };

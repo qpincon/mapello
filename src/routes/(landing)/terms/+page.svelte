@@ -55,6 +55,9 @@
       <p>
         Paid plans are billed through Paddle. Subscriptions renew automatically unless cancelled before the renewal date. You may cancel at any time from your account settings; you will retain access until the end of the billing period.
       </p>
+      <p>
+        New subscribers are covered by a <a href="/refund">30-day money-back guarantee</a>. If you are not satisfied, you can request a full refund from your account settings within 30 days of your first payment.
+      </p>
 
       <h2>Account termination</h2>
       <p>
