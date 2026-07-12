@@ -28,6 +28,7 @@ import area from '@turf/area';
 import center from '@turf/center';
 import { transitionCssMicro } from 'src/svg/transition';
 import { removeNotRenderedElements } from './remove-not-rendered-canvas';
+import { appState } from 'src/state.svelte';
 import { yieldToMain } from '../util/polyfills';
 
 
@@ -189,6 +190,14 @@ export async function drawPrettyMap(
         // Process got interrupted, a new call to this function is coming soon
     logTimeEnd('getRenderedFeatures')
         if (geometries == null) return;
+
+    const presentLayers = new Set<MicroLayerId>(
+        geometries.map(g => kebabCase(g.properties.mapLayerId) as MicroLayerId),
+    );
+    appState.microEmptyLayers = layersToQuery.filter(
+        l => !presentLayers.has(kebabCase(l) as MicroLayerId),
+    );
+
     const geometries2d = geometries.filter(geom =>
         geom.properties.mapLayerId !== "buildings" || !layerDefinitions.buildings['3dBuildings']
     ) as RenderedFeaturePoly[];

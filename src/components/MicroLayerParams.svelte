@@ -6,6 +6,7 @@
     import { log } from "../util/log";
     import type { Color, MicroLayerId, MicroPalette, MicroPaletteWithBorder } from "src/types";
     import { buildPalettePreviewSvg } from "src/micro/palettePreview";
+    import { appState } from "src/state.svelte";
 
     interface Props {
         layerDefinitions: MicroPalette;
@@ -81,7 +82,7 @@
     }
 
     function highlightLayer(layer: MicroLayerId, active?: boolean) {
-        if (!active) return;
+        if (!active || appState.microEmptyLayers.includes(layer)) return;
         const svg = document.getElementById("static-svg-map");
         if (!svg) return;
         svg.classList.forEach((c) => c.startsWith("hover-") && svg.classList.remove(c));
@@ -139,6 +140,7 @@
     {#each layers as [title, def], i (title)}
         <div
             class="d-flex align-items-center layer-row"
+            class:layer-empty={appState.microEmptyLayers.includes(title as MicroLayerId)}
             onclick={() => { if (def.active && !def.disabled) collapseLayer(title as MicroLayerId); }}
             onmouseenter={() => highlightLayer(title as MicroLayerId, def.active)}
             onmouseleave={clearHighlight}
@@ -157,6 +159,9 @@
                     {pascalCaseToSentence(title)}
                     {#if swatchColor(def)}
                         <span class="layer-swatch" style="background-color: {swatchColor(def)};"></span>
+                    {/if}
+                    {#if appState.microEmptyLayers.includes(title as MicroLayerId)}
+                        <span class="layer-empty-badge" title="This layer has no elements in the current view">empty</span>
                     {/if}
                 </label>
             </div>
@@ -412,12 +417,29 @@
         }
     }
 
+    .layer-row.layer-empty {
+        opacity: 0.55;
+    }
+
     .layer-swatch {
         display: inline-block;
         width: 11px;
         height: 11px;
         border-radius: 2px;
         border: 1px solid rgba(0, 0, 0, 0.18);
+        flex-shrink: 0;
+    }
+
+    .layer-empty-badge {
+        display: inline-block;
+        font-size: 0.65rem;
+        line-height: 1;
+        padding: 0.15em 0.45em;
+        border-radius: 0.5rem;
+        background: #e0e0e0;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
         flex-shrink: 0;
     }
 

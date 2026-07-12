@@ -1,5 +1,5 @@
 import { cloneDeep } from "lodash-es";
-import type { StateCommon, StateMacro, StateMicro } from "./types";
+import type { MicroLayerId, StateCommon, StateMacro, StateMicro } from "./types";
 import { defaultState } from "./stateDefaults";
 
 export const macroState = $state<StateMacro>(cloneDeep(defaultState.stateMacro));
@@ -14,6 +14,9 @@ interface AppState {
     /** === Macro === */
     path?: d3.GeoPath<any, any>;
     pathLarger?: d3.GeoPath<any, any>;
+    /** === Micro === */
+    /** Active micro layers that produced zero rendered features in the last draw. */
+    microEmptyLayers: MicroLayerId[];
 }
 
 
@@ -23,4 +26,5 @@ export const appState = $state<AppState>({
     projectionLarger: null,
     path: undefined,
     pathLarger: undefined,
+    microEmptyLayers: [],
 });
