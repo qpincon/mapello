@@ -17,6 +17,7 @@
       description:
         "A perfectly preserved star-shaped fortress from the 1600s — its geometry is so precise it looks drawn with a compass. \nTry clicking the cathedral!",
       highlights: ["Positron palette", "Link on building"],
+      animated: true,
       src: "/showcase/micro/naarden.svg",
       aspectRatio: "1 / 1",
       gradient:
@@ -39,6 +40,7 @@
       description:
         "A medieval city wrapped in a tight river loop — the Aare curves 270° around it.\nClick on the cathedral to have information about it in a popover - created in the editor.",
       highlights: ["Warm palette", "Popover", "Image along curve"],
+      animated: true,
       src: "/showcase/micro/bern.svg",
       aspectRatio: "1 / 1",
       gradient:
@@ -61,6 +63,7 @@
       description:
         "Asia's Las Vegas, squeezed onto a tiny peninsula — casino towers next to Portuguese colonial streets.",
       highlights: ["Playful palette", "Custom labels", "Custom markers"],
+      animated: true,
       src: "/showcase/micro/macau.svg",
       aspectRatio: "1 / 1",
       gradient:
@@ -86,6 +89,7 @@
       description:
         "A stylized map of the Italian peninsula with labeled cities — Roma, Milano, Venezia, Napoli and more. Clean typography and a warm earthy palette.",
       highlights: ["City labels", "Land glow", "Image along curve"],
+      animated: true,
       src: "/showcase/macro/italia.svg",
       aspectRatio: "600 / 660",
       gradient:
@@ -108,6 +112,7 @@
       description:
         "A tilted globe framing Japan, with each prefecture shaded by how crowded it is. Click Tokyo for a rich popover. A high-speed rail route arrow connects the three main cities.",
       highlights: ["Tilted globe", "Click popovers", "Route annotation"],
+      animated: true,
       src: "/showcase/macro/japan.svg",
       aspectRatio: "430 / 620",
       gradient:
@@ -118,6 +123,7 @@
       title: "Ukraine — Population by Region",
       description: "Population across Ukraine's regions.",
       highlights: ["Continuous choropleth", "Graticule"],
+      animated: true,
       src: "/showcase/macro/ukraine.svg",
       aspectRatio: "1 / 1",
       gradient:
@@ -129,6 +135,7 @@
       description:
         "A globe centered on Europe, where each country is shaded by wealth per person. Hover any country to see the exact figure. Built from IMF data in minutes.",
       highlights: ["Globe view", "Continuous choropleth", "Hover tooltips"],
+      animated: true,
       src: "/showcase/macro/gdp.svg",
       aspectRatio: "1 / 1",
       gradient:
@@ -141,6 +148,7 @@
       description:
         "Each French region colored by its dominant wine style. Click the cities for more information in popovers.",
       highlights: ["Mercator", "Categorical choropleth", "Hover tooltips"],
+      animated: true,
       src: "/showcase/macro/france.svg",
       aspectRatio: "650 / 590",
       gradient:
@@ -152,6 +160,7 @@
       description:
         "A clean choropleth of voting patterns by county, using a red-to-blue gradient.",
       highlights: ["Categorical choropleth", "Custom palette"],
+      animated: true,
       src: "/showcase/macro/usa.svg",
       aspectRatio: "650 / 380",
       gradient:
@@ -159,11 +168,27 @@
     },
   ];
 
+  const AUTOPLAY_MS = 5000;
+  const ANIMATED_BONUS_MS = 5000;
+
   let activeMicro = $state(0);
   let activeMacro = $state(0);
   let microKey = $state(0);
   let macroKey = $state(0);
+  let microUserControlled = $state(false);
+  let macroUserControlled = $state(false);
+  let reducedMotion = $state(false);
   let openFaq = $state<number | null>(null);
+
+  let microTimer: ReturnType<typeof setTimeout> | undefined;
+  let macroTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function microDuration() {
+    return AUTOPLAY_MS + (microMaps[activeMicro].animated ? ANIMATED_BONUS_MS : 0);
+  }
+  function macroDuration() {
+    return AUTOPLAY_MS + (macroMaps[activeMacro].animated ? ANIMATED_BONUS_MS : 0);
+  }
 
   const faqs = [
     {
@@ -192,18 +217,64 @@
     },
   ];
 
+  function advanceMicro() {
+    activeMicro = (activeMicro + 1) % microMaps.length;
+    microKey++;
+  }
+  function advanceMacro() {
+    activeMacro = (activeMacro + 1) % macroMaps.length;
+    macroKey++;
+  }
+
+  function scheduleMicro() {
+    microTimer = setTimeout(() => {
+      advanceMicro();
+      if (!reducedMotion && !microUserControlled) scheduleMicro();
+      else microTimer = undefined;
+    }, microDuration());
+  }
+  function startMicro() {
+    if (reducedMotion || microUserControlled || microTimer) return;
+    scheduleMicro();
+  }
+  function stopMicro() {
+    clearTimeout(microTimer);
+    microTimer = undefined;
+  }
+  function scheduleMacro() {
+    macroTimer = setTimeout(() => {
+      advanceMacro();
+      if (!reducedMotion && !macroUserControlled) scheduleMacro();
+      else macroTimer = undefined;
+    }, macroDuration());
+  }
+  function startMacro() {
+    if (reducedMotion || macroUserControlled || macroTimer) return;
+    scheduleMacro();
+  }
+  function stopMacro() {
+    clearTimeout(macroTimer);
+    macroTimer = undefined;
+  }
+
   function selectMicro(i: number) {
+    microUserControlled = true;
+    stopMicro();
     if (i === activeMicro) return;
     activeMicro = i;
     microKey++;
   }
   function selectMacro(i: number) {
+    macroUserControlled = true;
+    stopMacro();
     if (i === activeMacro) return;
     activeMacro = i;
     macroKey++;
   }
 
   onMount(() => {
+    reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     const els = document.querySelectorAll<HTMLElement>(".lp-reveal");
     const io = new IntersectionObserver(
       (entries) =>
@@ -214,7 +285,32 @@
       { threshold: 0.1 },
     );
     els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+
+    const theaterEls = document.querySelectorAll<HTMLElement>(".theater");
+    const [microTheaterEl, macroTheaterEl] = theaterEls;
+
+    const autoplayIo = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          const el = e.target as HTMLElement;
+          if (el === microTheaterEl) {
+            if (e.isIntersecting) startMicro();
+            else stopMicro();
+          } else if (el === macroTheaterEl) {
+            if (e.isIntersecting) startMacro();
+            else stopMacro();
+          }
+        }),
+      { threshold: 0.3 },
+    );
+    theaterEls.forEach((el) => autoplayIo.observe(el));
+
+    return () => {
+      io.disconnect();
+      autoplayIo.disconnect();
+      stopMicro();
+      stopMacro();
+    };
   });
 </script>
 
@@ -896,7 +992,13 @@
       </p>
     </div>
 
-    <div class="theater lp-reveal">
+    <div
+      class="theater lp-reveal"
+      onmouseenter={stopMicro}
+      onmouseleave={startMicro}
+      onfocusin={stopMicro}
+      onfocusout={startMicro}
+    >
       <div class="theater-stage">
         <div class="theater-display">
           {#key microKey}
@@ -925,17 +1027,30 @@
           {/key}
         </div>
       </div>
-      <div class="theater-tabs">
-        {#each microMaps as map, i}
-          <button
-            class="theater-tab"
-            class:active={activeMicro === i}
-            onclick={() => selectMicro(i)}
-          >
-            <span class="tab-index">{String(i + 1).padStart(2, "0")}</span>
-            <span class="tab-label">{map.title}</span>
-          </button>
-        {/each}
+      <div class="theater-tabbar">
+        <span class="tabbar-hint">Explore {microMaps.length} examples</span>
+        <div class="theater-tabs" role="tablist">
+          {#each microMaps as map, i}
+            <button
+              class="theater-tab"
+              class:active={activeMicro === i}
+              role="tab"
+              aria-selected={activeMicro === i}
+              onclick={() => selectMicro(i)}
+            >
+              <span class="tab-index">{String(i + 1).padStart(2, "0")}</span>
+              <span class="tab-label">{map.title}</span>
+              {#if activeMicro === i && !microUserControlled && !reducedMotion}
+                {#key microKey}
+                  <span
+                    class="tab-progress"
+                    style="animation-duration:{microDuration()}ms"
+                  ></span>
+                {/key}
+              {/if}
+            </button>
+          {/each}
+        </div>
       </div>
     </div>
   </div>
@@ -953,7 +1068,13 @@
       </p>
     </div>
 
-    <div class="theater lp-reveal">
+    <div
+      class="theater lp-reveal"
+      onmouseenter={stopMacro}
+      onmouseleave={startMacro}
+      onfocusin={stopMacro}
+      onfocusout={startMacro}
+    >
       <div class="theater-stage">
         <div class="theater-display">
           {#key macroKey}
@@ -982,17 +1103,30 @@
           {/key}
         </div>
       </div>
-      <div class="theater-tabs">
-        {#each macroMaps as map, i}
-          <button
-            class="theater-tab"
-            class:active={activeMacro === i}
-            onclick={() => selectMacro(i)}
-          >
-            <span class="tab-index">{String(i + 1).padStart(2, "0")}</span>
-            <span class="tab-label">{map.title}</span>
-          </button>
-        {/each}
+      <div class="theater-tabbar">
+        <span class="tabbar-hint">Explore {macroMaps.length} examples</span>
+        <div class="theater-tabs" role="tablist">
+          {#each macroMaps as map, i}
+            <button
+              class="theater-tab"
+              class:active={activeMacro === i}
+              role="tab"
+              aria-selected={activeMacro === i}
+              onclick={() => selectMacro(i)}
+            >
+              <span class="tab-index">{String(i + 1).padStart(2, "0")}</span>
+              <span class="tab-label">{map.title}</span>
+              {#if activeMacro === i && !macroUserControlled && !reducedMotion}
+                {#key macroKey}
+                  <span
+                    class="tab-progress"
+                    style="animation-duration:{macroDuration()}ms"
+                  ></span>
+                {/key}
+              {/if}
+            </button>
+          {/each}
+        </div>
       </div>
     </div>
   </div>
@@ -2852,13 +2986,47 @@
     border: 1px solid var(--color-gold-border);
   }
 
+  .theater-tabbar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.65rem;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0.9rem 1.1rem;
+    border-radius: var(--radius-md);
+  }
+  .showcase-dark .theater-tabbar {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .showcase-light .theater-tabbar {
+    border: 1px solid var(--color-gold-border);
+    background: rgba(201, 148, 58, 0.035);
+  }
+
+  .tabbar-hint {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .showcase-dark .tabbar-hint {
+    color: var(--color-text-on-dark-muted);
+  }
+  .showcase-light .tabbar-hint {
+    color: var(--color-parchment-muted);
+  }
+
   .theater-tabs {
     display: flex;
     gap: 0.4rem;
     flex-wrap: wrap;
     justify-content: center;
+    max-width: 100%;
   }
   .theater-tab {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -2873,9 +3041,10 @@
     border: 1px solid transparent;
     cursor: pointer;
     background: none;
+    overflow: hidden;
   }
   .showcase-dark .theater-tab {
-    color: var(--color-text-on-dark-muted);
+    color: rgba(226, 232, 240, 0.72);
   }
   .showcase-dark .theater-tab:hover {
     background: rgba(255, 255, 255, 0.055);
@@ -2886,7 +3055,8 @@
     border-color: var(--color-gold-border);
   }
   .showcase-light .theater-tab {
-    color: var(--color-parchment-muted);
+    color: var(--color-parchment-text);
+    opacity: 0.75;
   }
   .showcase-light .theater-tab:hover {
     background: rgba(160, 120, 60, 0.07);
@@ -2895,12 +3065,13 @@
     background: rgba(201, 148, 58, 0.1);
     color: var(--color-gold);
     border-color: var(--color-gold-border);
+    opacity: 1;
   }
 
   .tab-index {
     font-size: 0.68rem;
     font-weight: 700;
-    opacity: 0.38;
+    opacity: 0.55;
     letter-spacing: 0.05em;
     font-variant-numeric: tabular-nums;
   }
@@ -2910,6 +3081,29 @@
   }
   .tab-label {
     white-space: nowrap;
+  }
+
+  .tab-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 0;
+    background: var(--color-gold);
+    animation: progressFill linear forwards;
+  }
+  @keyframes progressFill {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tab-progress {
+      display: none;
+    }
   }
 
   /* ── Comparison ── */
@@ -3411,11 +3605,24 @@
       max-width: 400px;
       margin: 0 auto;
     }
+    .theater-tabbar {
+      max-width: 100%;
+      padding: 0.75rem 0.6rem;
+    }
     .theater-tabs {
       gap: 0.3rem;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-bottom: 2px;
     }
-    .tab-label {
+    .theater-tabs::-webkit-scrollbar {
       display: none;
+    }
+    .theater-tab {
+      flex: 0 0 auto;
     }
     .tab-index {
       opacity: 1;
