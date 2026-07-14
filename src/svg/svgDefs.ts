@@ -1,6 +1,6 @@
 import { rgb} from 'd3-color';
 import { select} from 'd3-selection';
-import type {Color, DefsSelection, SvgSelection} from '../types';
+import type {DefsSelection, SvgSelection} from '../types';
 import type { GlowParams } from "src/params";
 // import plaid from '../assets/img/plaid.jpg';
 
@@ -89,25 +89,6 @@ export function appendGlow(selection: SvgSelection, id = "glows", displaySource 
     filter.append(() => merge.node());
 
     defs.append(() => filter.node());
-}
-
-export function appendBgPattern(selection: SvgSelection, id: string, seaColor: Color) {
-    let defs: DefsSelection = selection.select('defs');
-    if (defs.empty()) defs = selection.append('defs');
-    const existing = select(`#${id}`);
-    if (!existing.empty()) existing.remove();
-
-    const pattern = defs.append('pattern')
-        .attr('id', id)
-        .attr('patternUnits', 'userSpaceOnUse')
-        .attr('width', 1)
-        .attr('height', 1);
-
-    pattern.append('rect')
-        .attr('width', 1).attr('height', 1)
-        .attr('fill', seaColor);
-
-    defs.append(() => pattern.node());
 }
 
 

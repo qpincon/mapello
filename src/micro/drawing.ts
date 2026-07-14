@@ -28,7 +28,7 @@ import area from '@turf/area';
 import center from '@turf/center';
 import { transitionCssMicro } from 'src/svg/transition';
 import { removeNotRenderedElements } from './remove-not-rendered-canvas';
-import { appState } from 'src/state.svelte';
+import { appState, microState } from 'src/state.svelte';
 import { yieldToMain } from '../util/polyfills';
 
 
@@ -453,6 +453,12 @@ export function drawMicroFrame(
         });
     }
     return frame;
+}
+
+/** Recolors the map border directly in the DOM, without going through a full draw() cycle. */
+export function updateMicroBorderColor(color: Color): void {
+    microState.microParams.Border.borderColor = color;
+    select("#frame").attr("stroke", color);
 }
 
 /**

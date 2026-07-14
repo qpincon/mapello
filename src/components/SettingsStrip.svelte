@@ -3,7 +3,8 @@
     import RangeInput from './RangeInput.svelte';
     import ColorPickerPreview from './ColorPickerPreview.svelte';
     import { paramDefs, type RangeDefinition, type SelectDefinition } from '../params';
-    import { handleChangeProp } from '../macro/drawing';
+    import { handleChangeProp, updateBorderColor, updateSeaColor } from '../macro/drawing';
+import { updateMicroBorderColor } from '../micro/drawing';
 
     interface Props {
         draw: (simplified?: boolean) => void;
@@ -122,7 +123,7 @@
                 <div class="field">
                     <ColorPickerPreview id="sp-bc" title="Color"
                         value={macroState.macroParams.Border.borderColor}
-                        onChange={(c) => { macroState.macroParams.Border.borderColor = c; drawSimplifyThenReal(); }} />
+                        onChange={(c) => updateBorderColor(c)} />
                 </div>
             </div>
 
@@ -131,7 +132,7 @@
                 <div class="field">
                     <ColorPickerPreview id="sp-sea" title="Sea color"
                         value={macroState.macroParams.Background.seaColor}
-                        onChange={(c) => { macroState.macroParams.Background.seaColor = c; drawSimplifyThenReal(); }} />
+                        onChange={(c) => updateSeaColor(c)} />
                 </div>
                 <div class="field form-check form-switch ps-0 d-flex align-items-center justify-content-between">
                     <label class="form-check-label" for="sp-grat">Graticule</label>
@@ -201,7 +202,7 @@
                 <div class="field">
                     <ColorPickerPreview id="sp-mbc" title="Color"
                         value={microState.microParams.Border.borderColor}
-                        onChange={(c) => { microState.microParams.Border.borderColor = c; draw(); }} />
+                        onChange={(c) => updateMicroBorderColor(c)} />
                 </div>
             </div>
 

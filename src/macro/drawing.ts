@@ -3,8 +3,8 @@ import { log } from 'src/util/log';
 import { select } from "d3-selection";
 import { geoGraticule, geoPath } from "d3-geo";
 import { GEO_META_KEYS, geometriesState, initializeAdms, resolvedAdmGeometry, updateLayerSimplification } from "./geometry-data";
-import type { FrameSelection, MacroGroupData, SvgSelection } from "src/types";
-import { appendBgPattern, appendClip, appendGlow, glowFilterId } from "src/svg/svgDefs";
+import type { Color, FrameSelection, MacroGroupData, SvgSelection } from "src/types";
+import { appendClip, appendGlow, glowFilterId } from "src/svg/svgDefs";
 import type { MultiLineString } from "geojson";
 import { appendCountryImageNew, appendLandImageNew } from "src/svg/contourMethods";
 import { getNumericCols, sortBy } from "src/util/common";
@@ -75,9 +75,7 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     svg.select('#paths').raise();
     svg.select('#freehand-drawings').raise();
 
-    appendBgPattern(svg, "noise", macroState.macroParams.Background.seaColor);
-
-    select("#outline").style("fill", "url(#noise)");
+    select("#outline").style("fill", macroState.macroParams.Background.seaColor);
 
     let frame: FrameSelection;
     frame = drawMacroFrame(
@@ -353,4 +351,16 @@ export function handleChangeProp(event: CustomEvent<{ prop: string; value: unkno
     changeProjection();
     updateLayerSimplification();
     if (drawSimplifyThenReal) drawSimplifyThenReal();
+}
+
+/** Recolors the sea directly in the DOM, without going through a full draw() cycle. */
+export function updateSeaColor(color: Color): void {
+    macroState.macroParams.Background.seaColor = color;
+    select("#outline").style("fill", color);
+}
+
+/** Recolors the map border directly in the DOM, without going through a full draw() cycle. */
+export function updateBorderColor(color: Color): void {
+    macroState.macroParams.Border.borderColor = color;
+    select("#frame").attr("stroke", color);
 }
