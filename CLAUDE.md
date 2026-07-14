@@ -84,10 +84,10 @@ The user is allowed to zoom and drag the map to change the projection and move a
 
 Multiple parameters are available to the user to customize the map. The parameters are separated into two tabs inside a sidebar:
 
-### General tab
+### Map settings from top bar
 Contains parameters to customize visually the map: change the width / height of the container, the sea color, the graticule, the border, etc. It also allows changing "glow" parameters, which are custom SVG filters that allow the element on which they are applied to have a glow effect (inner and outer). Two glow presets are available: `firstGlow` and `secondGlow`.
 
-### Layers tabs
+### Left panel
 In this tab, the user is able to decide which layers will be displayed on the map: will it show "lands" (which are all land masses in the world), will it show the countries boundaries.
 The user can here add new adm data for countries. For instance it can chose to add ADM2 data for France.
 For the "land" tab and the ADM tab, the user can chose which "glow filter" to use, that are defined in the general tab. This allows for a nice effect on the map.

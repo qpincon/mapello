@@ -16,8 +16,6 @@
     import { shapeViewBoxes } from "./svg/shapeDefs";
     import * as markers from "./svg/markerDefs";
     import {
-        setTransformScale,
-        setTransformRotation,
         closestDistance,
         type DistanceQueryResult,
         createSvgAnchor,
@@ -34,7 +32,7 @@
     import microImg from "./assets/img/micro.png";
     import Icon from "./components/Icon.svelte";
     import { exportStyleSheet, getUsedInlineFonts, fontsToCss, applyStyles } from "./util/dom";
-    import { getState, saveState, registerServerSync, saveProjectToServer } from "./util/save";
+    import { getState, saveState, registerServerSync } from "./util/save";
     import { defaultGlowParams } from "./stateDefaults";
     import { undo, redo, setRestoring, clearHistory } from "./util/history";
     import { type ExportOptions } from "./svg/export";
@@ -298,6 +296,11 @@
     $effect(() => {
         if (currentUser && !activeProjectId) {
             handleLoginProjectCheck();
+        } else if (!currentUser && activeProjectId) {
+            // Logged out (or switched account) — drop the stale project reference so
+            // auto-save doesn't try to PUT to a project we no longer have access to.
+            activeProjectId = null;
+            currentProjectName = "Project 1";
         }
     });
 
@@ -306,6 +309,7 @@
         registerServerSync({
             getProjectId: () => activeProjectId,
             getProjectJson,
+            isLoggedIn: () => !!currentUser,
             onError: (msg) => {
                 serverSyncError = msg;
             },

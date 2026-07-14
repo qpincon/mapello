@@ -3,11 +3,12 @@ import type { GlobalState } from "src/types";
 import { recordIfChanged } from "./history";
 
 const LOCAL_STORAGE_KEY = "map-builder-state";
-const SERVER_SYNC_DELAY_MS = 5000;
+const SERVER_SYNC_DELAY_MS = 3000;
 
 type ServerSyncContext = {
     getProjectId: () => number | null;
     getProjectJson: () => string;
+    isLoggedIn: () => boolean;
     onError: (message: string) => void;
 };
 
@@ -44,6 +45,7 @@ export async function saveProjectToServer(projectId: number, projectJson: string
 
 function syncToServer() {
     if (!_syncContext) return;
+    if (!_syncContext.isLoggedIn()) return;
     const projectId = _syncContext.getProjectId();
     if (!projectId) return;
     saveProjectToServer(projectId, _syncContext.getProjectJson()).then((errorMsg) => {
