@@ -42,9 +42,9 @@
 
     <!-- Center links -->
     <div class="nav-links" role="list">
-      <a href="#showcase" class="nav-link" role="listitem">Showcase</a>
-      <a href="#compare" class="nav-link" role="listitem">Compare</a>
-      <a href="#pricing" class="nav-link" role="listitem">Pricing</a>
+      <a href="/#showcase" class="nav-link" role="listitem">Showcase</a>
+      <a href="/#compare" class="nav-link" role="listitem">Compare</a>
+      <a href="/#pricing" class="nav-link" role="listitem">Pricing</a>
     </div>
 
     <!-- GitHub -->
