@@ -12,12 +12,7 @@
     import { initTooltips, sleep } from "./util/common";
     import { processUploadedImage } from "./util/imageProcess";
     import { log } from "./util/log";
-    import * as shapes from "./svg/shapeDefs";
-    import { shapeViewBoxes } from "./svg/shapeDefs";
-    import * as markers from "./svg/markerDefs";
     import {
-        closestDistance,
-        type DistanceQueryResult,
         createSvgAnchor,
         postClipSimple,
     } from "./svg/svg";
@@ -52,11 +47,9 @@
     import { drawFreeHandShapes, FreehandDrawer } from "./svg/freeHandDraw";
     import type {
         SvgSelection,
-        ShapeDefinition,
         ProvidedFont,
         ParsedPath,
         ContextMenuInfo,
-        MenuState,
         PathDefImage,
         MarkerName,
         ShapeName,
@@ -108,8 +101,6 @@
 
     // ==== End state =====
 
-    // shapeViewBoxes moved to src/svg/shapeDefs.ts and imported above.
-
     // ==== Toolbar / placement state ====
     type ActiveTool = null | 'curve' | 'freehand' | 'point' | 'label';
     type PendingPlacement = null | { kind: 'shape'; shapeName: ShapeName } | { kind: 'label' };
@@ -120,17 +111,8 @@
     // ==== End toolbar state ====
 
     let commonCss: string | undefined = $state(undefined);
-    const menuStates: MenuState = $state({
-        chosingPoint: false,
-        pointSelected: false,
-        addingLabel: false,
-        addingLink: false,
-        pathSelected: false,
-        freehandSelected: false,
-        addingImageToPath: false,
-        chosingMarker: false,
-        addingAnnotation: false,
-    });
+    // Whether the floating label-entry textarea (bound to #label-entry) is open.
+    let addingLabel = $state(false);
 
     // Annotation editor state — uses the same QuillEditor with containerStyle as macro tooltips.
     // Content is the inner HTML, containerStyle is the outer <div>'s CSS properties.
@@ -147,11 +129,6 @@
     let textInput: HTMLTextAreaElement | null = $state(null);
     let customImageInput: HTMLInputElement | null = $state(null);
     let typedText = $state("");
-    let selectedShapeId: string | null = $state(null);
-    let linkInputValue = $state("");
-    let linkTargetId: string | null = $state(null);
-    let linkInput: HTMLInputElement | null = $state(null);
-    let genericSelectedId: string | null = $state(null);
     let propertiesPanel: PropertiesPanel | null = $state(null);
     let contextualMenu: (HTMLDivElement & { opened?: boolean }) | null = $state(null);
     let showExportConfirm = $state(false);
@@ -190,7 +167,6 @@
         }
     });
 
-    // TODO: move in menuStates
     let editingPath = $state(false);
     let currentPathEditor: PathEditor | null = $state(null);
     let panelEntityDuringEdit = $state<SelectedEntity | null>(null);
@@ -362,7 +338,14 @@
                 const target = e.target as HTMLElement;
                 if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
                 e.preventDefault();
-                if (e.shiftKey) {
+                if (currentPathEditor) {
+                    // Path-editing undo/redo takes priority over the global history while a path is being edited.
+                    if (e.shiftKey) {
+                        currentPathEditor.redo();
+                    } else {
+                        currentPathEditor.undo();
+                    }
+                } else if (e.shiftKey) {
                     performRedo();
                 } else {
                     performUndo();
@@ -398,7 +381,7 @@
                 if (commonState.currentMode === "macro") macroSidebar!.onDrag(e);
             })
             .on("start", () => {
-                if (menuStates.addingLabel) validateLabel();
+                if (addingLabel) validateLabel();
                 propertiesPanel?.close();
                 closeMenu();
             });
@@ -459,7 +442,6 @@
                 .attr("id", "static-svg-map") as unknown as SvgSelection;
 
         svg.append("defs");
-        svg.on("contextmenu", onSvgContextMenu, false);
         svg.on("click", onSvgClick);
         svg.on("mousedown", onSvgMouseDown);
         svg.node()?.addEventListener(
@@ -597,62 +579,6 @@
         reader.readAsText(file);
     }
 
-    function onSvgContextMenu(e: MouseEvent): void {
-        if (editingPath) return;
-        let shouldOpenMenu = true;
-        if (isDrawingFreeHand) {
-            stopDrawFreeHand();
-            shouldOpenMenu = false;
-        }
-        if (isDrawingPath) {
-            cancelDrawPath();
-            shouldOpenMenu = false;
-        }
-        e.preventDefault();
-        closeMenu();
-        let target = null;
-        const clickedFreehandGroup = (e.target as Element).closest?.(".freehand");
-        if (clickedFreehandGroup) {
-            menuStates.freehandSelected = true;
-            target = e.target;
-            selectedFreehandIndex = parseInt(clickedFreehandGroup.getAttribute("id")!.match(/\d+$/)![0]);
-        } else {
-            const [x, y] = pointer(e);
-            const point = { x, y };
-            const pathsElement = document.getElementById("paths");
-            if (pathsElement) {
-                const paths = Array.from(pathsElement.querySelectorAll("path")) as SVGPathElement[];
-                if (paths.length) {
-                    const closestPath = paths.reduce((prev: DistanceQueryResult, curElem) => {
-                        const curDist = closestDistance(point, curElem);
-                        curDist.elem = curElem;
-                        return prev.distance! < curDist.distance! ? prev : curDist;
-                    }, {} as DistanceQueryResult);
-                    if (closestPath.distance != null && closestPath.distance < 6) {
-                        menuStates.pathSelected = true;
-                        target = closestPath.elem;
-                        selectedPathIndex = parseInt(closestPath.elem!.getAttribute("id")!.match(/\d+$/)![0]);
-                    }
-                }
-            }
-        }
-        // Track generic element ID for "Add link" in else-branch menu
-        if (!menuStates.freehandSelected && !menuStates.pathSelected) {
-            let el: Element | null = e.target as Element;
-            genericSelectedId = null;
-            const svgRoot = document.getElementById("static-svg-map");
-            while (el && el !== svgRoot) {
-                const id = el.getAttribute("id");
-                if (id) {
-                    genericSelectedId = id;
-                    break;
-                }
-                el = el.parentElement;
-            }
-        }
-        if (shouldOpenMenu) showMenu(e, target);
-    }
-
     // Handles left-click on the SVG map. Opens style panel for clicked element,
     // handles link/popover/selection as secondary concerns.
     // Note: for selectable entities (shapes/paths/freehand), onSvgMouseDown runs first and
@@ -702,6 +628,10 @@
             let target = e.target as Element;
             // For 3D buildings, redirect from individual wall/roof paths to the building <g>
             target = target.closest("#buildings > g") ?? target;
+            // Decorative <use>/<image> elements (e.g. animated path images, glow duplicates)
+            // are not selectable entities.
+            const targetTag = target.tagName?.toLowerCase();
+            if (targetTag === "use" || targetTag === "image") return;
             if (target.id !== "static-svg-map" && target.id !== "micro-background") {
                 propertiesPanel?.open(target);
             }
@@ -818,7 +748,6 @@
     }
 
     let selectedPathIndex = $state<number>(0);
-    let selectedFreehandIndex = $state<number>(0);
 
     function startPathEditing(pathElem: SVGPathElement, pathIndex: number): void {
         panelEntityDuringEdit = panelSelectedEntity ?? { type: "path", index: pathIndex, id: `path-${pathIndex}` };
@@ -840,11 +769,6 @@
             editingPath = false;
             saveState();
         });
-    }
-
-    function editPath(): void {
-        closeMenu();
-        startPathEditing(openContextMenuInfo.target as SVGPathElement, selectedPathIndex);
     }
 
     function handlePanelEditPath(): void {
@@ -916,6 +840,20 @@
         drawShapesAndSave();
     }
 
+    function getPanelPathMarker(_id: string): MarkerName | null {
+        const entity = panelSelectedEntity;
+        if (!entity || entity.type !== "path") return null;
+        return commonState.providedPaths[entity.index]?.marker ?? null;
+    }
+
+    function handlePanelChangePathMarker(markerName: MarkerName | "delete"): void {
+        const entity = panelSelectedEntity;
+        if (!entity || entity.type !== "path") return;
+        if (markerName === "delete") delete commonState.providedPaths[entity.index].marker;
+        else commonState.providedPaths[entity.index].marker = markerName;
+        drawShapesAndSave();
+    }
+
     function handlePanelDelete(): void {
         deleteSelected(() => redrawEntities());
         propertiesPanel?.close();
@@ -971,32 +909,6 @@
         removeAnnotation(id, "popover");
     }
 
-    function deletePath(): void {
-        closeMenu();
-        commonState.providedPaths.splice(selectedPathIndex, 1);
-        drawShapesAndSave();
-    }
-
-    function deleteFreehand(): void {
-        closeMenu();
-        commonState.providedFreeHand.splice(selectedFreehandIndex, 1);
-        drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
-        applyStyles(commonState.inlineStyles);
-        saveState();
-    }
-
-    function addImageToPath(e: Event): void {
-        menuStates.pathSelected = false;
-        menuStates.chosingMarker = false;
-        menuStates.addingImageToPath = true;
-    }
-
-    function choseMarker(e: Event): void {
-        menuStates.pathSelected = false;
-        menuStates.addingImageToPath = false;
-        menuStates.chosingMarker = true;
-    }
-
     async function setPathImageFromFile(file: File, pathIndex: number): Promise<void> {
         let content: string;
         try {
@@ -1015,41 +927,7 @@
         drawShapesAndSave();
     }
 
-    async function importImagePath(e: Event): Promise<void> {
-        // @ts-expect-error
-        const file = e.target.files[0];
-        await setPathImageFromFile(file, selectedPathIndex);
-    }
-
     const saveDebounced = debounce(saveState, 200);
-    function changeDurationAnimation(e: Event): void {
-        commonState.providedPaths[selectedPathIndex].duration = parseInt((e!.target! as HTMLInputElement).value);
-        drawShapesAndSave();
-    }
-
-    function changePathImageWidth(e: Event): void {
-        commonState.providedPaths[selectedPathIndex].width = parseInt((e!.target! as HTMLInputElement).value);
-        drawShapesAndSave();
-    }
-
-    function changePathImageHeight(e: Event): void {
-        commonState.providedPaths[selectedPathIndex].height = parseInt((e!.target! as HTMLInputElement).value);
-        drawShapesAndSave();
-    }
-
-    function changeMarker(markerName: MarkerName | "delete"): void {
-        closeMenu();
-        menuStates.chosingMarker = false;
-        if (markerName === "delete") delete commonState.providedPaths[selectedPathIndex].marker;
-        else commonState.providedPaths[selectedPathIndex].marker = markerName;
-        drawShapesAndSave();
-    }
-
-    function deleteImage(): void {
-        delete commonState.providedPaths[selectedPathIndex].image;
-        commonState.providedPaths[selectedPathIndex] = commonState.providedPaths[selectedPathIndex];
-        drawShapesAndSave();
-    }
 
     function drawShapesAndSave(): void {
         drawCustomPaths(
@@ -1060,6 +938,7 @@
             commonState.elementLinks ?? {},
         );
         applyInlineStyles();
+        refreshOverlay(); // drawCustomPaths recreates all <path> DOM nodes; re-point any active overlay at the fresh one
         saveState();
     }
 
@@ -1213,7 +1092,7 @@
         teardownPlacement();
         pendingPlacement = null;
         if (captured?.kind === 'label') {
-            // showMenu positions the hidden #contextmenu at the click point and sets openContextMenuInfo
+            // showMenu positions the hidden #label-entry textarea at the click point and sets openContextMenuInfo
             showMenu(e);
             addLabel();
             // activeTool will be cleared in validateLabel / closeMenu
@@ -1313,6 +1192,8 @@
             const id = `path-${pathIndex}`;
             finishedElem.setAttribute("id", id);
             commonState.providedPaths.push({ d: parseAndUnprojectPath(d, appState.projection!) });
+            toggleSelection({ type: 'path', index: pathIndex, id }, false);
+            propertiesPanel?.open(finishedElem);
             saveDebounced();
             setTimeout(() => {
                 isDrawingPath = false;
@@ -1407,26 +1288,17 @@
             unprojected.push(parsed);
             log(parsed);
         });
-        if (unprojected.length) commonState.providedFreeHand.push(unprojected);
+        if (!unprojected.length) return;
+        const freehandIndex = commonState.providedFreeHand.length;
+        commonState.providedFreeHand.push(unprojected);
         // Remove the drawer's temporary group before re-rendering
         newGroup.remove();
         drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
+        const freehandId = `freehand-${freehandIndex}`;
+        toggleSelection({ type: 'freehand', index: freehandIndex, id: freehandId }, false);
+        const el = document.getElementById(freehandId);
+        if (el) propertiesPanel?.open(el);
         saveState();
-    }
-
-    async function beginAddLink(elemId: string): Promise<void> {
-        log("adding link to", elemId);
-        linkTargetId = elemId;
-        linkInputValue = commonState.elementLinks?.[elemId] ?? "";
-        menuStates.pointSelected = false;
-        menuStates.pathSelected = false;
-        menuStates.freehandSelected = false;
-        menuStates.addingLink = true;
-        await tick();
-        linkInput!.focus();
-        linkInput!.addEventListener("keydown", (ev: KeyboardEvent) => {
-            if (ev.key === "Enter") validateLink();
-        });
     }
 
     function applyGenericLinks(): void {
@@ -1452,70 +1324,10 @@
         }
     }
 
-    function removeLink(elemId: string): void {
-        if (!commonState.elementLinks) return;
-        delete commonState.elementLinks[elemId];
-
-        const svgElem = document.getElementById("static-svg-map");
-        const el = svgElem?.querySelector(`#${CSS.escape(elemId)}`);
-        if (el?.parentElement?.tagName.toLowerCase() === "a") {
-            const a = el.parentElement;
-            const parent = a.parentNode!;
-            while (a.firstChild) parent.insertBefore(a.firstChild, a);
-            a.remove();
-        }
-
-        drawAndSetupShapes();
-        drawCustomPaths(
-            commonState.providedPaths,
-            svg,
-            appState.projection!,
-            commonState.inlineStyles,
-            commonState.elementLinks ?? {},
-        );
-        drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
-        applyInlineStyles();
-        applyGenericLinks();
-        saveState();
-        closeMenu();
-    }
-
-    function validateLink(): void {
-        if (linkTargetId) {
-            if (!commonState.elementLinks) commonState.elementLinks = {};
-            if (linkInputValue.trim()) {
-                commonState.elementLinks[linkTargetId] = linkInputValue.trim();
-            } else {
-                delete commonState.elementLinks[linkTargetId];
-            }
-            drawAndSetupShapes();
-            drawCustomPaths(
-                commonState.providedPaths,
-                svg,
-                appState.projection!,
-                commonState.inlineStyles,
-                commonState.elementLinks,
-            );
-            drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks);
-            applyInlineStyles();
-            applyGenericLinks();
-            saveState();
-        }
-        closeMenu();
-    }
-
     function closeMenu(): void {
         contextualMenu!.style.display = "none";
         contextualMenu!.opened = false;
-        menuStates.chosingPoint = false;
-        menuStates.pointSelected = false;
-        menuStates.addingLabel = false;
-        menuStates.addingLink = false;
-        menuStates.pathSelected = false;
-        menuStates.freehandSelected = false;
-        menuStates.addingImageToPath = false;
-        menuStates.addingAnnotation = false;
-        genericSelectedId = null;
+        addingLabel = false;
     }
 
     // Opens the annotation editor modal. Parses existing stored HTML (format: `<div style="...">content</div>`)
@@ -1615,13 +1427,9 @@
         saveState();
     }
 
-    function addPoint(): void {
-        menuStates.chosingPoint = true;
-    }
-
     async function addLabel(): Promise<void> {
         track('element_add', { type: 'label' });
-        menuStates.addingLabel = true;
+        addingLabel = true;
         await tick();
         textInput!.focus();
         textInput!.addEventListener("keydown", (event: KeyboardEvent) => {
@@ -1632,8 +1440,10 @@
     }
 
     function validateLabel(): void {
+        let created: { id: string; index: number } | null = null;
         if (typedText.length) {
             const labelId = `label-${commonState.shapeCount++}`;
+            const labelIndex = commonState.providedShapes.length;
             commonState.providedShapes.push({
                 pos: openContextMenuInfo.position,
                 scale: 1,
@@ -1642,10 +1452,16 @@
             });
             commonState.inlineStyles[labelId] = { ...commonState.lastUsedLabelProps };
             typedText = "";
+            created = { id: labelId, index: labelIndex };
         }
         activeTool = null;
         drawAndSetupShapes();
         closeMenu();
+        if (created) {
+            toggleSelection({ type: 'shape', index: created.index, id: created.id }, false);
+            const el = document.getElementById(created.id);
+            if (el) propertiesPanel?.open(el);
+        }
     }
 
     function setupLabelOverlayCallbacks(labelId: string, labelIndex: number): void {
@@ -1683,28 +1499,6 @@
         if (!container) return;
         select(container).attr("clip-path", "url(#clipMapBorder)");
         drawShapes(commonState.providedShapes, container, appState.projection!, commonState.elementLinks ?? {});
-        select(container).on(
-            "contextmenu",
-            function (e) {
-                e.stopPropagation();
-                e.preventDefault();
-                // Track which shape was right-clicked
-                let el = e.target as Element;
-                if (el.tagName === "tspan") el = el.parentElement!;
-                while (el && el !== container) {
-                    const id = el.getAttribute("id");
-                    if (id && commonState.providedShapes.some((s) => s.id === id)) {
-                        selectedShapeId = id;
-                        break;
-                    }
-                    el = el.parentElement!;
-                }
-                menuStates.pointSelected = true;
-                showMenu(e);
-                return false;
-            },
-            false,
-        );
         applyInlineStyles();
     }
 
@@ -1740,16 +1534,6 @@
         return { id: shapeId, index: newIndex };
     }
 
-    function addShape(shapeName: ShapeName): void {
-        const { id: shapeId, index: newIndex } = placeShape(shapeName, openContextMenuInfo.position);
-        closeMenu();
-        requestAnimationFrame(() => {
-            toggleSelection({ type: 'shape', index: newIndex, id: shapeId }, false);
-            const el = document.getElementById(shapeId);
-            if (el) propertiesPanel?.open(el);
-        });
-    }
-
     function startImportCustomImageShape(): void {
         closeMenu();
         customImageInput!.click();
@@ -1782,34 +1566,6 @@
         closeMenu();
         requestAnimationFrame(() => toggleSelection({ type: 'shape', index: newIndex, id: shapeId }, false));
         saveState();
-    }
-
-    function copySelection(): void {
-        let objectId = openContextMenuInfo.target.getAttribute("id");
-        if (openContextMenuInfo.target.tagName === "tspan") {
-            objectId = (openContextMenuInfo.target.parentNode as HTMLElement).getAttribute("id");
-        }
-        const newDef: ShapeDefinition = { ...commonState.providedShapes.find((def) => def.id === objectId)! };
-        const projected = appState.projection!(newDef.pos)!;
-        newDef.pos = appState.projection!.invert!([projected[0] - 10, projected[1]])!;
-        const newShapeId = `${newDef.name ? newDef.name : "label"}-${commonState.shapeCount++}`;
-        commonState.inlineStyles[newShapeId] = { ...commonState.inlineStyles[newDef.id] };
-        newDef.id = newShapeId;
-        commonState.providedShapes.push(newDef);
-        drawAndSetupShapes();
-        closeMenu();
-    }
-
-    function deleteSelection(): void {
-        let pointId = openContextMenuInfo.target.getAttribute("id")!;
-        delete commonState.inlineStyles[pointId];
-        if (openContextMenuInfo.target.tagName === "tspan") {
-            pointId = (openContextMenuInfo.target.parentNode as HTMLElement).getAttribute("id")!;
-            delete commonState.inlineStyles[pointId];
-        }
-        commonState.providedShapes = commonState.providedShapes.filter((def) => def.id !== pointId);
-        redrawEntities();
-        closeMenu();
     }
 
     async function validateExport(options: ExportOptions): Promise<void> {
@@ -1891,194 +1647,9 @@
     }}
 />
 
-<div id="contextmenu" class="border rounded" bind:this={contextualMenu} class:hidden={!contextualMenu?.opened}>
-    {#snippet linkMenuItem(elemId: string)}
-        {#if commonState.elementLinks?.[elemId]}
-            <div class="px-2 pt-1 menu-link-url">
-                <small class="text-muted text-truncate d-block">{commonState.elementLinks[elemId]}</small>
-            </div>
-            <div class="menu-link-item d-flex align-items-center px-2 py-1">
-                <span role="button" class="flex-grow-1" onclick={() => beginAddLink(elemId)}>Edit link</span>
-                <span
-                    role="button"
-                    class="ms-2 text-danger menu-link-remove"
-                    title="Remove link"
-                    onclick={() => removeLink(elemId)}>×</span
-                >
-            </div>
-        {:else}
-            <div role="button" class="px-2 py-1" onclick={() => beginAddLink(elemId)}>Add link</div>
-        {/if}
-    {/snippet}
-    {#snippet annotationMenuItem(elemId: string)}
-        {@const ann = commonState.elementAnnotations?.[elemId]}
-        {#if ann?.tooltip}
-            <div class="px-2 pt-1 menu-ann-preview">
-                <small class="text-muted d-block text-truncate">{@html ann.tooltip}</small>
-            </div>
-            <div class="menu-ann-item d-flex align-items-center px-2 py-1">
-                <span role="button" class="flex-grow-1" onclick={() => beginAddAnnotation(elemId, "tooltip")}
-                    >Edit tooltip</span
-                >
-                <span
-                    role="button"
-                    class="ms-2 text-danger menu-ann-remove"
-                    title="Remove tooltip"
-                    onclick={() => removeAnnotation(elemId, "tooltip")}>×</span
-                >
-            </div>
-        {:else}
-            <div role="button" class="px-2 py-1" onclick={() => beginAddAnnotation(elemId, "tooltip")}>Add tooltip</div>
-        {/if}
-        {#if ann?.popover}
-            <div class="px-2 pt-1 menu-ann-preview">
-                <small class="text-muted d-block text-truncate">{@html ann.popover}</small>
-            </div>
-            <div class="menu-ann-item d-flex align-items-center px-2 py-1">
-                <span role="button" class="flex-grow-1" onclick={() => beginAddAnnotation(elemId, "popover")}
-                    >Edit popover</span
-                >
-                <span
-                    role="button"
-                    class="ms-2 text-danger menu-ann-remove"
-                    title="Remove popover"
-                    onclick={() => removeAnnotation(elemId, "popover")}>×</span
-                >
-            </div>
-        {:else}
-            <div role="button" class="px-2 py-1" onclick={() => beginAddAnnotation(elemId, "popover")}>Add popover</div>
-        {/if}
-    {/snippet}
-    {#if menuStates.chosingPoint}
-        {#each Object.entries(shapes) as [shapeName, shapeSvg] (shapeName)}
-            <div
-                role="button"
-                class="px-2 py-1 d-flex align-items-center gap-2"
-                onclick={() => addShape(shapeName as ShapeName)}
-            >
-                <svg width="20" height="20" viewBox={shapeViewBoxes[shapeName]}>
-                    {@html shapeSvg}
-                </svg>
-                {shapeName}
-            </div>
-        {/each}
-        <div role="button" class="px-2 py-1" onclick={startImportCustomImageShape}>Custom image…</div>
-    {:else if menuStates.addingLabel}
-        <textarea bind:this={textInput} bind:value={typedText}> </textarea>
-    {:else if menuStates.pointSelected}
-        <div role="button" class="px-2 py-1" onclick={copySelection}>Copy</div>
-        {@render linkMenuItem(selectedShapeId!)}
-        {@render annotationMenuItem(selectedShapeId!)}
-        <div role="button" class="px-2 py-1" onclick={deleteSelection}>Delete</div>
-    {:else if menuStates.pathSelected}
-        <div role="button" class="px-2 py-1" onclick={editPath}>Edit curve</div>
-        {@render linkMenuItem(`path-${selectedPathIndex}`)}
-        {@render annotationMenuItem(`path-${selectedPathIndex}`)}
-        <div role="button" class="px-2 py-1" onclick={deletePath}>Delete curve</div>
-        <div role="button" class="px-2 py-1" onclick={addImageToPath}>Image along curve</div>
-        <div role="button" class="px-2 py-1" onclick={choseMarker}>Chose curve marker</div>
-    {:else if menuStates.freehandSelected}
-        {@render linkMenuItem(`freehand-${selectedFreehandIndex}`)}
-        {@render annotationMenuItem(`freehand-${selectedFreehandIndex}`)}
-        <div role="button" class="px-2 py-1" onclick={deleteFreehand}>Delete drawing</div>
-    {:else if menuStates.addingLink}
-        <div class="px-2 py-1">
-            <input
-                bind:this={linkInput}
-                type="text"
-                class="form-control form-control-sm"
-                placeholder="https://..."
-                bind:value={linkInputValue}
-                onblur={validateLink}
-            />
-        </div>
-    {:else if menuStates.chosingMarker}
-        <div class="d-flex">
-            <div role="button" class="px-2 py-1" onclick={() => changeMarker("delete")}>
-                <Icon fillColor="red" svg={icons["trash"]} />
-            </div>
-            {#each Object.entries(markers) as [markerName, markerDef] (markerName)}
-                <div role="button" class="px-2 py-1" onclick={() => changeMarker(markerName as MarkerName)}>
-                    <svg width="30" height="30" viewBox={`0 0 ${markerDef.width} ${markerDef.height}`}>
-                        <path d={markerDef.d} />
-                    </svg>
-                </div>
-            {/each}
-        </div>
-    {:else if menuStates.addingImageToPath}
-        <div class="d-flex align-items-center">
-            <div class="m-1">
-                <label for="image-select" class="m-2 d-flex align-items-center btn btn-sm btn-light">
-                    File: {commonState.providedPaths[selectedPathIndex].image?.name || "Import image"}
-                </label>
-                <input type="file" id="image-select" accept=".png,.jpg,.svg" onchange={importImagePath} />
-            </div>
-            <div role="button" class="" onclick={deleteImage}>
-                <Icon fillColor="red" svg={icons["trash"]} />
-            </div>
-        </div>
-        <div class="row m-1">
-            <label for="duration-select" class="col-6 col-form-label col-form-label-sm"> Duration </label>
-            <div class="col-6">
-                <input
-                    id="duration-select"
-                    class="form-control form-control-sm"
-                    type="number"
-                    value={commonState.providedPaths[selectedPathIndex].duration}
-                    onchange={changeDurationAnimation}
-                />
-            </div>
-        </div>
-        <div class="row m-1">
-            <label for="path-img-width" class="col-6 col-form-label col-form-label-sm"> Image width </label>
-            <div class="col-6">
-                <input
-                    id="path-img-width"
-                    class="form-control form-control-sm"
-                    type="number"
-                    value={commonState.providedPaths[selectedPathIndex].width}
-                    onchange={changePathImageWidth}
-                />
-            </div>
-        </div>
-        <div class="row m-1">
-            <label for="path-img-height" class="col-6 col-form-label col-form-label-sm"> Image height </label>
-            <div class="col-6">
-                <input
-                    id="path-img-height"
-                    class="form-control form-control-sm"
-                    type="number"
-                    value={commonState.providedPaths[selectedPathIndex].height}
-                    onchange={changePathImageHeight}
-                />
-            </div>
-        </div>
-        <div class="mx-2 form-check form-switch">
-            <input
-                type="checkbox"
-                role="switch"
-                class="form-check-input"
-                id="image-rotate-path"
-                checked={commonState.providedPaths[selectedPathIndex].imageRotate !== false}
-                onchange={(e) => {
-                    commonState.providedPaths[selectedPathIndex].imageRotate = (e.target as HTMLInputElement).checked;
-                    drawCustomPaths(commonState.providedPaths, svg, appState.projection!, commonState.inlineStyles, commonState.elementLinks ?? {});
-                    saveState();
-                }}
-            />
-            <label class="form-check-label" for="image-rotate-path">Rotate with curve</label>
-        </div>
-    {:else}
-        {#if genericSelectedId}
-            {@render linkMenuItem(genericSelectedId!)}
-            {@render annotationMenuItem(genericSelectedId!)}
-        {/if}
-        <hr class="my-1 menu-divider" />
-        <div role="button" class="px-2 py-1" onclick={addPath}>Draw curve</div>
-        <div role="button" class="px-2 py-1" onclick={drawFreeHand}>Draw freehand</div>
-        <div role="button" class="px-2 py-1" onclick={addPoint}>Add point</div>
-        <div role="button" class="px-2 py-1" onclick={addLabel}>Add label</div>
-    {/if}
+<!-- Floating label-entry textarea, positioned at the click point by showMenu(). -->
+<div id="label-entry" class="border rounded" bind:this={contextualMenu} class:hidden={!contextualMenu?.opened || !addingLabel}>
+    <textarea bind:this={textInput} bind:value={typedText}> </textarea>
 </div>
 
 <Modal
@@ -2392,6 +1963,8 @@
         onChangePathImageWidth={handlePanelChangePathImageWidth}
         onChangePathImageHeight={handlePanelChangePathImageHeight}
         onTogglePathImageRotate={handlePanelTogglePathImageRotate}
+        getPathMarker={getPanelPathMarker}
+        onChangePathMarker={handlePanelChangePathMarker}
         onSaveLink={handlePanelSaveLink}
         onAddTooltip={handlePanelAddTooltip}
         onRemoveTooltip={handlePanelRemoveTooltip}

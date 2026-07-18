@@ -230,31 +230,6 @@ export class SelectionOverlay {
             e.stopPropagation();
         });
 
-        // Forward contextmenu to the element beneath, so right-click menus work through the overlay
-        this.group.addEventListener("contextmenu", (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            this.group.setAttribute("pointer-events", "none");
-            const below = document.elementFromPoint(e.clientX, e.clientY);
-            this.group.setAttribute("pointer-events", "all");
-            if (below) {
-                below.dispatchEvent(
-                    new MouseEvent("contextmenu", {
-                        bubbles: true,
-                        cancelable: true,
-                        clientX: e.clientX,
-                        clientY: e.clientY,
-                        button: e.button,
-                        buttons: e.buttons,
-                        ctrlKey: e.ctrlKey,
-                        shiftKey: e.shiftKey,
-                        altKey: e.altKey,
-                        metaKey: e.metaKey,
-                    }),
-                );
-            }
-        });
-
         this.bboxRect.addEventListener("mousedown", (e) => {
             e.stopPropagation();
             e.preventDefault();

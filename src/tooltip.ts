@@ -6,6 +6,24 @@ function getMapScale(map: SVGElement): { sx: number; sy: number } {
     return { sx: ctm?.a ?? 1, sy: ctm?.d ?? 1 };
 }
 
+// Walks up from the hovered target to the nearest ancestor (self included) whose id
+// is a key in elementAnnotations with a tooltip. Needed because some entities (freehand
+// drawings, labels) have id-bearing children (path/tspan) that shadow the annotated
+// container (the .freehand group / the text element) — a plain "first id-bearing ancestor"
+// lookup would stop on the child and miss the annotation.
+function findTooltipAnnotationId(
+    target: EventTarget | null,
+    elementAnnotations?: ElementAnnotations,
+): string | null {
+    let el = target instanceof SVGElement ? target : null;
+    while (el) {
+        const id = el.getAttribute('id');
+        if (id && elementAnnotations?.[id]?.tooltip) return id;
+        el = el.parentElement instanceof SVGElement ? el.parentElement : null;
+    }
+    return null;
+}
+
 export function addTooltipListener(
     map: SVGSVGElement,
     tooltipDefs: TooltipDefs,
@@ -81,6 +99,14 @@ function onMouseMove(
     tooltip: Tooltip,
     elementAnnotations?: ElementAnnotations,
 ): void {
+    // Element-level annotation takes precedence over macro tooltip
+    const annId = findTooltipAnnotationId(e.target, elementAnnotations);
+    if (annId) {
+        const mapBounds = map.getBoundingClientRect();
+        return showElementAnnotationTooltip(
+            elementAnnotations![annId].tooltip!, annId, e.clientX, e.clientY, mapBounds, map, tooltip);
+    }
+
     let parent = e.target instanceof SVGElement ? e.target.parentNode as SVGElement | null : null;
     while (parent && !parent.hasAttribute('id')) {
         parent = parent.parentNode as SVGElement | null;
@@ -94,13 +120,6 @@ function onMouseMove(
         shapeElem = (shapeElem.querySelector('[id]') as SVGElement) ?? shapeElem;
     }
     const shapeId = shapeElem.getAttribute('id');
-
-    // Element-level annotation takes precedence over macro tooltip
-    const ann = elementAnnotations?.[shapeId ?? ''];
-    if (ann?.tooltip) {
-        const mapBounds = map.getBoundingClientRect();
-        return showElementAnnotationTooltip(ann.tooltip, shapeId!, e.clientX, e.clientY, mapBounds, map, tooltip);
-    }
 
     if (!tooltipDefs?.[groupId]?.enabled || !(groupId in zonesData)) return hideTooltip(tooltip);
 
@@ -222,19 +241,11 @@ export function addElementAnnotationListener(
 
     map.addEventListener('mouseleave', () => hideTooltip(tooltip));
     map.addEventListener('mousemove', (e: MouseEvent) => {
-        let el: SVGElement | null = e.target instanceof SVGElement ? e.target : null;
-        while (el && !el.getAttribute('id')) {
-            el = el.parentElement instanceof SVGElement ? el.parentElement : null;
-        }
-        if (!el) return hideTooltip(tooltip);
-        const shapeId = el.getAttribute('id');
+        const shapeId = findTooltipAnnotationId(e.target, elementAnnotations);
         if (!shapeId) return hideTooltip(tooltip);
 
-        const ann = elementAnnotations[shapeId];
-        if (!ann?.tooltip) return hideTooltip(tooltip);
-
         const mapBounds = map.getBoundingClientRect();
-        showElementAnnotationTooltip(ann.tooltip, shapeId, e.clientX, e.clientY, mapBounds, map, tooltip);
+        showElementAnnotationTooltip(elementAnnotations[shapeId].tooltip!, shapeId, e.clientX, e.clientY, mapBounds, map, tooltip);
     });
 }
 

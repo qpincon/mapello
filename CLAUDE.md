@@ -126,17 +126,21 @@ The `exportMicro` function is responsible for exporting the map as an SVG file. 
 
 Some common features exist between the two modes, which are handled in `App.svelte`. The main drawing function is the `draw` function in `App.svelte`, which will call all drawing functions (macro or micro + common drawing).
 
-By right-clicking on the map, a menu opens, allowing the user to:
+`src/components/ToolStrip.svelte`, docked in the top navbar, exposes the map's drawing tools:
 - Draw / edit SVG `<path>` elements (see `src/svg/freeHandPath.ts` and `src/svg/pathEditor.ts`)
 - Draw freehand on the map (`src/svg/freeHandDraw.ts`)
 - Add labels on the map. It is possible to provide a font to the app. On export, we will give the choice to the user to embed or not the font as base64 in the final SVG, convert the `<text>` elements to `<path>` using `text-to-svg`, or the smallest file size of the 2 possibilities
 - Add icons on the map (points / squares and more), stored as `ShapeDefinition` in `commonState.providedShapes`
+
+Curve-specific options (image along a curve, curve end markers) live in the Properties panel once a curve is selected — see below.
 
 ### Properties panel (inspector)
 `src/components/PropertiesPanel.svelte` is a permanent panel on the right side of the map area. Clicking any SVG element opens it for that element. It exposes:
 - **Style editing**: fill, stroke colour, stroke width, stroke dash, font family. Edits CSS rules (shared selectors) or inline styles depending on which rule tab is selected. When editing inline styles, no overlay is shown on the map since the marching-ants ring already indicates the target. Style changes are dispatched via the `onStyleChanged` prop to `MacroSidebar.onStyleChanged` / `MicroSidebar.onStyleChanged`, which persist inline changes in `commonState.inlineStyles` via `handleInlineStyleChange` in `src/svg/svg.ts`. `applyStyles(commonState.inlineStyles)` re-applies them after every redraw.
 - **Interactions**: link (URL on click), tooltip and popover annotations (opens the QuillEditor modal).
 - **Path editing**: "Edit path" / "Exit editing" buttons for `path` entities.
+- **Image along path** (path entities only): import an image, set duration/width/height, toggle "Rotate with curve". Backed by `PathDef.image`/`duration`/`width`/`height`/`imageRotate` in `commonState.providedPaths`.
+- **Marker** (path entities only): pick an end-of-curve marker from `src/svg/markerDefs.ts`, or "None" to remove it. Backed by `PathDef.marker` (`MarkerName`) in `commonState.providedPaths`.
 - **Delete**: removes the selected user entity.
 - **Bring to front** (macro mode only, for `.country` and `.adm` elements): moves the element to the end of its parent group so it renders on top of siblings. Persisted via `commonState.inlineStyles[id].bringtofront`. Only one element per parent group can be on top; promoting a new one clears the flag from its siblings. The button is disabled when the element already has the flag set. The tooltip hover behaviour in `src/tooltip.ts` temporarily raises hovered regions, so on-top detection must use `inlineStyles` rather than DOM position.
 

@@ -50,12 +50,12 @@ export function startTour(opts: TourOptions = {}): void {
             },
         },
         {
-            element: "#map-container",
+            element: "#tool-strip",
             popover: {
-                title: "Right-click is your toolkit",
+                title: "Draw on the map",
                 description:
-                    "Right-click anywhere on the map to draw paths, freehand sketches, labels, and shapes. Right-click an existing element to add tooltips, popovers, links, or edit its styles.",
-                side: "top",
+                    "Use this toolbar to draw curves, freehand sketches, points, and labels. Click any element on the map to add tooltips, popovers, links, or edit its styles in the properties panel.",
+                side: "bottom",
             },
         },
         {

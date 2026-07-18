@@ -71,7 +71,7 @@
         </ul>
         <p class="small">
           Both modes share common drawing tools (paths, freehand, labels,
-          shapes) accessible via the right-click menu on the map.
+          shapes) available in the toolbar above the map.
         </p>
         <div class="mt-4">
           <p class="small text-muted mb-2">
@@ -95,7 +95,7 @@
 
         <h6 class="section-title">Projections</h6>
         <p class="small">
-          Choose from the <strong>General tab</strong>: Mercator, Equal Earth,
+          Choose from the <strong>Map settings</strong>: Mercator, Equal Earth,
           Natural Earth, Albers USA, Baker, and Satellite. The Satellite
           projection renders a globe view with adjustable altitude, tilt, and
           field of view.
@@ -109,7 +109,7 @@
           </ul>
         </div>
 
-        <h6 class="section-title mt-3">General tab</h6>
+        <h6 class="section-title mt-3">Map settings</h6>
         <ul class="tip-list">
           <li>Map width &amp; height</li>
           <li>Sea color, graticule, border</li>
@@ -119,7 +119,7 @@
           </li>
         </ul>
 
-        <h6 class="section-title mt-3">Layers tab</h6>
+        <h6 class="section-title mt-3">Left panel</h6>
         <ul class="tip-list">
           <li>
             Toggle <strong>Land</strong> (all land masses) and
@@ -133,7 +133,8 @@
           <li>Drag-reorder layers to control draw order</li>
           <li>Assign a glow filter to any layer</li>
           <li>
-            Edit each layer's stroke and fill via the right-click style editor
+            Click any region on the map to edit its stroke and fill in the
+            properties panel
           </li>
         </ul>
       {:else if activeTab === "micro"}
@@ -172,25 +173,28 @@
       {:else if activeTab === "drawing"}
         <h5 class="tab-heading">Drawing &amp; annotations</h5>
         <p class="small">
-          Right-click anywhere on the map to open the drawing menu.
+          Use the toolbar above the map to draw curves, freehand strokes, points,
+          and labels.
         </p>
 
-        <h6 class="section-title">Right-click menu</h6>
+        <h6 class="section-title">Toolbar</h6>
         <ul class="tip-list">
           <li>
-            <strong>Draw curve</strong> — click on the map to add anchor points;
-            double-click to finish. Creates an editable SVG
-            <code>&lt;path&gt;</code>.
+            <strong>Curve</strong> — click the button, then click and drag on the
+            map to add anchor points; double-click to finish. Creates an editable
+            SVG <code>&lt;path&gt;</code>.
           </li>
           <li>
-            <strong>Draw freehand</strong> — hold and drag to draw freely.
+            <strong>Freehand</strong> — click the button, then hold and drag to
+            draw freely.
           </li>
           <li>
-            <strong>Add shape</strong> — choose from a library of icons and shapes.
+            <strong>Point</strong> — pick a shape from the dropdown, then click
+            the map to place it.
           </li>
           <li>
-            <strong>Add label</strong> — click to place a text element. Style it
-            with the Inline Style Editor.
+            <strong>Label</strong> — click the button, then click the map to
+            place a text element. Style it in the properties panel.
           </li>
         </ul>
 
@@ -224,7 +228,8 @@
 
         <h6 class="section-title mt-3">Element annotations</h6>
         <p class="small">
-          Right-click any SVG element (shape, path, label, or map region) to:
+          Click any SVG element (shape, path, label, or map region) to open the
+          properties panel, then use the interactions section to:
         </p>
         <ul class="tip-list">
           <li>

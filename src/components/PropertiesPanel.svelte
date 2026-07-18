@@ -4,6 +4,7 @@
     import { rgbToHex, parseColorValue, resolveColorToHex } from "../util/colorMath";
     import { getMatchedCSSRules, getRuleValue, setRuleValue, getElementsAffectedByProp, type StyleRule, type PropAffectResult } from "../util/cssRules";
     import StyleColorPicker from "./StyleColorPicker.svelte";
+    import * as markers from "../svg/markerDefs";
 
     // ── Bootstrap tooltip action ─────────────────────────────────────
     function bsTooltip(el: HTMLElement, title: string) {
@@ -46,6 +47,8 @@
         onChangePathImageWidth?: (value: number) => void;
         onChangePathImageHeight?: (value: number) => void;
         onTogglePathImageRotate?: (value: boolean) => void;
+        getPathMarker?: (id: string) => string | null;
+        onChangePathMarker?: (markerName: string | "delete") => void;
     }
 
     let {
@@ -58,6 +61,7 @@
         getPathImage, onImportPathImage, onDeletePathImage,
         onChangePathImageDuration, onChangePathImageWidth,
         onChangePathImageHeight, onTogglePathImageRotate,
+        getPathMarker, onChangePathMarker,
     }: Props = $props();
 
     const STROKE_WIDTHS = ["0.5", "1", "2", "3", "4", "6", "8", "12"];
@@ -110,6 +114,7 @@
     const resolvedAnnotations = $derived(activeId ? (getAnnotations?.(activeId) ?? null) : null);
     const resolvedLink = $derived(activeId ? (getLink?.(activeId) ?? null) : null);
     const resolvedPathImage = $derived(entityType === "path" && activeId ? (getPathImage?.(activeId) ?? null) : null);
+    const resolvedPathMarker = $derived(entityType === "path" && activeId ? (getPathMarker?.(activeId) ?? null) : null);
 
     let pathImageInputEl: HTMLInputElement | null = $state(null);
 
@@ -556,6 +561,27 @@
                 {/if}
                 {/if}
 
+                <!-- ── PATH MARKER ──────────────────────────────────── -->
+                {#if entityType === "path"}
+                <div class="sp-section-head">Marker</div>
+                <div class="d-flex align-items-center flex-wrap gap-2 px-3 py-2 border-bottom">
+                    <button type="button" class="sp-marker-btn" class:active={!resolvedPathMarker}
+                        title="None" onclick={() => onChangePathMarker?.("delete")}>
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <line x1="5" y1="19" x2="19" y2="5"/>
+                        </svg>
+                    </button>
+                    {#each Object.entries(markers) as [markerName, markerDef] (markerName)}
+                        <button type="button" class="sp-marker-btn" class:active={resolvedPathMarker === markerName}
+                            title={markerName} onclick={() => onChangePathMarker?.(markerName)}>
+                            <svg width="16" height="16" viewBox={`0 0 ${markerDef.width} ${markerDef.height}`} fill="currentColor">
+                                <path d={markerDef.d} />
+                            </svg>
+                        </button>
+                    {/each}
+                </div>
+                {/if}
+
                 <!-- ── STYLE ──────────────────────────────────────── -->
                 <div class="sp-section-head">Style</div>
 
@@ -778,6 +804,15 @@
     .sp-act-btn:hover { color: #506784; }
     .sp-act-btn.text-danger { color: #dc3545 !important; }
     .sp-act-btn.text-danger:hover { color: #a71d2a !important; }
+
+    .sp-marker-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 26px; height: 26px; padding: 0;
+        background: white; border: 1px solid #dde5ee; border-radius: 4px;
+        color: #506784; cursor: pointer;
+    }
+    .sp-marker-btn:hover { border-color: #9ab0ca; }
+    .sp-marker-btn.active { border-color: #4a7fc1; background: #e8f0fb; color: #1e4d8c; }
 
     .sp-delete-btn {
         color: #dc3545; border: 1px solid #f5c6cb; background: transparent;

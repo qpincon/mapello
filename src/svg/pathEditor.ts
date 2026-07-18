@@ -49,9 +49,12 @@ export default class PathEditor {
     private svgMouseMoveFunc!: (e: MouseEvent) => void;
     private keydownFunc!: (e: KeyboardEvent) => void;
     private currentDragging: ExtendedSVGCircleElement | ExtendedSVGPathElement | null = null;
+    private history: Coordinate[][] = [];
+    private historyIndex = -1;
 
     constructor(pathElem: SVGPathElement, svgContainer: SVGElement, onFinish: (pathElem: SVGPathElement | null) => void) {
         this.init(pathElem, svgContainer, onFinish);
+        this.commit();
     }
 
     init(pathElem: SVGPathElement, svgContainer: SVGElement, onFinish: (pathElem: SVGPathElement | null) => void): void {
@@ -105,6 +108,36 @@ export default class PathEditor {
         this.init(this.pathElem, this.svgContainer, this.onFinish);
     }
 
+    // --- local (in-editor) undo/redo history, independent from the app-wide history ---
+
+    private commit(): void {
+        const snapshot: Coordinate[] = this.pathData.map(c => [c[0], c[1]]);
+        const top = this.history[this.historyIndex];
+        if (top && JSON.stringify(top) === JSON.stringify(snapshot)) return;
+        this.history = this.history.slice(0, this.historyIndex + 1);
+        this.history.push(snapshot);
+        if (this.history.length > 50) this.history.shift();
+        this.historyIndex = this.history.length - 1;
+    }
+
+    private restore(snapshot: Coordinate[]): void {
+        this.pathData = snapshot.map(c => [c[0], c[1]]);
+        this.pathDataToD();
+        this.reset();
+    }
+
+    undo(): void {
+        if (this.historyIndex <= 0) return;
+        this.historyIndex--;
+        this.restore(this.history[this.historyIndex]);
+    }
+
+    redo(): void {
+        if (this.historyIndex >= this.history.length - 1) return;
+        this.historyIndex++;
+        this.restore(this.history[this.historyIndex]);
+    }
+
     setupPathOverlay(): void {
         this.pathOverlayElem.addEventListener('mousedown', (e: MouseEvent) => {
             e.stopPropagation();
@@ -139,6 +172,7 @@ export default class PathEditor {
         this.pathOverlayElem.addEventListener('mouseup', (e: MouseEvent) => {
             if (this.currentDragging === this.pathOverlayElem) {
                 this.currentDragging = null;
+                this.commit();
             }
         });
     }
@@ -179,6 +213,7 @@ export default class PathEditor {
         this.pathData.splice(clickedSegment * 3 + 1, 3, points[0][1], points[0][2], points[0][3], points[1][1], points[1][2], points[1][3]);
         this.pathDataToD();
         this.reset();
+        this.commit();
     }
 
     pathDataToD(): void {
@@ -312,6 +347,7 @@ export default class PathEditor {
 
         this.pathDataToD();
         this.reset();
+        this.commit();
     }
 
     onMouseMove(e: MouseEvent): void {
@@ -352,6 +388,7 @@ export default class PathEditor {
 
     onPointRelease(e: MouseEvent, point: ExtendedSVGCircleElement): void {
         this.currentDragging = null;
+        this.commit();
     }
 
     moveLinked(point: ExtendedSVGCircleElement, linkedIndex: number, deltaX: number, deltaY: number): void {

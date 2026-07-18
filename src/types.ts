@@ -43,18 +43,6 @@ export type ElementAnnotations = {
     }
 };
 
-export interface MenuState {
-    chosingPoint: boolean;
-    pointSelected: boolean;
-    addingLabel: boolean;
-    addingLink: boolean;
-    pathSelected: boolean;
-    freehandSelected: boolean;
-    addingImageToPath: boolean;
-    chosingMarker: boolean;
-    addingAnnotation: boolean;
-}
-
 export interface ProjectionParams {
     width: number;
     height: number;

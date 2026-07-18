@@ -41,6 +41,8 @@ export function identifyClickedEntity(target: Element): SelectedEntity | null {
         let elem = target as Element;
         // tspan -> parent text element
         if (elem.tagName === "tspan") elem = elem.parentElement!;
+        // <use> is never a legitimate shape entity (only <image>/<text>/icon markup are)
+        if (elem.tagName === "use") return null;
         const id = elem.getAttribute("id");
         if (!id) return null;
         const index = commonState.providedShapes.findIndex((def) => def.id === id);

@@ -42,7 +42,7 @@
 
 <svelte:document onclick={closeShapePicker} />
 
-<div class="tool-strip">
+<div class="tool-strip" id="tool-strip">
     <button
         class="tool-btn"
         class:active={activeTool === 'curve'}
