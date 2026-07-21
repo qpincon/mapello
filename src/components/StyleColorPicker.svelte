@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { hsvToHex, hexToHsv, parseColorValue, buildColorOutput, popoverPosition } from "../util/colorMath";
+    import { onMount, untrack } from "svelte";
+    import { hsvToHex, hexToHsv, parseColorValue, buildColorOutput, popoverPosition, alphaToHex, hexToAlpha } from "../util/colorMath";
 
     interface Props {
         value?: string;
@@ -34,10 +34,18 @@
     $effect(() => {
         const v = value;
         const { hex, alpha: a } = parseColorValue(v);
-        hexVal = hex; alpha = a;
-        if (!hex) return;
-        if (hsvToHex(hue, sat, bri) !== hex) { const hsv = hexToHsv("#" + hex); hue = hsv.h; sat = hsv.s; bri = hsv.v; }
+        untrack(() => {
+            hexVal = hex; alpha = a;
+            if (!hex) return;
+            if (hsvToHex(hue, sat, bri) !== hex) { const hsv = hexToHsv("#" + hex); hue = hsv.h; sat = hsv.s; bri = hsv.v; }
+        });
     });
+
+    // Text shown in the hex input — "RRGGBB" when fully opaque, "RRGGBBAA" otherwise.
+    // Kept as its own state (rather than a $derived on hexVal/alpha) so mid-typing
+    // keystrokes aren't clobbered by a re-render before the user finishes typing.
+    let hexBoxText = $state("");
+    $effect(() => { hexBoxText = hexVal + (alpha >= 100 ? "" : alphaToHex(alpha)); });
 
     function emitHsv() { const hex = hsvToHex(hue, sat, bri); hexVal = hex; onChange(buildColorOutput(hex, alpha)); }
 
@@ -92,15 +100,25 @@
         onChange(color); popoverOpen = false;
     }
 
+    // Accepts either a 6-char RGB hex (alpha implied opaque) or a full 8-char RRGGBBAA hex.
+    function commitHex(raw: string) {
+        if (raw.length !== 6 && raw.length !== 8) return;
+        const rgb = raw.slice(0, 6);
+        const newAlpha = raw.length === 8 ? hexToAlpha(raw.slice(6, 8)) : 100;
+        const hsv = hexToHsv("#" + rgb);
+        hexVal = rgb; alpha = newAlpha; hue = hsv.h; sat = hsv.s; bri = hsv.v;
+        onChange(buildColorOutput(rgb, newAlpha));
+    }
     function onHexInput(e: Event) {
-        const raw = (e.target as HTMLInputElement).value.toUpperCase().replace(/[^0-9A-F]/g, "");
-        hexVal = raw;
-        if (raw.length === 6) { const hsv = hexToHsv("#" + raw); hue = hsv.h; sat = hsv.s; bri = hsv.v; onChange(buildColorOutput(raw, alpha)); }
+        const raw = (e.target as HTMLInputElement).value.toUpperCase().replace(/[^0-9A-F]/g, "").slice(0, 8);
+        hexBoxText = raw;
+        // Only commit once the full 8 chars are typed — committing at 6 would force the
+        // displayed text back to "RRGGBBFF" mid-keystroke and swallow further alpha digits.
+        if (raw.length === 8) commitHex(raw);
     }
-    function onHexBlur() {
-        if (hexVal.length === 6) { const hsv = hexToHsv("#" + hexVal); hue = hsv.h; sat = hsv.s; bri = hsv.v; onChange(buildColorOutput(hexVal, alpha)); }
+    function onHexBlur(e: Event) {
+        commitHex((e.target as HTMLInputElement).value.toUpperCase().replace(/[^0-9A-F]/g, "").slice(0, 8));
     }
-    function onAlphaInput(e: Event) { alpha = Math.max(0, Math.min(100, parseInt((e.target as HTMLInputElement).value) || 0)); emitHsv(); }
 
     async function eyeDropper() {
         try { const d = new (window as any).EyeDropper(); pickColor((await d.open()).sRGBHex); } catch {}
@@ -197,18 +215,13 @@
             {/each}
         </div>
 
-        <!-- Hex + alpha + eyedropper -->
+        <!-- Hex (RRGGBBAA, opacity as the trailing alpha byte) + eyedropper -->
         <div class="d-flex align-items-center gap-1">
             <div class="d-flex align-items-center border rounded flex-grow-1 px-2 gap-1" style="height:28px">
                 <span class="text-muted" style="font-size:12px;font-family:monospace">#</span>
                 <input class="flex-grow-1 border-0 p-0 font-monospace text-uppercase" style="outline:none;font-size:12px;min-width:0;background:transparent"
-                    type="text" value={hexVal} maxlength="6" placeholder="RRGGBB"
+                    type="text" value={hexBoxText} maxlength="8" placeholder="RRGGBBAA" title="Hex color, with opacity as the last 2 digits"
                     oninput={onHexInput} onblur={onHexBlur} />
-            </div>
-            <div class="d-flex align-items-center border rounded px-1 gap-1" style="width:54px;height:28px">
-                <input class="flex-grow-1 border-0 p-0 text-end" style="outline:none;font-size:11px;min-width:0;background:transparent;-moz-appearance:textfield"
-                    type="number" min="0" max="100" value={alpha} oninput={onAlphaInput} title="Opacity %" />
-                <span class="text-muted" style="font-size:11px">%</span>
             </div>
             {#if hasEyeDropper}
                 <button type="button" class="btn btn-sm btn-link text-secondary p-1" title="Pick from screen" onclick={eyeDropper}>
@@ -295,6 +308,4 @@
         background: linear-gradient(to bottom right, white 43%, #e74c3c 43%, #e74c3c 57%, white 57%);
         border: 1px solid #ddd; border-radius: 2px;
     }
-    input[type=number]::-webkit-outer-spin-button,
-    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 </style>

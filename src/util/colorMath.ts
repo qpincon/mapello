@@ -10,6 +10,16 @@ export function hsvToHex(h: number, s: number, v: number): string {
     return rows[hi].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join("").toUpperCase();
 }
 
+/** Convert alpha 0-100 → 2-char uppercase hex (00-FF) */
+export function alphaToHex(alpha: number): string {
+    return Math.round((alpha / 100) * 255).toString(16).padStart(2, "0").toUpperCase();
+}
+
+/** Convert 2-char hex alpha (00-FF) → 0-100 */
+export function hexToAlpha(hex: string): number {
+    return Math.round((parseInt(hex, 16) / 255) * 100);
+}
+
 /** Convert hex string (with or without #) → HSV */
 export function hexToHsv(hex: string): { h: number; s: number; v: number } {
     const h = hex.replace("#", "");
@@ -34,20 +44,18 @@ export function parseColorValue(v: string): { hex: string; alpha: number } {
     if (rgba)
         return { hex: channelsToHex(rgba[1], rgba[2], rgba[3]), alpha: Math.round(parseFloat(rgba[4]) * 100) };
     if (v.startsWith("#") && v.length === 9)
-        return { hex: v.slice(1, 7).toUpperCase(), alpha: Math.round((parseInt(v.slice(7), 16) / 255) * 100) };
+        return { hex: v.slice(1, 7).toUpperCase(), alpha: hexToAlpha(v.slice(7, 9)) };
     if (v.startsWith("#") && v.length >= 7)
         return { hex: v.slice(1, 7).toUpperCase(), alpha: 100 };
     return { hex: "", alpha: 100 };
 }
 
-/** Build a CSS color output from 6-char hex (without #) and alpha 0-100 */
+/** Build a CSS color output from 6-char hex (without #) and alpha 0-100. Uses the
+ * standard 8-digit hex notation (#RRGGBBAA) for transparency instead of rgba(). */
 export function buildColorOutput(hex: string, alpha: number): string {
     if (!hex) return "none";
     if (alpha >= 100) return "#" + hex;
-    const r = parseInt(hex.slice(0, 2), 16);
-    const g = parseInt(hex.slice(2, 4), 16);
-    const b = parseInt(hex.slice(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${(alpha / 100).toFixed(2)})`;
+    return "#" + hex + alphaToHex(alpha);
 }
 
 /** Convert an rgb()/rgba() CSS string → #RRGGBB. Returns "" if not parseable. */

@@ -28,7 +28,7 @@
         Making a good-looking map has always required a choice between tools that are easy but ugly, tools that look great but require coding, or tools that tie your output to their servers forever. We wanted a fourth option.
       </p>
       <p>
-        Mapello exports a single self-contained SVG file. That file works anywhere an <code>&lt;img&gt;</code> or inline SVG does — your blog, your slides, your CMS. It has no external dependencies, no JavaScript runtime, and no connection to Mapello's servers. Cancel your subscription tomorrow and every map you've ever exported keeps working, unchanged.
+        Mapello exports a single self-contained SVG file. That file works anywhere an <code>&lt;img&gt;</code> or inline SVG does — your blog, your slides, your CMS. It has no external dependencies and no connection to Mapello's servers. Cancel your subscription tomorrow and every map you've ever exported keeps working, unchanged.
       </p>
 
       <h2>What it does</h2>

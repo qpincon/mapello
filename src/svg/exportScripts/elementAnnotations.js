@@ -13,7 +13,7 @@ mapElement.append(_ttFO);
 var _ttCurrentId = '';
 var _ttMeasuring = false;
 var _ttDiv = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-_ttDiv.style.cssText = 'position:absolute;left:0;top:0;width:max-content;opacity:0;pointer-events:none;transform-origin:0 0;will-change:transform,opacity';
+_ttDiv.style.cssText = 'position:absolute;left:0;top:0;width:max-content;opacity:0;pointer-events:none;transform-origin:0 0;will-change:transform,opacity;overflow-wrap:break-word';
 _ttFO.appendChild(_ttDiv);
 
 var _poFO = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');

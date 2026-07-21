@@ -302,7 +302,7 @@ export async function exportMacro(
 
 export function getFinalTooltipTemplate(groupId: string, tooltipDefs: TooltipDefs): string {
     const cs = tooltipDefs[groupId].containerStyle || {};
-    const runtimeProps = { "will-change": "opacity", "z-index": "1000", "width": "max-content", "max-width": "15rem", "line-height": "1.42" };
+    const runtimeProps = { "will-change": "opacity", "z-index": "1000", "width": "max-content", "max-width": "15rem", "line-height": "1.42", "overflow-wrap": "break-word" };
     const all = { ...cs, ...runtimeProps };
     const styleStr = Object.entries(all).map(([k, v]) => `${k}: ${v}`).join("; ");
     return `<div style="${styleStr}">${tooltipDefs[groupId].template}</div>`;

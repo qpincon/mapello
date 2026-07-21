@@ -191,7 +191,7 @@ function showElementAnnotationTooltip(
         elem.style.opacity = '0';
 
         const body = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-        body.style.cssText = 'display:inline-block;width:max-content;pointer-events:none;';
+        body.style.cssText = 'display:inline-block;width:max-content;pointer-events:none;overflow-wrap:break-word;';
         body.innerHTML = html;
         body.querySelectorAll('img').forEach(img => { img.style.maxWidth = '100%'; img.style.height = 'auto'; });
         elem.append(body);
@@ -299,6 +299,7 @@ function instanciateTooltip(
     tooltip.style.setProperty('width', 'max-content');
     tooltip.style.setProperty('max-width', '15rem');
     tooltip.style.setProperty('line-height', '1.42');
+    tooltip.style.setProperty('overflow-wrap', 'break-word');
 
     body.innerHTML = tooltip.outerHTML;
     body.querySelectorAll('img').forEach(img => { img.style.maxWidth = '100%'; img.style.height = 'auto'; });
