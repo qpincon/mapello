@@ -45,7 +45,7 @@ export function startTour(opts: TourOptions = {}): void {
             popover: {
                 title: "Your customization panel",
                 description:
-                    "All map controls live here: projection, layers, colors, data, legends. The <strong>General</strong> and <strong>Layers</strong> tabs at the top split global settings from per-layer ones.",
+                    "All map layers parameters live here: colors, data, legends, etc...",
                 side: "right",
             },
         },
@@ -63,7 +63,7 @@ export function startTour(opts: TourOptions = {}): void {
             popover: {
                 title: "Bind data to your map",
                 description: isMacro
-                    ? "In the <strong>Layers tab</strong>, add a country layer then load a CSV to color regions, show on-hover tooltips, and add a legend."
+                    ? "You can add a country layer then load a CSV to color regions, show on-hover tooltips, and add a legend."
                     : "Switch to <strong>Macro mode</strong> to load a CSV and bind it to country layers for choropleth maps and legends.",
                 side: "right",
             },

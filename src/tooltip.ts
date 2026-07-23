@@ -1,9 +1,77 @@
 import { extractTemplateVariables, formatUnicorn } from './util/common';
 import type { ElementAnnotations, FormatterObject, Tooltip, TooltipDefs, ZonesData } from './types';
 
-function getMapScale(map: SVGElement): { sx: number; sy: number } {
-    const ctm = (map as SVGSVGElement).getScreenCTM();
-    return { sx: ctm?.a ?? 1, sy: ctm?.d ?? 1 };
+// Positioning offset (screen px) between the cursor and the tooltip's near corner.
+const TOOLTIP_OFFSET = 12;
+
+// Reads the map's own size (and viewBox origin) in its local (viewBox / user-unit)
+// coordinate system — the same coordinate system a directly-appended <foreignObject>
+// renders in. Mirrors _getSvgSize() in src/svg/exportScripts/elementAnnotations.js.
+function getSvgSize(map: SVGSVGElement): { w: number; h: number; minX: number; minY: number } {
+    const vb = map.getAttribute('viewBox')?.split(/[\s,]+/) ?? [];
+    if (vb.length >= 4) return { minX: parseFloat(vb[0]) || 0, minY: parseFloat(vb[1]) || 0, w: parseFloat(vb[2]), h: parseFloat(vb[3]) };
+    return {
+        minX: 0,
+        minY: 0,
+        w: parseFloat(map.getAttribute('width') || '') || map.clientWidth,
+        h: parseFloat(map.getAttribute('height') || '') || map.clientHeight,
+    };
+}
+
+// Creates the single reusable tooltip host for a map: one full-size <foreignObject>
+// (so Safari doesn't clip content overflowing a tightly-sized foreignObject) containing
+// one absolutely-positioned XHTML <div> that is moved via a CSS transform. This mirrors
+// the technique used in the exported SVG (src/svg/exportScripts/elementAnnotations.js),
+// which Safari handles correctly, unlike mutating a foreignObject's x/y/opacity in place.
+function createTooltipHost(map: SVGSVGElement): Tooltip {
+    const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+    fo.setAttribute('x', '0');
+    fo.setAttribute('y', '0');
+    const size = getSvgSize(map);
+    fo.setAttribute('width', String(size.w || 1));
+    fo.setAttribute('height', String(size.h || 1));
+    fo.style.cssText = 'overflow:visible;pointer-events:none';
+    map.append(fo);
+
+    const div = document.createElementNS('http://www.w3.org/1999/xhtml', 'div') as HTMLDivElement;
+    div.style.cssText = 'position:absolute;left:0;top:0;width:max-content;opacity:0;pointer-events:none;'
+        + 'transform-origin:0 0;will-change:transform,opacity;overflow-wrap:break-word';
+    fo.appendChild(div);
+
+    return { shapeId: null, fo, div };
+}
+
+// Scale and screen-origin are derived entirely from getBoundingClientRect() + the
+// viewBox/width/height attributes — not from map.getScreenCTM(). WebKit has been observed
+// to report a getScreenCTM() that doesn't match the SVG's actual render size/position
+// (both the e/f translation and the a/d scale), which pushed tooltips off from the cursor
+// and, when the SVG was CSS-stretched to a much larger size, shrank them and dampened how
+// far they tracked the cursor. getBoundingClientRect() is immune to this: the root <svg>
+// here is only ever scaled (never rotated/skewed), so renderedSize/viewBoxSize is exactly
+// the scale getScreenCTM() would give in a bug-free browser.
+function getSvgScreenTransform(map: SVGSVGElement, mapBounds: DOMRect): { invSx: number; invSy: number; svgLeft: number; svgTop: number } {
+    const { w, h, minX, minY } = getSvgSize(map);
+    const sx = w > 0 ? mapBounds.width / w : 1;
+    const sy = h > 0 ? mapBounds.height / h : 1;
+    return {
+        invSx: 1 / sx,
+        invSy: 1 / sy,
+        svgLeft: mapBounds.left - sx * minX,
+        svgTop: mapBounds.top - sy * minY,
+    };
+}
+
+// Moves the tooltip's inner div so its near corner sits `TOOLTIP_OFFSET` px from the
+// cursor, flipping to the opposite side of the cursor when it would overflow `mapBounds`.
+function positionTooltip(tooltip: Tooltip, map: SVGSVGElement, clientX: number, clientY: number, mapBounds: DOMRect): void {
+    const { invSx, invSy, svgLeft, svgTop } = getSvgScreenTransform(map, mapBounds);
+    let posX = clientX - svgLeft + TOOLTIP_OFFSET;
+    let posY = clientY - svgTop + TOOLTIP_OFFSET;
+    if (tooltip.div.offsetWidth > 0) {
+        if (posX + tooltip.div.offsetWidth > mapBounds.width) posX = clientX - svgLeft - tooltip.div.offsetWidth - TOOLTIP_OFFSET;
+        if (posY + tooltip.div.offsetHeight > mapBounds.height) posY = clientY - svgTop - tooltip.div.offsetHeight - TOOLTIP_OFFSET;
+    }
+    tooltip.div.style.transform = `matrix(${invSx},0,0,${invSy},${posX * invSx},${posY * invSy})`;
 }
 
 // Walks up from the hovered target to the nearest ancestor (self included) whose id
@@ -30,10 +98,7 @@ export function addTooltipListener(
     zonesData: ZonesData,
     elementAnnotations?: ElementAnnotations,
 ): void {
-    const tooltip: Tooltip = { shapeId: null, element: document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') };
-    map.append(tooltip.element);
-    tooltip.element.style.opacity = '0';
-    tooltip.element.style.pointerEvents = 'none';
+    const tooltip = createTooltipHost(map);
 
     let hoveredPath: SVGPathElement | null = null;
     let zOrderElem: SVGElement | null = null;
@@ -87,13 +152,14 @@ export function addTooltipListener(
 }
 
 function hideTooltip(tooltip: Tooltip): void {
-    tooltip.element.style.opacity = '0';
+    tooltip.div.style.opacity = '0';
     tooltip.shapeId = null;
+    tooltip.html = undefined;
 }
 
 function onMouseMove(
     e: MouseEvent,
-    map: SVGElement,
+    map: SVGSVGElement,
     tooltipDefs: TooltipDefs,
     zonesData: ZonesData,
     tooltip: Tooltip,
@@ -124,46 +190,28 @@ function onMouseMove(
     if (!tooltipDefs?.[groupId]?.enabled || !(groupId in zonesData)) return hideTooltip(tooltip);
 
     const mapBounds = map.getBoundingClientRect();
-    let posX = e.clientX - mapBounds.left + 10;
-    let posY = e.clientY - mapBounds.top + 10;
-    const { sx, sy } = getMapScale(map);
 
     if (shapeId && tooltip.shapeId === shapeId) {
-        // Reposition — tooltip is visible, bounds are available for edge correction
+        // Reposition — tooltip is already showing the right content
         if (tooltip.measuring) return;
-        const ttBounds = (tooltip.element.firstChild?.firstChild as HTMLElement)?.getBoundingClientRect();
-        if (ttBounds && ttBounds.width > 0) {
-            if (mapBounds.right - ttBounds.width < e.clientX + 10) posX -= ttBounds.width + 20;
-            if (mapBounds.bottom - ttBounds.height < e.clientY + 10) posY -= ttBounds.height + 20;
-        }
-        tooltip.element.setAttribute('x', (posX / sx).toString());
-        tooltip.element.setAttribute('y', (posY / sy).toString());
-        tooltip.element.setAttribute('transform', `scale(${1 / sx},${1 / sy})`);
-        tooltip.element.style.opacity = '1';
+        positionTooltip(tooltip, map, e.clientX, e.clientY, mapBounds);
+        tooltip.div.style.opacity = '1';
     } else {
-        // New tooltip — create hidden, measure via rAF, then reveal at correct position
+        // New tooltip — fill content hidden, measure via rAF, then reveal at correct position
         const data = { ...zonesData[groupId].data.find(row => row.name === shapeId) };
         if (!data) return hideTooltip(tooltip);
-        const tt = instanciateTooltip(data, groupId, tooltipDefs, zonesData[groupId]?.formatters);
-        if (!tt) return hideTooltip(tooltip);
-        tooltip.element.replaceWith(tt);
-        tooltip.element = tt;
+        const html = instanciateTooltip(data, groupId, tooltipDefs, zonesData[groupId]?.formatters);
+        if (!html) return hideTooltip(tooltip);
+        tooltip.div.innerHTML = html;
         tooltip.shapeId = shapeId;
-        tooltip.element.setAttribute('x', (posX / sx).toString());
-        tooltip.element.setAttribute('y', (posY / sy).toString());
-        tooltip.element.setAttribute('transform', `scale(${1 / sx},${1 / sy})`);
-        tooltip.element.style.opacity = '0';
+        tooltip.html = html;
+        tooltip.div.style.opacity = '0';
         tooltip.measuring = true;
+        positionTooltip(tooltip, map, e.clientX, e.clientY, mapBounds);
         requestAnimationFrame(() => {
             tooltip.measuring = false;
-            const newBounds = (tooltip.element.firstChild?.firstChild as HTMLElement)?.getBoundingClientRect();
-            if (newBounds && newBounds.width > 0) {
-                if (mapBounds.right - newBounds.width < e.clientX + 10) posX -= newBounds.width + 20;
-                if (mapBounds.bottom - newBounds.height < e.clientY + 10) posY -= newBounds.height + 20;
-                tooltip.element.setAttribute('x', (posX / sx).toString());
-                tooltip.element.setAttribute('y', (posY / sy).toString());
-            }
-            tooltip.element.style.opacity = '1';
+            positionTooltip(tooltip, map, e.clientX, e.clientY, mapBounds);
+            tooltip.div.style.opacity = '1';
         });
     }
 }
@@ -174,59 +222,26 @@ function showElementAnnotationTooltip(
     clientX: number,
     clientY: number,
     mapBounds: DOMRect,
-    map: SVGElement,
+    map: SVGSVGElement,
     tooltip: Tooltip,
 ): void {
-    const offset = 10;
-    let posX = clientX - mapBounds.left + offset;
-    let posY = clientY - mapBounds.top + offset;
-    const { sx, sy } = getMapScale(map);
-
     if (tooltip.shapeId !== shapeId || tooltip.html !== html) {
-        const elem = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-        elem.setAttribute('width', '1');
-        elem.setAttribute('height', '1');
-        elem.style.overflow = 'visible';
-        elem.style.pointerEvents = 'none';
-        elem.style.opacity = '0';
-
-        const body = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-        body.style.cssText = 'display:inline-block;width:max-content;pointer-events:none;overflow-wrap:break-word;';
-        body.innerHTML = html;
-        body.querySelectorAll('img').forEach(img => { img.style.maxWidth = '100%'; img.style.height = 'auto'; });
-        elem.append(body);
-
-        tooltip.element.replaceWith(elem);
-        tooltip.element = elem;
+        tooltip.div.innerHTML = html;
+        tooltip.div.querySelectorAll('img').forEach(img => { img.style.maxWidth = '100%'; img.style.height = 'auto'; });
         tooltip.shapeId = shapeId;
         tooltip.html = html;
-        tooltip.element.setAttribute('x', (posX / sx).toString());
-        tooltip.element.setAttribute('y', (posY / sy).toString());
-        tooltip.element.setAttribute('transform', `scale(${1 / sx},${1 / sy})`);
-        tooltip.element.style.opacity = '0';
+        tooltip.div.style.opacity = '0';
         tooltip.measuring = true;
+        positionTooltip(tooltip, map, clientX, clientY, mapBounds);
         requestAnimationFrame(() => {
             tooltip.measuring = false;
-            const ttBounds = (tooltip.element.firstChild as HTMLElement)?.getBoundingClientRect();
-            if (ttBounds && ttBounds.width > 0) {
-                if (mapBounds.right - ttBounds.width < clientX + offset) posX -= ttBounds.width + offset * 2;
-                if (mapBounds.bottom - ttBounds.height < clientY + offset) posY -= ttBounds.height + offset * 2;
-                tooltip.element.setAttribute('x', (posX / sx).toString());
-                tooltip.element.setAttribute('y', (posY / sy).toString());
-            }
-            tooltip.element.style.opacity = '1';
+            positionTooltip(tooltip, map, clientX, clientY, mapBounds);
+            tooltip.div.style.opacity = '1';
         });
     } else {
         if (tooltip.measuring) return;
-        const ttBounds = (tooltip.element.firstChild as HTMLElement)?.getBoundingClientRect();
-        if (ttBounds && ttBounds.width > 0) {
-            if (mapBounds.right - ttBounds.width < clientX + offset) posX -= ttBounds.width + offset * 2;
-            if (mapBounds.bottom - ttBounds.height < clientY + offset) posY -= ttBounds.height + offset * 2;
-        }
-        tooltip.element.setAttribute('x', (posX / sx).toString());
-        tooltip.element.setAttribute('y', (posY / sy).toString());
-        tooltip.element.setAttribute('transform', `scale(${1 / sx},${1 / sy})`);
-        tooltip.element.style.opacity = '1';
+        positionTooltip(tooltip, map, clientX, clientY, mapBounds);
+        tooltip.div.style.opacity = '1';
     }
 }
 
@@ -234,10 +249,7 @@ export function addElementAnnotationListener(
     map: SVGSVGElement,
     elementAnnotations: ElementAnnotations,
 ): void {
-    const tooltip: Tooltip = { shapeId: null, element: document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') };
-    map.append(tooltip.element);
-    tooltip.element.style.opacity = '0';
-    tooltip.element.style.pointerEvents = 'none';
+    const tooltip = createTooltipHost(map);
 
     map.addEventListener('mouseleave', () => hideTooltip(tooltip));
     map.addEventListener('mousemove', (e: MouseEvent) => {
@@ -249,26 +261,16 @@ export function addElementAnnotationListener(
     });
 }
 
+// Builds the tooltip's inner HTML for a macro-layer data row, or undefined if there's
+// nothing worth showing (all referenced template variables are empty).
 function instanciateTooltip(
     dataRow: Record<string, any>,
     groupId: string,
     tooltipDefs: TooltipDefs,
     formatters?: FormatterObject,
-): SVGElement | undefined {
+): string | undefined {
     if (!dataRow) return;
 
-    const elem = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-    elem.setAttribute('width', '1');
-    elem.setAttribute('height', '1');
-    elem.style.overflow = 'visible';
-    elem.style.pointerEvents = 'none';
-    elem.style.opacity = '0';
-
-    const body = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-    body.classList.add('body');
-    body.style.pointerEvents = 'none';
-
-    const tooltip = document.createElement('div');
     const cleanTemplate = (tooltipDefs?.[groupId]?.template || '')
         .replace(/<(b|i|u|em|strong|span)>\s*<\/\1>/gi, '')
         .replace(/<div><br\s*\/?><\/div>/gi, '');
@@ -285,7 +287,9 @@ function instanciateTooltip(
             }
         }
     }
-    tooltip.innerHTML = formatUnicorn(cleanTemplate, (formattedRow) || {});
+
+    const tooltip = document.createElement('div');
+    tooltip.innerHTML = formatUnicorn(cleanTemplate, formattedRow || {});
 
     // Apply container styles + runtime properties
     const cs = tooltipDefs?.[groupId]?.containerStyle;
@@ -301,9 +305,7 @@ function instanciateTooltip(
     tooltip.style.setProperty('line-height', '1.42');
     tooltip.style.setProperty('overflow-wrap', 'break-word');
 
-    body.innerHTML = tooltip.outerHTML;
-    body.querySelectorAll('img').forEach(img => { img.style.maxWidth = '100%'; img.style.height = 'auto'; });
-    elem.append(body);
+    tooltip.querySelectorAll('img').forEach(img => { (img as HTMLImageElement).style.maxWidth = '100%'; (img as HTMLImageElement).style.height = 'auto'; });
 
-    return elem;
+    return tooltip.outerHTML;
 }

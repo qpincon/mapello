@@ -24,39 +24,51 @@ mapElement.append(_poFO);
 
 function _getSvgSize() {
     var vb = (mapElement.getAttribute('viewBox') || '').split(/[\s,]+/);
-    if (vb.length >= 4) return { w: parseFloat(vb[2]), h: parseFloat(vb[3]) };
-    return { w: parseFloat(mapElement.getAttribute('width')) || mapElement.clientWidth, h: parseFloat(mapElement.getAttribute('height')) || mapElement.clientHeight };
+    if (vb.length >= 4) return { minX: parseFloat(vb[0]) || 0, minY: parseFloat(vb[1]) || 0, w: parseFloat(vb[2]), h: parseFloat(vb[3]) };
+    return { minX: 0, minY: 0, w: parseFloat(mapElement.getAttribute('width')) || mapElement.clientWidth, h: parseFloat(mapElement.getAttribute('height')) || mapElement.clientHeight };
 }
 
 function _positionTooltipAnn(e) {
-    var ctm = mapElement.getScreenCTM();
-    var invSx = ctm ? 1 / ctm.a : 1;
-    var invSy = ctm ? 1 / ctm.d : 1;
-    var svgLeft = ctm ? ctm.e : 0;
-    var svgTop = ctm ? ctm.f : 0;
+    // Scale and screen-origin are derived entirely from getBoundingClientRect() + the
+    // viewBox — not from mapElement.getScreenCTM(). WebKit has been observed to report a
+    // getScreenCTM() that doesn't match the SVG's actual render size/position (both the
+    // e/f translation and the a/d scale), which pushed tooltips off from the cursor and,
+    // when the SVG was CSS-stretched to a much larger size (only a viewBox, no width/height
+    // attributes), shrank the tooltip and dampened how far it tracked the cursor.
+    // getBoundingClientRect() is immune to this: the root <svg> is only ever scaled (never
+    // rotated/skewed), so renderedSize/viewBoxSize is exactly the scale getScreenCTM() would
+    // give in a bug-free browser.
+    var rect = mapElement.getBoundingClientRect();
     var svgSize = _getSvgSize();
-    var svgW = svgSize.w * (ctm ? ctm.a : 1);
-    var svgH = svgSize.h * (ctm ? ctm.d : 1);
+    var sx = svgSize.w > 0 ? rect.width / svgSize.w : 1;
+    var sy = svgSize.h > 0 ? rect.height / svgSize.h : 1;
+    var invSx = 1 / sx;
+    var invSy = 1 / sy;
+    var svgLeft = rect.left - sx * svgSize.minX;
+    var svgTop = rect.top - sy * svgSize.minY;
     var offset = 12;
     var posX = e.clientX - svgLeft + offset;
     var posY = e.clientY - svgTop + offset;
     if (_ttDiv.offsetWidth > 0) {
-        if (posX + _ttDiv.offsetWidth > svgW) posX = e.clientX - svgLeft - _ttDiv.offsetWidth - offset;
-        if (posY + _ttDiv.offsetHeight > svgH) posY = e.clientY - svgTop - _ttDiv.offsetHeight - offset;
+        if (posX + _ttDiv.offsetWidth > rect.width) posX = e.clientX - svgLeft - _ttDiv.offsetWidth - offset;
+        if (posY + _ttDiv.offsetHeight > rect.height) posY = e.clientY - svgTop - _ttDiv.offsetHeight - offset;
     }
     _ttDiv.style.transform = 'matrix(' + invSx + ',0,0,' + invSy + ',' + (posX * invSx) + ',' + (posY * invSy) + ')';
 }
 
 function _positionPopoverAnn(el, arrowEl, bgColor) {
-    var ctm = mapElement.getScreenCTM();
-    var invSx = ctm ? 1 / ctm.a : 1;
-    var invSy = ctm ? 1 / ctm.d : 1;
-    var svgLeft = ctm ? ctm.e : 0;
-    var svgTop = ctm ? ctm.f : 0;
+    var mapRect = mapElement.getBoundingClientRect();
+    var svgSize = _getSvgSize();
+    var sx = svgSize.w > 0 ? mapRect.width / svgSize.w : 1;
+    var sy = svgSize.h > 0 ? mapRect.height / svgSize.h : 1;
+    var invSx = 1 / sx;
+    var invSy = 1 / sy;
+    var svgLeft = mapRect.left - sx * svgSize.minX;
+    var svgTop = mapRect.top - sy * svgSize.minY;
     var eb = el.getBoundingClientRect();
     var centerX = eb.left + eb.width / 2 - svgLeft;
     var centerY = eb.top + eb.height / 2 - svgTop;
-    var svgW = _getSvgSize().w * (ctm ? ctm.a : 1);
+    var svgW = mapRect.width;
     var contentEl = _poFO.firstChild;
     var rawW = (contentEl && contentEl.offsetWidth) ? contentEl.offsetWidth : 280;
     var rawH = (contentEl && contentEl.offsetHeight) ? contentEl.offsetHeight : 120;

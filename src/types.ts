@@ -91,7 +91,8 @@ export type InlineStyles = { [elemId: string]: CssDict };
 export type CssDict = { [cssProp: string]: string };
 export interface Tooltip {
     shapeId: string | null;
-    element: SVGElement;
+    fo: SVGForeignObjectElement;
+    div: HTMLDivElement;
     html?: string;
     measuring?: boolean;
 }
