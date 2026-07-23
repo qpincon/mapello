@@ -178,13 +178,18 @@ for (var _annId in _annData) {
                 _poFO.style.display = 'none';
                 _poFO.innerHTML = '';
                 var _poWrapper = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-                _poWrapper.style.cssText = 'display:inline-block;width:max-content;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));';
+                // overflow-wrap/word-wrap so long unbreakable strings wrap within max-width
+                // instead of overflowing it — the tooltip's host div already sets this;
+                // the popover's didn't.
+                _poWrapper.style.cssText = 'display:inline-block;width:max-content;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));overflow-wrap:break-word;word-wrap:break-word;';
                 _poWrapper.addEventListener('pointerup', function (e) { e.stopPropagation(); });
                 _poWrapper.addEventListener('click', function (e) { e.stopPropagation(); });
-                var _poContent = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-                _poContent.innerHTML = _tmpEl.innerHTML;
+                // The popover HTML's own root div carries its width/max-width constraint
+                // (e.g. max-width:15rem) inline. Setting it directly as _poWrapper's content
+                // (rather than through an extra unstyled wrapper div) matches the tooltip's
+                // structure.
+                _poWrapper.innerHTML = _tmpEl.innerHTML;
                 var _poArrow = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-                _poWrapper.appendChild(_poContent);
                 _poWrapper.appendChild(_poArrow);
                 _poFO.appendChild(_poWrapper);
                 _openPopoverId = id;

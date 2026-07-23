@@ -65,16 +65,20 @@ export function showElementPopover(
     _fo = fo;
 
     const wrapper = document.createElementNS('http://www.w3.org/1999/xhtml', 'div') as HTMLElement;
-    wrapper.style.cssText = 'display:inline-block;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));';
+    // overflow-wrap/word-wrap so long unbreakable strings wrap within max-width instead of
+    // overflowing it — the tooltip's host div already sets this; the popover's didn't.
+    wrapper.style.cssText = 'display:inline-block;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));overflow-wrap:break-word;word-wrap:break-word;';
     wrapper.addEventListener('click', (e) => e.stopPropagation());
 
-    const content = document.createElement('div');
-    content.innerHTML = tmpDiv.innerHTML;
-    content.querySelectorAll('img').forEach(img => { img.style.maxWidth = '100%'; img.style.height = 'auto'; });
+    // The popover HTML's own root div carries its width/max-width constraint (e.g.
+    // max-width:15rem) inline. Setting it directly as wrapper's content (rather than through
+    // an extra unstyled wrapper div) matches the tooltip's structure — WebKitGTK (GNOME Web)
+    // has been observed to not respect a descendant's max-width for shrink-to-fit sizing when
+    // there's an extra plain wrapper level in between, letting text overflow.
+    wrapper.innerHTML = tmpDiv.innerHTML;
+    wrapper.querySelectorAll('img').forEach(img => { img.style.maxWidth = '100%'; img.style.height = 'auto'; });
 
     const arrow = document.createElement('div');
-
-    wrapper.appendChild(content);
     wrapper.appendChild(arrow);
     fo.appendChild(wrapper);
 
