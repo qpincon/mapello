@@ -18,7 +18,7 @@ const MIN_BUILDING_HEIGHT = 5;
  * Apply a 4x4 projection matrix to a MercatorCoordinate, returning clip-space components.
  */
 function applyMatrixToMerc(
-    matrix: number[],
+    matrix: ArrayLike<number>,
     merc: MercatorCoordinate
 ): { cx: number; cy: number; cz: number; cw: number } {
     const x = merc.x;
@@ -58,7 +58,7 @@ function ndcToScreen(ndc: { x: number; y: number }, width: number, height: numbe
 export function projectWithHeightUsingMainMatrix(
     canvasWidth: number,
     canvasHeight: number,
-    mainMatrix: number[],
+    mainMatrix: ArrayLike<number>,
     lng: number,
     lat: number,
     heightMeters: number,
@@ -145,7 +145,7 @@ function renderExtrudedBuildingImproved(
     feature: RenderedFeaturePoly,
     canvasWidth: number,
     canvasHeight: number,
-    mainMatrix: number[],
+    mainMatrix: ArrayLike<number>,
     defaultHeight: number = MIN_BUILDING_HEIGHT,
     offset: number = 0
 ): { elements: Array<{ el: SVGElement; depth: number }>; className: string; minVertexDepth: number } | null {
@@ -273,7 +273,12 @@ export function renderBuildingsToSvgImproved(
     svgContainer.setAttribute('id', 'buildings');
     svgContainer.setAttribute('clip-path', 'url(#clipMapBorder)');
 
-    const mainMatrix = map.transform.getProjectionDataForCustomLayer(false).mainMatrix as number[];
+    // maplibre-gl v6 removed the public `map.transform` getter (`Map` now composes a
+    // `Camera` instead of extending it). `Camera.transform` is not public API either,
+    // but it's the only way to read the live projection matrix mid-render — capturing it
+    // from a custom layer's `render()` would go stale, since `resizeMaplibreMap()` calls
+    // `map.resize()` right before this runs. Keep this as the one non-public API call.
+    const mainMatrix = map._camera.transform.getProjectionDataForCustomLayer(false).mainMatrix;
     const canvas = map.getCanvas();
     const canvasWidth = canvas.clientWidth;
     const canvasHeight = canvas.clientHeight;

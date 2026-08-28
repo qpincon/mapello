@@ -257,6 +257,21 @@ export class SelectionOverlay {
         this.startDrag(e, "move");
     }
 
+    // Nudges the selection by a fixed pixel offset (arrow-key movement) without going
+    // through the mouse drag lifecycle: apply the visual move directly, then commit.
+    public moveByKeyboard(dx: number, dy: number): void {
+        for (const el of this.elements) {
+            const coords = getTranslateFromTransform(el);
+            const origX = coords ? coords[0] : 0;
+            const origY = coords ? coords[1] : 0;
+            setTransformTranslate(el, `translate(${origX + dx} ${origY + dy})`);
+        }
+        const deltas = this.entities.map((entity) => ({ entity, dx, dy }));
+        this.onCommit(deltas);
+        this.reRenderPathElements();
+        this.positionFromBbox();
+    }
+
     // Starts a resize drag anchored at the element's own placement point so the shape
     // grows in-place as the user drags away. Used for the topbar placement flow.
     public beginCreationResize(e: MouseEvent, onDone?: () => void): void {

@@ -168,6 +168,12 @@ export function refreshOverlay(): void {
     }
 }
 
+/** Nudge the current selection by a pixel offset, e.g. from arrow-key presses. */
+export function moveSelectedByKeyboard(dx: number, dy: number): void {
+    if (selectionState.selected.length === 0 || !overlay) return;
+    overlay.moveByKeyboard(dx, dy);
+}
+
 function getSelectedElements(): SVGElement[] {
     const elems: SVGElement[] = [];
     for (const sel of selectionState.selected) {

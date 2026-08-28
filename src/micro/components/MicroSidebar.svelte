@@ -16,7 +16,9 @@
     import { onMicroParamChange, replaceCssSheetContent, updateSvgPatterns } from "../change";
     import { saveState } from "src/util/save";
     import { exportStyleSheet } from "src/util/dom";
-    import { addProtocol, Map, Point, type StyleSpecification } from "maplibre-gl";
+    import { addProtocol, Map, Point, setWorkerUrl } from "maplibre-gl";
+    import type { StyleSpecification } from "@maplibre/maplibre-gl-style-spec";
+    import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
     import { cancelStitch } from "src/util/geometryStitch";
     import { select, selectAll } from "d3-selection";
     import { onDestroy, onMount } from "svelte";
@@ -28,6 +30,10 @@
     import mapStyle from "./mapstyle.json";
     import { initTooltips } from "src/util/common";
     import type { SearchResult } from "src/components/Geocoding.svelte";
+
+    // maplibre-gl v6 is ESM-only: under a bundler, import.meta.url inside the
+    // package doesn't resolve to the worker file, so it must be pointed here.
+    setWorkerUrl(workerUrl);
 
     let protocol = new Protocol();
     addProtocol("pmtiles", protocol.tile);
@@ -188,13 +194,20 @@
             pitch: microState.inlinePropsMicro.pitch,
             bearing: microState.inlinePropsMicro.bearing,
             attributionControl: false,
+            // maplibre-gl v6 defaults to slicing vector tiles above the source's max
+            // zoom instead of overscaling the deepest tile. Our own tile-stitching
+            // logic (src/util/geometryStitch.ts) assumes the v5 overscaling behavior
+            // (it reconstructs a fixed tile grid capped at MAX_ZOOM=15); tile slicing
+            // breaks that assumption and drops line features (roads, paths, railways)
+            // entirely at typical detailed-view zoom levels. Restore v5 behavior.
+            zoomLevelsToOverscale: undefined,
         });
         const translateAmount =
             microState.microParams.Border.borderPadding + microState.microParams.Border.borderWidth / 2;
         appState.projection = createD3ProjectionFromMapLibre(maplibreMap!, translateAmount);
         appState.path = geoPath(appState.projection);
         // maplibreMap.showTileBoundaries = true;
-        maplibreMap.on("moveend", async (event) => {
+        maplibreMap.on("moveend", async () => {
             const center = maplibreMap!.getCenter().toArray();
             if (center[0] !== 0 && center[1] !== 0) {
                 microState.inlinePropsMicro = {
@@ -208,7 +221,7 @@
             draw();
         });
 
-        maplibreMap.on("movestart", (event) => {
+        maplibreMap.on("movestart", () => {
             onMapMoveStart?.();
             cancelStitch();
             cancelPendingCutout();

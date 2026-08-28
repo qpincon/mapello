@@ -183,7 +183,7 @@ function computeFeatureUuid(feature: RenderedFeature): void {
 }
 
 // Get bounds by calling map.unproject() on each corner of the viewport
-export function getMapRealBounds(map: any): Feature<Polygon> {
+export function getMapRealBounds(map: MaplibreMap): Feature<Polygon> {
   const canvas = map.getCanvas();
   const w = canvas.width;
   const h = canvas.height;

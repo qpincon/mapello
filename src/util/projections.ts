@@ -1,7 +1,8 @@
 import { geoMercator, geoEqualEarth, geoAlbersUsa, geoNaturalEarth1, geoTransform } from 'd3-geo';
 import { geoSatellite, geoBaker } from 'd3-geo-projection';
 import { geoClipCircle, geoClipRectangle } from 'd3';
-import { LngLat, Point, Map } from 'maplibre-gl';
+import { LngLat, Point } from 'maplibre-gl';
+import type { Map } from 'maplibre-gl';
 import { clamp } from 'lodash-es';
 import type { ProjectionParams } from 'src/types';
 

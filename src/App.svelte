@@ -84,6 +84,7 @@
         deleteSelected,
         refreshOverlay,
         getOverlay,
+        moveSelectedByKeyboard,
         type SelectedEntity,
     } from "./selection.svelte";
 
@@ -319,21 +320,21 @@
                 cancelDrawPath();
             } else if (e.code === "Enter") {
                 stopDrawFreeHand();
-            } else if (e.ctrlKey && e.code === "KeyC") {
+            } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyC") {
                 if (isSelectionActive()) {
                     const target = e.target as HTMLElement;
                     if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
                     e.preventDefault();
                     copySelected();
                 }
-            } else if (e.ctrlKey && e.code === "KeyV") {
+            } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyV") {
                 if (selectionState.clipboard) {
                     const target = e.target as HTMLElement;
                     if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
                     e.preventDefault();
                     pasteFromClipboard(() => redrawEntities());
                 }
-            } else if (e.ctrlKey && e.key.toLowerCase() === "z") {
+            } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
                 const target = e.target as HTMLElement;
                 if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
                 e.preventDefault();
@@ -356,6 +357,19 @@
                     if (tag === "INPUT" || tag === "TEXTAREA") return;
                     e.preventDefault();
                     deleteSelected(() => redrawEntities());
+                }
+            } else if (
+                e.code === "ArrowUp" || e.code === "ArrowDown" ||
+                e.code === "ArrowLeft" || e.code === "ArrowRight"
+            ) {
+                if (isSelectionActive()) {
+                    const target = e.target as HTMLElement;
+                    if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
+                    e.preventDefault();
+                    const step = e.shiftKey ? 10 : 1;
+                    const dx = e.code === "ArrowLeft" ? -step : e.code === "ArrowRight" ? step : 0;
+                    const dy = e.code === "ArrowUp" ? -step : e.code === "ArrowDown" ? step : 0;
+                    moveSelectedByKeyboard(dx, dy);
                 }
             }
         });

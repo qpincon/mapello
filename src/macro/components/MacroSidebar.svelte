@@ -706,15 +706,16 @@
                         </a>
                     </li>{/each}
 
-                <li class="nav-item icon-add">
+                <li class="nav-item icon-add position-relative">
                     <select role="button" id="country-select" onchange={addNewCountry}>
                         <option disabled selected value> -- select a country -- </option>
                         {#each allAvailableAdm as country}
                             <option value={country}>{country}</option>
                         {/each}
                     </select>
-                    <span class="nav-link d-flex">
+                    <span class="nav-link d-flex align-items-center gap-1">
                         <Icon fillColor="none" svg={icons["add"]} />
+                        <span class="add-country-label">Add country regions</span>
                     </span>
                 </li>
             </ul>
@@ -1143,11 +1144,16 @@
     #country-select {
         opacity: 0;
         position: absolute;
-        height: 38px;
-        width: 4rem;
+        inset: 0;
+        width: 100%;
+        height: 100%;
     }
     #country-select:hover ~ span {
         color: #aeafaf;
+    }
+    .add-country-label {
+        font-size: 0.85rem;
+        white-space: nowrap;
     }
 
     :global(.is-dnd-hovering-right) {
