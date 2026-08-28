@@ -1,5 +1,5 @@
 import type { DataType } from 'csstype';
-import type { GlowParams, MacroParams, MicroBorderParams, MicroParams } from './params';
+import type { GlowParams, MacroBackgroundParams, MacroBorderParams, MacroParams, MicroBorderParams, MicroParams } from './params';
 import * as markers from './svg/markerDefs';
 import * as shapes from './svg/shapeDefs';
 import type { Feature, FeatureCollection, Geometry, MultiLineString, Polygon } from 'geojson';
@@ -85,6 +85,19 @@ export interface ContourParams {
     strokeColor: Color;
     strokeDash: number;
     fillColor: Color;
+}
+
+/** A one-click macro map style: sea/graticule, border, land contour, glow, and default country/adm CSS. */
+export interface MacroPalette {
+    background: MacroBackgroundParams;
+    border: MacroBorderParams;
+    land: ContourParams;
+    /** null = no glow filter on any layer */
+    glow: GlowParams | null;
+    country: CssDict;
+    countryHovered: CssDict;
+    adm: CssDict;
+    admHovered: CssDict;
 }
 
 export type InlineStyles = { [elemId: string]: CssDict };

@@ -2,7 +2,7 @@ import { appState, commonState, macroState } from "src/state.svelte";
 import { log } from 'src/util/log';
 import { select } from "d3-selection";
 import { geoGraticule, geoPath } from "d3-geo";
-import { GEO_META_KEYS, geometriesState, initializeAdms, resolvedAdmGeometry, updateLayerSimplification } from "./geometry-data";
+import { GEO_META_KEYS, geometriesState, initializeAdms, resolvedAdmGeometry } from "./geometry-data";
 import type { Color, FrameSelection, MacroGroupData, SvgSelection } from "src/types";
 import { appendClip, appendGlow, glowFilterId } from "src/svg/svgDefs";
 import type { MultiLineString } from "geojson";
@@ -359,7 +359,8 @@ export function handleChangeProp(event: CustomEvent<{ prop: string; value: unkno
         });
     }
     changeProjection();
-    updateLayerSimplification();
+    // Re-simplifying geometry is expensive; it's deferred to drawSimplifyThenReal's settle
+    // callback (called once the gesture pauses) instead of running on every zoom/drag tick.
     if (drawSimplifyThenReal) drawSimplifyThenReal();
 }
 

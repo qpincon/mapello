@@ -4,6 +4,7 @@
     import ColorPickerPreview from './ColorPickerPreview.svelte';
     import { paramDefs, type RangeDefinition, type SelectDefinition } from '../params';
     import { handleChangeProp, updateBorderColor, updateSeaColor } from '../macro/drawing';
+    import { updateLayerSimplification } from '../macro/geometry-data';
 import { updateMicroBorderColor } from '../micro/drawing';
 
     interface Props {
@@ -22,7 +23,10 @@ import { updateMicroBorderColor } from '../micro/drawing';
     function drawSimplifyThenReal() {
         draw(true);
         clearTimeout(drawTimeoutId);
-        drawTimeoutId = window.setTimeout(() => draw(false), 500);
+        drawTimeoutId = window.setTimeout(async () => {
+            await updateLayerSimplification();
+            draw(false);
+        }, 500);
     }
 
     function onMacroChange(prop: string) {

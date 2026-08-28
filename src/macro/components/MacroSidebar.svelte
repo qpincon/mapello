@@ -13,7 +13,7 @@
     import Icon from "../../components/Icon.svelte";
     import { icons } from "../../shared/icons";
     import { track } from "../../util/analytics";
-    import { allAvailableAdm, geometriesState, initWorldData, resolvedAdmGeometry } from "../geometry-data";
+    import { allAvailableAdm, geometriesState, initWorldData, resolvedAdmGeometry, updateLayerSimplification } from "../geometry-data";
     import RangeInput from "src/components/RangeInput.svelte";
     import ColorPickerPreview from "src/components/ColorPickerPreview.svelte";
     import type {
@@ -21,6 +21,7 @@
         ColorDef,
         ColorScale,
         LegendColor,
+        MacroPalette,
         OrdinalMapping,
         SvgGSelection,
         SvgSelection,
@@ -59,6 +60,9 @@
     import { dragged, updateVisibleAreaScale, zoomed } from "../interactions";
     import Modal from "src/components/Modal.svelte";
     import PaletteEditor from "src/components/PaletteEditor.svelte";
+    import MacroPalettePicker from "src/components/MacroPalettePicker.svelte";
+    import * as _macroPalettes from "../macroPalettes";
+    import { applyMacroPalette, findMatchingPaletteId } from "../macroPalettes";
     import QuillEditor from "src/components/QuillEditor.svelte";
     import { getLocaleDisplayName, resolvedLocales, updateZonesDataFormatters } from "../formatting";
     import { handleInlineStyleChange } from "src/svg/svg";
@@ -90,6 +94,17 @@
     let colorDataMenuOpenedByTab = $state<Record<string, boolean>>({});
     let glowMenuOpenedByTab = $state<Record<string, boolean>>({});
     let commonStyleSheetElem: HTMLStyleElement;
+
+    const macroColorPalettes = Object.fromEntries(
+        Object.entries(_macroPalettes).filter(([, value]) => typeof value === "object"),
+    ) as Record<string, MacroPalette>;
+    let currentMacroPaletteId = $derived(findMatchingPaletteId(macroColorPalettes));
+
+    function handleMacroPaletteChange(paletteId: string) {
+        applyMacroPalette(macroColorPalettes[paletteId]);
+        draw();
+        saveState();
+    }
 
     let computedOrderedTabs = $derived(
         macroState.orderedTabs.filter((x) => {
@@ -234,7 +249,8 @@
     function drawSimplifyThenReal(): void {
         draw(true);
         clearTimeout(drawTimeoutId);
-        drawTimeoutId = setTimeout(() => {
+        drawTimeoutId = window.setTimeout(async () => {
+            await updateLayerSimplification();
             draw(false);
         }, 500);
     }
@@ -630,6 +646,11 @@
 </svelte:head>
 
 <div class="border border-primary rounded layers">
+            <MacroPalettePicker
+                palettes={macroColorPalettes}
+                currentPaletteId={currentMacroPaletteId}
+                onPaletteChange={handleMacroPaletteChange}
+            ></MacroPalettePicker>
             <div class="p-2">
                 <div class="form-check form-switch">
                     <input
