@@ -113,10 +113,6 @@
         <ul class="tip-list">
           <li>Map width &amp; height</li>
           <li>Sea color, graticule, border</li>
-          <li>
-            Two reusable <strong>glow filters</strong> — assign them to layers for
-            a glowing outline effect
-          </li>
         </ul>
 
         <h6 class="section-title mt-3">Left panel</h6>

@@ -2143,7 +2143,7 @@
               stroke-width="2.5"
               stroke-linecap="round"
               stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            >3 exported maps
+            >3 exported maps per month
           </li>
           <li>
             <svg

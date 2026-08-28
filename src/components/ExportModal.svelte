@@ -404,11 +404,11 @@
     {#snippet footer()}
     <div class="footer-row">
         {#if localRemaining === 0}
-            <span class="quota-msg">You've used all your free exports.</span>
+            <span class="quota-msg">You've used all your free exports this month.</span>
             <button type="button" class="btn btn-primary" onclick={onUpgrade}>Upgrade to Pro</button>
         {:else}
             {#if localRemaining !== null}
-                <span class="quota-msg">{localRemaining} free export{localRemaining === 1 ? "" : "s"} remaining</span>
+                <span class="quota-msg">{localRemaining} free export{localRemaining === 1 ? "" : "s"} remaining this month</span>
             {/if}
             <button type="button" class="btn btn-success" onclick={onExportClicked} disabled={exportLoading || previewLoading}>
                 {exportLoading ? "Exporting…" : "Export"}

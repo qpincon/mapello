@@ -193,7 +193,7 @@
                     <span class="value">Free</span>
                 </div>
                 <div class="field">
-                    <span class="label">Exports remaining</span>
+                    <span class="label">Exports remaining this month</span>
                     <span class="value">
                         {exportsRemaining ?? 0} / {FREE_EXPORT_LIMIT}
                     </span>

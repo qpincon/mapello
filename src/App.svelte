@@ -1811,7 +1811,7 @@
                                 {#if page.data.subscription}
                                     <li><span class="dropdown-item-text"><span class="nav-pro-badge">Pro</span></span></li>
                                 {:else}
-                                    <li><span class="dropdown-item-text nav-exports-left">{page.data.exportsRemaining ?? 0} free export{page.data.exportsRemaining === 1 ? "" : "s"} remaining</span></li>
+                                    <li><span class="dropdown-item-text nav-exports-left">{page.data.exportsRemaining ?? 0} free export{page.data.exportsRemaining === 1 ? "" : "s"} remaining this month</span></li>
                                     <li>
                                         <button class="dropdown-item" type="button" onclick={() => (showUpgradeModal = true)}>
                                             Upgrade to Pro

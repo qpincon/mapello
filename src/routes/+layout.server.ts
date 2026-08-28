@@ -1,9 +1,6 @@
 import type { LayoutServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
-import { getActiveSubscription } from '$lib/server/subscription';
-import { db } from '$lib/server/db';
-import { user } from '$lib/server/auth-schema';
-import { eq } from 'drizzle-orm';
+import { getActiveSubscription, getExportsUsed } from '$lib/server/subscription';
 import { FREE_EXPORT_LIMIT, REFUND_WINDOW_DAYS, SUPER_USER_EMAILS } from '$lib/billing-constants';
 
 export const load: LayoutServerLoad = async ({ request }) => {
@@ -11,19 +8,14 @@ export const load: LayoutServerLoad = async ({ request }) => {
 	const currentUser = session?.user ?? null;
 
 	let subscription = null;
-	let exportCount = 0;
 	let exportsRemaining: number | null = null;
 
 	if (currentUser) {
-		const [userRow] = await db
-			.select({ exportCount: user.exportCount })
-			.from(user)
-			.where(eq(user.id, currentUser.id))
-			.limit(1);
-
-		exportCount = userRow?.exportCount ?? 0;
 		subscription = await getActiveSubscription(currentUser.id);
-		exportsRemaining = subscription ? null : Math.max(0, FREE_EXPORT_LIMIT - exportCount);
+		if (!subscription) {
+			const used = await getExportsUsed(currentUser.id);
+			exportsRemaining = Math.max(0, FREE_EXPORT_LIMIT - used);
+		}
 	}
 
 	const isSuperUser = SUPER_USER_EMAILS.includes(currentUser?.email ?? '');

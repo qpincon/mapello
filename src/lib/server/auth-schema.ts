@@ -19,6 +19,7 @@ export const user = sqliteTable("user", {
   // billing columns
   paddleCustomerId: text("paddle_customer_id").unique(),
   exportCount: integer("export_count").notNull().default(0),
+  exportPeriod: text("export_period"), // "YYYY-MM" (UTC) of the current quota window; null = never counted
 });
 
 export const session = sqliteTable(

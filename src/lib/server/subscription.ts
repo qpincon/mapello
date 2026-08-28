@@ -25,6 +25,24 @@ export async function isPro(userId: string): Promise<boolean> {
 	return sub !== null;
 }
 
+export function currentExportPeriod(now = new Date()): string {
+	const y = now.getUTCFullYear();
+	const m = String(now.getUTCMonth() + 1).padStart(2, "0");
+	return `${y}-${m}`;
+}
+
+// Read-only "how many exports used in the current month" (0 if the quota window rolled over)
+export async function getExportsUsed(userId: string): Promise<number> {
+	const [row] = await db
+		.select({ exportCount: user.exportCount, exportPeriod: user.exportPeriod })
+		.from(user)
+		.where(eq(user.id, userId))
+		.limit(1);
+
+	if (!row) return 0;
+	return row.exportPeriod === currentExportPeriod() ? row.exportCount : 0;
+}
+
 export async function consumeExport(userId: string): Promise<{ allowed: boolean; remaining: number }> {
 	if (await isPro(userId)) {
 		return { allowed: true, remaining: -1 }; // -1 = unlimited
@@ -33,7 +51,7 @@ export async function consumeExport(userId: string): Promise<{ allowed: boolean;
 	// Transaction ensures the read-check-increment is atomic in SQLite
 	return db.transaction((tx) => {
 		const [current] = tx
-			.select({ exportCount: user.exportCount })
+			.select({ exportCount: user.exportCount, exportPeriod: user.exportPeriod })
 			.from(user)
 			.where(eq(user.id, userId))
 			.limit(1)
@@ -41,12 +59,18 @@ export async function consumeExport(userId: string): Promise<{ allowed: boolean;
 
 		if (!current) return { allowed: false, remaining: 0 };
 
-		if (current.exportCount >= FREE_EXPORT_LIMIT) {
+		const period = currentExportPeriod();
+		const used = current.exportPeriod === period ? current.exportCount : 0; // month rollover → reset
+
+		if (used >= FREE_EXPORT_LIMIT) {
 			return { allowed: false, remaining: 0 };
 		}
 
-		const newCount = current.exportCount + 1;
-		tx.update(user).set({ exportCount: newCount }).where(eq(user.id, userId)).run();
+		const newCount = used + 1;
+		tx.update(user)
+			.set({ exportCount: newCount, exportPeriod: period })
+			.where(eq(user.id, userId))
+			.run();
 
 		return { allowed: true, remaining: FREE_EXPORT_LIMIT - newCount };
 	});

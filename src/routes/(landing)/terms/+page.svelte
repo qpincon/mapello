@@ -26,7 +26,7 @@
 
       <h2>The service</h2>
       <p>
-        Mapello provides a browser-based map design tool and SVG export service. The free tier allows up to 3 exported maps without an account. Paid plans unlock additional exports and cloud project storage.
+        Mapello provides a browser-based map design tool and SVG export service. The free tier allows up to 3 exported maps per month. Paid plans unlock additional exports and cloud project storage.
       </p>
 
       <h2>Your exports</h2>
