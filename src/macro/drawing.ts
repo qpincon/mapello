@@ -41,18 +41,23 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
         svg.remove();
         let canvas = container.select<HTMLCanvasElement>("#canvas");
         if (canvas.empty()) {
-            canvas = container.append("canvas").attr("id", "canvas").attr("width", width).attr("height", height);
+            canvas = container.append("canvas").attr("id", "canvas");
         }
+        // Setting width/height (even to the same value) resets the canvas bitmap, which is
+        // also what clears out whatever the previous simplified draw left behind.
+        canvas.attr("width", width).attr("height", height);
         const context = canvas!.node()!.getContext("2d")!;
+        context.globalAlpha = 1;
         context.fillStyle = "#55a4c5";
-        context.rect(0, 0, width, height);
-        context.fillStyle = "#cdb396";
+        context.fillRect(0, 0, width, height);
         appState.path = geoPath(appState.projection, context);
         context.beginPath();
         appState.path(graticule);
         context.strokeStyle = "#ddf";
         context.globalAlpha = 0.8;
         context.stroke();
+        context.globalAlpha = 1;
+        context.fillStyle = "#cdb396";
         context.beginPath();
         appState.path(simplified ? geometriesState.simpleLand : geometriesState.land);
         context.fill();
@@ -323,6 +328,11 @@ export function handleChangeProp(event: CustomEvent<{ prop: string; value: unkno
         if (value !== undefined && value !== null) {
             macroState.inlinePropsMacro[prop] = value;
         }
+    }
+    // Altitude lives in both macroParams (the settings slider) and inlinePropsMacro (zoom +
+    // projection). A string-form call comes from the slider, which only wrote macroParams.
+    if (prop === "altitude" && value === undefined) {
+        macroState.inlinePropsMacro.altitude = macroState.macroParams.General.altitude;
     }
     if (prop === "projection" || prop === "fieldOfView") {
         changeAltitudeScale();

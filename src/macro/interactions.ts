@@ -1,8 +1,5 @@
 import { appState, macroState } from "src/state.svelte";
 
-export let altMin = 100;
-let altMax = 10000;
-
 // Exponential simplification: area = minArea * (maxArea/minArea) ^ (t^curve)
 // t goes from 0 (fully zoomed in) to 1 (fully zoomed out), clamped
 function makeSimplificationScale(
@@ -12,12 +9,14 @@ function makeSimplificationScale(
     const range = zoomedOutValue - zoomedInValue;
     const ratio = maxArea / minArea;
     return (value: number) => {
-        const t = Math.max(0, Math.min(1, (value - zoomedInValue) / range));
+        if (!range || !Number.isFinite(value)) return minArea;
+        const raw = (value - zoomedInValue) / range;
+        const t = Number.isFinite(raw) ? Math.max(0, Math.min(1, raw)) : 0;
         return minArea * Math.pow(ratio, Math.pow(t, curve));
     };
 }
 
-let threshScale = makeSimplificationScale(altMax, altMin, 0.001, 0.03, 0.78);
+let threshScale = makeSimplificationScale(10000, 100, 0.001, 0.03, 0.78);
 
 export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
     const src = event.sourceEvent;
@@ -31,7 +30,7 @@ export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
     const isSatellite = macroState.macroParams.General.projection === "satellite";
     const oldAltitude = macroState.inlinePropsMacro.altitude;
     let newAltitude = oldAltitude * (isSatellite ? 1 / zoomFactor : zoomFactor);
-    newAltitude = Math.round(Math.max(altMin, Math.min(altMax, newAltitude)));
+    newAltitude = Math.round(Math.max(appState.altMin, Math.min(appState.altMax, newAltitude)));
 
     // Zoom toward cursor: adjust center so the point under the cursor stays fixed
     const projection = appState.projection;
@@ -63,9 +62,10 @@ export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
         }
     }
 
-    macroState.visibleArea = threshScale(newAltitude);
     macroState.macroParams.General.altitude = newAltitude;
     macroState.inlinePropsMacro.altitude = newAltitude;
+    clampMercatorTranslate();
+    macroState.visibleArea = threshScale(newAltitude);
 }
 
 const sensitivity = 75;
@@ -89,41 +89,64 @@ export function dragged(event: d3.D3DragEvent<SVGSVGElement, unknown, unknown>):
         macroState.inlinePropsMacro.longitude = -rotate[0] - adjustedDx;
         macroState.inlinePropsMacro.latitude = -rotate[1] + adjustedDy;
     }
+    clampMercatorTranslate();
 }
 
 export function updateVisibleAreaScale(): void {
     const fov = macroState.macroParams.General.fieldOfView;
     if (macroState.macroParams.General.projection === "satellite") {
         const fovExtent = Math.tan((0.5 * fov * Math.PI) / 180);
-        altMin = Math.round((1 / fovExtent) * 500);
-        altMax = Math.round((1 / fovExtent) * 4000);
+        appState.altMin = Math.max(1, Math.round((1 / fovExtent) * 220));
+        appState.altMax = Math.max(appState.altMin + 1, Math.round((1 / fovExtent) * 4000));
         // low altitude (zoomed in) → small area, high altitude (zoomed out) → large area
-        threshScale = makeSimplificationScale(altMin, altMax, 0.001, 0.08, 0.78);
+        threshScale = makeSimplificationScale(appState.altMin, appState.altMax, 0.0005, 0.08, 0.78);
+    } else if (macroState.macroParams.General.projection === "mercator") {
+        // Below scale 130 the world is narrower than most canvas widths, which is what the
+        // translateX/Y clamp below relies on to always keep the map covering the canvas.
+        appState.altMin = 130;
+        appState.altMax = 2000;
+        threshScale = makeSimplificationScale(appState.altMax, 300, 0.001, 0.03, 0.78);
     } else {
-        altMin = 90;
-        altMax = 2000;
+        appState.altMin = 90;
+        appState.altMax = 2000;
         // high scale (zoomed in) → small area, low scale (zoomed out) → large area
         // Simplification maxes out at scale 300, below that stays at 0.03
-        threshScale = makeSimplificationScale(altMax, 300, 0.001, 0.03, 0.78);
+        threshScale = makeSimplificationScale(appState.altMax, 300, 0.001, 0.03, 0.78);
     }
+}
+
+/**
+ * Mercator is cylindrical: the full world is exactly 2*scale*PI px wide, and clamping the
+ * vertical span to the same size (the standard "square world" Web Mercator convention, matching
+ * the ~85.05° latitude cutoff) lets translateX/Y be clamped with the same formula. This keeps the
+ * map always covering the canvas instead of panning past the world's edge into blank space.
+ */
+function clampMercatorTranslate(): void {
+    if (macroState.macroParams.General.projection !== "mercator") return;
+    const { width, height } = macroState.macroParams.General;
+    const scale = macroState.inlinePropsMacro.altitude || macroState.macroParams.General.altitude;
+    const halfWorld = scale * Math.PI;
+
+    const boundX = Math.abs(halfWorld - width / 2);
+    macroState.inlinePropsMacro.translateX = Math.max(-boundX, Math.min(boundX, macroState.inlinePropsMacro.translateX));
+
+    const boundY = Math.abs(halfWorld - height / 2);
+    macroState.inlinePropsMacro.translateY = Math.max(-boundY, Math.min(boundY, macroState.inlinePropsMacro.translateY));
 }
 export function changeAltitudeScale(autoAdjustAltitude = true): void {
     updateVisibleAreaScale();
 
-    const altitude = macroState.inlinePropsMacro.altitude || macroState.macroParams.General.altitude;
-    macroState.visibleArea = threshScale(altitude);
+    let altitude = macroState.inlinePropsMacro.altitude || macroState.macroParams.General.altitude;
 
-    if (!autoAdjustAltitude) return;
-    let altChanged = false;
-    if (altitude < altMin) {
-        macroState.inlinePropsMacro.altitude = altMin;
-        altChanged = true;
+    if (autoAdjustAltitude) {
+        const clamped = Math.min(appState.altMax, Math.max(appState.altMin, altitude));
+        if (clamped !== altitude) {
+            altitude = clamped;
+            macroState.inlinePropsMacro.altitude = clamped;
+            macroState.macroParams.General.altitude = clamped;
+        }
     }
-    if (altitude > altMax) {
-        macroState.inlinePropsMacro.altitude = altMax;
-        altChanged = true;
-    }
-    if (altChanged) {
-        macroState.macroParams.General.altitude = macroState.inlinePropsMacro.altitude;
-    }
+
+    clampMercatorTranslate();
+    macroState.visibleArea = threshScale(altitude);
 }

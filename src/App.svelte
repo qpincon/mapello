@@ -61,7 +61,6 @@
     import { Dropdown } from "bootstrap";
     import { applyInlineStyles, changeProjection, handleChangeProp } from "./macro/drawing";
     import { updateLayerSimplification } from "./macro/geometry-data";
-    import { altMin } from "./macro/interactions";
     import MacroSidebar from "./macro/components/MacroSidebar.svelte";
     import ResizeHandles from "./components/ResizeHandles.svelte";
     import { appState, commonState, macroState, microState } from "./state.svelte";
@@ -139,7 +138,7 @@
     const showMicroHint = $derived(
         commonState.currentMode === "macro" &&
         !microHintDismissed &&
-        macroState.inlinePropsMacro.altitude <= altMin + 5
+        macroState.inlinePropsMacro.altitude <= appState.altMin + 5
     );
     let showInstructionsModal = $state(false);
     let showFeedbackModal = $state(false);

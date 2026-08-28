@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { commonState, macroState, microState } from '../state.svelte';
+    import { appState, commonState, macroState, microState } from '../state.svelte';
     import RangeInput from './RangeInput.svelte';
     import ColorPickerPreview from './ColorPickerPreview.svelte';
     import { paramDefs, type RangeDefinition, type SelectDefinition } from '../params';
@@ -101,7 +101,9 @@ import { updateMicroBorderColor } from '../micro/drawing';
                 <div class="field">
                     <RangeInput id="sp-altitude" title={isSatellite ? 'Altitude' : 'Scale'}
                         bind:value={macroState.macroParams.General.altitude}
-                        min={r('altitude').min} max={r('altitude').max} step={r('altitude').step ?? 1}
+                        min={appState.altMin}
+                        max={appState.altMax}
+                        step={isSatellite ? 1 : (r('altitude').step ?? 1)}
                         onChange={() => onMacroChange('altitude')} />
                 </div>
             </div>

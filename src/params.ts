@@ -84,7 +84,7 @@ export type ParamDefinitions = { [paramName: string]: ParamDefinition };
 export const paramDefs: ParamDefinitions = {
     width: { type: 'range', min: 100, max: 1000, step: 10 },
     height: { type: 'range', min: 100, max: 1000, step: 10 },
-    fieldOfView: { type: 'range', min: 15, max: 180 },
+    fieldOfView: { type: 'range', min: 15, max: 170 },
     altitude: { type: 'range', min: 1, max: 30000, step: 10 },
     innerBlur: { type: 'range', min: 0, max: 10, step: 0.1 },
     innerStrength: { type: 'range', min: 0, max: 2.5, step: 0.1 },

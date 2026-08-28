@@ -14,6 +14,9 @@ interface AppState {
     /** === Macro === */
     path?: d3.GeoPath<any, any>;
     pathLarger?: d3.GeoPath<any, any>;
+    /** Min/max altitude allowed for the current projection/fieldOfView, used to clamp zoom and the altitude slider. */
+    altMin: number;
+    altMax: number;
     /** === Micro === */
     /** Active micro layers that produced zero rendered features in the last draw. */
     microEmptyLayers: MicroLayerId[];
@@ -26,5 +29,7 @@ export const appState = $state<AppState>({
     projectionLarger: null,
     path: undefined,
     pathLarger: undefined,
+    altMin: 100,
+    altMax: 10000,
     microEmptyLayers: [],
 });

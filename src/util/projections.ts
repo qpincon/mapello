@@ -63,9 +63,12 @@ export function geoSatelliteCustom(params: ProjectionParams): any {
         larger = false
     } = params;
 
-    const snyderP = 1.0 + altitude / earthRadius;
-    const dY = altitude * Math.sin(tilt / degrees);
-    const dZ = altitude * Math.cos(tilt / degrees);
+    // Guard against a stale/zero persisted altitude (e.g. from a degenerate fieldOfView),
+    // which would otherwise produce an infinite scale and an inverted clip circle.
+    const alt = Math.max(1, altitude || 1);
+    const snyderP = 1.0 + alt / earthRadius;
+    const dY = alt * Math.sin(tilt / degrees);
+    const dZ = alt * Math.cos(tilt / degrees);
     const fovExtent = Math.tan(0.5 * fov / degrees);
     const visibleYextent = 2 * dZ * fovExtent;
     const yShift = dY * 600 / visibleYextent;
