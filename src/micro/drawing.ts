@@ -275,7 +275,7 @@ export async function drawPrettyMap(
         );
 
     const buildings = geometries.filter(geom => geom.properties.mapLayerId === "buildings") as RenderedFeaturePoly[];
-    // console.log('buildings features=', featureCollection(buildings));
+    console.log('buildings features=', featureCollection(buildings));
     if (layerDefinitions.buildings['3dBuildings']) {
 
         const { normalFeatures, groupedFeatures } = groupBuildingFeatures(buildings);
@@ -304,7 +304,7 @@ export async function drawPrettyMap(
     mapLibreContainer.style('opacity', 0);
     setTimeout(() => {
         postClip(generalParams);
-        if (buildingPaths.length > 0 || linePaths.length > 0) removeNotRenderedElements(linePaths, buildingPaths);
+        // if (buildingPaths.length > 0 || linePaths.length > 0) removeNotRenderedElements(linePaths, buildingPaths);
     }, 200);
     pendingCutout = applyCutoutsDeferred(svg, d3PathFunction, mainFeatures, cutoutFeatures);
 }
@@ -712,7 +712,18 @@ export function computeBaseHeights(groupedFeatures: GroupedFeature[]): void {
             groupedFeature.properties.shouldRender = true;
         } else {
             const meanPartHeight = parts.reduce((sum, p) => sum + (p.properties.height ?? rootHeight), 0) / parts.length;
-            groupedFeature.properties.shouldRender = rootHeight < 30 || rootHeight < meanPartHeight;
+            const heightSuggestsPodium = rootHeight < 30 || rootHeight < meanPartHeight;
+
+            // The root is only redundant with its parts (and safe to skip) when the parts'
+            // combined footprint actually covers most of the root's footprint (podium/tower
+            // case). For a large complex/courtyard root containing several small, scattered
+            // structures, the parts cover only a fraction of it, so the root is a distinct
+            // volume in its own right and must still render even if it's the tallest element.
+            const rootArea = area(groupedFeature);
+            const partsArea = parts.reduce((sum, p) => sum + area(p), 0);
+            const partsCoverMostOfRoot = rootArea > 0 && (partsArea / rootArea) > 0.7;
+
+            groupedFeature.properties.shouldRender = heightSuggestsPodium || !partsCoverMostOfRoot;
         }
     }
 }
