@@ -5,6 +5,7 @@ import { LngLat, Point } from 'maplibre-gl';
 import type { Map } from 'maplibre-gl';
 import { clamp } from 'lodash-es';
 import type { ProjectionParams } from 'src/types';
+import type { Feature, MultiPolygon, Polygon, Position } from 'geojson';
 
 const degrees = 180 / Math.PI;
 const earthRadius = 6371;
@@ -48,6 +49,36 @@ export function getGeographicalBounds(projection: any, width: number, height: nu
         [minLng, minLat],
         [maxLng, maxLat],
     ];
+}
+
+function ringIsCCW(ring: Position[]): boolean {
+    let sum = 0;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        sum += (ring[j][0] - ring[i][0]) * (ring[i][1] + ring[j][1]);
+    }
+    return sum > 0;
+}
+
+/**
+ * d3-geo treats lon/lat polygons as spherical and requires the opposite ring winding from
+ * GeoJSON/RFC 7946: exterior rings clockwise, holes counter-clockwise. A CCW exterior isn't
+ * rendered as "the same shape" — it's interpreted as everything except that shape, which
+ * combined with a projection's spherical preclip (geoClipAntimeridian/geoClipCircle) can
+ * fill the entire visible area instead of the intended small polygon.
+ *
+ * Raw vector-tile decode already comes out with correct (d3-compatible) winding, but
+ * anything that has passed through a turf union/intersect/etc. (which normalize to RFC
+ * 7946) needs this before geoPath. Cheap enough to apply unconditionally as a safety net.
+ * Mutates the feature's geometry in place.
+ */
+export function rewindForD3(feature: Feature<Polygon | MultiPolygon>): void {
+    const polys = feature.geometry.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry.coordinates;
+    for (const rings of polys) {
+        rings.forEach((ring, ringIndex) => {
+            const isHole = ringIndex > 0;
+            if (ringIsCCW(ring) !== isHole) ring.reverse();
+        });
+    }
 }
 
 export function geoSatelliteCustom(params: ProjectionParams): any {

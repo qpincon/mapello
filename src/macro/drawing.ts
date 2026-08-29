@@ -16,6 +16,38 @@ import { getProjection } from "src/util/projections";
 import { macroPositionVars } from "src/stateDefaults";
 import { changeAltitudeScale } from "./interactions";
 import { updateZonesDataFormatters } from "./formatting";
+import { updateMacroRoads } from "./roads";
+import { updateMacroWater } from "./water";
+import { updateMacroMountains } from "./mountains";
+
+/**
+ * Returns the persistent `<g id={id}>` placeholder for a macro vector-tile layer (roads,
+ * water, mountains, …). Positioned immediately before #points-labels on EVERY call, not
+ * just when first created — see the reasoning inline below. Callers control layer z-order
+ * purely by the ORDER they call this in (bottom-most layer first), not by fetch timing: only
+ * the group's contents change asynchronously once each layer's data has been fetched. Must
+ * never get the `.macro-layer` class — drawMacro() wipes and rebuilds every `.macro-layer`
+ * element on each redraw, which would remove these placeholders.
+ */
+function ensureLayerGroup(svg: SvgSelection, id: string): SVGGElement {
+    let group = svg.select<SVGGElement>(`#${id}`).node();
+    if (!group) {
+        group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.setAttribute('id', id);
+        // Decorative-only: never intercept clicks/hover, so users can still select/click
+        // through to the country shapes and annotations these layers sit on top of.
+        group.setAttribute('pointer-events', 'none');
+    }
+    // Repositioned on every call, not just on creation: drawMacro() removes and rebuilds
+    // every `.macro-layer` element on each redraw via D3's `.join("g")`, and since the
+    // removal leaves no anchor for the join's enter selection, the rebuilt elements get
+    // appended to the end of `svg` — after this group, if it isn't moved back. Re-anchoring
+    // here every time keeps it immediately before #points-labels regardless.
+    const pointsLabels = svg.select<Element>('#points-labels').node();
+    if (pointsLabels) pointsLabels.before(group);
+    else svg.node()!.append(group);
+    return group;
+}
 
 export async function drawMacroBase(svg: SvgSelection, simplified = false): Promise<void> {
     log("drawMacroBase", simplified);
@@ -79,6 +111,10 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     svg.select('#points-labels').raise();
     svg.select('#paths').raise();
     svg.select('#freehand-drawings').raise();
+
+    updateMacroMountains(ensureLayerGroup(svg, 'mountains-layer'));
+    updateMacroWater(ensureLayerGroup(svg, 'water-layer'));
+    updateMacroRoads(ensureLayerGroup(svg, 'roads-layer'));
 
     select("#outline").style("fill", macroState.macroParams.Background.seaColor);
 

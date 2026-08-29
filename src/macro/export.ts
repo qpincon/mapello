@@ -96,7 +96,7 @@ export async function exportMacro(
         parent.insertBefore(el, parent.firstChild);
     });
     svgNode.querySelectorAll('.svgo-trick').forEach(el => el.remove());
-    // === End re-insertion === 
+    // === End re-insertion ===
 
     const optimizedSVG = DOM_PARSER.parseFromString(finalSvg, 'image/svg+xml');
     optimizedSVG.querySelectorAll('.svgo-trick').forEach(el => el.remove());

@@ -58,6 +58,22 @@ export function buildColorOutput(hex: string, alpha: number): string {
     return "#" + hex + alphaToHex(alpha);
 }
 
+/**
+ * Lighten a CSS color by blending its RGB channels toward white. `ratio` is 0 (unchanged)
+ * to 1 (white); preserves the original alpha. Blending toward white (rather than raising
+ * HSV value additively) gives a predictable result regardless of how dark the input is.
+ */
+export function lightenColor(color: string, ratio: number): string {
+    const { hex, alpha } = parseColorValue(color);
+    if (!hex) return color;
+    const mix = (channel: string) => Math.round(parseInt(channel, 16) + (255 - parseInt(channel, 16)) * ratio);
+    const lightened = [hex.slice(0, 2), hex.slice(2, 4), hex.slice(4, 6)]
+        .map((c) => mix(c).toString(16).padStart(2, "0"))
+        .join("")
+        .toUpperCase();
+    return buildColorOutput(lightened, alpha);
+}
+
 /** Convert an rgb()/rgba() CSS string → #RRGGBB. Returns "" if not parseable. */
 export function rgbToHex(rgb: string): string {
     const m = rgb.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);

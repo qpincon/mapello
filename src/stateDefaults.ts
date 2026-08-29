@@ -22,6 +22,9 @@ const defaultMacroParams: MacroParams = {
         graticuleColor: "#777777",
         graticuleWidth: 0.5,
         seaColor: "#dde2eeff",
+        roadColor: "#ffffff",
+        waterColor: "#80deea",
+        mountainColor: "#3d3a3440",
     },
 };
 
@@ -48,6 +51,9 @@ const defaultInlinePropsMacro: InlinePropsMacro = {
     tilt: 0,
     showLand: true,
     showCountries: true,
+    showRoads: false,
+    showWater: false,
+    showMountains: false,
 };
 
 const defaultInlinePropsMicro: InlinePropsMicro = {

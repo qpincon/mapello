@@ -31,6 +31,9 @@ export interface MacroBackgroundParams {
     graticuleColor: Color;
     graticuleWidth: number;
     seaColor: Color;
+    roadColor: Color;
+    waterColor: Color;
+    mountainColor: Color;
 }
 
 export interface MacroParams {

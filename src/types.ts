@@ -76,6 +76,9 @@ export interface MacroGroupData {
 export type InlinePropsMacro = Prettify<Pick<ProjectionParams, 'longitude' | 'latitude' | 'translateX' | 'translateY' | 'altitude' | 'rotation' | 'tilt'> & {
     showLand: boolean;
     showCountries: boolean;
+    showRoads: boolean;
+    showWater: boolean;
+    showMountains: boolean;
 }>
 
 export type ParsedPathGroup = [string, number, number];

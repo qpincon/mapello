@@ -123,7 +123,7 @@ function getTolerance(zoom: number): number {
 }
 
 // Get bounds of a tile
-function getTileBounds(x: number, y: number, zoom: number): Tile {
+export function getTileBounds(x: number, y: number, zoom: number): Tile {
   zoom = Math.min(Math.floor(zoom), MAX_ZOOM);
   const scale = Math.pow(2, zoom);
 
@@ -242,6 +242,24 @@ export async function getRenderedFeatures(map: MaplibreMap, options: any, threeD
 
 export function cancelStitch(): void {
   processCounter += 1;
+}
+
+/**
+ * Stitches LineString features across tile boundaries without a MapLibre map instance.
+ * Unlike `stitch()`, this never reads from a live map (no `getCanvas`/`unproject`), so it
+ * can be used with tiles fetched directly from a PMTiles archive. `stitchLines` ignores
+ * its `cuts`/`deadZones` arguments, so empty stand-ins are safe here.
+ *
+ * `tileCoords` must list every tile the `lines` were decoded from (as `[x, y, z]`); each
+ * line's `properties.x`/`properties.y` must match one of them for stitching to find it.
+ */
+export async function stitchTileLines(
+  lines: RenderedFeature[],
+  tileCoords: [number, number, number][],
+): Promise<RenderedFeature[] | null> {
+  const tiles: Tiles = tileCoords.map(([x, y, zoom]) => getTileBounds(x, y, zoom));
+  tiles.zoom = tileCoords[0]?.[2] ?? 0;
+  return stitchLines(lines, { h: [], v: [] }, [], tiles, processCounter);
 }
 
 // Additional functions remain unchanged but now include proper type annotations.
@@ -369,7 +387,7 @@ export async function stitch(renderedFeatures: RenderedFeature[], tiles: Tiles, 
   ];
 }
 
-function explodeGeometry(geometries: RenderedFeature[], type = 'LineString'): RenderedFeature[] {
+export function explodeGeometry(geometries: RenderedFeature[], type = 'LineString'): RenderedFeature[] {
   const multiType = `Multi${type}`;
   const exploded: RenderedFeature[] = [];
 
