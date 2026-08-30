@@ -16,7 +16,7 @@ function makeSimplificationScale(
     };
 }
 
-let threshScale = makeSimplificationScale(10000, 100, 0.001, 0.03, 0.78);
+let threshScale = makeSimplificationScale(10000, 100, 0.0001, 0.03, 0.78);
 
 export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
     const src = event.sourceEvent;
@@ -99,19 +99,19 @@ export function updateVisibleAreaScale(): void {
         appState.altMin = Math.max(1, Math.round((1 / fovExtent) * 220));
         appState.altMax = Math.max(appState.altMin + 1, Math.round((1 / fovExtent) * 4000));
         // low altitude (zoomed in) → small area, high altitude (zoomed out) → large area
-        threshScale = makeSimplificationScale(appState.altMin, appState.altMax, 0.0005, 0.08, 0.78);
+        threshScale = makeSimplificationScale(appState.altMin, appState.altMax, 0.00005, 0.08, 0.78);
     } else if (macroState.macroParams.General.projection === "mercator") {
         // Below scale 130 the world is narrower than most canvas widths, which is what the
         // translateX/Y clamp below relies on to always keep the map covering the canvas.
         appState.altMin = 130;
         appState.altMax = 2000;
-        threshScale = makeSimplificationScale(appState.altMax, 300, 0.001, 0.03, 0.78);
+        threshScale = makeSimplificationScale(appState.altMax, 300, 0.0001, 0.03, 0.78);
     } else {
         appState.altMin = 90;
         appState.altMax = 2000;
         // high scale (zoomed in) → small area, low scale (zoomed out) → large area
         // Simplification maxes out at scale 300, below that stays at 0.03
-        threshScale = makeSimplificationScale(appState.altMax, 300, 0.001, 0.03, 0.78);
+        threshScale = makeSimplificationScale(appState.altMax, 300, 0.0001, 0.03, 0.78);
     }
 }
 

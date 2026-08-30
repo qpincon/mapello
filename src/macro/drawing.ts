@@ -2,10 +2,10 @@ import { appState, commonState, macroState } from "src/state.svelte";
 import { log } from 'src/util/log';
 import { select } from "d3-selection";
 import { geoGraticule, geoPath } from "d3-geo";
-import { GEO_META_KEYS, geometriesState, initializeAdms, resolvedAdmGeometry } from "./geometry-data";
+import { GEO_META_KEYS, geometriesState, initializeAdms, resolvedAdmCountryOutline, resolvedAdmGeometry } from "./geometry-data";
 import type { Color, FrameSelection, MacroGroupData, SvgSelection } from "src/types";
 import { appendClip, appendGlow, glowFilterId } from "src/svg/svgDefs";
-import type { MultiLineString } from "geojson";
+import type { Feature, MultiLineString, Polygon } from "geojson";
 import { appendCountryImageNew, appendLandImageNew } from "src/svg/contourMethods";
 import { getNumericCols, sortBy } from "src/util/common";
 import { applyStyles } from "src/util/dom";
@@ -63,8 +63,10 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     const container = select("#map-container");
     const mapLibreContainer = select("#maplibre-map");
 
-    appState.path = geoPath(appState.projection);
-    appState.pathLarger = geoPath(appState.projectionLarger);
+    // .digits(2) trims the "d" attribute precision on country/adm/land paths — matches
+    // src/macro/roads.ts, water.ts and mountains.ts, which already do this for payload size.
+    appState.path = geoPath(appState.projection).digits(2);
+    appState.pathLarger = geoPath(appState.projectionLarger).digits(2);
 
     await initializeAdms();
     const graticule = geoGraticule().step([macroState.macroParams.Background.graticuleStep, macroState.macroParams.Background.graticuleStep])();
@@ -162,6 +164,23 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
         class: "graticule",
         filter: null,
     });
+    // A country's ADM1/ADM2 file embeds that country's own ADM0 outline, presimplified
+    // together with its regions so the two always nest exactly (see geometry-data.ts /
+    // scripts/getAndSimplifyWorld.ts). For any country with an active ADM1/ADM2 tab, use
+    // that embedded outline instead of the globally-presimplified `geometriesState.countries`
+    // version, both for the glow-filter mask below and for the `.country` fill itself.
+    const outlineOverrideByCountryName = new Map<string, Feature<Polygon, { name: string }>>();
+    computedOrderedTabs.forEach((layer) => {
+        if (layer === "countries" || layer === "land") return;
+        const outline = resolvedAdmCountryOutline[layer];
+        if (outline) {
+            const countryOutlineId = layer.substring(0, layer.length - 5);
+            outlineOverrideByCountryName.set(countryOutlineId, {
+                ...outline,
+                properties: { ...outline.properties, name: countryOutlineId },
+            });
+        }
+    });
     computedOrderedTabs.forEach((layer, i) => {
         const filter = macroState.zonesGlow[layer] ? glowFilterId(layer) : null;
         if (layer === "countries" && macroState.inlinePropsMacro.showCountries && geometriesState.countries) {
@@ -180,7 +199,14 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
             }
             groupData.push({
                 name: "countries",
-                data: geometriesState.countries,
+                data: outlineOverrideByCountryName.size
+                    ? {
+                          ...geometriesState.countries,
+                          features: geometriesState.countries.features.map(
+                              (f) => outlineOverrideByCountryName.get(f.properties.name) ?? f,
+                          ),
+                      }
+                    : geometriesState.countries,
                 id: "name",
                 props: [],
                 containerClass: "choro",
@@ -201,7 +227,9 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
                 filter: null,
             });
             const countryOutlineId = layer.substring(0, layer.length - 5);
-            const countryData = geometriesState.countries?.features.find((country) => country.properties.name === countryOutlineId);
+            const countryData =
+                outlineOverrideByCountryName.get(countryOutlineId) ??
+                geometriesState.countries?.features.find((country) => country.properties.name === countryOutlineId);
             groupData.push({
                 name: `${countryOutlineId}-img`,
                 type: "filterImg",
@@ -272,7 +300,6 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
         if (data.filter) parentPathElem.attr("filter", `url(#${data.filter})`);
         // data.props?.forEach((prop) => pathElem.attr(prop, (d) => d.properties[prop]));
     }
-    // @ts-expect-error
     groups.each(drawPaths);
     svg.select("#graticule").selectAll("path")
         .attr("stroke", macroState.macroParams.Background.graticuleColor)

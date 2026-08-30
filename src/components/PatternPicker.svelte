@@ -99,6 +99,7 @@
 <style lang="scss">
     .pattern-picker {
         flex: 1 0 100%;
+        max-width: 20ch;
         position: relative;
     }
 

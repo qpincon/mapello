@@ -7,6 +7,13 @@
     "sub-region": "Southern Asia"
   },
   {
+    "name": "Koualou",
+    "alpha-3": "122",
+    "alpha-2": "",
+    "region": "",
+    "sub-region": ""
+  },
+  {
     "name": "Isla Brasilera",
     "alpha-3": "120",
     "alpha-2": "",
@@ -19,6 +26,13 @@
     "alpha-2": "",
     "region": "Africa",
     "sub-region": "Northern Africa"
+  },
+  {
+    "name": "Spratly Is",
+    "alpha-3": "128",
+    "alpha-2": "",
+    "region": "",
+    "sub-region": ""
   },
   {
     "name": "No Man's Land",
@@ -89,6 +103,27 @@
     "alpha-2": "",
     "region": "Americas",
     "sub-region": "Latin America and the Caribbean"
+  },
+  {
+    "name": "Paracel Is",
+    "alpha-3": "125",
+    "alpha-2": "",
+    "region": "",
+    "sub-region": ""
+  },
+  {
+    "name": "Senkakus",
+    "alpha-3": "127",
+    "alpha-2": "",
+    "region": "",
+    "sub-region": ""
+  },
+  {
+    "name": "Liancourt Rocks",
+    "alpha-3": "123",
+    "alpha-2": "",
+    "region": "",
+    "sub-region": ""
   },
   {
     "name": "Aksai Chin",
