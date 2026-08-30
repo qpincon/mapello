@@ -13,11 +13,12 @@ import type { Map as MaplibreMap } from 'maplibre-gl';
 import { mergeLineStrings } from "./linestitch";
 import { yieldToMain } from "./polyfills";
 import type { BBox, Feature, Geometry, LineString, MultiLineString, MultiPolygon, Polygon, Position } from "geojson";
-import { booleanOverlap } from "@turf/boolean-overlap";
+import { lineIntersect } from "@turf/line-intersect";
 import { booleanWithin } from "@turf/boolean-within";
 import booleanIntersects from "@turf/boolean-intersects";
 import { buffer } from "@turf/buffer";
 import { distance } from "@turf/distance";
+import RBush from "rbush";
 
 /**
  * This file contains an attempt at stitching tiles together.
@@ -473,6 +474,93 @@ async function stitchLines(allLines: RenderedFeature[], cuts: Cuts, deadZones: D
   return finalFeatures;
 }
 
+type IndexedSegment = { minX: number; minY: number; maxX: number; maxY: number; p: Position; q: Position };
+type SegmentData = { segments: IndexedSegment[]; tree?: RBush<IndexedSegment> };
+
+/** Per-polygon-feature cache of its boundary segments (and lazily, an rbush index over them) */
+const segmentDataCache = new WeakMap<Feature, SegmentData>();
+
+function getSegmentData(feature: RenderedFeaturePoly): SegmentData {
+  let data = segmentDataCache.get(feature);
+  if (!data) {
+    const segments: IndexedSegment[] = [];
+    for (const ring of feature.geometry.coordinates) {
+      for (let i = 0; i < ring.length - 1; i++) {
+        const p = ring[i];
+        const q = ring[i + 1];
+        segments.push({
+          minX: Math.min(p[0], q[0]),
+          minY: Math.min(p[1], q[1]),
+          maxX: Math.max(p[0], q[0]),
+          maxY: Math.max(p[1], q[1]),
+          p, q,
+        });
+      }
+    }
+    data = { segments };
+    segmentDataCache.set(feature, data);
+  }
+  return data;
+}
+
+function bboxRoughlyEqual(a: BBox, b: BBox, eps = 5e-7): boolean {
+  return Math.abs(a[0] - b[0]) < eps && Math.abs(a[1] - b[1]) < eps &&
+    Math.abs(a[2] - b[2]) < eps && Math.abs(a[3] - b[3]) < eps;
+}
+
+/** Coordinate-for-coordinate compare at 6-decimal precision, mirroring geojson-equality-ts (used
+ * internally by @turf/boolean-overlap) closely enough for our purposes: same ring/vertex counts
+ * and same rounded coordinates in the same order. */
+function polygonsRoughlyEqual(a: RenderedFeaturePoly, b: RenderedFeaturePoly): boolean {
+  const ringsA = a.geometry.coordinates;
+  const ringsB = b.geometry.coordinates;
+  if (ringsA.length !== ringsB.length) return false;
+  const round = (n: number) => Math.round(n * 1e6);
+  for (let r = 0; r < ringsA.length; r++) {
+    const ringA = ringsA[r];
+    const ringB = ringsB[r];
+    if (ringA.length !== ringB.length) return false;
+    for (let i = 0; i < ringA.length; i++) {
+      if (round(ringA[i][0]) !== round(ringB[i][0]) || round(ringA[i][1]) !== round(ringB[i][1])) return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Drop-in, result-identical replacement for `@turf/boolean-overlap` specialized to two `Polygon`
+ * features. Turf's version runs a full sweepline `lineIntersect` (FeatureCollection allocation +
+ * sort) for every pair of segments across both polygons with no early exit, which is O(n*m) and
+ * extremely slow for the large tile-clipped polygons seen at low zoom (water especially).
+ *
+ * Here we flatten each polygon's boundary to segments once (cached per feature), index the larger
+ * side in an rbush, and bail out on the first confirmed intersection - `lineIntersect` is still
+ * used as the final pairwise predicate so the semantics match turf exactly.
+ */
+function polygonsOverlap(a: RenderedFeaturePoly, b: RenderedFeaturePoly): boolean {
+  // @turf/boolean-overlap treats coordinate-identical features as non-overlapping.
+  if (a.boundingBox && b.boundingBox && bboxRoughlyEqual(a.boundingBox, b.boundingBox) && polygonsRoughlyEqual(a, b)) {
+    return false;
+  }
+
+  const dataA = getSegmentData(a);
+  const dataB = getSegmentData(b);
+  const [smaller, larger] = dataA.segments.length <= dataB.segments.length ? [dataA, dataB] : [dataB, dataA];
+  if (!larger.tree) {
+    larger.tree = new RBush<IndexedSegment>();
+    larger.tree.load(larger.segments);
+  }
+
+  for (const seg of smaller.segments) {
+    for (const candidate of larger.tree.search(seg)) {
+      const line1 = { type: "LineString" as const, coordinates: [seg.p, seg.q] };
+      const line2 = { type: "LineString" as const, coordinates: [candidate.p, candidate.q] };
+      if (lineIntersect(line1, line2).features.length) return true;
+    }
+  }
+  return false;
+}
+
 /** For some reason water is cut differently: we bypass a lot of checks to merge more aggressively */
 let currentIsWater = false;
 
@@ -544,6 +632,23 @@ async function stitchPolygons(allPolygons: RenderedFeaturePoly[], cuts: Cuts, de
       const hi = a < b ? b : a;
       return lo * (1 << 20) + hi;
     };
+    // Union-find over confirmed overlaps: once two polygons are known to be linked, any further
+    // segment pair between them (or between anything already merged into their component) is
+    // redundant to re-test - the transitive grouping is unaffected, only the redundant
+    // bboxIntersects/polygonsAreCutByTile/polygonsOverlap work is skipped.
+    const unionFindParent = layerPolygons.map((_, idx) => idx);
+    const find = (x: number): number => {
+      while (unionFindParent[x] !== x) {
+        unionFindParent[x] = unionFindParent[unionFindParent[x]];
+        x = unionFindParent[x];
+      }
+      return x;
+    };
+    const linkIndices = (a: number, b: number) => {
+      const rootA = find(a);
+      const rootB = find(b);
+      if (rootA !== rootB) unionFindParent[rootA] = rootB;
+    };
     for (let i = 0; i < segmentsToProcess.length; ++i) {
       const [polygonIndex, ringIndex, coordIndex, cutDirection] = segmentsToProcess[i];
       if (polygonCutIndexExclude.has(polygonIndex)) continue;
@@ -553,15 +658,28 @@ async function stitchPolygons(allPolygons: RenderedFeaturePoly[], cuts: Cuts, de
         if (polygonCutIndexExclude.has(curPolygonIndex)) return false;
         if (curPolygonIndex === polygonIndex) return false;
         if (cutDirection !== curCutDirection) return false;
-        if (!bboxIntersects(layerPolygons[polygonIndex].boundingBox!, layerPolygons[curPolygonIndex].boundingBox!)) return false;
-        if (!polygonsAreCutByTile(segmentsToProcess[i], segment, layerPolygons, deadZones)) return false;
+
+        // Tile-stitch candidates only ever come from different, adjacent (incl. diagonal) tiles.
+        const dx = Math.abs(layerPolygons[polygonIndex].properties.x! - layerPolygons[curPolygonIndex].properties.x!);
+        const dy = Math.abs(layerPolygons[polygonIndex].properties.y! - layerPolygons[curPolygonIndex].properties.y!);
+        if (dx === 0 && dy === 0) return false;
+        if (dx > 1 || dy > 1) return false;
+
+        // Already known to be in the same stitch component: no need to re-derive the edge.
+        if (find(polygonIndex) === find(curPolygonIndex)) return false;
 
         const key = overlapKey(polygonIndex, curPolygonIndex);
         let overlap = overlapCache.get(key);
+        if (overlap === false) return false;
+
         if (overlap === undefined) {
-          overlap = booleanOverlap(layerPolygons[polygonIndex], layerPolygons[curPolygonIndex]);
+          if (!bboxIntersects(layerPolygons[polygonIndex].boundingBox!, layerPolygons[curPolygonIndex].boundingBox!)) return false;
+          if (!polygonsAreCutByTile(segmentsToProcess[i], segment, layerPolygons, deadZones)) return false;
+
+          overlap = polygonsOverlap(layerPolygons[polygonIndex], layerPolygons[curPolygonIndex]);
           overlapCache.set(key, overlap);
         }
+        if (overlap) linkIndices(polygonIndex, curPolygonIndex);
         return overlap;
       });
       if (matching.length) {
