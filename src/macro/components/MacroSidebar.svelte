@@ -759,60 +759,64 @@
                 </div>
             </div>
 
-            <ul class="nav nav-tabs align-items-center m-1">
-                {#each computedOrderedTabs as tabTitle, index (tabTitle)}
-                    {@const isLand = tabTitle === "land"}
-                    <li
-                        class="nav-item d-flex align-items-center mx-1"
-                        draggable={isLand}
-                        ondragstart={(event) => tabDragStart(event, index, tabTitle !== "land")}
-                        ondrop={(event) => {
-                            event.preventDefault;
-                            drop(event, index);
-                        }}
-                        ondragover={(ev) => {
-                            ev.preventDefault();
-                        }}
-                        ondragenter={() => (hoveringTab = index)}
-                        class:is-dnd-hovering-right={hoveringTab === index && index > dragStartIndex}
-                        class:is-dnd-hovering-left={hoveringTab === index && index < dragStartIndex}
-                        class:grabbable={isLand}
-                    >
-                        <a
-                            href="javascript:;"
-                            class:active={currentMacroLayerTab === tabTitle}
-                            class="nav-link d-flex align-items-center position-relative"
-                            onclick={() => onTabChanged(tabTitle)}
+            <div class="nav-tabs-wrapper d-flex align-items-center m-1">
+                <ul class="nav nav-tabs flex-nowrap tabs-scroll">
+                    {#each computedOrderedTabs as tabTitle, index (tabTitle)}
+                        {@const isLand = tabTitle === "land"}
+                        <li
+                            class="nav-item d-flex align-items-center mx-1"
+                            draggable={isLand}
+                            ondragstart={(event) => tabDragStart(event, index, tabTitle !== "land")}
+                            ondrop={(event) => {
+                                event.preventDefault;
+                                drop(event, index);
+                            }}
+                            ondragover={(ev) => {
+                                ev.preventDefault();
+                            }}
+                            ondragenter={() => (hoveringTab = index)}
+                            class:is-dnd-hovering-right={hoveringTab === index && index > dragStartIndex}
+                            class:is-dnd-hovering-left={hoveringTab === index && index < dragStartIndex}
+                            class:grabbable={isLand}
                         >
-                            {#if isLand}
-                                <Icon svg={icons["draggable"]} />
-                            {/if}
-                            {tabTitle}
-                            {#if tabTitle !== "countries" && !isLand}
-                                <span
-                                    role="button"
-                                    class="delete-tab"
-                                    onclick={(e) => deleteCountry(tabTitle, true, e)}
-                                >
-                                    ✕
-                                </span>
-                            {/if}
-                        </a>
-                    </li>{/each}
+                            <a
+                                href="javascript:;"
+                                class:active={currentMacroLayerTab === tabTitle}
+                                class="nav-link d-flex align-items-center position-relative"
+                                onclick={() => onTabChanged(tabTitle)}
+                            >
+                                {#if isLand}
+                                    <Icon svg={icons["draggable"]} />
+                                {/if}
+                                {tabTitle}
+                                {#if tabTitle !== "countries" && !isLand}
+                                    <span
+                                        role="button"
+                                        class="delete-tab"
+                                        onclick={(e) => deleteCountry(tabTitle, true, e)}
+                                    >
+                                        ✕
+                                    </span>
+                                {/if}
+                            </a>
+                        </li>{/each}
+                </ul>
 
-                <li class="nav-item icon-add position-relative">
-                    <select role="button" id="country-select" onchange={addNewCountry}>
-                        <option disabled selected value> -- select a country -- </option>
-                        {#each allAvailableAdm as country}
-                            <option value={country}>{country}</option>
-                        {/each}
-                    </select>
-                    <span class="nav-link d-flex align-items-center gap-1">
-                        <Icon fillColor="none" svg={icons["add"]} />
-                        <span class="add-country-label">Add country regions</span>
-                    </span>
-                </li>
-            </ul>
+                <ul class="nav nav-tabs flex-shrink-0">
+                    <li class="nav-item icon-add position-relative">
+                        <select role="button" id="country-select" onchange={addNewCountry}>
+                            <option disabled selected value> -- select a country -- </option>
+                            {#each allAvailableAdm as country}
+                                <option value={country}>{country}</option>
+                            {/each}
+                        </select>
+                        <span class="nav-link d-flex align-items-center gap-1">
+                            <Icon fillColor="none" svg={icons["add"]} />
+                            <span class="add-country-label">Add regions</span>
+                        </span>
+                    </li>
+                </ul>
+            </div>
             {#if computedOrderedTabs.length > 0}
             <div class="p-2">
                 {#if currentMacroLayerTab === "land"}
@@ -1255,6 +1259,22 @@
         width: 9rem;
         flex-shrink: 0;
         white-space: nowrap;
+    }
+
+    .nav-tabs-wrapper {
+        min-width: 0;
+    }
+
+    .tabs-scroll {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+
+        > .nav-item {
+            flex-shrink: 0;
+        }
     }
 
     :global(.is-dnd-hovering-right) {

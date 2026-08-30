@@ -22,6 +22,7 @@
     let offsetLeft = $state(0);
     let offsetTop = $state(0);
     let isResizing = $state(false);
+    let isHoveringMap = $state(false);
     let dragLeft = $state(0);
     let dragTop = $state(0);
 
@@ -46,13 +47,19 @@
         window.addEventListener("resize", onWindowResize);
         const parent = document.getElementById("map-content");
         let ro: ResizeObserver | null = null;
+        const onMouseEnter = () => (isHoveringMap = true);
+        const onMouseLeave = () => (isHoveringMap = false);
         if (parent) {
             ro = new ResizeObserver(recomputePos);
             ro.observe(parent);
+            parent.addEventListener("mouseenter", onMouseEnter);
+            parent.addEventListener("mouseleave", onMouseLeave);
         }
         return () => {
             window.removeEventListener("resize", onWindowResize);
             ro?.disconnect();
+            parent?.removeEventListener("mouseenter", onMouseEnter);
+            parent?.removeEventListener("mouseleave", onMouseLeave);
         };
     });
 
@@ -190,6 +197,9 @@
             onpointerdown={(e) => onPointerDown(edge, e)}
             oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
         ></div>
+    {/each}
+    {#each (["s", "e"] as Edge[]) as edge}
+        <div class="grip grip-{edge}" class:visible={isHoveringMap || isResizing}></div>
     {/each}
 </div>
 
@@ -329,4 +339,46 @@
     .handle-nw::before { position: absolute; top: 0; left: 0; }
     .handle-se::before { position: absolute; bottom: 0; right: 0; }
     .handle-sw::before { position: absolute; bottom: 0; left: 0; }
+
+    /* Discoverability grips: static bars shown at the middle of each side while hovering the map */
+    .grip {
+        position: absolute;
+        pointer-events: none;
+        background: #4a90d9;
+        border-radius: 4px;
+        opacity: 0;
+        transition: opacity 0.15s;
+    }
+
+    .grip.visible {
+        opacity: 0.55;
+    }
+
+    .grip-n,
+    .grip-s {
+        left: 50%;
+        width: 48px;
+        height: 6px;
+        transform: translateX(-50%);
+    }
+    .grip-n {
+        top: -3px;
+    }
+    .grip-s {
+        bottom: -3px;
+    }
+
+    .grip-e,
+    .grip-w {
+        top: 50%;
+        width: 6px;
+        height: 48px;
+        transform: translateY(-50%);
+    }
+    .grip-e {
+        right: -3px;
+    }
+    .grip-w {
+        left: -3px;
+    }
 </style>
