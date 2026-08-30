@@ -13,37 +13,89 @@ const offCanvasPx = 20;
 
 type ProjectionFunction = (params: ProjectionParams) => any;
 
-export function getGeographicalBounds(projection: any, width: number, height: number): [[number, number], [number, number]] | null {
-    const corners = [
-        [0, 0],           // top-left
-        [width, 0],       // top-right
-        [width, height],  // bottom-right
-        [0, height]       // bottom-left
-    ];
+// 13x13 grid — cheap (a few hundred invert/reproject calls) for a once-per-draw bounds
+// calculation, and dense enough to correctly bound circular/clipped projections (satellite)
+// where the visible disc doesn't touch the viewport rectangle's own corners.
+const BOUNDS_GRID_STEPS = 12;
 
-    const geoCorners = corners.map(corner => {
+// Below this, the sampled longitudes have no meaningful "uncovered side" left (see
+// `longitudeBoundsFromSamples`) — treated as full 360° coverage rather than a real arc.
+const FULL_COVERAGE_GAP_THRESHOLD_DEG = 10;
+
+/**
+ * A satellite/perspective view's visible cap can straddle the antimeridian even when its
+ * center longitude is nowhere near ±180 — near the edge of a wide cap, longitude lines
+ * converge (more so at high latitude) and a real, continuous swept region can numerically
+ * wrap past -180/180. A plain min/max over sampled longitudes can't tell "the view covers
+ * -170..171 (a ~341° span, the long way round)" apart from "the view covers 171..-170 the
+ * SHORT way round, through the seam (a real ~18° span)" — those are the same two numbers.
+ *
+ * This finds the largest angular gap between consecutive sampled longitudes (arranged on
+ * the circle); the covered arc is everything else. If every gap is small, samples surround
+ * the whole circle with no clear empty side (e.g. a pole is in view, so literally every
+ * longitude appears somewhere in the sampled area) and the caller should treat it as full
+ * coverage. Otherwise the two bounds are returned in arc order — if the arc crosses the
+ * seam, the "min" (right after the gap) ends up numerically greater than the "max" (right
+ * before the gap); callers use exactly that (minLng > maxLng) as the wrap signal, rather
+ * than needing a separate sentinel.
+ */
+function longitudeBoundsFromSamples(lngs: number[]): [number, number] {
+    const normalized = lngs.map(l => (((l % 360) + 540) % 360) - 180).sort((a, b) => a - b);
+
+    let maxGap = -Infinity;
+    let gapIndex = normalized.length - 1; // default: the "wraparound" pair (last -> first+360)
+    for (let i = 0; i < normalized.length; i++) {
+        const curr = normalized[i];
+        const next = i + 1 < normalized.length ? normalized[i + 1] : normalized[0] + 360;
+        const gap = next - curr;
+        if (gap > maxGap) {
+            maxGap = gap;
+            gapIndex = i;
+        }
+    }
+
+    if (maxGap < FULL_COVERAGE_GAP_THRESHOLD_DEG) return [-180, 180];
+    if (gapIndex === normalized.length - 1) return [normalized[0], normalized[normalized.length - 1]];
+    return [normalized[gapIndex + 1], normalized[gapIndex]];
+}
+
+export function getGeographicalBounds(projection: any, width: number, height: number): [[number, number], [number, number]] | null {
+    const points: [number, number][] = [];
+    for (let i = 0; i <= BOUNDS_GRID_STEPS; i++) {
+        for (let j = 0; j <= BOUNDS_GRID_STEPS; j++) {
+            points.push([(width * i) / BOUNDS_GRID_STEPS, (height * j) / BOUNDS_GRID_STEPS]);
+        }
+    }
+
+    const geoPoints = points.map(point => {
         try {
-            return projection.invert(corner);
+            const inverted = projection.invert(point);
+            if (!inverted) return null;
+            // Perspective/clipped projections (satellite) can return a mathematically valid
+            // but meaningless inverse for a pixel outside their visible disc — reflecting to
+            // the back of the globe instead of failing outright. Round-trip through the
+            // forward projection and discard anything that doesn't land back near its own
+            // pixel, so those points can't corrupt the bounding box.
+            const reprojected = projection(inverted);
+            if (!reprojected || Math.hypot(reprojected[0] - point[0], reprojected[1] - point[1]) > 1) return null;
+            return inverted as [number, number];
         } catch (e) {
             return null;
         }
-    }).filter(corner => corner !== null);
+    }).filter((p): p is [number, number] => p !== null);
 
-    if (geoCorners.length === 0) {
+    if (geoPoints.length === 0) {
         return null;
     }
 
-    let minLng = Infinity;
-    let maxLng = -Infinity;
     let minLat = Infinity;
     let maxLat = -Infinity;
-
-    for (const corner of geoCorners) {
-        minLng = Math.min(minLng, corner[0]);
-        maxLng = Math.max(maxLng, corner[0]);
-        minLat = Math.min(minLat, corner[1]);
-        maxLat = Math.max(maxLat, corner[1]);
+    for (const [, lat] of geoPoints) {
+        minLat = Math.min(minLat, lat);
+        maxLat = Math.max(maxLat, lat);
     }
+
+    const [minLng, maxLng] = longitudeBoundsFromSamples(geoPoints.map(([lng]) => lng));
 
     return [
         [minLng, minLat],

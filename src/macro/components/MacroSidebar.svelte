@@ -277,10 +277,6 @@
         drawMacroTotal();
     }
 
-    function handleShowMountainsToggle(): void {
-        drawMacroTotal();
-    }
-
     function openEditor(e: MouseEvent): void {
         openPropertiesPanel(e.target as Element);
     }
@@ -697,38 +693,6 @@
                     > Show countries</label>
                 </div>
                 <hr class="my-2" style="opacity: 0.1;" />
-                <div class="d-flex flex-wrap align-items-center">
-                    <div class="form-check form-switch layer-toggle-label">
-                        <input
-                            class="form-check-input"
-                            type="checkbox"
-                            role="switch"
-                            id="showMountains"
-                            bind:checked={macroState.inlinePropsMacro.showMountains}
-                            onchange={handleShowMountainsToggle}
-                        />
-                        <label class="form-check-label" for="showMountains"
-                            data-bs-toggle="tooltip"
-                            data-bs-trigger="hover"
-                            data-bs-placement="right"
-                            title="Display hillshade relief, fetched from vector tile data."
-                        > Show mountains</label>
-                    </div>
-                    {#if macroState.inlinePropsMacro.showMountains}
-                        <ColorPickerPreview
-                            labelAbove
-                            additionalClasses="ms-3"
-                            id="mountaincolorpicker"
-                            popup="right"
-                            title=""
-                            value={macroState.macroParams.Background.mountainColor}
-                            onChange={(col) => {
-                                macroState.macroParams.Background.mountainColor = col;
-                                drawDebounced();
-                            }}
-                        ></ColorPickerPreview>
-                    {/if}
-                </div>
                 <div class="d-flex flex-wrap align-items-center">
                     <div class="form-check form-switch layer-toggle-label">
                         <input
@@ -1285,8 +1249,8 @@
         font-size: 0.85rem;
         white-space: nowrap;
     }
-    // Fixed width so the "Show mountains"/"Show water"/"Show roads" color pickers line up
-    // with each other regardless of label text width. Sized for the longest label.
+    // Fixed width so the "Show water"/"Show roads" color pickers line up with each other
+    // regardless of label text width.
     .layer-toggle-label {
         width: 9rem;
         flex-shrink: 0;

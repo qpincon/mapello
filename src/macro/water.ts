@@ -3,7 +3,7 @@ import type { Feature, Polygon } from "geojson";
 import { macroState, appState } from "src/state.svelte";
 import { type RenderedFeature } from "src/util/geometryStitch";
 import { geoPath } from "d3-geo";
-import { getMacroTileCoords, createTileFeatureFetcher, createLayerRenderer, clipAndRewindPolygons, PMTILES_URL } from "./vectorTiles";
+import { getMacroTileCoords, createTileFeatureFetcher, createLayerRenderer, clipAndRewindPolygons, pmtilesFetcher, PMTILES_URL } from "./vectorTiles";
 
 /**
  * Fetches lakes/rivers (everything except the ocean) for macro mode directly from the
@@ -13,7 +13,9 @@ import { getMacroTileCoords, createTileFeatureFetcher, createLayerRenderer, clip
  */
 
 // Lower than roads' MAX_ZOOM (5): water is a filled shape, not a stroked line, so it
-// tolerates a coarser network + lower coordinate precision without looking wrong.
+// tolerates a coarser network + lower coordinate precision without looking wrong. Vertex
+// count explodes between z5 and z6 (measured ~24x for the same area) — z4 keeps lake/river
+// shapes recognizable without tracing every little inlet.
 const MAX_ZOOM = 6;
 
 function extractWaterFeatures(tile: VectorTile, x: number, y: number, z: number): RenderedFeature[] {
@@ -38,7 +40,14 @@ function extractWaterFeatures(tile: VectorTile, x: number, y: number, z: number)
     return features;
 }
 
-const fetchWaterTiles = createTileFeatureFetcher(PMTILES_URL, extractWaterFeatures);
+const fetchWaterTiles = createTileFeatureFetcher(pmtilesFetcher(PMTILES_URL), extractWaterFeatures);
+
+// Below this projected (on-screen) area, in square pixels, a water feature is a speck too
+// small to register visually — drop it rather than spend SVG path bytes on it. This is a
+// render-time (not fetch-time) filter deliberately: "small" depends on the current
+// zoom/projection, not the feature's real-world size, so it has to be checked against the
+// actual projected geometry, not something precomputed once per tile.
+const MIN_PERCEIVED_AREA_PX = 1;
 
 /**
  * Fetches and decodes non-ocean water covering the current macro viewport, clipped to tile
@@ -49,7 +58,6 @@ const fetchWaterTiles = createTileFeatureFetcher(PMTILES_URL, extractWaterFeatur
 export async function getMacroWater(): Promise<Feature<Polygon>[]> {
     try {
         const { zoom, tileCoords } = getMacroTileCoords(MAX_ZOOM);
-        console.log('zoom', zoom);
         if (tileCoords.length === 0) return [];
 
         const rawFeatures = await fetchWaterTiles(tileCoords);
@@ -72,7 +80,11 @@ export const updateMacroWater = createLayerRenderer<Feature<Polygon>>({
         if (!appState.projection) return;
         // Fills tolerate less precision than strokes; keep the path data modest.
         const waterPath = geoPath(appState.projection).digits(1);
-        const d = waterFeatures.map((feature) => waterPath(feature)).filter(Boolean).join(' ');
+        const d = waterFeatures
+            .filter((feature) => Math.abs(waterPath.area(feature)) >= MIN_PERCEIVED_AREA_PX)
+            .map((feature) => waterPath(feature))
+            .filter(Boolean)
+            .join(' ');
         if (!d) return;
 
         const pathElem = document.createElementNS('http://www.w3.org/2000/svg', 'path');

@@ -12,14 +12,16 @@ import mapStyle from "src/micro/components/mapstyle.json";
 
 /**
  * Shared plumbing for fetching macro-mode vector tile layers (roads, water, mountains, …)
- * directly from PMTiles archives — no `maplibregl.Map` instance involved. Layers can come
- * from different archives (roads/water from the world archive, mountains from a separate
- * hillshade one), so `getPmtiles`/`createTileFeatureFetcher` are keyed by URL. Each layer
- * module (roads.ts, water.ts, mountains.ts) only supplies what's actually specific to it:
- * which source-layer to read and how to filter it (`createTileFeatureFetcher`), its own
- * zoom cap, and how to turn its fetched features into geometry ready for `geoPath`
- * (stitching for lines, clipping for polygons — genuinely different per layer, not worth
- * abstracting further) and how to style the resulting `<path>` (`createLayerRenderer`).
+ * — no `maplibregl.Map` instance involved. Layers can come from different sources: roads/
+ * water read the world PMTiles archive (via `pmtilesFetcher`, keyed by URL so multiple
+ * archives can coexist), mountains reads a plain HTTP vector tile API directly (Mapbox) —
+ * `createTileFeatureFetcher` only cares that its `fetchTileBytes` callback returns raw MVT
+ * bytes, not where from. Each layer module (roads.ts, water.ts, mountains.ts) only supplies
+ * what's actually specific to it: how to fetch its tile bytes and which source-layer to
+ * read from them (`createTileFeatureFetcher`), its own zoom cap, and how to turn its
+ * fetched features into geometry ready for `geoPath` (stitching for lines, clipping for
+ * polygons — genuinely different per layer, not worth abstracting further) and how to style
+ * the resulting `<path>` (`createLayerRenderer`).
  */
 
 export const MIN_ZOOM = 3;
@@ -38,7 +40,15 @@ export function getPmtiles(url: string): PMTiles {
     return instance;
 }
 
-/** Geographic bounds of the current macro viewport, in [minLng, minLat, maxLng, maxLat]. */
+/**
+ * Geographic bounds of the current macro viewport, in [minLng, minLat, maxLng, maxLat].
+ * `minLng` can come back greater than `maxLng` — that's not an error, it's how
+ * `getGeographicalBounds` signals a viewport whose visible longitude range genuinely wraps
+ * the antimeridian (common for a wide satellite view, even one centered nowhere near ±180 —
+ * see `longitudeBoundsFromSamples` in projections.ts). Every consumer of this bbox must go
+ * through `coveringTilesForBounds`, which knows how to split a wrapped bbox in two, rather
+ * than feeding it straight to `bboxPolygon`.
+ */
 export function getMacroBounds(): BBox {
     const { projection } = appState;
     const { width, height } = macroState.macroParams.General;
@@ -50,15 +60,38 @@ export function getMacroBounds(): BBox {
     const [[minLng, rawMinLat], [maxLng, rawMaxLat]] = bounds;
     const minLat = Math.max(rawMinLat, -85);
     const maxLat = Math.min(rawMaxLat, 85);
-    // A bbox straddling the antimeridian collapses to near-full-width under a naive
-    // min/max over the four corners — fall back to the whole world rather than fetch
-    // a bogus half-globe slice.
-    if (maxLng - minLng > 180) return [-180, minLat, 180, maxLat];
     return [minLng, minLat, maxLng, maxLat];
 }
 
+/**
+ * Tile cover for a bounds box, aware of the antimeridian-wrap convention `getMacroBounds`
+ * can now produce: `minLng > maxLng` means the viewport's visible longitude range actually
+ * crosses the seam (see `longitudeBoundsFromSamples` in projections.ts for why this can
+ * happen well away from lng ±180 for a wide satellite view) — covering `[minLng, 180]` and
+ * `[-180, maxLng]` rather than the single (invalid, crossed-over) rectangle a naive
+ * `bboxPolygon` would build from those same four numbers.
+ */
+export function coveringTilesForBounds(bounds: BBox, zoom: number): [number, number, number][] {
+    const [minLng, minLat, maxLng, maxLat] = bounds;
+    if (minLng <= maxLng) {
+        return getCoveringTiles(bboxPolygon(bounds).geometry, { min_zoom: zoom, max_zoom: zoom }) as [number, number, number][];
+    }
+    const west = getCoveringTiles(bboxPolygon([minLng, minLat, 180, maxLat]).geometry, { min_zoom: zoom, max_zoom: zoom }) as [number, number, number][];
+    const east = getCoveringTiles(bboxPolygon([-180, minLat, maxLng, maxLat]).geometry, { min_zoom: zoom, max_zoom: zoom }) as [number, number, number][];
+    const seen = new Set<string>();
+    const merged: [number, number, number][] = [];
+    for (const t of [...west, ...east]) {
+        const key = t.join(',');
+        if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(t);
+        }
+    }
+    return merged;
+}
+
 function tileCountForZoom(bounds: BBox, zoom: number): number {
-    return getCoveringTiles(bboxPolygon(bounds).geometry, { min_zoom: zoom, max_zoom: zoom }).length;
+    return coveringTilesForBounds(bounds, zoom).length;
 }
 
 /**
@@ -69,8 +102,8 @@ function tileCountForZoom(bounds: BBox, zoom: number): number {
  * Note this always tries to climb as high as `maxZoom` allows — with `minZoom === maxZoom`
  * (a fixed, non-adaptive zoom) it just returns that one zoom, verified against the budget;
  * it does NOT fall back to something lower if that single zoom is over budget (matches the
- * existing "never silently truncate coverage" stance — see `getMacroBounds`'s antimeridian
- * comment). A layer wanting real adaptive behavior should pass a wider [minZoom, maxZoom].
+ * existing "never silently truncate coverage" stance). A layer wanting real adaptive
+ * behavior should pass a wider [minZoom, maxZoom].
  */
 export function pickZoom(bounds: BBox, maxZoom: number, minZoom: number = MIN_ZOOM): number {
     let chosen = minZoom;
@@ -85,7 +118,7 @@ export function pickZoom(bounds: BBox, maxZoom: number, minZoom: number = MIN_ZO
 export function getMacroTileCoords(maxZoom: number, minZoom?: number): { zoom: number; tileCoords: [number, number, number][] } {
     const bounds = getMacroBounds();
     const zoom = pickZoom(bounds, maxZoom, minZoom);
-    const tileCoords = getCoveringTiles(bboxPolygon(bounds).geometry, { min_zoom: zoom, max_zoom: zoom }) as [number, number, number][];
+    const tileCoords = coveringTilesForBounds(bounds, zoom);
     return { zoom, tileCoords };
 }
 
@@ -139,16 +172,25 @@ export function clipAndRewindPolygons(rawFeatures: RenderedFeature[], zoom: numb
     return result;
 }
 
+/** Fetches raw (decompressed) MVT bytes for one tile from the world PMTiles archive, or
+ *  `undefined` if the tile has no data — the PMTiles-backed counterpart to a plain HTTP
+ *  tile fetcher, so both can be passed to `createTileFeatureFetcher` interchangeably. */
+export function pmtilesFetcher(pmtilesUrl: string): (x: number, y: number, z: number) => Promise<ArrayBuffer | undefined> {
+    return async (x, y, z) => (await getPmtiles(pmtilesUrl).getZxy(z, x, y))?.data;
+}
+
 /**
- * Builds a cached, concurrency-limited tile-feature fetcher for one vector tile layer from
- * one PMTiles archive. `extract` reads whichever `tile.layers.<name>` it cares about and
- * returns whatever feature shape its caller wants (already filtered/tagged) — this stays
- * generic over that shape so roads/water/mountains can each get their own fetcher, against
- * their own archive, with their own private per-tile cache, without duplicating the
+ * Builds a cached, concurrency-limited tile-feature fetcher for one vector tile layer.
+ * `fetchTileBytes` supplies the raw MVT bytes for a z/x/y (from a PMTiles archive via
+ * `pmtilesFetcher`, or a plain HTTP vector tile API — anything that returns an
+ * `ArrayBuffer | undefined`); `extract` reads whichever `tile.layers.<name>` it cares about
+ * and returns whatever feature shape its caller wants (already filtered/tagged) — this
+ * stays generic over that shape so roads/water/mountains can each get their own fetcher,
+ * against their own source, with their own private per-tile cache, without duplicating the
  * fetch/decode/concurrency plumbing.
  */
 export function createTileFeatureFetcher<T>(
-    pmtilesUrl: string,
+    fetchTileBytes: (x: number, y: number, z: number) => Promise<ArrayBuffer | undefined>,
     extract: (tile: VectorTile, x: number, y: number, z: number) => T[],
 ): (tileCoords: [number, number, number][]) => Promise<T[]> {
     const tileCache = new Map<string, T[]>();
@@ -160,8 +202,8 @@ export function createTileFeatureFetcher<T>(
 
         let features: T[] = [];
         try {
-            const resp = await getPmtiles(pmtilesUrl).getZxy(z, x, y);
-            if (resp) features = extract(new VectorTile(new PbfReader(resp.data)), x, y, z);
+            const data = await fetchTileBytes(x, y, z);
+            if (data) features = extract(new VectorTile(new PbfReader(data)), x, y, z);
         } catch (err) {
             console.warn(`createTileFeatureFetcher: failed to fetch/decode tile ${key}`, err);
         }

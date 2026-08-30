@@ -74,6 +74,17 @@ export function lightenColor(color: string, ratio: number): string {
     return buildColorOutput(lightened, alpha);
 }
 
+/**
+ * Scale a CSS color's existing alpha by `fraction` (0-1) — e.g. withOpacity(color, 0.5)
+ * halves however transparent/opaque the color already was, rather than replacing its alpha
+ * outright. Useful for rendering several intensity bands from one user-picked color.
+ */
+export function withOpacity(color: string, fraction: number): string {
+    const { hex, alpha } = parseColorValue(color);
+    if (!hex) return color;
+    return buildColorOutput(hex, Math.round(alpha * fraction));
+}
+
 /** Convert an rgb()/rgba() CSS string → #RRGGBB. Returns "" if not parseable. */
 export function rgbToHex(rgb: string): string {
     const m = rgb.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);

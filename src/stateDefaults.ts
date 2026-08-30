@@ -24,7 +24,7 @@ const defaultMacroParams: MacroParams = {
         seaColor: "#dde2eeff",
         roadColor: "#ffffff",
         waterColor: "#80deea",
-        mountainColor: "#3d3a3440",
+        mountainColor: "#838483",
     },
 };
 
