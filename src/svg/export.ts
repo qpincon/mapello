@@ -594,14 +594,6 @@ export function changeIdAndReferences(exportedMapElem: Element, newMapId: string
         }
     });
 
-    // change image-filter-name special attribute for contours
-    exportedMapElem.querySelectorAll('[image-filter-name]').forEach(elem => {
-        const existingFilterName = elem.getAttribute('image-filter-name');
-        if (existingFilterName) {
-            elem.setAttribute('image-filter-name', `${newMapId}-${existingFilterName}`);
-        }
-    });
-
     // change inline styles with url(#...)
     exportedMapElem.querySelectorAll('[style*="url"]').forEach(elem => {
         const elementStyle = (elem as HTMLElement).style;

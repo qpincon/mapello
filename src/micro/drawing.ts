@@ -445,7 +445,6 @@ export function drawMicroFrame(
                 svg.classed('animate', false);
                 svg.selectAll('path[pathLength]').attr('pathLength', null);
                 setTimeout(() => {
-                    svg.selectAll('g[image-class]').classed('hidden-after', true);
                     svg.classed('animate-transition', false);
                 }, 1500);
             }, 200);

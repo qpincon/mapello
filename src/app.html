@@ -4,8 +4,18 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="/favicon.svg" sizes="64x64" media="(prefers-color-scheme: light)" />
-    <link rel="icon" type="image/png" href="/favicon-dark.svg" sizes="64x64" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" id="favicon" type="image/svg+xml" href="/favicon.svg" sizes="64x64" />
+    <script>
+        (function () {
+            var favicon = document.getElementById('favicon');
+            var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            function updateFavicon() {
+                favicon.href = darkQuery.matches ? '/favicon-dark.svg' : '/favicon.svg';
+            }
+            darkQuery.addEventListener('change', updateFavicon);
+            updateFavicon();
+        })();
+    </script>
     %sveltekit.head%
 </head>
 

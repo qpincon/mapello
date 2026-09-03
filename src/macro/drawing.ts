@@ -10,7 +10,6 @@ import { appendCountryImageNew, appendLandImageNew } from "src/svg/contourMethod
 import { getNumericCols, sortBy } from "src/util/common";
 import { applyStyles } from "src/util/dom";
 import { saveState } from "src/util/save";
-import { duplicateContourCleanFirst } from "src/svg/svg";
 import { addTooltipListener } from "src/tooltip";
 import { getProjection } from "src/util/projections";
 import { macroPositionVars } from "src/stateDefaults";
@@ -133,9 +132,7 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     );
     updateZonesDataFormatters();
 
-    duplicateContourCleanFirst(svg.node() as SVGSVGElement);
     svg.selectAll("path[pathLength]").attr("pathLength", null);
-    svg.selectAll("g[image-class]").classed("hidden-after", true);
 
     /** Wait a bit before attaching the tooltip in order to make it the last element and to appear above everything else */
     setTimeout(() => {
@@ -252,18 +249,27 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     //     filter: null,
     // });
     // const groups = svg.selectAll('svg').data(groupData).join('svg').attr('id', d => d.name);
-    const groups = svg
-        .selectAll("g.macro-layer")
-        .data(groupData)
-        .join("g")
-        .classed("macro-layer", true)
-        .attr("id", (d) => d.name!)
-        .attr('clip-path', 'url(#clipMapBorder)');
+    // Image-backed layers (land, per-country glow outlines) render their <image> directly as
+    // the .macro-layer element — no wrapping <g> (see appendLandImageNew / appendCountryImageNew
+    // in src/svg/contourMethods.ts) — while every other layer is still a <g> of <path>s. d3's
+    // .join() can't emit a mixed tag per datum in one call, so the layers are built with a plain
+    // sequential loop instead; stacking order only depends on this loop visiting groupData in
+    // order and appending each element right after the previous one, regardless of tag.
+    const svgNode = svg.node()!;
+    const groups = groupData.map((d) => {
+        const isImageLayer = d.type === "landImg" || d.type === "filterImg";
+        const el = document.createElementNS("http://www.w3.org/2000/svg", isImageLayer ? "image" : "g");
+        el.classList.add("macro-layer");
+        if (d.name) el.setAttribute("id", d.name);
+        el.setAttribute("clip-path", "url(#clipMapBorder)");
+        svgNode.appendChild(el);
+        return el;
+    });
 
-    function drawPaths(this: SVGGElement, data: MacroGroupData) {
+    function drawPaths(this: Element, data: MacroGroupData) {
         if (data.type === "landImg")
             return appendLandImageNew.call(
-                this,
+                this as SVGImageElement,
                 data.showSource ?? false,
                 width,
                 height,
@@ -272,16 +278,16 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
                 geometriesState.land,
                 appState.pathLarger!,
                 macroState.zonesGlow["land"]?.enabled ? macroState.zonesGlow["land"] : undefined,
-                false,
             );
         if (data.type === "filterImg")
             return appendCountryImageNew.call(
-                this,
+                this as SVGImageElement,
                 data.countryData!,
                 data.filter ?? null,
                 appState.path!,
                 commonState.inlineStyles,
-                false,
+                width,
+                height,
             );
         if (!data.data) return;
         const parentPathElem = select(this).style("will-change", "opacity");
@@ -301,7 +307,7 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
         if (data.filter) parentPathElem.attr("filter", `url(#${data.filter})`);
         // data.props?.forEach((prop) => pathElem.attr(prop, (d) => d.properties[prop]));
     }
-    groups.each(drawPaths);
+    groups.forEach((el, i) => drawPaths.call(el, groupData[i]));
     svg.select("#graticule").selectAll("path")
         .attr("stroke", macroState.macroParams.Background.graticuleColor)
         .attr("stroke-width", macroState.macroParams.Background.graticuleWidth);

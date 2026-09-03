@@ -156,34 +156,6 @@ export function createSvgFromPart(partStr: string): SVGElement {
     return parsed?.firstChild as SVGElement;
 }
 
-export function duplicateContourCleanFirst(svgElem: SVGSVGElement): void {
-    Array.from(svgElem.querySelectorAll('.contour-to-dup[filter]')).forEach(el => el.remove());
-    duplicateContours(svgElem);
-}
-
-/** Duplicate contour <image> tags, that only contain stroke, to have a new one with a fill and a filter applied */
-export function duplicateContours(svgElem: SVGSVGElement): void {
-    Array.from(svgElem.querySelectorAll('.contour-to-dup')).forEach(el => {
-        if (!el.hasAttribute('filter-name')) return;
-        const clone = el.cloneNode() as SVGElement;
-        const href = el.getAttribute('href');
-        if (href) {
-            clone.setAttribute('href', href.replace(`fill='none'`, ''));
-        }
-        const filterName = el.getAttribute('filter-name');
-        if (filterName) {
-            clone.setAttribute('filter', `url(#${filterName})`);
-            clone.style.willChange = "transform";
-        }
-        // set opacity to 0 once to initiate transition
-        (clone.style as CSSStyleDeclaration).opacity = '0';
-        setTimeout(() => {
-            (clone.style as CSSStyleDeclaration).opacity = '1';
-        }, 0);
-        el.parentNode?.insertBefore(clone, el);
-    });
-}
-
 export function pathStringFromParsed(parsedD: ParsedPath, projection: GeoProjection): string {
     return parsedD.reduce((d, curGroup) => {
         const [instruction, ...data] = curGroup;
