@@ -225,7 +225,7 @@
         ) {
             computedOrderedTabs.forEach((tab) => {
                 if (tab.substring(0, tab.length - 5) !== elemId) return;
-                const filter = macroState.zonesGlow[tab] ? glowFilterId(tab) : null;
+                const filter = macroState.zonesGlow[tab]?.enabled ? glowFilterId(tab) : null;
                 const countryData = geometriesState.countries.features.find(
                     (country) => country.properties?.name === elemId,
                 )!;
@@ -1143,7 +1143,7 @@
                 {#if currentMacroLayerTab !== "countries"}
                     <div
                         class="d-flex align-items-center layer-row mt-2"
-                        onclick={() => { if (currentMacroLayerTab in macroState.zonesGlow) { const cur = glowMenuOpenedByTab[currentMacroLayerTab] ?? true; glowMenuOpenedByTab[currentMacroLayerTab] = !cur; } }}
+                        onclick={() => { if (macroState.zonesGlow[currentMacroLayerTab]?.enabled) { const cur = glowMenuOpenedByTab[currentMacroLayerTab] ?? true; glowMenuOpenedByTab[currentMacroLayerTab] = !cur; } }}
                     >
                         <div class="mx-2 form-check form-switch" onclick={(e) => e.stopPropagation()}>
                             <input
@@ -1151,24 +1151,30 @@
                                 type="checkbox"
                                 role="switch"
                                 id="glowToggle"
-                                checked={currentMacroLayerTab in macroState.zonesGlow}
+                                checked={macroState.zonesGlow[currentMacroLayerTab]?.enabled ?? false}
                                 onchange={(e) => {
                                     if ((e.target as HTMLInputElement).checked) {
-                                        macroState.zonesGlow[currentMacroLayerTab] = { ...defaultGlowParams };
+                                        macroState.zonesGlow[currentMacroLayerTab] = {
+                                            ...(macroState.zonesGlow[currentMacroLayerTab] ?? defaultGlowParams),
+                                            enabled: true,
+                                        };
                                         glowMenuOpenedByTab[currentMacroLayerTab] = true;
                                     } else {
-                                        delete macroState.zonesGlow[currentMacroLayerTab];
+                                        macroState.zonesGlow[currentMacroLayerTab] = {
+                                            ...macroState.zonesGlow[currentMacroLayerTab],
+                                            enabled: false,
+                                        };
                                     }
                                     draw();
                                 }}
                             />
                             <label class="form-check-label" for="glowToggle">Glow</label>
                         </div>
-                        {#if currentMacroLayerTab in macroState.zonesGlow}
+                        {#if macroState.zonesGlow[currentMacroLayerTab]?.enabled}
                             <div class="toggle" class:opened={glowMenuOpenedByTab[currentMacroLayerTab] !== false}></div>
                         {/if}
                     </div>
-                    {#if currentMacroLayerTab in macroState.zonesGlow && (glowMenuOpenedByTab[currentMacroLayerTab] ?? true)}
+                    {#if macroState.zonesGlow[currentMacroLayerTab]?.enabled && (glowMenuOpenedByTab[currentMacroLayerTab] ?? true)}
                         <div class="mx-2 mt-1">
                             <p class="glow-section-label">Inner</p>
                             <div class="field">
@@ -1254,11 +1260,18 @@
         white-space: nowrap;
     }
     // Fixed width so the "Show water"/"Show roads" color pickers line up with each other
-    // regardless of label text width.
+    // regardless of label text width. Wide enough to fit "Show water elements" without
+    // wrapping; overflow/ellipsis guards against any longer label overlapping the swatch.
     .layer-toggle-label {
-        width: 9rem;
+        width: 13rem;
         flex-shrink: 0;
         white-space: nowrap;
+        overflow: hidden;
+
+        .form-check-label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     }
 
     .nav-tabs-wrapper {

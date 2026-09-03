@@ -103,6 +103,7 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
 
     const groupData: MacroGroupData[] = [];
     Object.entries(macroState.zonesGlow).forEach(([layer, glowParams]) => {
+        if (!glowParams.enabled) return;
         appendGlow(svg, glowFilterId(layer), false, glowParams);
     });
     mapLibreContainer.style("display", "none");
@@ -182,7 +183,7 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
         }
     });
     computedOrderedTabs.forEach((layer, i) => {
-        const filter = macroState.zonesGlow[layer] ? glowFilterId(layer) : null;
+        const filter = macroState.zonesGlow[layer]?.enabled ? glowFilterId(layer) : null;
         if (layer === "countries" && macroState.inlinePropsMacro.showCountries && geometriesState.countries) {
             if (!("countries" in macroState.zonesData) && !macroState.zonesData["countries"]?.provided) {
                 const countryProps = geometriesState.countries.features.map((f) => {
@@ -270,7 +271,7 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
                 macroState.contourParams,
                 geometriesState.land,
                 appState.pathLarger!,
-                macroState.zonesGlow["land"],
+                macroState.zonesGlow["land"]?.enabled ? macroState.zonesGlow["land"] : undefined,
                 false,
             );
         if (data.type === "filterImg")

@@ -95,8 +95,8 @@ export interface MacroPalette {
     background: MacroBackgroundParams;
     border: MacroBorderParams;
     land: ContourParams;
-    /** null = no glow filter on any layer */
-    glow: GlowParams | null;
+    /** null = no glow filter on any layer. `enabled` is decided per-layer when the palette is applied. */
+    glow: Omit<GlowParams, "enabled"> | null;
     country: CssDict;
     countryHovered: CssDict;
     adm: CssDict;

@@ -190,12 +190,14 @@ export function applyMacroPalette(palette: MacroPalette): void {
 
     if (palette.glow) {
         for (const layer of Object.keys(macroState.zonesGlow)) {
-            macroState.zonesGlow[layer] = { ...palette.glow };
+            if (macroState.zonesGlow[layer].enabled) {
+                macroState.zonesGlow[layer] = { ...palette.glow, enabled: true };
+            }
         }
-        macroState.zonesGlow.land = { ...palette.glow };
+        macroState.zonesGlow.land = { ...palette.glow, enabled: true };
     } else {
         for (const layer of Object.keys(macroState.zonesGlow)) {
-            delete macroState.zonesGlow[layer];
+            macroState.zonesGlow[layer] = { ...macroState.zonesGlow[layer], enabled: false };
         }
     }
 
@@ -233,16 +235,17 @@ function extractRuleProps(css: string, selector: string): CssDict {
     return props;
 }
 
-const glowMatches = (actual: GlowParams | undefined, expected: GlowParams | null): boolean => {
-    if (!expected) return !actual;
-    if (!actual) return false;
+const glowMatches = (actual: GlowParams | undefined, expected: Omit<GlowParams, "enabled"> | null): boolean => {
+    const activeActual = actual?.enabled ? actual : undefined;
+    if (!expected) return !activeActual;
+    if (!activeActual) return false;
     return (
-        actual.innerStrength === expected.innerStrength &&
-        actual.innerBlur === expected.innerBlur &&
-        hex8(actual.innerColor) === hex8(expected.innerColor) &&
-        actual.outerStrength === expected.outerStrength &&
-        actual.outerBlur === expected.outerBlur &&
-        hex8(actual.outerColor) === hex8(expected.outerColor)
+        activeActual.innerStrength === expected.innerStrength &&
+        activeActual.innerBlur === expected.innerBlur &&
+        hex8(activeActual.innerColor) === hex8(expected.innerColor) &&
+        activeActual.outerStrength === expected.outerStrength &&
+        activeActual.outerBlur === expected.outerBlur &&
+        hex8(activeActual.outerColor) === hex8(expected.outerColor)
     );
 };
 

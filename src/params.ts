@@ -3,6 +3,7 @@ import type { Color, Flatten, Prettify, UnionToIntersection } from "./types";
 
 
 export interface GlowParams {
+    enabled: boolean;
     innerBlur: number;
     innerStrength: number;
     innerColor: Color;

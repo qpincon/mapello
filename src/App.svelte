@@ -551,6 +551,12 @@
                     ])
                 );
             }
+            // Migration: states saved before the glow enabled/disabled toggle default to enabled
+            if (state.stateMacro?.zonesGlow) {
+                for (const glow of Object.values(state.stateMacro.zonesGlow) as any[]) {
+                    if (glow.enabled === undefined) glow.enabled = true;
+                }
+            }
             Object.assign(macroState, state.stateMacro.macroParams ? state.stateMacro : defaultState.stateMacro);
             if (!macroState.baseCss) macroState.baseCss = defaultState.stateMacro.baseCss;
             Object.assign(microState, state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro);

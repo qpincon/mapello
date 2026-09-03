@@ -64,6 +64,7 @@ const defaultInlinePropsMicro: InlinePropsMicro = {
 };
 
 export const defaultGlowParams: GlowParams = {
+    enabled: true,
     innerStrength: 0.3,
     innerBlur: 4.8,
     innerColor: "#ffbc6eff",
