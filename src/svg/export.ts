@@ -29,6 +29,7 @@ export interface ExportOptions {
     frameShadow?: boolean;
     customAttributions?: CustomAttribution[];
     skipAttribution?: boolean;
+    hideBrand?: boolean;
     /** Texture preset key (from TEXTURES[].key). Falsy = no texture. */
     texture?: string;
     /** How the texture is composited: 'overlay' (mix-blend-mode on top) or 'background' (behind the map). Default 'overlay'. */
@@ -503,6 +504,7 @@ export function addAttribution(
     height: number,
     mode: 'macro' | 'micro',
     customAttributions?: CustomAttribution[],
+    hideBrand?: boolean,
 ): void {
     const margin = 8;
     const fontSize = 9;
@@ -511,9 +513,10 @@ export function addAttribution(
     const lineGap = 4;
 
     // Build list of attribution lines
-    const lines: { label: string; href?: string }[] = [
-        { label: 'mapello', href: 'https://mapello.net' },
-    ];
+    const lines: { label: string; href?: string }[] = [];
+    if (!hideBrand) {
+        lines.push({ label: 'Created with Mapello', href: 'https://mapello.net' });
+    }
     if (mode === 'macro') {
         lines.push({ label: '© GeoBoundaries', href: 'https://www.geoboundaries.org' });
     } else {

@@ -275,7 +275,6 @@ export async function drawPrettyMap(
         );
 
     const buildings = geometries.filter(geom => geom.properties.mapLayerId === "buildings") as RenderedFeaturePoly[];
-    console.log('buildings features=', featureCollection(buildings));
     if (layerDefinitions.buildings['3dBuildings']) {
 
         const { normalFeatures, groupedFeatures } = groupBuildingFeatures(buildings);
@@ -917,6 +916,7 @@ export async function exportMicro(
         minifyJs = false,
         customAttributions,
         skipAttribution = false,
+        hideBrand = false,
         texture,
         textureMode = 'overlay',
     } = options;
@@ -1103,7 +1103,7 @@ export async function exportMicro(
         addTexture(svgElement, mapId, texture, textureMode, width, height, texClipId, bgEl);
     }
 
-    if (!skipAttribution) addAttribution(svgElement, width, height, 'micro', customAttributions);
+    if (!skipAttribution) addAttribution(svgElement, width, height, 'micro', customAttributions, hideBrand);
 
     if (useViewBox) {
         if (!shadowPadded) {

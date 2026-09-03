@@ -2,7 +2,7 @@ import type { VectorTile } from "@mapbox/vector-tile";
 import type { BBox, Feature, Polygon } from "geojson";
 import center from "@turf/center";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
-import { PUBLIC_MAPBOX_TOKEN } from "$env/static/public";
+import { env } from "$env/dynamic/public";
 import { macroState, appState } from "src/state.svelte";
 import { type RenderedFeature } from "src/util/geometryStitch";
 import { geoPath } from "d3-geo";
@@ -64,7 +64,7 @@ function pickMountainZoom(bounds: BBox): number {
 }
 
 async function fetchMapboxTileBytes(x: number, y: number, z: number): Promise<ArrayBuffer | undefined> {
-    const url = `https://api.mapbox.com/v4/${MAPBOX_TILESET}/${z}/${x}/${y}.mvt?access_token=${PUBLIC_MAPBOX_TOKEN}`;
+    const url = `https://api.mapbox.com/v4/${MAPBOX_TILESET}/${z}/${x}/${y}.mvt?access_token=${env.PUBLIC_MAPBOX_TOKEN}`;
     const res = await fetch(url);
     if (!res.ok) return undefined;
     return res.arrayBuffer();

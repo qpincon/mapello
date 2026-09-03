@@ -42,6 +42,7 @@ export async function exportMacro(
         frameShadow = false,
         customAttributions,
         skipAttribution = false,
+        hideBrand = false,
         texture,
         textureMode = 'overlay',
     } = options;
@@ -294,7 +295,7 @@ export async function exportMacro(
         addTexture(svgElement, mapId, texture, textureMode, w, h, `${mapId}-clipMapBorder`, seaEl);
     }
 
-    if (!skipAttribution) addAttribution(svgElement, w, h, 'macro', customAttributions);
+    if (!skipAttribution) addAttribution(svgElement, w, h, 'macro', customAttributions, hideBrand);
 
     if (!downloadExport) return svgElement.outerHTML;
     download(svgElement.outerHTML, 'text/plain', 'mapello-export.svg');

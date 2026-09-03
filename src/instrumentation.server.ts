@@ -1,8 +1,8 @@
 import * as Sentry from '@sentry/sveltekit';
-import { PUBLIC_SENTRY_DSN } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
 Sentry.init({
-  dsn: PUBLIC_SENTRY_DSN,
+  dsn: env.PUBLIC_SENTRY_DSN,
 
   // Enable logs to be sent to Sentry
   enableLogs: true,

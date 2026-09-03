@@ -708,7 +708,7 @@
                             data-bs-trigger="hover"
                             data-bs-placement="right"
                             title="Display lakes and rivers, fetched from vector tile data."
-                        > Show water</label>
+                        > Show water elements</label>
                     </div>
                     {#if macroState.inlinePropsMacro.showWater}
                         <ColorPickerPreview

@@ -3,7 +3,7 @@
     import { page } from '$app/state';
     import { invalidateAll } from '$app/navigation';
     import { loadPaddle, openCheckout } from '$lib/paddle-client';
-    import { PUBLIC_PADDLE_PRICE_MONTHLY, PUBLIC_PADDLE_PRICE_YEARLY } from '$env/static/public';
+    import { env } from '$env/dynamic/public';
     import { track } from '../util/analytics';
 
     interface Props {
@@ -35,13 +35,13 @@
             const paddle = await loadPaddle();
             const result = await paddle.PricePreview({
                 items: [
-                    { priceId: PUBLIC_PADDLE_PRICE_MONTHLY, quantity: 1 },
-                    { priceId: PUBLIC_PADDLE_PRICE_YEARLY, quantity: 1 },
+                    { priceId: env.PUBLIC_PADDLE_PRICE_MONTHLY, quantity: 1 },
+                    { priceId: env.PUBLIC_PADDLE_PRICE_YEARLY, quantity: 1 },
                 ],
             });
             const items = result.data.details.lineItems;
-            const monthly = items.find((i) => i.price.id === PUBLIC_PADDLE_PRICE_MONTHLY);
-            const yearly = items.find((i) => i.price.id === PUBLIC_PADDLE_PRICE_YEARLY);
+            const monthly = items.find((i) => i.price.id === env.PUBLIC_PADDLE_PRICE_MONTHLY);
+            const yearly = items.find((i) => i.price.id === env.PUBLIC_PADDLE_PRICE_YEARLY);
 
             const monthlyTotal = monthly?.formattedTotals.total ?? null;
             const yearlyTotal = yearly?.formattedTotals.total ?? null;
@@ -77,7 +77,7 @@
     }
 
     async function subscribe(priceId: string) {
-        const plan = priceId === PUBLIC_PADDLE_PRICE_YEARLY ? 'yearly' : 'monthly';
+        const plan = priceId === env.PUBLIC_PADDLE_PRICE_YEARLY ? 'yearly' : 'monthly';
         track('paddle_checkout_start', { plan });
         loading = priceId;
         errorMsg = '';
@@ -113,7 +113,7 @@
         <div class="plans">
             <button
                 class="plan-btn"
-                onclick={() => subscribe(PUBLIC_PADDLE_PRICE_MONTHLY)}
+                onclick={() => subscribe(env.PUBLIC_PADDLE_PRICE_MONTHLY)}
                 disabled={!!loading}
             >
                 <span class="plan-label">Monthly</span>
@@ -123,7 +123,7 @@
             </button>
             <button
                 class="plan-btn plan-btn--featured"
-                onclick={() => subscribe(PUBLIC_PADDLE_PRICE_YEARLY)}
+                onclick={() => subscribe(env.PUBLIC_PADDLE_PRICE_YEARLY)}
                 disabled={!!loading}
             >
                 <span class="plan-label">Yearly <span class="save-badge">save 20%</span></span>

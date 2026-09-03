@@ -10,7 +10,9 @@
     ]
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    ".svelte-kit/ambient.d.ts",
+    ".svelte-kit/non-ambient.d.ts"
   ],
   "exclude": [
     "node_modules/*",

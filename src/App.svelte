@@ -1583,7 +1583,7 @@
 
     async function validateExport(options: ExportOptions): Promise<void> {
         track('export_complete', { mode: commonState.currentMode });
-        const exportOptions = { ...options, skipAttribution: isSuperUser };
+        const exportOptions = { ...options, skipAttribution: isSuperUser, hideBrand: isSuperUser || !!page.data.subscription };
         if (commonState.currentMode === "macro") {
             const totalCss = macroSidebar!.computeCss();
             await exportMacro(
