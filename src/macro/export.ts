@@ -59,12 +59,16 @@ export async function exportMacro(
 
     // === Swap contour <image>s for their raw source <g> (never attached to the visible tree
     // in the editor — see getContourSource in src/svg/contourMethods.ts) so SVGO can optimize
-    // the vector geometry. That <g> already carries the same id/class/style the <image> has
-    // (see appendLandImageNew / appendCountryImageNew), so no wrapper is needed here — CSS like
-    // src/svg/transition.ts's "#land path" / ".country-img path" draw-in selectors, which target
-    // <path> descendants, keep resolving correctly. The glow <filter> and the frame <clipPath>
-    // both travel inside the <g> too (see embedRefClone), each referenced there by a real
-    // `filter`/`clip-path` attribute, so SVGO keeps them without any extra trick.
+    // the vector geometry. That <g> already carries the same id/class/style/clip-path the
+    // <image> effectively renders with (see appendLandImageNew / appendCountryImageNew), so no
+    // wrapper is needed here — both for the frame clip (needed while this raw <g> is briefly the
+    // live document content during the export draw-in animation, before gElemsToImages.js swaps
+    // it for the <image>) and because CSS like src/svg/transition.ts's "#land path" /
+    // ".country-img path" draw-in selectors, which target <path> descendants, keep resolving
+    // correctly. The glow <filter> travels inside the <g> too (see embedRefClone), referenced
+    // there by a real `filter` attribute, so SVGO keeps it without any extra trick — the frame
+    // <clipPath> is embedded the same way for the final <image>, on top of (not instead of) the
+    // <g>'s own clip-path attribute.
     const contours = Array.from(svgNode.querySelectorAll('image.contour-to-dup'));
     const contoursState = contours.map(el => {
         const parent = el.parentNode as Element;

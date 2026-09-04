@@ -34,15 +34,20 @@ export const encodeSVGDataImageStr = encodeSVGDataImage.toString();
  * The source `<g>` carries its layer identity directly — `id`/`class`/`style` (see
  * appendLandImageNew / appendCountryImageNew) — so that identity travels onto the built `<image>`
  * unchanged (both here, in-app, and when the exported runtime script rebuilds the image from the
- * same `<g>` — see gElemsToImages.js). `clip-path` is deliberately NOT among these: it lives
- * inside the embedded document instead (see embedRefClone), since a `clip-path` copied onto the
- * outer `<image>` would be a live host-document reference, forcing clip and paint to interleave
- * on the main tree; embedding it keeps the `<image>` a self-contained raster the compositor can
- * treat like a plain bitmap. `image-class` is a pure marker for gElemsToImages.js's
- * `g[image-class]` lookup and carries no value of its own. Attributes prefixed `image-` (besides
- * `image-class`) move onto the `<image>` too (dropping the prefix); everything else moves onto
- * the embedded `<svg>` root, where it is inherited by both `<use>`s exactly as it would be
- * inherited by the original `<g>`'s children.
+ * same `<g>` — see gElemsToImages.js). `clip-path` is deliberately NOT among these: gElem also
+ * carries a real `clip-path="url(#clipMapBorder)")` attribute of its own (set directly in
+ * appendLandImageNew / appendCountryImageNew, not mirrored through this function), which keeps
+ * the raw `<g>` correctly clipped for the brief window it's live in the document itself — the
+ * export draw-in animation, before gElemsToImages.js swaps it for this `<image>`. That attribute
+ * is skipped here rather than copied, since on the outer `<image>` it would be a live
+ * host-document reference (forcing clip and paint to interleave on the main tree, and the whole
+ * reason clip-path is kept off the `<image>`), and on the embedded `<svg>` root it would be a
+ * dangling one (the id it references doesn't exist inside the data URI). The frame clip the
+ * `<image>` actually renders with comes from the embedded copy instead (see embedRefClone).
+ * `image-class` is a pure marker for gElemsToImages.js's `g[image-class]` lookup and carries no
+ * value of its own. Attributes prefixed `image-` (besides `image-class`) move onto the `<image>`
+ * too (dropping the prefix); everything else moves onto the embedded `<svg>` root, where it is
+ * inherited by both `<use>`s exactly as it would be inherited by the original `<g>`'s children.
  */
 export function imageFromSpecialGElem(gElem: SVGGElement) {
     // Everything this function touches must be self-contained: it's shipped into the exported
@@ -90,7 +95,14 @@ export function imageFromSpecialGElem(gElem: SVGGElement) {
 
     const imageElem = document.createElementNS(svgNs, 'image');
     [...gElem.attributes].forEach(attr => {
-        if (attr.nodeName === 'image-class') return;
+        // image-class is a pure marker (see docstring); clip-path is handled above via
+        // embedRefClone + hostClip — gElem's own clip-path attribute exists only so the raw
+        // <g> is still clipped correctly while it's briefly live in the document itself (the
+        // export-animation window before gElemsToImages swaps it for this <image> — see
+        // appendLandImageNew / appendCountryImageNew). Copying it here would either land on the
+        // outer <image> (which we deliberately keep clip-path-free) or on embeddedSvg, where the
+        // host id it references doesn't exist — a dangling reference.
+        if (attr.nodeName === 'image-class' || attr.nodeName === 'clip-path') return;
         if (attr.nodeName === 'id' || attr.nodeName === 'class' || attr.nodeName === 'style') {
             imageElem.setAttribute(attr.nodeName, attr.nodeValue!);
         }
@@ -170,12 +182,16 @@ export function appendLandImageNew(this: SVGImageElement, showSource: boolean,
     // style) directly, so the exported <g> needs no separate wrapper (see macro/export.ts) and
     // the runtime conversion (gElemsToImages.js) carries that identity over to the rebuilt
     // <image> unchanged. The source <g> itself is registered in contourSources so export can
-    // still pull the raw vector geometry from it (see getContourSource). The frame clip is
-    // embedded separately below (embedRefClone) rather than mirrored as a plain attribute here.
+    // still pull the raw vector geometry from it (see getContourSource). It also carries its own
+    // clip-path — NOT mirrored from `this` (which has none, see drawMacro) — so the raw <g>
+    // stays clipped to the frame while it's briefly the live document content during the export
+    // draw-in animation (see the docstring on imageFromSpecialGElem for why this can't just be
+    // copied from the embedded-image mechanism instead).
     const gElem = select(document.createElementNS(SVG_NS, 'g') as SVGGElement)
         .attr('id', this.getAttribute('id'))
         .attr('class', `${this.getAttribute('class') ?? ''} contour-to-dup`.trim())
         .attr('style', this.getAttribute('style'))
+        .attr('clip-path', 'url(#clipMapBorder)')
         .attr('stroke', contourParams.strokeColor)
         .attr('stroke-width', contourParams.strokeWidth)
         .attr('stroke-dasharray', contourParams.strokeDash)
@@ -232,6 +248,7 @@ export function appendCountryImageNew(this: SVGImageElement, countryData: Featur
         .attr('id', this.getAttribute('id'))
         .attr('class', `${this.getAttribute('class') ?? ''} contour-to-dup`.trim())
         .attr('style', this.getAttribute('style'))
+        .attr('clip-path', 'url(#clipMapBorder)')
         .attr('fill', 'none')
         .attr('viewBox', `0 0 ${width} ${height}`)
         .attr('image-x', 0)
