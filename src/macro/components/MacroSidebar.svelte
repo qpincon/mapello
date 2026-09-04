@@ -1154,7 +1154,7 @@
                                 onchange={(e) => {
                                     if ((e.target as HTMLInputElement).checked) {
                                         macroState.zonesGlow[currentMacroLayerTab] = {
-                                            ...(macroState.zonesGlow[currentMacroLayerTab] ?? defaultGlowParams),
+                                            ...(macroState.zonesGlow[currentMacroLayerTab] ?? macroState.zonesGlow.land ?? defaultGlowParams),
                                             enabled: true,
                                         };
                                         glowMenuOpenedByTab[currentMacroLayerTab] = true;

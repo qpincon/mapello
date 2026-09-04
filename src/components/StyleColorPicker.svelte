@@ -112,9 +112,10 @@
     function onHexInput(e: Event) {
         const raw = (e.target as HTMLInputElement).value.toUpperCase().replace(/[^0-9A-F]/g, "").slice(0, 8);
         hexBoxText = raw;
-        // Only commit once the full 8 chars are typed — committing at 6 would force the
-        // displayed text back to "RRGGBBFF" mid-keystroke and swallow further alpha digits.
-        if (raw.length === 8) commitHex(raw);
+        // Commit at 6 (opaque RRGGBB) or 8 (RRGGBBAA) chars. Committing at 6 only resets
+        // alpha to 100, which is a no-op on the displayed text, so it doesn't clobber
+        // further alpha digits if the user keeps typing past 6.
+        if (raw.length === 6 || raw.length === 8) commitHex(raw);
     }
     function onHexBlur(e: Event) {
         commitHex((e.target as HTMLInputElement).value.toUpperCase().replace(/[^0-9A-F]/g, "").slice(0, 8));

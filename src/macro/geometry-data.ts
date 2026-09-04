@@ -79,31 +79,61 @@ function ringSignedArea(ring: number[][]): number {
     return sum;
 }
 
-function hasInconsistentWinding(fc: any): boolean {
-    let sawPositive = false;
-    let sawNegative = false;
-    for (const feature of fc.features ?? [fc]) {
-        const geom = feature.geometry;
-        if (!geom) continue;
-        const polygons: number[][][][] = geom.type === "MultiPolygon" ? geom.coordinates : geom.type === "Polygon" ? [geom.coordinates] : [];
-        for (const polygon of polygons) {
-            const sign = ringSignedArea(polygon[0]);
-            if (sign > 0) sawPositive = true;
-            else if (sign < 0) sawNegative = true;
-            if (sawPositive && sawNegative) return true;
-        }
-    }
-    return false;
+/** Signs of every exterior ring (the first ring of each polygon part) in a Polygon/MultiPolygon
+ *  feature geometry. Used only to detect the winding inconsistency below — not a general-purpose
+ *  helper. */
+function exteriorRingSigns(geometry: any): number[] {
+    const polygons: number[][][][] =
+        geometry.type === "MultiPolygon" ? geometry.coordinates : geometry.type === "Polygon" ? [geometry.coordinates] : [];
+    return polygons.map((rings) => Math.sign(ringSignedArea(rings[0])));
 }
 
-/** Simplify `topo`'s `objectName` at `va`, falling back to full detail if the result has an
- *  inconsistently-wound ring (see note above). Full detail is never subject to this — there
+/** Topology arc indices (sign-normalized — a negative ref means the arc is traversed in
+ *  reverse) referenced anywhere in a topology-space Polygon/MultiPolygon geometry. */
+function geometryArcIndices(geometry: any): Set<number> {
+    const out = new Set<number>();
+    const addRing = (ring: number[]) => ring.forEach((ref: number) => out.add(ref < 0 ? ~ref : ref));
+    const polygons: number[][][] =
+        geometry.type === "MultiPolygon" ? geometry.arcs : geometry.type === "Polygon" ? [geometry.arcs] : [];
+    polygons.forEach((rings) => rings.forEach(addRing));
+    return out;
+}
+
+/** Simplify `topo`'s `objectName` at `va`, repairing any inconsistently-wound ring (see note
+ *  above). `topojson-simplify` filters points independently within each shared arc — arc
+ *  indices are stable across every `va` — so a broken ring can be fixed by restoring just the
+ *  specific arc(s) the offending feature uses to full detail, rather than discarding
+ *  simplification for the whole layer. Full detail (va === 0) is never subject to this — there
  *  are no more points left to remove. */
 function simplifyWithSanityCheck(topo: any, objectName: string, va: number): any {
     const simplified = simplify(topo, va);
     if (va === 0) return simplified;
-    const feature = topojson.feature(simplified, simplified.objects[objectName]);
-    return hasInconsistentWinding(feature) ? simplify(topo, 0) : simplified;
+
+    const geometries = (simplified.objects[objectName] as any).geometries;
+    const feature: any = topojson.feature(simplified, simplified.objects[objectName]);
+    const features = feature.features ?? [feature];
+
+    const signsByFeature = features.map((f: any) => (f.geometry ? exteriorRingSigns(f.geometry) : []));
+    const signCounts = new Map<number, number>();
+    signsByFeature.flat().forEach((sign) => {
+        if (sign) signCounts.set(sign, (signCounts.get(sign) ?? 0) + 1);
+    });
+    const expectedSign = (signCounts.get(1) ?? 0) >= (signCounts.get(-1) ?? 0) ? 1 : -1;
+
+    const brokenArcIndices = new Set<number>();
+    signsByFeature.forEach((signs: number[], i: number) => {
+        if (signs.some((sign) => sign !== 0 && sign !== expectedSign)) {
+            geometryArcIndices(geometries[i]).forEach((idx) => brokenArcIndices.add(idx));
+        }
+    });
+    if (!brokenArcIndices.size) return simplified;
+
+    const fullDetail = simplify(topo, 0);
+    const patchedArcs = simplified.arcs.slice();
+    brokenArcIndices.forEach((idx) => {
+        patchedArcs[idx] = fullDetail.arcs[idx];
+    });
+    return { ...simplified, arcs: patchedArcs };
 }
 
 /** Total point count across every ring of every feature — a proxy for how "detailed" a

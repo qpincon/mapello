@@ -89,10 +89,6 @@
         return Math.max(MIN, Math.min(MAX, v));
     }
 
-    function isCorner(edge: Edge): boolean {
-        return edge.length === 2;
-    }
-
     function setMapVisibility(visible: boolean) {
         const mapContainer = document.getElementById("map-container");
         const maplibre = document.getElementById("maplibre-map");
@@ -136,17 +132,6 @@
             if (edge.includes("w")) newW = startW - dx;
             if (edge.includes("s")) newH = startH + dy;
             if (edge.includes("n")) newH = startH - dy;
-
-            if (isCorner(edge)) {
-                const ratio = startW / startH;
-                const relW = Math.abs(newW - startW) / startW;
-                const relH = Math.abs(newH - startH) / startH;
-                if (relW >= relH) {
-                    newH = newW / ratio;
-                } else {
-                    newW = newH * ratio;
-                }
-            }
 
             const cw = clamp(newW);
             const ch = clamp(newH);

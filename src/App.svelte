@@ -269,14 +269,26 @@
         if (!activeProjectId) await handleSaveDraft();
     }
 
+    // Tracks the last user id we ran the login-project check for. `currentUser` gets a brand
+    // new object on every invalidateAll() (e.g. the one ExportModal fires after every export to
+    // refresh the export quota), even when it's still the same logged-in user — without this
+    // guard, that reference change alone was mistaken for a fresh login and re-ran the check,
+    // which could re-open the "Welcome back" project picker right after an export finished.
+    let lastCheckedUserId: string | null = null;
+
     $effect(() => {
-        if (currentUser && !activeProjectId) {
-            handleLoginProjectCheck();
-        } else if (!currentUser && activeProjectId) {
-            // Logged out (or switched account) — drop the stale project reference so
-            // auto-save doesn't try to PUT to a project we no longer have access to.
-            activeProjectId = null;
-            currentProjectName = "Project 1";
+        const uid = currentUser?.id ?? null;
+        if (uid && uid !== lastCheckedUserId) {
+            lastCheckedUserId = uid;
+            if (!activeProjectId) handleLoginProjectCheck();
+        } else if (!uid) {
+            lastCheckedUserId = null;
+            if (activeProjectId) {
+                // Logged out (or switched account) — drop the stale project reference so
+                // auto-save doesn't try to PUT to a project we no longer have access to.
+                activeProjectId = null;
+                currentProjectName = "Project 1";
+            }
         }
     });
 

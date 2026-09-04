@@ -7,6 +7,10 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const HANDLE_SIZE = 8;
 const HALF_HANDLE = HANDLE_SIZE / 2;
 const STROKE_COLOR = "#528af4";
+// Extra invisible margin around a text selection's bbox, so the edge (used to grab and
+// move the label) is easier to hit — text boxes are often thin, leaving little room
+// around the visible dashed border.
+const TEXT_HIT_MARGIN = 8;
 
 type Corner = "nw" | "ne" | "se" | "sw";
 type TransformCommitFn = (
@@ -34,6 +38,7 @@ export class SelectionOverlay {
     private svg: SVGSVGElement;
     private group: SVGGElement;
     private bboxRect: SVGRectElement;
+    private hitRect: SVGRectElement | null = null;
     private handles: Map<Corner, SVGRectElement> = new Map();
     private elements: SVGElement[];
     private entities: SelectedEntity[];
@@ -75,6 +80,24 @@ export class SelectionOverlay {
         this.group.setAttribute("id", "selection-overlay");
         this.group.setAttribute("pointer-events", "all");
 
+        // Only for a single selected text/label element (used both for the rotation
+        // handle below and for the wider edge hit-margin).
+        this.isTextSelection = (
+            entities.length === 1 &&
+            entities[0].type === "shape" &&
+            commonState.providedShapes[entities[0].index]?.text !== undefined
+        );
+
+        // Text bboxes are often thin, making the dashed border a tiny target — add an
+        // invisible, wider hit rect behind it so the edge is easier to grab for a move drag.
+        if (this.isTextSelection) {
+            this.hitRect = document.createElementNS(SVG_NS, "rect");
+            this.hitRect.setAttribute("fill", "none");
+            this.hitRect.setAttribute("stroke", "transparent");
+            this.hitRect.setAttribute("cursor", "move");
+            this.group.appendChild(this.hitRect);
+        }
+
         // Create bounding box rect
         this.bboxRect = document.createElementNS(SVG_NS, "rect");
         this.bboxRect.setAttribute("id", "sel-bbox");
@@ -103,12 +126,6 @@ export class SelectionOverlay {
         }
 
         // Rotation handle: only for a single selected text/label element
-        this.isTextSelection = (
-            entities.length === 1 &&
-            entities[0].type === "shape" &&
-            commonState.providedShapes[entities[0].index]?.text !== undefined
-        );
-
         if (this.isTextSelection) {
             this.rotateLine = document.createElementNS(SVG_NS, "line");
             this.rotateLine.setAttribute("stroke", STROKE_COLOR);
@@ -193,6 +210,13 @@ export class SelectionOverlay {
         this.bboxRect.setAttribute("width", String(bw));
         this.bboxRect.setAttribute("height", String(bh));
 
+        if (this.hitRect) {
+            this.hitRect.setAttribute("x", String(bx - TEXT_HIT_MARGIN));
+            this.hitRect.setAttribute("y", String(by - TEXT_HIT_MARGIN));
+            this.hitRect.setAttribute("width", String(bw + TEXT_HIT_MARGIN * 2));
+            this.hitRect.setAttribute("height", String(bh + TEXT_HIT_MARGIN * 2));
+        }
+
         // Position handles at corners
         this.handles.get("nw")!.setAttribute("x", String(bx - HALF_HANDLE));
         this.handles.get("nw")!.setAttribute("y", String(by - HALF_HANDLE));
@@ -231,6 +255,12 @@ export class SelectionOverlay {
         });
 
         this.bboxRect.addEventListener("mousedown", (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.startDrag(e, "move");
+        });
+
+        this.hitRect?.addEventListener("mousedown", (e) => {
             e.stopPropagation();
             e.preventDefault();
             this.startDrag(e, "move");

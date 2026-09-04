@@ -158,6 +158,14 @@
         onStyleChanged(element, selectedRule, prop, value);
     }
 
+    /** Setting a stroke color has no visible effect if the stroke width resolves to 0 —
+     * force a 1px width in that case so the new color shows up instantly. */
+    function applyStroke(color: string) {
+        const needsWidth = !currentStrokeWidth && !parseFloat(computedVal("stroke-width"));
+        apply("stroke", color);
+        if (needsWidth) apply("stroke-width", "1px");
+    }
+
     // ── Computed / cascade values ────────────────────────────────────
     function computedVal(prop: string): string {
         if (!element) return "";
@@ -420,7 +428,7 @@
 {#if element}
 <div style="position:absolute;width:0;height:0;overflow:hidden">
     <StyleColorPicker bind:this={fillPicker}   value={currentFill}   onChange={(c) => apply("fill", c)} />
-    <StyleColorPicker bind:this={strokePicker} value={currentStroke} onChange={(c) => apply("stroke", c)} />
+    <StyleColorPicker bind:this={strokePicker} value={currentStroke} onChange={applyStroke} />
 </div>
 {/if}
 
