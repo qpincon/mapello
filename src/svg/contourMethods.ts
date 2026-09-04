@@ -25,20 +25,24 @@ export const encodeSVGDataImageStr = encodeSVGDataImage.toString();
 
 /**
  * Builds a standalone `<svg>` from a contour `<g>` (geometry + an optional embedded glow
- * `<filter>`, see embedFilterClone) and returns an `<image>` referencing it as a data URI.
- * Two `<use>` of the same geometry are emitted: one under the glow filter (filled, so the
- * filter has a solid alpha mask to work with), one on top carrying the visible stroke.
+ * `<filter>` and/or frame `<clipPath>`, see embedRefClone) and returns an `<image>` referencing
+ * it as a data URI. Two `<use>` of the same geometry are emitted: one under the glow filter
+ * (filled, so the filter has a solid alpha mask to work with), one on top carrying the visible
+ * stroke; both sit inside a wrapping `<g clip-path="...">` when a frame clip is embedded, so the
+ * whole layer is clipped once rather than clipping each `<use>` separately.
  *
- * The source `<g>` carries its layer identity directly — `id`/`class`/`clip-path`/`style`
- * (see appendLandImageNew / appendCountryImageNew) — so that identity travels onto the built
- * `<image>` unchanged (both here, in-app, and when the exported runtime script rebuilds the
- * image from the same `<g>` — see gElemsToImages.js); it is NOT copied onto the embedded `<svg>`
- * root, where `clip-path` in particular would be a dangling reference (the id it points at
- * lives in the host document, unreachable from inside a data URI). `image-class` is a pure
- * marker for gElemsToImages.js's `g[image-class]` lookup and carries no value of its own.
- * Attributes prefixed `image-` (besides `image-class`) move onto the `<image>` too (dropping
- * the prefix); everything else moves onto the embedded `<svg>` root, where it is inherited by
- * both `<use>`s exactly as it would be inherited by the original `<g>`'s children.
+ * The source `<g>` carries its layer identity directly — `id`/`class`/`style` (see
+ * appendLandImageNew / appendCountryImageNew) — so that identity travels onto the built `<image>`
+ * unchanged (both here, in-app, and when the exported runtime script rebuilds the image from the
+ * same `<g>` — see gElemsToImages.js). `clip-path` is deliberately NOT among these: it lives
+ * inside the embedded document instead (see embedRefClone), since a `clip-path` copied onto the
+ * outer `<image>` would be a live host-document reference, forcing clip and paint to interleave
+ * on the main tree; embedding it keeps the `<image>` a self-contained raster the compositor can
+ * treat like a plain bitmap. `image-class` is a pure marker for gElemsToImages.js's
+ * `g[image-class]` lookup and carries no value of its own. Attributes prefixed `image-` (besides
+ * `image-class`) move onto the `<image>` too (dropping the prefix); everything else moves onto
+ * the embedded `<svg>` root, where it is inherited by both `<use>`s exactly as it would be
+ * inherited by the original `<g>`'s children.
  */
 export function imageFromSpecialGElem(gElem: SVGGElement) {
     // Everything this function touches must be self-contained: it's shipped into the exported
@@ -50,6 +54,7 @@ export function imageFromSpecialGElem(gElem: SVGGElement) {
     embeddedSvg.setAttribute('preserveAspectRatio', 'none');
 
     const hostFilter = gElem.querySelector(':scope > defs > filter');
+    const hostClip = gElem.querySelector(':scope > defs > clipPath');
 
     const geomGroup = document.createElementNS(svgNs, 'g');
     geomGroup.setAttribute('id', 's');
@@ -60,8 +65,13 @@ export function imageFromSpecialGElem(gElem: SVGGElement) {
     });
     const defs = document.createElementNS(svgNs, 'defs');
     if (hostFilter) defs.appendChild(hostFilter.cloneNode(true));
+    if (hostClip) defs.appendChild(hostClip.cloneNode(true));
     defs.appendChild(geomGroup);
     embeddedSvg.appendChild(defs);
+
+    // Both <use>s share one clip application when a frame clip is embedded.
+    const useContainer = hostClip ? document.createElementNS(svgNs, 'g') : embeddedSvg;
+    if (hostClip) useContainer.setAttribute('clip-path', `url(#${hostClip.getAttribute('id')})`);
 
     const rootFill = gElem.getAttribute('fill');
     if (hostFilter) {
@@ -71,16 +81,17 @@ export function imageFromSpecialGElem(gElem: SVGGElement) {
         // The filter needs a filled alpha mask to dilate/erode/blur, not just a stroke outline;
         // the actual color only matters when the filter merges SourceGraphic back in (showSource).
         glowUse.setAttribute('fill', (!rootFill || rootFill === 'none') ? '#000' : rootFill);
-        embeddedSvg.appendChild(glowUse);
+        useContainer.appendChild(glowUse);
     }
     const strokeUse = document.createElementNS(svgNs, 'use');
     strokeUse.setAttribute('href', '#s');
-    embeddedSvg.appendChild(strokeUse);
+    useContainer.appendChild(strokeUse);
+    if (hostClip) embeddedSvg.appendChild(useContainer);
 
     const imageElem = document.createElementNS(svgNs, 'image');
     [...gElem.attributes].forEach(attr => {
         if (attr.nodeName === 'image-class') return;
-        if (attr.nodeName === 'id' || attr.nodeName === 'class' || attr.nodeName === 'clip-path' || attr.nodeName === 'style') {
+        if (attr.nodeName === 'id' || attr.nodeName === 'class' || attr.nodeName === 'style') {
             imageElem.setAttribute(attr.nodeName, attr.nodeValue!);
         }
         else if (attr.nodeName.startsWith('image-')) {
@@ -98,23 +109,23 @@ export function imageFromSpecialGElem(gElem: SVGGElement) {
 export const imageFromSpecialGElemStr = imageFromSpecialGElem.toString();
 
 /**
- * Clones an existing host `<filter>` (by id) into `gElem`'s own `<defs>`, under a fixed local
- * id, plus an empty sibling `<g filter="url(#f)">` that keeps SVGO from pruning it as unused.
- * This makes the filter travel with `gElem.innerHTML` — imageFromSpecialGElem picks it up with
- * no cross-document/cross-context lookup, so it works identically in-app and inside the
- * stringified export script (which has no access to the app's module imports, see the note
- * on imageFromSpecialGElemStr above).
+ * Clones an existing host element (by id) into `gElem`'s own `<defs>`, under a fixed local id,
+ * plus an empty sibling `<g [attrName]="url(#[localId])">` that keeps SVGO from pruning it as
+ * unused. This makes the referenced element (glow `<filter>` or frame `<clipPath>`) travel with
+ * `gElem.innerHTML` — imageFromSpecialGElem picks it up with no cross-document/cross-context
+ * lookup, so it works identically in-app and inside the stringified export script (which has no
+ * access to the app's module imports, see the note on imageFromSpecialGElemStr above).
  */
-function embedFilterClone(gElem: SVGGElement, hostFilterId: string): void {
-    const hostFilter = document.getElementById(hostFilterId);
-    if (!hostFilter) return;
-    const clonedFilter = hostFilter.cloneNode(true) as Element;
-    clonedFilter.setAttribute('id', 'f');
+function embedRefClone(gElem: SVGGElement, hostId: string, localId: string, attrName: string): void {
+    const hostEl = document.getElementById(hostId);
+    if (!hostEl) return;
+    const clone = hostEl.cloneNode(true) as Element;
+    clone.setAttribute('id', localId);
     const defs = document.createElementNS(SVG_NS, 'defs');
-    defs.appendChild(clonedFilter);
-    const filterRef = document.createElementNS(SVG_NS, 'g');
-    filterRef.setAttribute('filter', 'url(#f)');
-    gElem.prepend(filterRef);
+    defs.appendChild(clone);
+    const ref = document.createElementNS(SVG_NS, 'g');
+    ref.setAttribute(attrName, `url(#${localId})`);
+    gElem.prepend(ref);
     gElem.prepend(defs);
 }
 
@@ -152,19 +163,18 @@ export function appendLandImageNew(this: SVGImageElement, showSource: boolean,
     const offCanvasWithBorder = 20 - (borderWidth / 2);
     select(this).attr('id', 'land')
         .style('pointer-events', 'none')
-        .style('will-change', 'opacity');
+        .style('will-change', 'transform');
 
     // Built off-DOM: `this` (the .macro-layer <image> itself) is the only thing attached to
     // the visible tree — see applyImageAttrs. gElem mirrors this's own identity (id/class/
-    // clip-path/style) directly, so the exported <g> needs no separate wrapper (see
-    // macro/export.ts) and the runtime conversion (gElemsToImages.js) carries that identity
-    // over to the rebuilt <image> unchanged. The source <g> itself is registered in
-    // contourSources so export can still pull the raw vector geometry from it (see
-    // getContourSource).
+    // style) directly, so the exported <g> needs no separate wrapper (see macro/export.ts) and
+    // the runtime conversion (gElemsToImages.js) carries that identity over to the rebuilt
+    // <image> unchanged. The source <g> itself is registered in contourSources so export can
+    // still pull the raw vector geometry from it (see getContourSource). The frame clip is
+    // embedded separately below (embedRefClone) rather than mirrored as a plain attribute here.
     const gElem = select(document.createElementNS(SVG_NS, 'g') as SVGGElement)
         .attr('id', this.getAttribute('id'))
         .attr('class', `${this.getAttribute('class') ?? ''} contour-to-dup`.trim())
-        .attr('clip-path', this.getAttribute('clip-path'))
         .attr('style', this.getAttribute('style'))
         .attr('stroke', contourParams.strokeColor)
         .attr('stroke-width', contourParams.strokeWidth)
@@ -190,8 +200,9 @@ export function appendLandImageNew(this: SVGImageElement, showSource: boolean,
             filterName = `${glowFilterId('land')}-with-source`;
             appendGlow(select('#static-svg-map') as unknown as SvgSelection, filterName, showSource, glowParams);
         }
-        embedFilterClone(gElem.node() as SVGGElement, filterName);
+        embedRefClone(gElem.node() as SVGGElement, filterName, 'f', 'filter');
     }
+    embedRefClone(gElem.node() as SVGGElement, 'clipMapBorder', 'c', 'clip-path');
 
     applyImageAttrs(this, imageFromSpecialGElem(gElem.node() as SVGGElement));
     contourSources.set(this, gElem.node() as SVGGElement);
@@ -214,13 +225,12 @@ export function appendCountryImageNew(this: SVGImageElement, countryData: Featur
         }
     }
     select(this).style('pointer-events', 'none')
-        .style('will-change', 'opacity')
+        .style('will-change', 'transform')
         .classed('country-img', true);
 
     const gElem = select(document.createElementNS(SVG_NS, 'g') as SVGGElement)
         .attr('id', this.getAttribute('id'))
         .attr('class', `${this.getAttribute('class') ?? ''} contour-to-dup`.trim())
-        .attr('clip-path', this.getAttribute('clip-path'))
         .attr('style', this.getAttribute('style'))
         .attr('fill', 'none')
         .attr('viewBox', `0 0 ${width} ${height}`)
@@ -232,7 +242,8 @@ export function appendCountryImageNew(this: SVGImageElement, countryData: Featur
     gElem.append('path')
         .attr('d', path(countryData))
         .attr('pathLength', 1);
-    if (filter) embedFilterClone(gElem.node() as SVGGElement, filter);
+    if (filter) embedRefClone(gElem.node() as SVGGElement, filter, 'f', 'filter');
+    embedRefClone(gElem.node() as SVGGElement, 'clipMapBorder', 'c', 'clip-path');
 
     const pathElem = gElem.select('path');
     if (ref) {

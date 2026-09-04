@@ -28,6 +28,16 @@ import { updateMacroMountains } from "./mountains";
  * never get the `.macro-layer` class — drawMacro() wipes and rebuilds every `.macro-layer`
  * element on each redraw, which would remove these placeholders.
  */
+function macroFrameRect(width: number, height: number, borderWidth: number, borderRadius: number) {
+    return {
+        rx: Math.max(width, height) * (borderRadius / 100),
+        x: borderWidth / 2,
+        y: borderWidth / 2,
+        width: width - borderWidth,
+        height: height - borderWidth,
+    };
+}
+
 function ensureLayerGroup(svg: SvgSelection, id: string): SVGGElement {
     let group = svg.select<SVGGElement>(`#${id}`).node();
     if (!group) {
@@ -107,6 +117,15 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     });
     mapLibreContainer.style("display", "none");
     container.style("display", "block");
+
+    // #clipMapBorder must exist before drawMacro() runs: land/country image layers embed it
+    // into their data URI at build time (see embedRefClone in contourMethods.ts), which needs
+    // the element in the DOM already — unlike a plain clip-path attribute, that's not a live
+    // reference resolved later. drawMacroFrame() recreates the same clipPath afterward once the
+    // border is drawn; appendClip() is idempotent (replaces any existing #clipMapBorder).
+    const earlyFrameRect = macroFrameRect(width, height, macroState.macroParams.Border.borderWidth, macroState.macroParams.Border.borderRadius);
+    appendClip(svg, earlyFrameRect.width, earlyFrameRect.height, earlyFrameRect.rx, earlyFrameRect.x, earlyFrameRect.y);
+
     drawMacro(svg, graticule, groupData, computedOrderedTabs);
 
     // Re-raise annotation groups so they render on top of the recreated macro layers
@@ -261,7 +280,10 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
         const el = document.createElementNS("http://www.w3.org/2000/svg", isImageLayer ? "image" : "g");
         el.classList.add("macro-layer");
         if (d.name) el.setAttribute("id", d.name);
-        el.setAttribute("clip-path", "url(#clipMapBorder)");
+        // Image layers (land, per-country glow outlines) embed the frame clip inside their data
+        // URI instead — see embedRefClone in contourMethods.ts — so the clip stays off the live
+        // host attribute and the <image> can be treated as a self-contained raster.
+        if (!isImageLayer) el.setAttribute("clip-path", "url(#clipMapBorder)");
         svgNode.appendChild(el);
         return el;
     });
@@ -321,13 +343,8 @@ export function drawMacroFrame(
     borderColor: string,
     animated: boolean
 ): FrameSelection {
-    const rx = Math.max(width, height) * (borderRadius / 100);
-
     // Frame position (no padding, just half border width inset)
-    const frameX = borderWidth / 2;
-    const frameY = borderWidth / 2;
-    const frameWidth = width - borderWidth;
-    const frameHeight = height - borderWidth;
+    const { rx, x: frameX, y: frameY, width: frameWidth, height: frameHeight } = macroFrameRect(width, height, borderWidth, borderRadius);
 
     svg.select("#frame").remove();
 
