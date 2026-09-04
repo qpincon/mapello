@@ -10,7 +10,11 @@ function gElemsToImages(transition) {
                 image.style.opacity = 1;
             }, 0);
         }
-        gElem.parentNode.append(image);
+        // Insert in gElem's own slot, not appended to the end of the parent — otherwise every
+        // converted layer piles up in call order, corrupting paint order relative to whatever
+        // else shares that parent (e.g. a country image should stay under labels drawn after it
+        // in the source markup, not jump on top once converted).
+        gElem.before(image);
         if (transition) {
             setTimeout(() => {
                 gElem.remove();
