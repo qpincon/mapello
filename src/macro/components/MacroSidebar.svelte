@@ -758,7 +758,7 @@
                 </div>
             </div>
 
-            <div class="nav-tabs-wrapper d-flex align-items-center m-1">
+            <div class="nav-tabs-wrapper d-flex align-items-end m-1">
                 <ul class="nav nav-tabs flex-nowrap tabs-scroll">
                     {#each computedOrderedTabs as tabTitle, index (tabTitle)}
                         {@const isLand = tabTitle === "land"}
@@ -802,7 +802,7 @@
                 </ul>
 
                 <ul class="nav nav-tabs flex-shrink-0">
-                    <li class="nav-item icon-add position-relative">
+                    <li class="nav-item icon-add d-flex align-items-center position-relative">
                         <select role="button" id="country-select" onchange={addNewCountry}>
                             <option disabled selected value> -- select a country -- </option>
                             {#each allAvailableAdm as country}
@@ -1250,9 +1250,13 @@
         inset: 0;
         width: 100%;
         height: 100%;
+        cursor: pointer;
     }
     #country-select:hover ~ span {
         color: #aeafaf;
+    }
+    .icon-add .nav-link {
+        pointer-events: none;
     }
     .add-country-label {
         font-size: 0.85rem;

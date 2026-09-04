@@ -498,6 +498,17 @@ export function addTexture(
 
 const urlUsingAttributes = ['marker-start', 'marker-mid', 'marker-end', 'clip-path', 'fill', 'filter', '*|href'];
 
+let measureCanvasCtx: CanvasRenderingContext2D | null = null;
+
+function measureTextWidth(text: string, fontSize: number, fontFamily = 'sans-serif'): number {
+    if (!measureCanvasCtx) {
+        measureCanvasCtx = document.createElement('canvas').getContext('2d');
+    }
+    if (!measureCanvasCtx) return text.length * fontSize * 0.6;
+    measureCanvasCtx.font = `${fontSize}px ${fontFamily}`;
+    return measureCanvasCtx.measureText(text).width;
+}
+
 export function addAttribution(
     svgElement: SVGElement | Element,
     width: number,
@@ -532,9 +543,7 @@ export function addAttribution(
     const lineCount = lines.length;
     const pillHeight = fontSize * lineCount + lineGap * (lineCount - 1) + pillPaddingY * 2;
 
-    // Approximate text width: ~0.6 * fontSize per character for sans-serif
-    const charWidth = fontSize * 0.6;
-    const maxTextWidth = Math.max(...lines.map((l) => l.label.length * charWidth));
+    const maxTextWidth = Math.max(...lines.map((l) => measureTextWidth(l.label, fontSize)));
     const pillWidth = Math.ceil(maxTextWidth + pillPaddingX * 2);
     const rightX = width - margin;
     const rectX = rightX - pillWidth;

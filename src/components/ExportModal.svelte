@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { untrack } from "svelte";
+    import { debounce } from "lodash-es";
     import Modal from "./Modal.svelte";
     import { ExportFontChoice, type ExportOptions, type CustomAttribution } from "../svg/export";
     import { TEXTURES } from "../svg/textures";
@@ -62,6 +64,8 @@
     let modalWidth = $state("600px");
     let previewContainer: HTMLDivElement;
 
+    const debouncedUpdatePreview = debounce(() => updatePreview(), 500);
+
     function getExportFontChoice(): ExportFontChoice {
         if (!inlineFontUsed) return ExportFontChoice.convertToPath;
         if (fontUsedElsewhere) return ExportFontChoice.noExport;
@@ -85,7 +89,10 @@
 
     async function updatePreview(isOpening = false) {
         previewLoading = true;
-        const validAttributions = customAttributions.filter((a) => a.text.trim());
+        // untrack: this can be called synchronously from inside the effect below (before
+        // its first await), so reading customAttributions here must not re-subscribe the
+        // effect to every keystroke in the attribution inputs.
+        const validAttributions = untrack(() => customAttributions.filter((a) => a.text.trim()));
         const options: ExportOptions = {
             animate,
             useViewBox,
@@ -186,7 +193,6 @@
             texture;
             textureMode;
             minifyJs;
-            JSON.stringify(customAttributions);
             updatePreview(isOpening);
         } else {
             wasOpen = false;
@@ -368,17 +374,23 @@
                                     class="form-control form-control-sm"
                                     placeholder="Text"
                                     bind:value={attr.text}
+                                    oninput={debouncedUpdatePreview}
                                 />
                                 <input
                                     type="text"
                                     class="form-control form-control-sm"
                                     placeholder="Link (optional)"
                                     bind:value={attr.link}
+                                    oninput={debouncedUpdatePreview}
                                 />
                                 <button
                                     type="button"
                                     class="btn btn-sm btn-outline-danger remove-attr-btn"
-                                    onclick={() => customAttributions.splice(i, 1)}
+                                    onclick={() => {
+                                        customAttributions.splice(i, 1);
+                                        debouncedUpdatePreview.cancel();
+                                        updatePreview();
+                                    }}
                                     title="Remove">&times;</button
                                 >
                             </div>
