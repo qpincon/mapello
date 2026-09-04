@@ -9,13 +9,12 @@ const svgoConfig = {
     plugins: [...svgoConfigBase.plugins, 'removeOffCanvasPaths'],
 };
 import { discriminateCssForExport, download, htmlToElement, indexBy, pick, randomString, xhtmlifyHtml } from 'src/util/common';
-import { encodeSVGDataImageStr, imageFromSpecialGElemStr } from 'src/svg/contourMethods';
+import { encodeSVGDataImageStr, getContourSource, imageFromSpecialGElemStr } from 'src/svg/contourMethods';
 import { transitionCssMacro } from 'src/svg/transition';
 
 // Import export-only scripts as raw strings
 import hoverScript from 'src/svg/exportScripts/hover.js?raw';
 import tooltipScript from 'src/svg/exportScripts/tooltip.js?raw';
-import duplicateContoursScript from 'src/svg/exportScripts/duplicateContours.js?raw';
 import gElemsToImagesScript from 'src/svg/exportScripts/gElemsToImages.js?raw';
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.js?raw';
@@ -58,25 +57,26 @@ export async function exportMacro(
     const selectionOverlay = svgNode.querySelector('#selection-overlay');
     if (selectionOverlay) selectionOverlay.remove();
 
-    // === Remove contours images (keep only <g> element to duplicate afterwards) ==
-    let contours = Array.from(svgNode.querySelectorAll('image.contour-to-dup'));
-    const contoursWithParents: [Element, Element][] = contours.map(el => {
+    // === Swap contour <image>s for their raw source <g> (never attached to the visible tree
+    // in the editor — see getContourSource in src/svg/contourMethods.ts) so SVGO can optimize
+    // the vector geometry. That <g> already carries the same id/class/style/clip-path the
+    // <image> effectively renders with (see appendLandImageNew / appendCountryImageNew), so no
+    // wrapper is needed here — both for the frame clip (needed while this raw <g> is briefly the
+    // live document content during the export draw-in animation, before gElemsToImages.js swaps
+    // it for the <image>) and because CSS like src/svg/transition.ts's "#land path" /
+    // ".country-img path" draw-in selectors, which target <path> descendants, keep resolving
+    // correctly. The glow <filter> travels inside the <g> too (see embedRefClone), referenced
+    // there by a real `filter` attribute, so SVGO keeps it without any extra trick — the frame
+    // <clipPath> is embedded the same way for the final <image>, on top of (not instead of) the
+    // <g>'s own clip-path attribute.
+    const contours = Array.from(svgNode.querySelectorAll('image.contour-to-dup'));
+    const contoursState = contours.map(el => {
         const parent = el.parentNode as Element;
-        document.body.append(el);
-        return [el, parent];
+        const sourceG = getContourSource(el);
+        if (sourceG) parent.replaceChild(sourceG, el);
+        return { el, parent, sourceG };
     });
-
-    /** Add an element using the SVG filter, otherwise it gets removed by SVGO as it's never used directly but later in JS*/
-    svgNode.querySelectorAll('[image-filter-name]').forEach(elem => {
-        const filterName = elem.getAttribute('image-filter-name');
-        if (filterName) {
-            const emptyElementTrickSvgo = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            emptyElementTrickSvgo.classList.add('svgo-trick');
-            emptyElementTrickSvgo.setAttribute('filter', `url(#${filterName})`);
-            svgNode.append(emptyElementTrickSvgo);
-        }
-    });
-    // === End remove contours ==
+    // === End swap ==
 
     // Set pathLength on legend rects for draw animation (stroke-dasharray: 1 / stroke-dashoffset)
     if (animate) {
@@ -91,16 +91,14 @@ export async function exportMacro(
     // Optimize whole SVG
     const finalSvg = SVGO.optimize(svgNode.outerHTML, svgoConfig as Config).data;
 
-    // === re-insert foreignObjects and contours ===
+    // === re-insert foreignObjects, restore contour images ===
     fos.forEach(fo => svgNode.append(fo));
-    contoursWithParents.forEach(([el, parent]) => {
-        parent.insertBefore(el, parent.firstChild);
+    contoursState.forEach(({ el, parent, sourceG }) => {
+        if (sourceG) parent.replaceChild(el, sourceG);
     });
-    svgNode.querySelectorAll('.svgo-trick').forEach(el => el.remove());
     // === End re-insertion ===
 
     const optimizedSVG = DOM_PARSER.parseFromString(finalSvg, 'image/svg+xml');
-    optimizedSVG.querySelectorAll('.svgo-trick').forEach(el => el.remove());
 
     let pathIsBetter = false;
     if (exportFonts === ExportFontChoice.smallest || exportFonts === ExportFontChoice.convertToPath) {
@@ -215,7 +213,6 @@ export async function exportMacro(
 
         ${encodeSVGDataImageStr}
         ${imageFromSpecialGElemStr}
-        ${duplicateContoursScript}
         ${gElemsToImagesScript}
         ${tooltipCode}
         ${hoverScript}

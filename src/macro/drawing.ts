@@ -10,7 +10,6 @@ import { appendCountryImageNew, appendLandImageNew } from "src/svg/contourMethod
 import { getNumericCols, sortBy } from "src/util/common";
 import { applyStyles } from "src/util/dom";
 import { saveState } from "src/util/save";
-import { duplicateContourCleanFirst } from "src/svg/svg";
 import { addTooltipListener } from "src/tooltip";
 import { getProjection } from "src/util/projections";
 import { macroPositionVars } from "src/stateDefaults";
@@ -29,6 +28,16 @@ import { updateMacroMountains } from "./mountains";
  * never get the `.macro-layer` class — drawMacro() wipes and rebuilds every `.macro-layer`
  * element on each redraw, which would remove these placeholders.
  */
+function macroFrameRect(width: number, height: number, borderWidth: number, borderRadius: number) {
+    return {
+        rx: Math.max(width, height) * (borderRadius / 100),
+        x: borderWidth / 2,
+        y: borderWidth / 2,
+        width: width - borderWidth,
+        height: height - borderWidth,
+    };
+}
+
 function ensureLayerGroup(svg: SvgSelection, id: string): SVGGElement {
     let group = svg.select<SVGGElement>(`#${id}`).node();
     if (!group) {
@@ -108,6 +117,15 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     });
     mapLibreContainer.style("display", "none");
     container.style("display", "block");
+
+    // #clipMapBorder must exist before drawMacro() runs: land/country image layers embed it
+    // into their data URI at build time (see embedRefClone in contourMethods.ts), which needs
+    // the element in the DOM already — unlike a plain clip-path attribute, that's not a live
+    // reference resolved later. drawMacroFrame() recreates the same clipPath afterward once the
+    // border is drawn; appendClip() is idempotent (replaces any existing #clipMapBorder).
+    const earlyFrameRect = macroFrameRect(width, height, macroState.macroParams.Border.borderWidth, macroState.macroParams.Border.borderRadius);
+    appendClip(svg, earlyFrameRect.width, earlyFrameRect.height, earlyFrameRect.rx, earlyFrameRect.x, earlyFrameRect.y);
+
     drawMacro(svg, graticule, groupData, computedOrderedTabs);
 
     // Re-raise annotation groups so they render on top of the recreated macro layers
@@ -133,9 +151,7 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     );
     updateZonesDataFormatters();
 
-    duplicateContourCleanFirst(svg.node() as SVGSVGElement);
     svg.selectAll("path[pathLength]").attr("pathLength", null);
-    svg.selectAll("g[image-class]").classed("hidden-after", true);
 
     /** Wait a bit before attaching the tooltip in order to make it the last element and to appear above everything else */
     setTimeout(() => {
@@ -252,18 +268,30 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     //     filter: null,
     // });
     // const groups = svg.selectAll('svg').data(groupData).join('svg').attr('id', d => d.name);
-    const groups = svg
-        .selectAll("g.macro-layer")
-        .data(groupData)
-        .join("g")
-        .classed("macro-layer", true)
-        .attr("id", (d) => d.name!)
-        .attr('clip-path', 'url(#clipMapBorder)');
+    // Image-backed layers (land, per-country glow outlines) render their <image> directly as
+    // the .macro-layer element — no wrapping <g> (see appendLandImageNew / appendCountryImageNew
+    // in src/svg/contourMethods.ts) — while every other layer is still a <g> of <path>s. d3's
+    // .join() can't emit a mixed tag per datum in one call, so the layers are built with a plain
+    // sequential loop instead; stacking order only depends on this loop visiting groupData in
+    // order and appending each element right after the previous one, regardless of tag.
+    const svgNode = svg.node()!;
+    const groups = groupData.map((d) => {
+        const isImageLayer = d.type === "landImg" || d.type === "filterImg";
+        const el = document.createElementNS("http://www.w3.org/2000/svg", isImageLayer ? "image" : "g");
+        el.classList.add("macro-layer");
+        if (d.name) el.setAttribute("id", d.name);
+        // Image layers (land, per-country glow outlines) embed the frame clip inside their data
+        // URI instead — see embedRefClone in contourMethods.ts — so the clip stays off the live
+        // host attribute and the <image> can be treated as a self-contained raster.
+        if (!isImageLayer) el.setAttribute("clip-path", "url(#clipMapBorder)");
+        svgNode.appendChild(el);
+        return el;
+    });
 
-    function drawPaths(this: SVGGElement, data: MacroGroupData) {
+    function drawPaths(this: Element, data: MacroGroupData) {
         if (data.type === "landImg")
             return appendLandImageNew.call(
-                this,
+                this as SVGImageElement,
                 data.showSource ?? false,
                 width,
                 height,
@@ -272,16 +300,16 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
                 geometriesState.land,
                 appState.pathLarger!,
                 macroState.zonesGlow["land"]?.enabled ? macroState.zonesGlow["land"] : undefined,
-                false,
             );
         if (data.type === "filterImg")
             return appendCountryImageNew.call(
-                this,
+                this as SVGImageElement,
                 data.countryData!,
                 data.filter ?? null,
                 appState.path!,
                 commonState.inlineStyles,
-                false,
+                width,
+                height,
             );
         if (!data.data) return;
         const parentPathElem = select(this).style("will-change", "opacity");
@@ -301,7 +329,7 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
         if (data.filter) parentPathElem.attr("filter", `url(#${data.filter})`);
         // data.props?.forEach((prop) => pathElem.attr(prop, (d) => d.properties[prop]));
     }
-    groups.each(drawPaths);
+    groups.forEach((el, i) => drawPaths.call(el, groupData[i]));
     svg.select("#graticule").selectAll("path")
         .attr("stroke", macroState.macroParams.Background.graticuleColor)
         .attr("stroke-width", macroState.macroParams.Background.graticuleWidth);
@@ -315,13 +343,8 @@ export function drawMacroFrame(
     borderColor: string,
     animated: boolean
 ): FrameSelection {
-    const rx = Math.max(width, height) * (borderRadius / 100);
-
     // Frame position (no padding, just half border width inset)
-    const frameX = borderWidth / 2;
-    const frameY = borderWidth / 2;
-    const frameWidth = width - borderWidth;
-    const frameHeight = height - borderWidth;
+    const { rx, x: frameX, y: frameY, width: frameWidth, height: frameHeight } = macroFrameRect(width, height, borderWidth, borderRadius);
 
     svg.select("#frame").remove();
 

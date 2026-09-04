@@ -230,15 +230,14 @@
                     (country) => country.properties?.name === elemId,
                 )!;
                 appendCountryImageNew.call(
-                    select(`[id='${elemId}-img']`).node() as SVGGElement,
+                    select(`[id='${elemId}-img']`).node() as SVGImageElement,
                     countryData,
                     filter,
                     appState.path!,
                     commonState.inlineStyles,
-                    false,
-                    true,
+                    macroState.macroParams.General.width,
+                    macroState.macroParams.General.height,
                 );
-                svg.selectAll("g[image-class]").classed("hidden-after", true);
             });
         }
         macroState.baseCss = exportStyleSheet("#outline")!;

@@ -1,5 +1,4 @@
 import { rgb} from 'd3-color';
-import { select} from 'd3-selection';
 import type {DefsSelection, SvgSelection} from '../types';
 import type { GlowParams } from "src/params";
 // import plaid from '../assets/img/plaid.jpg';
@@ -15,7 +14,7 @@ export function appendGlow(selection: SvgSelection, id = "glows", displaySource 
 ) {
     const colorInner = rgb(innerColor);
     const colorOuter = rgb(outerColor);
-    const existing = select(`#${id}`);
+    const existing = selection.select(`#${id}`);
     if (!existing.empty()) existing.remove();
     let defs: DefsSelection = selection.select('defs');
     if (defs.empty()) defs = selection.append('defs');
@@ -86,16 +85,13 @@ export function appendGlow(selection: SvgSelection, id = "glows", displaySource 
     if (hasOuterGlow) merge.append('feMergeNode').attr('in', 'OUTGLOW');
     if (displaySource) merge.append('feMergeNode').attr('in', 'SourceGraphic');
     if (hasInnerGlow) merge.append('feMergeNode').attr('in', 'INGLOW');
-    filter.append(() => merge.node());
-
-    defs.append(() => filter.node());
 }
 
 
 export function appendClip(selection: SvgSelection, width: number, height: number, rx: number, x: number, y: number) {
     let defs:DefsSelection = selection.select('defs');
     if (defs.empty()) defs = selection.append('defs') ;
-    const existing = select('#clipMapBorder');
+    const existing = selection.select('#clipMapBorder');
     if (!existing.empty()) existing.remove();
     const clip = defs.append('clipPath')
         .attr('id', "clipMapBorder")
