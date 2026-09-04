@@ -130,6 +130,16 @@ export const defaultTooltipStyle: Record<string, string> = {
     "box-shadow": "0 2px 6px #00000026",
 };
 
+/** Default container style for a brand-new element tooltip/popover annotation (no prior one to copy). */
+export const defaultAnnotationStyle: Record<string, string> = {
+    "background-color": "white",
+    "padding": "4px 8px",
+    "border-radius": "4px",
+    "font-size": "0.82rem",
+    "max-width": "15rem",
+    "width": "max-content",
+};
+
 export const defaultInlineStyles: Record<string, any> = {};
 
 export const macroPositionVars: string[] = [
@@ -176,6 +186,8 @@ export const defaultState: GlobalState = {
     },
     stateCommon: {
         lastUsedLabelProps: defaultLastUsedLabelProps,
+        lastUsedAnnotationStyle: {},
+        lastUsedAnnotationFont: {},
         providedFonts: [],
         providedShapes: [],
         providedPaths: [],

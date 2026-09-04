@@ -492,6 +492,8 @@
         } else {
             legendSelection.selectAll("*").remove(); // Clear existing contents
         }
+        // Keep legend on top: drawMacroBase() re-anchors layer groups after it on every redraw.
+        legendSelection.raise();
         Object.entries(macroState.colorDataDefs).forEach(([tab, dataColorDef], tabIndex) => {
             if (!macroState.zonesData[tab]) return;
             if (!dataColorDef.noDataColor) dataColorDef.noDataColor = { enabled: false, color: "#AAAAAA" };

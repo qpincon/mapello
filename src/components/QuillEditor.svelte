@@ -6,6 +6,7 @@
     import QuillResizeImage from "quill-resize-image";
     import "quill/dist/quill.snow.css";
     import StyleColorPicker from "./StyleColorPicker.svelte";
+    import { popoverPosition } from "../util/colorMath";
     import type { Color } from "src/types";
 
     // Override Block to use <div> instead of <p>
@@ -60,6 +61,9 @@
         placeholder?: string;
         fonts?: string[];
         containerStyle?: Record<string, string>;
+        // Text formatting (color, font-size, font-family) to seed as the typing format when the
+        // editor starts out empty. Ignored once there is existing content to preserve its formatting.
+        defaultTextFormat?: Record<string, string>;
     }
 
     let {
@@ -69,11 +73,14 @@
         placeholder = "Enter tooltip template using __column__ for variables...",
         fonts = [],
         containerStyle = $bindable(),
+        defaultTextFormat,
     }: Props = $props();
 
     let editorContainer: HTMLDivElement;
     let quillInstance: Quill | null = null;
     let isInternalUpdate = false;
+    // Text format (color/size/font) tracked at the caret, so we can remember "the last font used".
+    let lastKnownFormat: Record<string, any> = {};
 
     // ColorPicker instances for toolbar buttons that need color selection
     let containerBgPicker: StyleColorPicker | null = $state(null);
@@ -90,6 +97,17 @@
     let containerBorderBtn: HTMLElement | null = null;
     let blockBorderBtn: HTMLElement | null = null;
     let borderBottomBtn: HTMLElement | null = null;
+    let imageBtn: HTMLElement | null = null;
+
+    // "Insert image" submenu (embedded file vs. remote URL)
+    let imageMenuOpen = $state(false);
+    let imageMenuMode = $state<"menu" | "url">("menu");
+    let imageMenuTop = $state(0);
+    let imageMenuLeft = $state(0);
+    let imageUrlValue = $state("");
+    let imageMenuEl: HTMLElement | null = $state(null);
+    let imageUrlInput: HTMLInputElement | null = $state(null);
+    let savedImageRange: { index: number; length: number } | null = null;
 
     // Current color values for the pickers
     let containerBgColor = $state<Color>("#ffffffff");
@@ -149,6 +167,57 @@
             quillInstance!.setSelection(range.index + 1);
         };
         input.click();
+    }
+
+    // --- "Insert image" submenu: embedded file vs. remote URL ---
+    function openImageMenu(): void {
+        if (!imageBtn || !quillInstance) return;
+        savedImageRange = quillInstance.getSelection(true);
+        const pos = popoverPosition(imageBtn, 190, 76);
+        imageMenuTop = pos.top;
+        imageMenuLeft = pos.left;
+        imageMenuMode = "menu";
+        imageUrlValue = "";
+        imageMenuOpen = true;
+    }
+
+    function closeImageMenu(): void {
+        imageMenuOpen = false;
+        imageMenuMode = "menu";
+        imageUrlValue = "";
+    }
+
+    function chooseEmbeddedImage(): void {
+        closeImageMenu();
+        imageHandler();
+    }
+
+    function chooseImageLink(): void {
+        imageMenuMode = "url";
+        const pos = popoverPosition(imageBtn!, 240, 90);
+        imageMenuTop = pos.top;
+        imageMenuLeft = pos.left;
+        setTimeout(() => imageUrlInput?.focus(), 0);
+    }
+
+    function insertImageLink(): void {
+        const url = imageUrlValue.trim();
+        if (!url || !quillInstance) return;
+        const range = savedImageRange ?? quillInstance.getSelection(true) ?? { index: quillInstance.getLength(), length: 0 };
+        quillInstance.insertEmbed(range.index, "image", url);
+        quillInstance.setSelection(range.index + 1);
+        closeImageMenu();
+    }
+
+    function onImageUrlKeydown(e: KeyboardEvent): void {
+        e.stopPropagation();
+        if (e.key === "Enter") {
+            e.preventDefault();
+            insertImageLink();
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            closeImageMenu();
+        }
     }
 
     // --- Container style toolbar handlers ---
@@ -299,7 +368,7 @@
         toolbarConfig.push(["image", "link"], ["clean"]);
 
         const handlers: Record<string, () => void> = {
-            image: imageHandler,
+            image: openImageMenu,
             "text-color": textColorHandler,
             "text-bg": textBgHandler,
         };
@@ -335,6 +404,7 @@
             containerBorderBtn = toolbar.querySelector(".ql-container-border") as HTMLElement | null;
             blockBorderBtn = toolbar.querySelector(".ql-blockBorder") as HTMLElement | null;
             borderBottomBtn = toolbar.querySelector(".ql-borderBottom") as HTMLElement | null;
+            imageBtn = toolbar.querySelector(".ql-image") as HTMLElement | null;
 
             // Inject SVG icons into custom toolbar buttons
             for (const [cls, svg] of Object.entries(toolbarIcons)) {
@@ -386,7 +456,7 @@
                 bold: "Bold",
                 italic: "Italic",
                 underline: "Underline",
-                image: "Insert image (PNG, JPG, SVG)",
+                image: "Insert image",
                 link: "Insert link",
                 clean: "Clear formatting",
                 "text-color": "Text color",
@@ -454,6 +524,24 @@
             value = html === "<div><br></div>" ? "" : html;
             onchange?.();
         });
+
+        // Track the format at the caret so we can remember "the last font used" on save.
+        quillInstance.on("editor-change", (eventName: string) => {
+            if (eventName !== "text-change" && eventName !== "selection-change") return;
+            const range = quillInstance!.getSelection();
+            if (range) lastKnownFormat = quillInstance!.getFormat(range.index, range.length);
+        });
+    });
+
+    function handleImageMenuClickOutside(e: MouseEvent): void {
+        if (!imageMenuOpen) return;
+        const t = e.target as Node;
+        if (imageBtn?.contains(t) || imageMenuEl?.contains(t)) return;
+        closeImageMenu();
+    }
+    onMount(() => {
+        document.addEventListener("mousedown", handleImageMenuClickOutside);
+        return () => document.removeEventListener("mousedown", handleImageMenuClickOutside);
     });
 
     onDestroy(() => {
@@ -462,6 +550,24 @@
 
     export function focus(): void {
         quillInstance?.focus();
+        // Seed the typing format from the last-used font, but only while the editor is still empty —
+        // existing content already carries its own per-character formatting.
+        if (defaultTextFormat && quillInstance && quillInstance.getLength() <= 1) {
+            quillInstance.setSelection(0, 0, "silent");
+            if (defaultTextFormat["color"]) quillInstance.format("color", defaultTextFormat["color"]);
+            if (defaultTextFormat["font-size"]) quillInstance.format("size", defaultTextFormat["font-size"]);
+            if (defaultTextFormat["font-family"]) quillInstance.format("font", defaultTextFormat["font-family"]);
+        }
+    }
+
+    // Returns the text format (color, font-size, font-family) tracked at the caret, so the caller
+    // can remember it as "the last font used" for the next brand-new tooltip/popover.
+    export function getLastTextFormat(): Record<string, string> {
+        const result: Record<string, string> = {};
+        if (lastKnownFormat.color) result["color"] = lastKnownFormat.color;
+        if (lastKnownFormat.size) result["font-size"] = lastKnownFormat.size;
+        if (lastKnownFormat.font) result["font-family"] = lastKnownFormat.font;
+        return result;
     }
 
     // Update editor when value changes externally
@@ -494,6 +600,33 @@
             <StyleColorPicker bind:this={borderBottomPicker} value={borderBottomColor} onChange={onBorderBottomChange} />
         {/if}
     </div>
+    {#if imageMenuOpen}
+        <div
+            class="image-menu"
+            bind:this={imageMenuEl}
+            style="top: {imageMenuTop}px; left: {imageMenuLeft}px;"
+        >
+            {#if imageMenuMode === "menu"}
+                <button type="button" class="image-menu-item" onclick={chooseEmbeddedImage}>Embedded image</button>
+                <button type="button" class="image-menu-item" onclick={chooseImageLink}>Image link</button>
+            {:else}
+                <div class="image-menu-url">
+                    <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        placeholder="https://example.com/image.png"
+                        bind:this={imageUrlInput}
+                        bind:value={imageUrlValue}
+                        onkeydown={onImageUrlKeydown}
+                    />
+                    <div class="d-flex gap-1 mt-1">
+                        <button type="button" class="btn btn-sm btn-primary" onclick={insertImageLink}>Insert</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick={closeImageMenu}>Cancel</button>
+                    </div>
+                </div>
+            {/if}
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -596,5 +729,38 @@
     .quill-wrapper :global(.ql-text-bg svg) {
         width: 18px;
         height: 18px;
+    }
+
+    .image-menu {
+        position: fixed;
+        z-index: 9999;
+        background: white;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 6px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.13);
+        padding: 4px;
+        display: flex;
+        flex-direction: column;
+        min-width: 170px;
+    }
+
+    .image-menu-item {
+        background: none;
+        border: none;
+        text-align: left;
+        padding: 6px 10px;
+        font-size: 0.875rem;
+        border-radius: 4px;
+        cursor: pointer;
+        color: #212529;
+    }
+
+    .image-menu-item:hover {
+        background: #f0f3f8;
+    }
+
+    .image-menu-url {
+        padding: 6px;
+        width: 220px;
     }
 </style>

@@ -15,6 +15,8 @@ function serializeDrawingState(): string {
         elementAnnotations: commonState.elementAnnotations,
         shapeCount: commonState.shapeCount,
         lastUsedLabelProps: commonState.lastUsedLabelProps,
+        lastUsedAnnotationStyle: commonState.lastUsedAnnotationStyle,
+        lastUsedAnnotationFont: commonState.lastUsedAnnotationFont,
         baseCss: macroState.baseCss,
         microLayerDefinitions: microState.microLayerDefinitions,
     });

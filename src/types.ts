@@ -314,6 +314,9 @@ export interface StateCommon {
     currentMode: Mode;
     // TODO: remove and compute from last shape
     lastUsedLabelProps: CssDict;
+    lastUsedAnnotationStyle?: { tooltip?: CssDict; popover?: CssDict };
+    // Last-used text formatting (color, font-size, font-family) typed inside a tooltip/popover.
+    lastUsedAnnotationFont?: { tooltip?: CssDict; popover?: CssDict };
 }
 
 export interface GlobalState {

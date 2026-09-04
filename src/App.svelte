@@ -28,7 +28,7 @@
     import Icon from "./components/Icon.svelte";
     import { exportStyleSheet, getUsedInlineFonts, fontsToCss, applyStyles } from "./util/dom";
     import { getState, saveState, registerServerSync } from "./util/save";
-    import { defaultGlowParams } from "./stateDefaults";
+    import { defaultGlowParams, defaultAnnotationStyle } from "./stateDefaults";
     import { undo, redo, setRestoring, clearHistory } from "./util/history";
     import { type ExportOptions } from "./svg/export";
     import ExportModal from "./components/ExportModal.svelte";
@@ -122,6 +122,9 @@
     let annotationEditingType = $state<"tooltip" | "popover">("tooltip");
     let annotationEditorContent = $state("");
     let annotationContainerStyle = $state<Record<string, string>>({});
+    // Default text formatting (color, size, font-family) seeded from the last-used font when starting
+    // brand-new (empty) content — undefined when editing existing content, whose text keeps its own formatting.
+    let annotationDefaultTextFormat = $state<Record<string, string> | undefined>(undefined);
     let annotationQuillEditor: ReturnType<typeof QuillEditor> | null = $state(null);
     let annotationEditorKeyHandler: ((e: KeyboardEvent) => void) | null = null;
 
@@ -364,9 +367,8 @@
                 }
             } else if (e.code === "Delete" || e.code === "Backspace") {
                 if (isSelectionActive()) {
-                    // Don't intercept if user is typing in an input/textarea
-                    const tag = (e.target as HTMLElement)?.tagName;
-                    if (tag === "INPUT" || tag === "TEXTAREA") return;
+                    const target = e.target as HTMLElement;
+                    if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
                     e.preventDefault();
                     deleteSelected(() => redrawEntities());
                 }
@@ -395,7 +397,9 @@
             // relatedTarget is null when the drag leaves the browser window entirely.
             if (!e.relatedTarget) isDraggingImage = false;
         });
-        document.addEventListener('drop', () => { isDraggingImage = false; });
+        // Capture phase so this always runs before a nested drop handler (e.g. the Quill editor's
+        // image drop handler) can stop the event from bubbling back up to document.
+        document.addEventListener('drop', () => { isDraggingImage = false; }, true);
     });
 
     function attachListeners(): void {
@@ -1384,24 +1388,13 @@
             annotationContainerStyle =
                 Object.keys(style).length > 0
                     ? style
-                    : {
-                          "background-color": "white",
-                          padding: "4px 8px",
-                          "border-radius": "4px",
-                          "font-size": "0.82rem",
-                          "max-width": "15rem",
-                          width: "max-content",
-                      };
+                    : { ...(commonState.lastUsedAnnotationStyle?.[type] ?? defaultAnnotationStyle) };
+            // Existing content already carries its own per-character formatting — don't override it.
+            annotationDefaultTextFormat = undefined;
         } else {
             annotationEditorContent = "";
-            annotationContainerStyle = {
-                "background-color": "white",
-                padding: "4px 8px",
-                "border-radius": "4px",
-                "font-size": "0.82rem",
-                "max-width": "15rem",
-                width: "max-content",
-            };
+            annotationContainerStyle = { ...(commonState.lastUsedAnnotationStyle?.[type] ?? defaultAnnotationStyle) };
+            annotationDefaultTextFormat = commonState.lastUsedAnnotationFont?.[type];
         }
         annotationEditorOpen = true;
         closeMenu();
@@ -1439,6 +1432,13 @@
             if (el) (el as SVGElement).style.cursor = "pointer";
         }
         commonState.elementAnnotations[annotationEditingElemId] = entry;
+        if (!commonState.lastUsedAnnotationStyle) commonState.lastUsedAnnotationStyle = {};
+        commonState.lastUsedAnnotationStyle[annotationEditingType] = { ...annotationContainerStyle };
+        const textFormat = annotationQuillEditor?.getLastTextFormat();
+        if (textFormat && Object.keys(textFormat).length > 0) {
+            if (!commonState.lastUsedAnnotationFont) commonState.lastUsedAnnotationFont = {};
+            commonState.lastUsedAnnotationFont[annotationEditingType] = textFormat;
+        }
         saveState();
     }
 
@@ -1707,6 +1707,7 @@
                 bind:this={annotationQuillEditor}
                 bind:value={annotationEditorContent}
                 bind:containerStyle={annotationContainerStyle}
+                defaultTextFormat={annotationDefaultTextFormat}
                 placeholder=""
                 fonts={commonState.providedFonts.map((f) => f.name)}
             />
