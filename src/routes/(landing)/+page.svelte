@@ -107,6 +107,30 @@
         "linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #3a2a1a 100%)",
     },
     {
+      id: "greece-trip",
+      title: "Greece — Travel Map",
+      description:
+        "A parchment-styled map of a trip across Greece, with curved routes linking each stop. Click a city label for a popover with trip notes.",
+      highlights: ["Parchment palette", "Curved routes", "City popovers"],
+      animated: true,
+      src: "/showcase/macro/greece-trip.svg",
+      aspectRatio: "668 / 720",
+      gradient:
+        "linear-gradient(160deg, #f0e4c8 0%, #c9b795 50%, #8c3a1e 100%)",
+    },
+     {
+      id: "midnight",
+      title: "Norway — Hours of Daylight",
+      description:
+        "A midnight-toned choropleth of Norway's regions, shaded by hours of daylight on the winter solstice. Click a city pin for a popover with more detail.",
+      highlights: ["Choropleth", "City popovers", "Midnight palette"],
+      animated: true,
+      src: "/showcase/macro/midnight.svg",
+      aspectRatio: "668 / 763",
+      gradient:
+        "radial-gradient(ellipse at 50% 40%, #16283d 0%, #0a1626 50%, #050d18 100%)",
+    },
+    {
       id: "japan",
       title: "Japan — Population by Prefecture",
       description:
@@ -128,18 +152,6 @@
       aspectRatio: "1 / 1",
       gradient:
         "linear-gradient(135deg, #1a2535 0%, #1e3a5a 50%, #1a3050 100%)",
-    },
-    {
-      id: "gdp",
-      title: "Europe — GDP per Capita",
-      description:
-        "A globe centered on Europe, where each country is shaded by wealth per person. Hover any country to see the exact figure. Built from IMF data in minutes.",
-      highlights: ["Globe view", "Continuous choropleth", "Hover tooltips"],
-      animated: true,
-      src: "/showcase/macro/gdp.svg",
-      aspectRatio: "1 / 1",
-      gradient:
-        "radial-gradient(ellipse at 50% 40%, #1d3557 0%, #0d1f3c 50%, #080f1e 100%)",
     },
 
     {
@@ -166,6 +178,7 @@
       gradient:
         "linear-gradient(135deg, #1a1a3a 0%, #2a2a5a 50%, #1a2a6a 100%)",
     },
+    
   ];
 
   const AUTOPLAY_MS = 5000;
@@ -1184,20 +1197,14 @@
                 ></td
               >
               <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
+                title="Only on Datawrapper's Custom/Enterprise plans (from $599/mo), and meant for touch-ups in Illustrator — not for pasting straight into a page."
+                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
                   ><line
                     x1="3.5"
-                    y1="3.5"
+                    y1="8"
                     x2="12.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
+                    y2="8"
+                    stroke-width="2"
                     stroke-linecap="round"
                   /></svg
                 ></td
@@ -1249,20 +1256,14 @@
                 ></td
               >
               <td
-                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
+                title="The default embed depends on Datawrapper's servers forever. A standalone offline file only exists behind the $599/mo Custom plan, and drops the live interactivity."
+                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
                   ><line
                     x1="3.5"
-                    y1="3.5"
+                    y1="8"
                     x2="12.5"
-                    y2="12.5"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  /><line
-                    x1="12.5"
-                    y1="3.5"
-                    x2="3.5"
-                    y2="12.5"
-                    stroke-width="1.8"
+                    y2="8"
+                    stroke-width="2"
                     stroke-linecap="round"
                   /></svg
                 ></td
@@ -1573,6 +1574,138 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
+                  /></svg
+                ></td
+              >
+            </tr>
+            <tr>
+              <td class="compare-feature"
+                >Export highly optimized for small file size</td
+              >
+              <td class="compare-col-us"
+                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
+                  ><polyline
+                    points="2.5 8.5 6.5 12.5 13.5 4"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /></svg
+                ></td
+              >
+              <td
+                title="Built for editing in Illustrator, not for the web — Datawrapper's own docs warn that detailed locator map exports get heavy enough (300KB+) to slow down graphics software."
+                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
+                    x1="12.5"
+                    y1="3.5"
+                    x2="3.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /></svg
+                ></td
+              >
+              <td
+                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
+                  ><line
+                    x1="3.5"
+                    y1="8"
+                    x2="12.5"
+                    y2="8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
+                ></td
+              >
+              <td
+                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
+                    x1="12.5"
+                    y1="3.5"
+                    x2="3.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /></svg
+                ></td
+              >
+            </tr>
+            <tr>
+              <td class="compare-feature"
+                >Interactive 3D globe (tilt, rotate, altitude)</td
+              >
+              <td class="compare-col-us"
+                ><svg class="ci-check" viewBox="0 0 16 16" fill="none"
+                  ><polyline
+                    points="2.5 8.5 6.5 12.5 13.5 4"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /></svg
+                ></td
+              >
+              <td
+                title="Datawrapper only offers a small static globe as an inset thumbnail, not as an interactive main projection."
+                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
+                    x1="12.5"
+                    y1="3.5"
+                    x2="3.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /></svg
+                ></td
+              >
+              <td
+                ><svg class="ci-dash" viewBox="0 0 16 16" fill="none"
+                  ><line
+                    x1="3.5"
+                    y1="8"
+                    x2="12.5"
+                    y2="8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
+                ></td
+              >
+              <td
+                ><svg class="ci-cross" viewBox="0 0 16 16" fill="none"
+                  ><line
+                    x1="3.5"
+                    y1="3.5"
+                    x2="12.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  /><line
+                    x1="12.5"
+                    y1="3.5"
+                    x2="3.5"
+                    y2="12.5"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
                   /></svg
                 ></td
               >

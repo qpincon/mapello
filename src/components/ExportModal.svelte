@@ -290,8 +290,8 @@
 
                 {#if inlineFontUsed}
                     <hr />
-                    <h6 class="mb-2">Font</h6>
-                    <p class="text-muted small mb-2">Will the font be used elsewhere on your page?</p>
+                    <h6 class="mb-2">Fonts</h6>
+                    <p class="text-muted small mb-2">Will the fonts be used elsewhere on your page?</p>
                     <div class="form-check">
                         <input
                             class="form-check-input"
