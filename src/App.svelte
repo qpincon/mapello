@@ -277,7 +277,10 @@
     // refresh the export quota), even when it's still the same logged-in user — without this
     // guard, that reference change alone was mistaken for a fresh login and re-ran the check,
     // which could re-open the "Welcome back" project picker right after an export finished.
-    let lastCheckedUserId: string | null = null;
+    // Seeded from whoever is already logged in when the app boots, so a session that was already
+    // active on load is never mistaken for a fresh login — only a later null → id transition
+    // (an actual sign-in during this run) should open the project picker.
+    let lastCheckedUserId: string | null = currentUser?.id ?? null;
 
     $effect(() => {
         const uid = currentUser?.id ?? null;

@@ -3,6 +3,11 @@ import { auth } from '$lib/server/auth';
 import { getActiveSubscription, getExportsUsed } from '$lib/server/subscription';
 import { FREE_EXPORT_LIMIT, REFUND_WINDOW_DAYS, SUPER_USER_EMAILS } from '$lib/billing-constants';
 
+// Scoped to the (authed) group (app + account) rather than the root layout so it never shares
+// a load node with the prerendered (landing) pages. Sharing it with prerendered pages meant the
+// session data was baked in at build time (always logged out) and reused as-is by the client
+// router when navigating from a landing page into the app, since cookies aren't a tracked
+// load dependency — only a hard refresh forced a fresh, request-time session check.
 export const load: LayoutServerLoad = async ({ request }) => {
 	const session = await auth.api.getSession({ headers: request.headers });
 	const currentUser = session?.user ?? null;

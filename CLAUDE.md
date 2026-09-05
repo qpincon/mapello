@@ -171,7 +171,7 @@ The app uses **better-auth** for user authentication. The app is fully usable wi
 - Server config: `src/lib/server/auth.ts` — configures email/password auth and optional Google OAuth (if `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` env vars are set). Uses `sveltekitCookies(getRequestEvent)` plugin from `$app/server`.
 - Browser client: `src/lib/auth-client.ts` — exports `signIn`, `signUp`, `signOut` from `better-auth/client`.
 - SvelteKit hook: `src/hooks.server.ts` — wires `svelteKitHandler` from `better-auth/svelte-kit` to handle all `/api/auth/*` requests.
-- Session loading: `src/routes/+layout.server.ts` — calls `auth.api.getSession()` on every request and exposes `user`/`session` via `page.data`.
+- Session loading: `src/routes/(authed)/+layout.server.ts` — calls `auth.api.getSession()` on every request and exposes `user`/`session` via `page.data`. See "SvelteKit routing notes" below for why this isn't in the root layout.
 - Auth API route: `src/routes/api/auth/[...all]/+server.ts` — passes requests to better-auth via `toSvelteKitHandler`.
 - After login/logout: call `invalidateAll()` from `$app/navigation` to refresh `page.data.user`.
 - UI: `AuthModal.svelte` (login/register with Google button), user dropdown with "Sign out" in the app navbar.
@@ -205,7 +205,8 @@ Logged-in users can save multiple named projects to the backend. Each project st
 - `getProjectJson()` in `App.svelte`: builds the project JSON (same format as `saveProject()` local download).
 
 ### SvelteKit routing notes
-- `src/routes/+layout.ts`: `prerender` is **not** set (was removed to allow server-side session loading).
-- `src/routes/app/+page.ts`: `export const ssr = false` — the map app page is client-only.
+- Route groups: `(landing)` holds the prerendered marketing pages (`prerender = true` per page); `(authed)` holds `(app)` (the map editor, `/app`, `/reset-password`) and `account`.
+- `src/routes/(authed)/+layout.server.ts` is where the auth session (`auth.api.getSession`), subscription, and export-quota data are loaded. It is intentionally scoped to `(authed)` rather than the root layout so it never shares a load node with the prerendered `(landing)` pages — sharing it previously baked a logged-out session into the landing pages at build time, which the client router then reused (unchanged) when navigating into `/app`, since cookies aren't a tracked load dependency. Only a hard refresh forced a fresh, request-time session check. Root `src/routes/+layout.server.ts`/`+layout.ts` no longer exist.
+- `src/routes/(authed)/(app)/app/+page.ts`: `export const ssr = false` — the map app page is client-only.
 - `src/app.d.ts`: declares `App.Locals` (user, session) and `App.PageData` (user, session) for TypeScript.
 - `tsconfig.json` `paths` includes `$lib`/`$lib/*` manually because the project-level `paths` object overrides the auto-generated `.svelte-kit/tsconfig.json` paths.
