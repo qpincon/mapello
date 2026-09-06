@@ -289,21 +289,21 @@ export async function drawPrettyMap(
             false
         );
     }
-    const svgNode = svg.node() as SVGSVGElement;
-    const buildingsGroup = svgNode.querySelector('#buildings');
-    const buildingPaths = buildingsGroup
-        ? [...buildingsGroup.querySelectorAll<SVGPathElement>('path')]
-        : [...svgNode.querySelectorAll<SVGPathElement>('.buildings')];
-    const microGroup = svgNode.querySelector('#micro');
-    const linePaths = microGroup
-        ? [...microGroup.querySelectorAll<SVGPathElement>('path.line')]
-        : [];
-
+    
     drawMicroFrame(svg, width, height, borderWidth, borderRadius, borderPadding, borderColor, false, outerFrameRx);
     mapLibreContainer.style('opacity', 0);
     setTimeout(() => {
         postClip(generalParams);
-        // if (buildingPaths.length > 0 || linePaths.length > 0) removeNotRenderedElements(linePaths, buildingPaths);
+        const svgNode = svg.node() as SVGSVGElement;
+        const buildingsGroup = svgNode.querySelector('#buildings');
+        const buildingPaths = buildingsGroup
+            ? [...buildingsGroup.querySelectorAll<SVGPathElement>('path')]
+            : [...svgNode.querySelectorAll<SVGPathElement>('.buildings')];
+        const microGroup = svgNode.querySelector('#micro');
+        const linePaths = microGroup
+            ? [...microGroup.querySelectorAll<SVGPathElement>('path.line')]
+            : [];
+        if (buildingPaths.length > 0 || linePaths.length > 0) removeNotRenderedElements(linePaths, buildingPaths);
     }, 200);
     pendingCutout = applyCutoutsDeferred(svg, d3PathFunction, mainFeatures, cutoutFeatures);
 }
