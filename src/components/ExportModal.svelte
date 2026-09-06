@@ -23,9 +23,10 @@
         onUpgrade: () => void;
         /** null = Pro / unlimited; number = free quota left */
         exportsRemaining: number | null;
+        hideBrand: boolean;
     }
 
-    let { open = $bindable(), mode, svgNode, inlineFontUsed, computeMacroCss, onExport, onClosed, onUpgrade, exportsRemaining }: Props = $props();
+    let { open = $bindable(), mode, svgNode, inlineFontUsed, computeMacroCss, onExport, onClosed, onUpgrade, exportsRemaining, hideBrand }: Props = $props();
 
     let localRemaining: number | null = $state(null);
     let exportLoading = $state(false);
@@ -84,6 +85,7 @@
             customAttributions: validAttributions.length > 0 ? validAttributions : undefined,
             texture: texture || undefined,
             textureMode: texture ? textureMode : undefined,
+            hideBrand,
         };
     }
 
@@ -102,6 +104,7 @@
             customAttributions: validAttributions.length > 0 ? validAttributions : undefined,
             texture: texture || undefined,
             textureMode: texture ? textureMode : undefined,
+            hideBrand,
         };
         let svgString: string | void;
         if (mode === "macro") {

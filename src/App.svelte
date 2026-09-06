@@ -2067,6 +2067,7 @@
     onClosed={() => (showExportConfirm = false)}
     onUpgrade={() => { showExportConfirm = false; showUpgradeModal = true; }}
     exportsRemaining={page.data.exportsRemaining ?? null}
+    hideBrand={isSuperUser || !!page.data.subscription}
 />
 
 <PostExportInfoModal bind:open={showPostExportInfo} onClosed={() => (showPostExportInfo = false)} />
