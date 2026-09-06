@@ -849,7 +849,8 @@ export function generateCssFromState(state: MicroPalette): string | null {
                 css += updateStyleSheetOrGenerateCss(sheet, `#micro .${layer}-${i}:hover`, { 'fill': lighten(fill) });
             });
             if (layerDef['3dBuildings']) {
-                css += updateStyleSheetOrGenerateCss(sheet, `#buildings`, { 'stroke': layerDef.stroke!, 'stroke-linejoin': 'round' });
+                // 'miter' instead of 'round' avoids the expensive round-join arc tessellation
+                css += updateStyleSheetOrGenerateCss(sheet, `#buildings`, { 'stroke': layerDef.stroke!, 'stroke-linejoin': 'miter' });
                 layerDef.fills.forEach((fill, i) => {
                     css += updateStyleSheetOrGenerateCss(sheet, `#buildings .${layer}-${i}`, {
                         '--building-color': fill,
