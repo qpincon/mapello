@@ -11,9 +11,11 @@ declare global {
 		}
 		interface PageData {
 			user: User | null;
-			session: Session | null;
+			// Narrowed on the server (src/routes/(authed)/+layout.server.ts) — never the full
+			// Session, which carries the httpOnly cookie's token value.
+			session: { expiresAt: Session['expiresAt'] } | null;
 			isSuperUser: boolean;
-			subscription: import('$lib/server/subscription-schema').Subscription | null;
+			subscription: import('$lib/server/subscription-schema').PublicSubscription | null;
 			exportsRemaining: number | null;
 			refundEligible: boolean;
 		}

@@ -1,6 +1,6 @@
-import { json, error } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
-import { auth } from '$lib/server/auth';
+import { requireUser } from '$lib/server/session';
 import { getPaddle } from '$lib/server/paddle';
 import { db } from '$lib/server/db';
 import { subscription } from '$lib/server/subscription-schema';
@@ -8,8 +8,7 @@ import { user } from '$lib/server/auth-schema';
 import { eq, and, inArray, gt } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request }) => {
-	const session = await auth.api.getSession({ headers: request.headers });
-	if (!session?.user) throw error(401, 'Not logged in');
+	const authedUser = await requireUser(request);
 
 	const now = new Date();
 	const activeSubs = await db
@@ -17,7 +16,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		.from(subscription)
 		.where(
 			and(
-				eq(subscription.userId, session.user.id),
+				eq(subscription.userId, authedUser.id),
 				inArray(subscription.status, ['active', 'trialing'] as const),
 				gt(subscription.currentPeriodEnd, now),
 			),
@@ -33,7 +32,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	// Cascade deletes sessions, subscriptions, projects
-	await db.delete(user).where(eq(user.id, session.user.id));
+	await db.delete(user).where(eq(user.id, authedUser.id));
 
 	return json({ ok: true });
 };

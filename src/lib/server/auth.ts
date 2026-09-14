@@ -14,6 +14,17 @@ const disposableDomainSet = new Set(disposableDomains);
 const googleClientId = env.GOOGLE_CLIENT_ID;
 const googleClientSecret = env.GOOGLE_CLIENT_SECRET;
 
+// The repo (and this fallback secret) is public, so falling back to it in production would mean
+// session cookies are forgeable by anyone who reads the source. Fail loudly at startup instead of
+// silently serving with a known signing key.
+const isProd = process.env.NODE_ENV === 'production';
+if (isProd && (!env.BETTER_AUTH_SECRET || env.BETTER_AUTH_SECRET.length < 32)) {
+	throw new Error('BETTER_AUTH_SECRET is not set (or is shorter than 32 chars) in production');
+}
+if (isProd && !env.BETTER_AUTH_URL) {
+	throw new Error('BETTER_AUTH_URL is not set in production');
+}
+
 export const auth = betterAuth({
 	secret: env.BETTER_AUTH_SECRET ?? 'dev-secret-change-in-production',
 	baseURL: env.BETTER_AUTH_URL ?? 'http://localhost:5173',
@@ -67,6 +78,20 @@ export const auth = betterAuth({
 				},
 			}
 			: {}),
+	},
+	account: {
+		accountLinking: {
+			enabled: true,
+			// Pins the fix for GHSA-g38m-r43w-p2q7 (account takeover via OAuth auto-link to an
+			// unverified pre-registered email) as our own config rather than relying on the
+			// library default: an attacker who pre-registers a victim's email with a password
+			// (requireEmailVerification means that row stays unverified) must not have the
+			// victim's later Google sign-in auto-link into that attacker-owned row. better-auth
+			// >=1.7 defaults this to true already, but we assert it explicitly so a future
+			// library default change can't silently reopen the hole.
+			requireLocalEmailVerified: true,
+			allowDifferentEmails: false,
+		},
 	},
 	databaseHooks: {
 		user: {

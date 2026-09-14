@@ -1,8 +1,22 @@
 import { eq, and, gt, inArray } from 'drizzle-orm';
 import { db } from './db';
-import { subscription, webhookEvent, type SubscriptionStatus } from './subscription-schema';
+import { subscription, webhookEvent, type SubscriptionStatus, type Subscription, type PublicSubscription } from './subscription-schema';
 import { user } from './auth-schema';
 import { FREE_EXPORT_LIMIT } from '$lib/billing-constants';
+
+// Strips Paddle identifiers and internal bookkeeping before a subscription row is sent to the
+// browser (e.g. via a page `load` function) — see src/routes/(authed)/+layout.server.ts.
+export function toPublicSubscription(sub: Subscription): PublicSubscription {
+	return {
+		status: sub.status,
+		currentPeriodStart: sub.currentPeriodStart,
+		currentPeriodEnd: sub.currentPeriodEnd,
+		cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+		canceledAt: sub.canceledAt,
+		refundRequestedAt: sub.refundRequestedAt,
+		createdAt: sub.createdAt,
+	};
+}
 
 export async function getActiveSubscription(userId: string) {
 	const now = new Date();

@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
-import { auth } from '$lib/server/auth';
+import { requireUser } from '$lib/server/session';
 import { getPaddle } from '$lib/server/paddle';
 import { db } from '$lib/server/db';
 import { subscription } from '$lib/server/subscription-schema';
@@ -10,8 +10,7 @@ import { REFUND_WINDOW_DAYS } from '$lib/billing-constants';
 const WINDOW_MS = REFUND_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
 export const POST: RequestHandler = async ({ request }) => {
-	const session = await auth.api.getSession({ headers: request.headers });
-	if (!session?.user) throw error(401, 'Not logged in');
+	const user = await requireUser(request);
 
 	const now = new Date();
 	const [sub] = await db
@@ -19,7 +18,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		.from(subscription)
 		.where(
 			and(
-				eq(subscription.userId, session.user.id),
+				eq(subscription.userId, user.id),
 				inArray(subscription.status, ['active', 'trialing'] as const),
 				gt(subscription.currentPeriodEnd, now),
 			),

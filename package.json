@@ -14,7 +14,7 @@
   "author": "Quentin Pinçon",
   "license": "AGPL-3.0-only",
   "devDependencies": {
-    "@sveltejs/adapter-node": "^5.5.4",
+    "@sveltejs/adapter-node": "^5.5.7",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "@tsconfig/svelte": "^5.0.4",
@@ -94,6 +94,6 @@
     "terser": "^5.16.2",
     "topojson-client": "^3.1.0",
     "topojson-simplify": "^3.0.3",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   }
 }

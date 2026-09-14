@@ -31,6 +31,13 @@ export const webhookEvent = sqliteTable('webhook_event', {
 
 export type Subscription = typeof subscription.$inferSelect;
 
+// Fields safe to send to the browser — excludes Paddle identifiers (paddleSubscriptionId,
+// paddleCustomerId, paddlePriceId) and internal bookkeeping (id, userId) that the UI never needs.
+export type PublicSubscription = Pick<
+	Subscription,
+	'status' | 'currentPeriodStart' | 'currentPeriodEnd' | 'cancelAtPeriodEnd' | 'canceledAt' | 'refundRequestedAt' | 'createdAt'
+>;
+
 export const subscriptionRelations = relations(subscription, ({ one }) => ({
 	user: one(user, {
 		fields: [subscription.userId],

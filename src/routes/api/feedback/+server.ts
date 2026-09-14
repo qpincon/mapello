@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
 import { json, error } from '@sveltejs/kit';
-import { auth } from '$lib/server/auth';
+import { requireUser } from '$lib/server/session';
 import { resend } from '$lib/server/email';
 
 const ALLOWED_CATEGORIES = ['bug', 'feature', 'other'] as const;
@@ -28,11 +28,19 @@ function checkRateLimit(userId: string): boolean {
 	return true;
 }
 
-export const POST: RequestHandler = async ({ request }) => {
-	const session = await auth.api.getSession({ headers: request.headers });
-	if (!session?.user) throw error(401, 'Unauthorized');
+function escapeHtml(value: string): string {
+	return value
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
+}
 
-	if (!checkRateLimit(session.user.id)) {
+export const POST: RequestHandler = async ({ request }) => {
+	const user = await requireUser(request);
+
+	if (!checkRateLimit(user.id)) {
 		throw error(429, 'Too many feedback submissions. Please wait a few minutes.');
 	}
 
@@ -45,24 +53,27 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (trimmed.length === 0) throw error(400, 'Message is required');
 	if (trimmed.length > 5000) throw error(400, 'Message is too long (max 5000 characters)');
 
+	const validProjectId = Number.isInteger(projectId) ? projectId : undefined;
+	const validProjectName = typeof projectName === 'string' ? projectName : undefined;
+
 	const userAgent = request.headers.get('user-agent') ?? 'unknown';
 	const categoryLabel = CATEGORY_LABELS[category as Category];
 
 	const projectLine =
-		projectId && projectName
-			? `Project: ${projectName} (id: ${projectId})`
+		validProjectId !== undefined && validProjectName
+			? `Project: ${validProjectName} (id: ${validProjectId})`
 			: 'Project: none (not saved)';
 
 	const metaText = [
-		`From: ${session.user.email}`,
+		`From: ${user.email}`,
 		projectLine,
 		`Browser: ${userAgent}`,
 	].join('\n');
 
 	const metaHtml = [
-		`<b>From:</b> ${session.user.email}`,
-		`<b>${projectLine}</b>`,
-		`<b>Browser:</b> ${userAgent}`,
+		`<b>From:</b> ${escapeHtml(user.email)}`,
+		`<b>${escapeHtml(projectLine)}</b>`,
+		`<b>Browser:</b> ${escapeHtml(userAgent)}`,
 	]
 		.map((l) => `<p style="margin:0 0 4px">${l}</p>`)
 		.join('');
@@ -70,10 +81,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	await resend.emails.send({
 		from: 'Mapello Feedback <noreply@mapello.net>',
 		to: 'support@mapello.net',
-		replyTo: session.user.email,
-		subject: `[${categoryLabel}] from ${session.user.email}`,
+		replyTo: user.email,
+		subject: `[${categoryLabel}] from ${user.email}`,
 		text: `${trimmed}\n\n---\n${metaText}`,
-		html: `<p style="white-space:pre-wrap">${trimmed}</p><hr/>${metaHtml}`,
+		html: `<p style="white-space:pre-wrap">${escapeHtml(trimmed)}</p><hr/>${metaHtml}`,
 	});
 
 	return json({ ok: true });

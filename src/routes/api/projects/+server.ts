@@ -1,17 +1,11 @@
 import type { RequestHandler } from './$types';
 import { json, error } from '@sveltejs/kit';
-import { auth } from '$lib/server/auth';
+import { requireUser } from '$lib/server/session';
 import { db } from '$lib/server/db';
-import { userProjects, MAX_PROJECT_BYTES } from '$lib/server/schema';
+import { userProjects, validProjectName, validProjectJson } from '$lib/server/schema';
 import { isPro } from '$lib/server/subscription';
 import { FREE_PROJECT_LIMIT, PRO_PROJECT_LIMIT } from '$lib/billing-constants';
 import { eq, desc, count } from 'drizzle-orm';
-
-async function requireUser(request: Request) {
-	const session = await auth.api.getSession({ headers: request.headers });
-	if (!session?.user) throw error(401, 'Unauthorized');
-	return session.user;
-}
 
 export const GET: RequestHandler = async ({ request }) => {
 	const user = await requireUser(request);
@@ -31,8 +25,8 @@ export const GET: RequestHandler = async ({ request }) => {
 export const POST: RequestHandler = async ({ request }) => {
 	const user = await requireUser(request);
 	const body = await request.json();
-	const { name, project_json } = body;
-	if (!name || !project_json) throw error(400, 'Missing name or project_json');
+	const name = validProjectName(body.name);
+	const projectJson = validProjectJson(body.project_json);
 
 	const [{ total }] = await db.select({ total: count() }).from(userProjects).where(eq(userProjects.userId, user.id));
 	const limit = (await isPro(user.id)) ? PRO_PROJECT_LIMIT : FREE_PROJECT_LIMIT;
@@ -40,15 +34,11 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(403, `Project limit reached (maximum ${limit})`);
 	}
 
-	if (new TextEncoder().encode(project_json).byteLength > MAX_PROJECT_BYTES) {
-		throw error(413, 'Project is too large to save. Please delete or resize some images and try again.');
-	}
-
 	const now = Date.now();
 	const [created] = await db.insert(userProjects).values({
 		userId: user.id,
 		name,
-		projectJson: project_json,
+		projectJson,
 		createdAt: now,
 		updatedAt: now,
 	}).returning({ id: userProjects.id });

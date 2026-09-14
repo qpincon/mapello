@@ -1,6 +1,6 @@
 import type { LayoutServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
-import { getActiveSubscription, getExportsUsed } from '$lib/server/subscription';
+import { getActiveSubscription, getExportsUsed, toPublicSubscription } from '$lib/server/subscription';
 import { FREE_EXPORT_LIMIT, REFUND_WINDOW_DAYS, SUPER_USER_EMAILS } from '$lib/billing-constants';
 
 // Scoped to the (authed) group (app + account) rather than the root layout so it never shares
@@ -35,9 +35,17 @@ export const load: LayoutServerLoad = async ({ request }) => {
 
 	return {
 		user: currentUser,
-		session: session?.session ?? null,
+		// Only the session's expiry is safe to expose to the browser — the full row includes
+		// `token`, which is the value of the httpOnly session cookie. Serializing it into the
+		// page data would let any XSS (or a cached page, or a DOM-capturing tool) steal live
+		// sessions, defeating the httpOnly protection entirely. Nothing in the client reads
+		// anything else off `session`.
+		session: session?.session ? { expiresAt: session.session.expiresAt } : null,
 		isSuperUser,
-		subscription,
+		// Paddle identifiers (subscription/customer/price ids) stay server-side — the UI only
+		// needs status/dates, and there's no reason to hand an attacker-readable Paddle
+		// subscription id to the browser.
+		subscription: subscription ? toPublicSubscription(subscription) : null,
 		exportsRemaining,
 		refundEligible,
 	};
