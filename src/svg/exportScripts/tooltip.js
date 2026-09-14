@@ -33,6 +33,17 @@ ttDiv.classList.add('body');
 ttDiv.style.cssText = 'position:absolute;left:0;top:0;width:max-content;opacity:0;pointer-events:none;transform-origin:0 0;will-change:transform,opacity;overflow-wrap:break-word';
 ttFO.appendChild(ttDiv);
 
+// Mirrors escapeHtml() in src/util/common.ts — duplicated because this script runs standalone
+// in the exported SVG with no build step / imports.
+function _escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function buildTooltipHtml(rawData, templateStr, shapeId) {
     if (!rawData) return;
     // Check if all data values are empty/zero — if so, don't show tooltip
@@ -43,10 +54,22 @@ function buildTooltipHtml(rawData, templateStr, shapeId) {
     for (const k in rawData) {
         data[k] = (!rawData[k] && rawData[k] !== false && rawData[k] !== 0) ? 'N/A' : rawData[k];
     }
-    // shapeId is referenced by `eval` below: export.ts rewrites the template's __NAME__
-    // placeholder to a bare `shapeId` identifier (not `data.name`), so it must be in scope here.
-    const parsed = parser.parseFromString(eval('`' + templateStr + '`'), 'text/html').querySelector('body');
-    return parsed.firstChild ? parsed.firstChild.outerHTML : undefined;
+    // __name__ refers to the shape's own id/name (not part of `data` — see export.ts's usedVars
+    // filter), everything else is looked up in `data`. Substituted values are HTML-escaped since
+    // they come from user-imported spreadsheet data; the surrounding template markup is the
+    // author's own and is left untouched.
+    const html = templateStr.replace(/__(\w+)__/g, (_, key) => {
+        const val = key === 'name' ? shapeId : data[key];
+        return _escapeHtml(val == null ? '' : String(val));
+    });
+    const parsed = parser.parseFromString(html, 'text/html').querySelector('body');
+    if (!parsed.firstChild) return undefined;
+    // XMLSerializer, not .outerHTML — outerHTML uses HTML serialization rules, which drop the
+    // self-closing slash off void elements like <img>. That breaks ttDiv.innerHTML = ... once
+    // the exported file is opened standalone (an XML document, which requires well-formed
+    // markup); XMLSerializer always keeps void elements self-closed.
+    return new XMLSerializer().serializeToString(parsed.firstChild)
+        .replace(/ xmlns="http:\/\/www\.w3\.org\/1999\/xhtml"/g, '');
 }
 
 function hideTooltip() {

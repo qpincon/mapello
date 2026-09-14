@@ -8,7 +8,7 @@ const svgoConfig = {
     ...svgoConfigBase,
     plugins: [...svgoConfigBase.plugins, 'removeOffCanvasPaths'],
 };
-import { discriminateCssForExport, download, htmlToElement, indexBy, pick, randomString, xhtmlifyHtml } from 'src/util/common';
+import { discriminateCssForExport, download, htmlToElement, indexBy, pick, randomString, xhtmlifyHtml, jsonForScript } from 'src/util/common';
 import { encodeSVGDataImageStr, getContourSource, imageFromSpecialGElemStr } from 'src/svg/contourMethods';
 import { transitionCssMacro } from 'src/svg/transition';
 
@@ -120,13 +120,13 @@ export async function exportMacro(
         usedVars = [...new Set(usedVars)];
         usedVars = usedVars.filter(v => v !== 'name');
 
-        let functionStr = ttTemplate.replaceAll(/__(\w+)__/gi, '${data.$1}');
-        functionStr = functionStr.replace('data.name', 'shapeId');
-        // Escape literal $ that aren't part of ${data.} or ${shapeId} template expressions,
-        // so they survive eval('`' + str + '`') in the exported tooltip script
-        functionStr = functionStr.replace(/\$(?!\{(?:data\.|shapeId))/g, "&#36;");
-        finalDataByGroup.tooltips[groupId] = functionStr;
-
+        // Placeholders passed through as-is — the exported tooltip script (tooltip.js) does its
+        // own __field__ substitution. xhtmlifyHtml() self-closes void elements (<img>, <br>, ...)
+        // in the author's template, same as for element annotations below: this template ends up
+        // embedded in the exported <script>, and needs to stay valid XML for when the file is
+        // opened standalone.
+        finalDataByGroup.tooltips[groupId] = xhtmlifyHtml(ttTemplate);
+        
         const zonesDataDup = JSON.parse(JSON.stringify(stateMacro.zonesData[groupId].data));
         stateMacro.zonesData[groupId].numericCols.forEach(colDef => {
             const col = colDef.column;
@@ -153,7 +153,8 @@ export async function exportMacro(
         finalDataByGroup.data[groupId] = finalData;
     });
 
-    // Build tooltip code by replacing placeholders with actual values
+    // __DATA_BY_GROUP__ / __ANNOTATION_IDS__ are deliberately left un-substituted here — the
+    // actual JSON is injected after minification, further below. See the comment there for why.
     const annotationTooltipIds = elementAnnotations
         ? Object.entries(elementAnnotations).filter(([, v]) => v.tooltip).map(([k]) => k)
         : [];
@@ -161,8 +162,6 @@ export async function exportMacro(
         ? tooltipScript
             .replaceAll('__WIDTH__', stateMacro.macroParams.General.width.toString())
             .replaceAll('__HEIGHT__', stateMacro.macroParams.General.height.toString())
-            .replaceAll('__DATA_BY_GROUP__', JSON.stringify(finalDataByGroup))
-            .replaceAll('__ANNOTATION_IDS__', JSON.stringify(annotationTooltipIds))
         : '';
 
     // Build intersection observer code with animation end handler
@@ -187,6 +186,8 @@ export async function exportMacro(
 
     // Build annotation code after changeIdAndReferences so #paths element IDs are correctly resolved
     let annotationCode = '';
+    // __ELEMENT_ANNOTATIONS__ substituted after minification too — see below.
+    let resolvedAnnotationsForScript: Record<string, { tooltip?: string; popover?: string }> | null = null;
     if (hasAnnotations) {
         const resolvedAnnotations: Record<string, { tooltip?: string; popover?: string }> = {};
         for (const [id, ann] of Object.entries(elementAnnotations!)) {
@@ -200,10 +201,8 @@ export async function exportMacro(
             }
         }
         if (Object.keys(resolvedAnnotations).length > 0) {
-            annotationCode = elementAnnotationsScript.replaceAll(
-                '__ELEMENT_ANNOTATIONS__',
-                JSON.stringify(resolvedAnnotations)
-            );
+            annotationCode = elementAnnotationsScript;
+            resolvedAnnotationsForScript = resolvedAnnotations;
         }
     }
 
@@ -276,8 +275,30 @@ export async function exportMacro(
         finalScript = minified.code || finalScript;
     }
 
+    // Inject the real JSON payloads now that minification is done (see the comments above
+    // tooltipCode / resolvedAnnotationsForScript). One regex pass, not chained .replaceAll calls,
+    // so no substitution's output can be re-matched by a later one.
+    const jsonPlaceholders: Record<string, string> = {};
+    if (tooltipEnabled) {
+        jsonPlaceholders.__DATA_BY_GROUP__ = jsonForScript(finalDataByGroup);
+        jsonPlaceholders.__ANNOTATION_IDS__ = jsonForScript(annotationTooltipIds);
+    }
+    if (resolvedAnnotationsForScript) {
+        jsonPlaceholders.__ELEMENT_ANNOTATIONS__ = jsonForScript(resolvedAnnotationsForScript);
+    }
+    if (Object.keys(jsonPlaceholders).length > 0) {
+        finalScript = finalScript.replace(
+            new RegExp(Object.keys(jsonPlaceholders).join('|'), 'g'),
+            (match) => jsonPlaceholders[match]
+        );
+    }
+
     const scriptElem = document.createElementNS("http://www.w3.org/2000/svg", 'script');
-    const scriptContent = document.createTextNode(finalScript);
+    // A real CDATA section, not a plain text node — `.outerHTML` always HTML/XML-escapes a text
+    // node's `<`/`>`/`&`, which would corrupt the script. Must be created via `optimizedSVG`
+    // (the XML document), not the page's own `document` — createCDATASection() throws on an
+    // HTML document.
+    const scriptContent = optimizedSVG.createCDATASection(finalScript);
     scriptElem.appendChild(scriptContent);
     svgElement.append(scriptElem);
 

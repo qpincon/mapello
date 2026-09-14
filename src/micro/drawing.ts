@@ -7,7 +7,7 @@ import { color, hsl } from "d3-color";
 import { DOM_PARSER, findStyleSheet, fontsToCssMultiSubset, fontsToCssEmbedMultiSubset, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
 import { patternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
-import { discriminateCssForExport, download, randomString, xhtmlifyHtml } from "../util/common";
+import { discriminateCssForExport, download, randomString, xhtmlifyHtml, jsonForScript } from "../util/common";
 import { addAttribution, addFrameShadow, addTexture, additionnalCssExport, changeIdAndReferences, exportFontChoices, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.js?raw';
@@ -1043,6 +1043,9 @@ export async function exportMicro(
         : '';
 
     let annotationCode = '';
+    // __ELEMENT_ANNOTATIONS__ substituted after minification, below — terser would otherwise
+    // undo jsonForScript()'s escaping.
+    let resolvedAnnotationsForScript: Record<string, { tooltip?: string; popover?: string }> | null = null;
     if (hasAnnotations) {
         const resolvedAnnotations: Record<string, { tooltip?: string; popover?: string }> = {};
         for (const [id, ann] of Object.entries(elementAnnotations!)) {
@@ -1056,10 +1059,8 @@ export async function exportMicro(
             }
         }
         if (Object.keys(resolvedAnnotations).length > 0) {
-            annotationCode = elementAnnotationsScript.replaceAll(
-                '__ELEMENT_ANNOTATIONS__',
-                JSON.stringify(resolvedAnnotations)
-            );
+            annotationCode = elementAnnotationsScript;
+            resolvedAnnotationsForScript = resolvedAnnotations;
         }
     }
 
@@ -1113,8 +1114,13 @@ export async function exportMicro(
             js = minified.code || js;
         }
 
+        if (resolvedAnnotationsForScript) {
+            js = js.replaceAll('__ELEMENT_ANNOTATIONS__', jsonForScript(resolvedAnnotationsForScript));
+        }
         const scriptElem = document.createElementNS("http://www.w3.org/2000/svg", 'script');
-        const scriptContent = document.createTextNode(js);
+        // Real CDATA section, not a text node — see src/macro/export.ts for why. Must use
+        // `optimizedSVG` (the XML document); createCDATASection() throws on an HTML document.
+        const scriptContent = optimizedSVG.createCDATASection(js);
         scriptElem.appendChild(scriptContent);
         svgElement.append(scriptElem);
     }

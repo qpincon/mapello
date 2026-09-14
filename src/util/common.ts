@@ -158,12 +158,23 @@ export function discriminateCssForExport(cssToTransform: string, mapId: string):
     return transformed;
 }
 
+export function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 export function formatUnicorn(str: string, args: Record<string, string | number>, naFallback = "N/A"): string {
     if (args) {
         for (const key in args) {
             const val = args[key];
-            const display = (val == null || val === "") ? naFallback : String(val);
-            str = str.replace(new RegExp("__" + key + "__", "gi"), display);
+            const display = (val == null || val === "") ? naFallback : escapeHtml(String(val));
+            // Function replacer, not a string: a string replacer reinterprets $&/$1/$$ in
+            // `display`, corrupting any value containing a literal $.
+            str = str.replace(new RegExp("__" + key + "__", "gi"), () => display);
         }
     }
     // Replace any remaining unreplaced variables with N/A
@@ -200,9 +211,26 @@ export function sleep(ms: number): Promise<void> {
     })
 }
 
+// Converts HTML to valid XHTML: self-closes void elements, expands valueless boolean attributes
+// (disabled -> disabled=""), and escapes bare `&`/entities — via the browser's own HTML parser
+// + XMLSerializer. A <template> parses without side effects (no image loads, no script exec).
 export function xhtmlifyHtml(html: string): string {
-    return html.replace(
-        /<(img|br|hr|input|area|base|col|embed|link|meta|param|source|track|wbr)(\s[^>]*)?>/gi,
-        (_, tag, attrs) => `<${tag}${attrs ?? ''}/>`
-    );
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    return new XMLSerializer()
+        .serializeToString(template.content)
+        // XMLSerializer adds this namespace to every top-level node lacking an ancestor that
+        // already declares it — redundant once re-inserted into an XHTML-namespaced container.
+        .replace(/ xmlns="http:\/\/www\.w3\.org\/1999\/xhtml"/g, '');
+}
+
+// JSON.stringify, but with any literal "]]>" escaped so it can't prematurely close a CDATA
+// section this JSON is later embedded in (see createCDATASection in src/macro/export.ts).
+//
+// Apply only to the final script text, after minification — a minifier normalizes \uXXXX
+// escapes back to literal characters, which would undo this. Keep the target placeholder
+// un-substituted through minification (an unrecognized identifier survives untouched) and
+// substitute the real value afterwards.
+export function jsonForScript(value: unknown): string {
+    return JSON.stringify(value).replace(/\]\]>/g, ']]\\u003e');
 }
