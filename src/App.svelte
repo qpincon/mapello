@@ -142,8 +142,43 @@
     const showMicroHint = $derived(
         commonState.currentMode === "macro" &&
         !microHintDismissed &&
-        macroState.inlinePropsMacro.altitude <= appState.altMin + 5
+        (macroState.macroParams.General.projection === "satellite"
+            // Satellite: low altitude (close to the ground) = zoomed in.
+            ? macroState.inlinePropsMacro.altitude <= appState.altMin + 5
+            // Classical projections: high altitude/scale = zoomed in (opposite of satellite).
+            : macroState.inlinePropsMacro.altitude >= appState.altMax - 5)
     );
+
+    // Current macro view center, in [lng, lat] — used to hand the map position off to Detailed mode.
+    // Clamped/wrapped defensively: MapLibre's LngLat throws synchronously on an out-of-range
+    // latitude, which would otherwise crash mid-render and wedge the app's reactivity.
+    function getMacroCenterLngLat(): [number, number] {
+        const clampLngLat = ([lng, lat]: [number, number]): [number, number] => [
+            ((lng + 180) % 360 + 360) % 360 - 180,
+            Math.max(-90, Math.min(90, lat)),
+        ];
+        if (macroState.macroParams.General.projection === "satellite") {
+            return clampLngLat([macroState.inlinePropsMacro.longitude, macroState.inlinePropsMacro.latitude]);
+        }
+        const { width, height } = macroState.macroParams.General;
+        const inverted = appState.projection?.invert?.([width / 2, height / 2]);
+        if (inverted && isFinite(inverted[0]) && isFinite(inverted[1])) {
+            return clampLngLat(inverted as [number, number]);
+        }
+        return clampLngLat([macroState.inlinePropsMacro.longitude, macroState.inlinePropsMacro.latitude]);
+    }
+
+    // Approximate MapLibre zoom from the macro projection's current scale (same "pixels per
+    // radian" convention d3.geoMercator uses, and what geoSatelliteCustom's altitude/fov ultimately
+    // produce too — see appState.projection.scale() usage in interactions.ts). MapLibre's world
+    // is tileSize(512) * 2^zoom pixels wide; a d3 projection at this scale spans 2*PI*scale pixels.
+    function getMacroZoomApprox(): number | null {
+        const scale = appState.projection?.scale?.();
+        if (!scale || !isFinite(scale)) return null;
+        const zoom = Math.log2((2 * Math.PI * scale) / 512);
+        return Math.max(0, Math.min(20, zoom));
+    }
+    
     let showInstructionsModal = $state(false);
     let showFeedbackModal = $state(false);
     let showAuthModal = $state(false);
@@ -1799,6 +1834,7 @@
                     id="switchMacro"
                     onchange={(e) => switchMode(e.currentTarget.value as Mode)}
                     value="macro"
+                    checked={commonState.currentMode === "macro"}
                     autocomplete="off"
                 />
                 <label class="mode-btn" for="switchMacro" class:active={commonState.currentMode === "macro"}>
@@ -1814,6 +1850,7 @@
                     autocomplete="off"
                     onchange={(e) => switchMode(e.currentTarget.value as Mode)}
                     value="micro"
+                    checked={commonState.currentMode === "micro"}
                 />
                 <label class="mode-btn" for="switchMicro" class:active={commonState.currentMode === "micro"}>
                     Detailed
@@ -2012,7 +2049,12 @@
                 <div class="micro-hint-banner">
                     <span>Want a detailed town view? Switch to <strong>Detailed mode</strong></span>
                     <div class="micro-hint-actions">
-                        <button class="micro-hint-btn micro-hint-btn-primary" onclick={() => switchMode("micro")}>
+                        <button class="micro-hint-btn micro-hint-btn-primary" onclick={() => {
+                            microState.inlinePropsMicro.center = getMacroCenterLngLat();
+                            const zoom = getMacroZoomApprox();
+                            if (zoom !== null) microState.inlinePropsMicro.zoom = zoom;
+                            switchMode("micro");
+                        }}>
                             Go to Detailed
                         </button>
                         <button class="micro-hint-btn micro-hint-btn-dismiss" onclick={() => {

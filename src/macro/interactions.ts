@@ -48,7 +48,7 @@ export function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
                     const lon = macroState.inlinePropsMacro.longitude;
                     const lat = macroState.inlinePropsMacro.latitude;
                     macroState.inlinePropsMacro.longitude = lon + ((cursorGeo[0] - lon) * (1 - altRatio));
-                    macroState.inlinePropsMacro.latitude = lat + ((cursorGeo[1] - lat) * (1 - altRatio));
+                    macroState.inlinePropsMacro.latitude = Math.max(-90, Math.min(90, lat + ((cursorGeo[1] - lat) * (1 - altRatio))));
                 } else {
                     // Standard: translateX/Y control the pixel offset
                     const w = container.clientWidth;
@@ -87,7 +87,7 @@ export function dragged(event: d3.D3DragEvent<SVGSVGElement, unknown, unknown>):
         const adjustedDx = (event.dx * xPartX + event.dy * yPartX) * k;
         const adjustedDy = (event.dy * yPartY + event.dx * xPartY) * k;
         macroState.inlinePropsMacro.longitude = -rotate[0] - adjustedDx;
-        macroState.inlinePropsMacro.latitude = -rotate[1] + adjustedDy;
+        macroState.inlinePropsMacro.latitude = Math.max(-90, Math.min(90, -rotate[1] + adjustedDy));
     }
     clampMercatorTranslate();
 }
