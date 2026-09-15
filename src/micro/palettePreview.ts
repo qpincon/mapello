@@ -9,7 +9,7 @@
 import microPreviewRaw from "src/assets/img/micro-preview.svg?raw";
 import { initLayersState } from "src/micro/drawing";
 import { patternGenerator } from "src/svg/patternGenerator";
-import type { MicroPaletteWithBorder, PatternDefinition } from "src/types";
+import { NON_LAYER_PALETTE_KEYS, type MicroLayerDefinition, type MicroLayerId, type MicroPaletteWithBorder, type PatternDefinition } from "src/types";
 
 const cache = new Map<string, string>();
 
@@ -33,9 +33,10 @@ export function buildPalettePreviewSvg(
         ${microSel} .poly { stroke-linejoin: round; }
     `;
 
-    for (const [layer, layerDef] of Object.entries(layerDefs)) {
-        if (layer === "borderParams") continue;
-
+    const layerEntries = Object.entries(layerDefs).filter(
+        ([layer]) => !NON_LAYER_PALETTE_KEYS.has(layer)
+    ) as [MicroLayerId, MicroLayerDefinition][];
+    for (const [layer, layerDef] of layerEntries) {
         const isLineLayer =
             layer.includes("road") || layer.includes("path") || layer.includes("rail");
 
@@ -83,8 +84,7 @@ export function buildPalettePreviewSvg(
         const tmpDefs = document.createElementNS(svgns, "defs") as SVGDefsElement;
 
         const patternList: PatternDefinition[] = [];
-        for (const [layer, layerDef] of Object.entries(layerDefs)) {
-            if (layer === "borderParams") continue;
+        for (const [layer, layerDef] of layerEntries) {
             if (layerDef.pattern?.active && layerDef.fill) {
                 patternList.push({
                     ...layerDef.pattern,

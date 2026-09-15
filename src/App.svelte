@@ -1550,11 +1550,17 @@
         addingLabel = true;
         await tick();
         textInput!.focus();
-        textInput!.addEventListener("keydown", (event: KeyboardEvent) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-                validateLabel();
-            }
-        });
+    }
+
+    // Bound once via the template (see #label-entry textarea below) rather than re-attached
+    // on every addLabel() call — that used to pile up one extra listener per label created,
+    // so a single Enter press would re-run validateLabel() (and its unconditional
+    // drawAndSetupShapes()) once per past label, silently invalidating the DOM element the
+    // selection overlay had just captured for the new one.
+    function onLabelTextareaKeydown(event: KeyboardEvent): void {
+        if (event.key === "Enter" && !event.shiftKey) {
+            validateLabel();
+        }
     }
 
     function validateLabel(): void {
@@ -1767,7 +1773,7 @@
 
 <!-- Floating label-entry textarea, positioned at the click point by showMenu(). -->
 <div id="label-entry" class="border rounded" bind:this={contextualMenu} class:hidden={!contextualMenu?.opened || !addingLabel}>
-    <textarea bind:this={textInput} bind:value={typedText}> </textarea>
+    <textarea bind:this={textInput} bind:value={typedText} onkeydown={onLabelTextareaKeydown}> </textarea>
 </div>
 
 <Modal

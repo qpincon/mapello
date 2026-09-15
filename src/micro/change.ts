@@ -3,7 +3,7 @@ import { log } from 'src/util/log';
 import { debounce, last } from "lodash-es";
 import { generateCssFromState } from "src/micro/drawing";
 import { patternGenerator } from "src/svg/patternGenerator";
-import type { Color, MicroLayerId, MicroPalette, PatternDefinition } from "src/types";
+import { NON_LAYER_PALETTE_KEYS, type Color, type MicroLayerDefinition, type MicroLayerId, type MicroPalette, type PatternDefinition } from "src/types";
 import { findStyleSheet } from "src/util/dom";
 
 
@@ -70,7 +70,10 @@ function lighten(c: string, quantity: number = 0.2): Color {
 
 export function updateSvgPatterns(svgNode: SVGElement | null, layerState: MicroPalette): void {
     if (!svgNode) return;
-    const patterns: PatternDefinition[] = Object.values(layerState).map((def) => {
+    const layers = Object.fromEntries(
+        Object.entries(layerState).filter(([layer]) => !NON_LAYER_PALETTE_KEYS.has(layer))
+    ) as Record<MicroLayerId, MicroLayerDefinition>;
+    const patterns: PatternDefinition[] = Object.values(layers).map((def) => {
         return {
             ...def.pattern,
             backgroundColor: def.fill

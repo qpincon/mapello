@@ -398,7 +398,9 @@ export class SelectionOverlay {
             sw: { x: bbox.x + bbox.width, y: bbox.y },
         };
         const anchor = anchorMap[corner];
-        const origDiag = Math.sqrt(bbox.width ** 2 + bbox.height ** 2);
+        // Clamp away from 0: a near-zero diagonal (e.g. bbox read before layout settles)
+        // would make the very first pixel of drag movement produce an enormous scaleFactor.
+        const origDiag = Math.max(1, Math.sqrt(bbox.width ** 2 + bbox.height ** 2));
 
         // Save original positions
         const origPositions = new Map<string, { x: number; y: number }>();
@@ -418,7 +420,7 @@ export class SelectionOverlay {
             corner,
             anchorX: anchor.x,
             anchorY: anchor.y,
-            origDiag: origDiag || 1,
+            origDiag,
             origPositions,
         };
 
@@ -502,10 +504,10 @@ export class SelectionOverlay {
         const ax = state.anchorX!;
         const ay = state.anchorY!;
 
-        // Compute scale factor from diagonal distance
+        // Compute scale factor from diagonal distance. Clamped on both ends so a
+        // degenerate origDiag (or a stray large pointer jump) can't blow up the scale.
         const newDiag = Math.sqrt((pt.x - ax) ** 2 + (pt.y - ay) ** 2);
-        const scaleFactor = Math.max(0.1, newDiag / state.origDiag!);
-
+        const scaleFactor = Math.min(100, Math.max(0.1, newDiag / state.origDiag!));
 
         for (let i = 0; i < this.elements.length; i++) {
             const el = this.elements[i];
@@ -634,7 +636,7 @@ export class SelectionOverlay {
             const ax = state.anchorX!;
             const ay = state.anchorY!;
             const newDiag = Math.sqrt((pt.x - ax) ** 2 + (pt.y - ay) ** 2);
-            const scaleFactor = Math.max(0.1, newDiag / state.origDiag!);
+            const scaleFactor = Math.min(100, Math.max(0.1, newDiag / state.origDiag!));
 
             // Creation resize: if the pointer never moved, keep scale: 1 as-is.
             if (state.creation && !state.started) {

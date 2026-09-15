@@ -18,7 +18,7 @@ import difference from '@turf/difference';
 import { featureCollection } from '@turf/helpers';
 import type { Feature, Geometry, Polygon } from 'geojson';
 import type { MicroParams } from '../params';
-import { MICRO_LAYERS, type Color, type ElementAnnotations, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type StateMicro, type SvgSelection } from '../types';
+import { MICRO_LAYERS, NON_LAYER_PALETTE_KEYS, type Color, type ElementAnnotations, type MicroLayerDefinition, type MicroLayerId, type MicroPalette, type PatternDefinition, type ProvidedFont, type StateMicro, type SvgSelection } from '../types';
 import type { Config } from 'svgo/browser';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { postClipSimple } from 'src/svg/svg';
@@ -773,8 +773,10 @@ export function initLayersState(providedPalette: Partial<MicroPalette>): MicroPa
     if (!palette['railways']) palette['railways'] = { ...palette['roads'], active: false };
     if (!palette['paths']) palette['paths'] = { ...palette['roads'], active: false };
 
-    Object.entries(palette).forEach(([layer, state]) => {
-        if (layer === "borderParams") return;
+    const layerEntries = Object.entries(palette).filter(
+        ([layer]) => !NON_LAYER_PALETTE_KEYS.has(layer)
+    ) as [MicroLayerId, MicroLayerDefinition][];
+    layerEntries.forEach(([layer, state]) => {
         if (state.menuOpened == null) state.menuOpened = false;
         let pattern = state.pattern;
         if (!pattern && state.fill) {
@@ -826,29 +828,27 @@ export function generateCssFromState(state: MicroPalette): string | null {
         fill: none;
     }
     #paths path {
-        stroke: ${state['roads']?.stroke ?? '#6D4C41'};
+        stroke: ${state.curve?.stroke ?? state['roads']?.stroke ?? '#6D4C41'};
         fill: none;
         stroke-width: 2px;
     }
     #freehand-drawings .freehand {
         paint-order: stroke;
-        fill: ${state['roads']?.stroke ?? '#6D4C41'};
+        fill: ${state.freehand?.fill ?? state['roads']?.stroke ?? '#6D4C41'};
     }
 
     #freehand-drawings g path {
         fill: inherit;
     }
-    .shape {
-        fill: black;
-    }
     .text {
         paint-order: stroke;
-        stroke-width: 0px;
     }
     `;
 
-    for (const [layer, layerDef] of Object.entries(state)) {
-        if (layer === "borderParams") continue;
+    const layerEntries = Object.entries(state).filter(
+        ([layer]) => !NON_LAYER_PALETTE_KEYS.has(layer)
+    ) as [MicroLayerId, MicroLayerDefinition][];
+    for (const [layer, layerDef] of layerEntries) {
         let ruleContent: Record<string, string | number> = {};
         let ruleHoverContent: Record<string, string | number> = {};
 
@@ -913,13 +913,19 @@ export function generateCssFromState(state: MicroPalette): string | null {
         }
     }
 
+    css += updateStyleSheetOrGenerateCss(sheet, '.shape', state.point ?? { fill: 'black' });
+    css += updateStyleSheetOrGenerateCss(sheet, '.text', { 'stroke-width': '1px', ...(state.label ?? { fill: 'black' }) });
+
     if (sheet) return null;
     return css;
 }
 
 function updateSvgPatterns(svgNode: SVGElement | null, layerState: MicroPalette): void {
     if (!svgNode) return;
-    const patterns: PatternDefinition[] = Object.values(layerState).map((def) => {
+    const layers = Object.fromEntries(
+        Object.entries(layerState).filter(([layer]) => !NON_LAYER_PALETTE_KEYS.has(layer))
+    ) as Record<MicroLayerId, MicroLayerDefinition>;
+    const patterns: PatternDefinition[] = Object.values(layers).map((def) => {
         return {
             ...def.pattern,
             backgroundColor: def.fill

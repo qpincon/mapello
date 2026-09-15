@@ -76,7 +76,7 @@ export const defaultGlowParams: GlowParams = {
 
 const defaultZonesGlow: Record<string, GlowParams> = { land: { ...defaultGlowParams } };
 
-const defaultLastUsedLabelProps: Record<string, string> = { "font-size": "14px" };
+const defaultLastUsedLabelProps: Record<string, string> = { "font-size": "24px" };
 
 const defaultContourParams: ContourParams = {
     strokeWidth: 1,

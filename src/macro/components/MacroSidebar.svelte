@@ -100,9 +100,15 @@
     let currentMacroPaletteId = $derived(findMatchingPaletteId(macroColorPalettes));
 
     function handleMacroPaletteChange(paletteId: string) {
-        applyMacroPalette(macroColorPalettes[paletteId]);
+        // Color/border/etc. apply synchronously; the label font (Bunny-hosted) loads
+        // asynchronously, so draw()/saveState() run again once it's ready.
+        const pending = applyMacroPalette(macroColorPalettes[paletteId]);
         draw();
         saveState();
+        pending.then(() => {
+            draw();
+            saveState();
+        });
     }
 
     let computedOrderedTabs = $derived(visibleOrderedTabs(macroState.orderedTabs));

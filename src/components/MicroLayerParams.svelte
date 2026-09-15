@@ -4,7 +4,7 @@
     import RangeInput from "./RangeInput.svelte";
     import { camelCaseToSentence, initTooltips, pascalCaseToSentence } from "../util/common";
     import { log } from "../util/log";
-    import type { Color, MicroLayerId, MicroPalette, MicroPaletteWithBorder } from "src/types";
+    import { NON_LAYER_PALETTE_KEYS, type Color, type MicroLayerId, type MicroPalette, type MicroPaletteWithBorder } from "src/types";
     import { buildPalettePreviewSvg } from "src/micro/palettePreview";
     import { appState } from "src/state.svelte";
 
@@ -25,7 +25,7 @@
     }: Props = $props();
 
     let layers: [string, any][] = $derived(
-        Object.entries(layerDefinitions).filter(([layerId, _]) => layerId !== "borderParams"),
+        Object.entries(layerDefinitions).filter(([layerId, _]) => !NON_LAYER_PALETTE_KEYS.has(layerId)),
     );
     function updated(layer: MicroLayerId, key: string | string[], value: number | Color | string | boolean) {
         log(layer, key, value);

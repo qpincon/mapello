@@ -3,6 +3,7 @@
     import Modal from "./Modal.svelte";
     import Icon from "./Icon.svelte";
     import { icons } from "../shared/icons";
+    import { defaultBunnyWeight, getBunnyFontCatalog, toProvidedFont, type BunnyFontCatalog } from "../util/bunnyFonts";
 
     interface Props {
         onFontSelected: (font: ProvidedFont) => void;
@@ -16,7 +17,7 @@
     let showModal = $state(false);
     let searchQuery = $state("");
     let selectedCategory = $state("all");
-    let catalog: Record<string, any> | null = $state(null);
+    let catalog: BunnyFontCatalog | null = $state(null);
     let selectedWeights: Record<string, number> = $state({});
     let loading = $state(false);
     let error: string | null = $state(null);
@@ -107,9 +108,7 @@
         loading = true;
         error = null;
         try {
-            const res = await fetch("https://fonts.bunny.net/list");
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            catalog = await res.json();
+            catalog = await getBunnyFontCatalog();
         } catch (e: any) {
             error = e.message || "Failed to load font catalog";
         } finally {
@@ -127,29 +126,19 @@
         cleanupPreviewFonts();
     }
 
-    function getWeightForFont(slug: string, data: any): number {
+    function getWeightForFont(slug: string, data: BunnyFontCatalog[string]): number {
         if (selectedWeights[slug] !== undefined) return selectedWeights[slug];
-        const weights: number[] = data.weights ?? [];
-        return weights.includes(400) ? 400 : (weights[0] ?? 400);
+        return defaultBunnyWeight(data.weights);
     }
 
-    function addFont(slug: string, data: any): void {
-        const familyName: string = data.familyName;
-        if (existingFontNames.includes(familyName)) return;
+    function addFont(slug: string, data: BunnyFontCatalog[string]): void {
+        if (existingFontNames.includes(data.familyName)) return;
 
         const weight = getWeightForFont(slug, data);
-        const weights: number[] = data.weights ?? [];
+        const weights = data.weights ?? [];
         if (weights.length > 0 && !weights.includes(weight)) return;
 
-        const defSubset = data.defSubset || "latin";
-        const font: ProvidedFont = {
-            name: familyName,
-            slug,
-            weight,
-            style: "normal",
-            defSubset,
-        };
-        onFontSelected(font);
+        onFontSelected(toProvidedFont(slug, data, weight));
     }
 
     function isAlreadyAdded(familyName: string): boolean {

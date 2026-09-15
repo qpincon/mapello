@@ -1,9 +1,10 @@
 import { color } from "d3-color";
 import type { GlowParams } from "../params";
-import { macroState } from "../state.svelte";
+import { commonState, macroState } from "../state.svelte";
 import { defaultGlowParams } from "../stateDefaults";
 import type { CssDict, MacroPalette } from "../types";
 import { exportStyleSheet, findStyleSheet, updateStyleSheetOrGenerateCss } from "../util/dom";
+import { resolveBunnyFontByName } from "../util/bunnyFonts";
 
 /**
  * One-click macro map styles. Mirrors src/micro/microPalettes.ts: each named export is a
@@ -30,8 +31,8 @@ export const atlas: MacroPalette = {
     adm: { fill: "#ffffffd0", stroke: "#c4b8a3ff", "stroke-width": "1px" },
     admHovered: { fill: "#ecd6b6ff", stroke: "#d29d52ff", "stroke-width": "2px" },
     curve: { stroke: "#7c490ea0" },
-    point: { fill: "#000000" },
-    label: { fill: "#000000" },
+    point: { fill: "#000000", stroke: "#ffffff" },
+    label: { fill: "#000000", stroke: "#ffffff" },
     freehand: { fill: "#7c490ea0" },
 };
 
@@ -55,9 +56,10 @@ export const positron: MacroPalette = {
     adm: { fill: "#f7f8f5ff", stroke: "#d3d3ccff", "stroke-width": "0.6px" },
     admHovered: { fill: "#e4e6e0ff", stroke: "#b8b8b0ff", "stroke-width": "1px" },
     curve: { stroke: "#5b7a8ca0" },
-    point: { fill: "#33414a" },
-    label: { fill: "#33414a" },
+    point: { fill: "#33414a", stroke: "#ffffff" },
+    label: { fill: "#33414a", stroke: "#ffffff" },
     freehand: { fill: "#5b7a8ca0" },
+    labelFontName: "Work Sans",
 };
 
 // --- Antique engraved atlas: sepia, outer-glow-only coastal halo ---
@@ -87,9 +89,10 @@ export const parchment: MacroPalette = {
     adm: { fill: "#f5ecd6ff", stroke: "#ab8f61ff", "stroke-width": "1px" },
     admHovered: { fill: "#e8d5a8ff", stroke: "#8a6a3eff", "stroke-width": "2px" },
     curve: { stroke: "#6b4a28a0" },
-    point: { fill: "#4a3520" },
-    label: { fill: "#4a3520" },
+    point: { fill: "#4a3520", stroke: "#f2e6cb" },
+    label: { fill: "#4a3520", stroke: "#f2e6cb" },
     freehand: { fill: "#6b4a28a0" },
+    labelFontName: "EB Garamond",
 };
 
 // --- Near-black navy, cyan coastline ---
@@ -119,9 +122,10 @@ export const midnight: MacroPalette = {
     adm: { fill: "#182838ff", stroke: "#3c5a75ff", "stroke-width": "1px" },
     admHovered: { fill: "#274a63ff", stroke: "#5fa8d0ff", "stroke-width": "2px" },
     curve: { stroke: "#4a90a8a0" },
-    point: { fill: "#eaf6ff" },
-    label: { fill: "#eaf6ff" },
+    point: { fill: "#eaf6ff", stroke: "#070d17" },
+    label: { fill: "#eaf6ff", stroke: "#070d17" },
     freehand: { fill: "#4a90a8a0" },
+    labelFontName: "Space Mono",
 };
 
 // --- National-Geographic-style expedition atlas: tan land, muted teal sea, brown borders ---
@@ -151,9 +155,10 @@ export const expedition: MacroPalette = {
     adm: { fill: "#f5eeddff", stroke: "#8a7550ff", "stroke-width": "1px" },
     admHovered: { fill: "#ddc994ff", stroke: "#5c4a30ff", "stroke-width": "1.5px" },
     curve: { stroke: "#8a7550a0" },
-    point: { fill: "#3a2f1f" },
-    label: { fill: "#3a2f1f" },
+    point: { fill: "#3a2f1f", stroke: "#e8ddc0" },
+    label: { fill: "#3a2f1f", stroke: "#e8ddc0" },
     freehand: { fill: "#8a7550a0" },
+    labelFontName: "Roboto Slab",
 };
 
 // --- Classic textbook physical/political map: blue sea, green land, square frame, no glow ---
@@ -176,9 +181,10 @@ export const meridian: MacroPalette = {
     adm: { fill: "#f2f7ecff", stroke: "#7a9a72ff", "stroke-width": "0.8px" },
     admHovered: { fill: "#d3e8c8ff", stroke: "#4d4d4dff", "stroke-width": "1.5px" },
     curve: { stroke: "#4d4d4da0" },
-    point: { fill: "#333333" },
-    label: { fill: "#333333" },
+    point: { fill: "#333333", stroke: "#ffffff" },
+    label: { fill: "#333333", stroke: "#ffffff" },
     freehand: { fill: "#4d4d4da0" },
+    labelFontName: "Libre Baskerville",
 };
 
 // --- Monochrome newsprint / print atlas: grayscale, square frame, no glow ---
@@ -201,9 +207,10 @@ export const newsprint: MacroPalette = {
     adm: { fill: "#fafafaff", stroke: "#777777ff", "stroke-width": "0.8px" },
     admHovered: { fill: "#d0d0d0ff", stroke: "#222222ff", "stroke-width": "1.5px" },
     curve: { stroke: "#333333a0" },
-    point: { fill: "#1a1a1a" },
-    label: { fill: "#1a1a1a" },
+    point: { fill: "#1a1a1a", stroke: "#ffffff" },
+    label: { fill: "#1a1a1a", stroke: "#ffffff" },
     freehand: { fill: "#333333a0" },
+    labelFontName: "Archivo Narrow",
 };
 
 /**
@@ -211,8 +218,15 @@ export const newsprint: MacroPalette = {
  * that currently has one, and the default .country/.adm/curve/point/label/freehand CSS rules.
  * These CSS defaults only affect elements without an inline style override, so per-element
  * inline styles (fonts, individually recolored elements, etc.) are left untouched.
+ *
+ * `palette.labelFontName` (a Bunny Fonts family name) is resolved and loaded asynchronously:
+ * Bunny fonts aren't natively available, so they need a `ProvidedFont` pushed to
+ * `commonState.providedFonts` (which triggers loading its `@font-face`, see `fontsToCss`)
+ * before the `.text` rule's font-family can actually render that font. `macroState.labelFontName`
+ * is set synchronously (independent of that network round-trip) so palette-match detection
+ * (`findMatchingPaletteId`) doesn't need to wait on it either.
  */
-export function applyMacroPalette(palette: MacroPalette): void {
+export async function applyMacroPalette(palette: MacroPalette): Promise<void> {
     Object.assign(macroState.macroParams.Background, palette.background);
     Object.assign(macroState.macroParams.Border, palette.border);
     Object.assign(macroState.contourParams, palette.land);
@@ -239,6 +253,21 @@ export function applyMacroPalette(palette: MacroPalette): void {
     updateStyleSheetOrGenerateCss(sheet, ".shape", palette.point);
     updateStyleSheetOrGenerateCss(sheet, ".text", palette.label);
     updateStyleSheetOrGenerateCss(sheet, "#freehand-drawings .freehand", palette.freehand);
+    macroState.baseCss = exportStyleSheet("#outline") ?? macroState.baseCss;
+    macroState.labelFontName = palette.labelFontName;
+
+    if (!palette.labelFontName) {
+        updateStyleSheetOrGenerateCss(sheet, ".text", { "font-family": "" });
+        macroState.baseCss = exportStyleSheet("#outline") ?? macroState.baseCss;
+        return;
+    }
+    const font = await resolveBunnyFontByName(palette.labelFontName);
+    if (!font || macroState.labelFontName !== palette.labelFontName) return; // a newer palette was applied meanwhile
+    if (!commonState.providedFonts.some((f) => f.slug === font.slug && f.weight === font.weight && f.style === font.style)) {
+        commonState.providedFonts.push(font);
+    }
+    const [liveSheet] = findStyleSheet("#outline");
+    updateStyleSheetOrGenerateCss(liveSheet, ".text", { "font-family": font.name });
     macroState.baseCss = exportStyleSheet("#outline") ?? macroState.baseCss;
 }
 
@@ -313,7 +342,8 @@ export function findMatchingPaletteId(palettes: Record<string, MacroPalette>): s
                 cssDictMatches(curve, p.curve) &&
                 cssDictMatches(point, p.point) &&
                 cssDictMatches(label, p.label) &&
-                cssDictMatches(freehand, p.freehand)
+                cssDictMatches(freehand, p.freehand) &&
+                (macroState.labelFontName ?? null) === (p.labelFontName ?? null)
             );
         }) ?? ""
     );

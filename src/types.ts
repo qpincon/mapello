@@ -110,6 +110,8 @@ export interface MacroPalette {
     label: CssDict;
     /** Default color for freehand drawings (`#freehand-drawings .freehand`). */
     freehand: CssDict;
+    /** Bunny Fonts family name applied as the default `.text` font-family. Omit to leave the font untouched. */
+    labelFontName?: string;
 }
 
 export type InlineStyles = { [elemId: string]: CssDict };
@@ -271,10 +273,31 @@ type LayerId = typeof MICRO_LAYERS[number];
 export type MicroLayerId = LayerId | 'background';
 export type MicroPalette = {
     [layerId in MicroLayerId]: MicroLayerDefinition;
+} & {
+    /** Default color for newly-placed points/icons (`.shape`). */
+    point?: CssDict;
+    /** Default color for newly-added labels (`.text`). */
+    label?: CssDict;
+    /** Default color for newly-drawn curves (`#paths path`). */
+    curve?: CssDict;
+    /** Default color for freehand drawings (`#freehand-drawings .freehand`). */
+    freehand?: CssDict;
+    /** Bunny Fonts family name applied as the default `.text` font-family. Omit to leave the font untouched. */
+    labelFontName?: string;
 };
 export type MicroPaletteWithBorder = MicroPalette & {
     borderParams: MicroBorderParams;
 }
+
+/** Keys on `MicroPalette`/`MicroPaletteWithBorder` that aren't a `MicroLayerId` map layer. */
+export const NON_LAYER_PALETTE_KEYS = new Set<string>([
+    "borderParams",
+    "point",
+    "label",
+    "curve",
+    "freehand",
+    "labelFontName",
+]);
 
 export type InlinePropsMicro = {
     center: [number, number],
@@ -301,6 +324,8 @@ export interface StateMacro {
     customCategoricalPalette: Color[];
     customContinuousPalette: Color[];
     visibleArea: number;
+    /** Bunny Fonts family name of the last-applied palette's label font, kept in sync with `.text`'s font-family. */
+    labelFontName?: string;
 }
 
 export interface StateMicro {

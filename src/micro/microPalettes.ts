@@ -19,6 +19,11 @@ export const playful: Partial<MicroPaletteWithBorder> = {
     forest: { fill: "#64B96A", stroke: "#2F3737", active: true },
     roads: { stroke: "#2F3737", active: true },
     railways: { stroke: "#2a3737", active: true },
+    point: { fill: "#2F3737", stroke: "#ffffff" },
+    label: { fill: "#2F3737", stroke: "#ffffff" },
+    curve: { stroke: "#2F3737" },
+    freehand: { fill: "#2F3737" },
+    labelFontName: "Patrick Hand",
 };
 
 // --- Monochrome: hand-drawn black & white ink drawing ---
@@ -51,6 +56,11 @@ export const ink: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#222222", active: true },
     railways: { stroke: "#333333", active: true },
     paths: { stroke: "#555555", active: true },
+    point: { fill: "#0d0d0d", stroke: "#ffffff" },
+    label: { fill: "#0d0d0d", stroke: "#ffffff" },
+    curve: { stroke: "#555555" },
+    freehand: { fill: "#555555" },
+    labelFontName: "Caveat",
 };
 
 
@@ -76,6 +86,11 @@ export const blueprint: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#7aaae0", active: true },
     railways: { stroke: "#5484c0", active: true },
     paths: { stroke: "#4070a8", active: true },
+    point: { fill: "#eaf2ff", stroke: "#0f1d3c" },
+    label: { fill: "#eaf2ff", stroke: "#0f1d3c" },
+    curve: { stroke: "#4070a8" },
+    freehand: { fill: "#4070a8" },
+    labelFontName: "IBM Plex Mono",
 };
 
 // --- Raw concrete brutalism ---
@@ -104,6 +119,11 @@ export const brutalist: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#1e1810", active: true },
     railways: { stroke: "#100e08", active: true },
     paths: { stroke: "#504838", active: true },
+    point: { fill: "#1e1810", stroke: "#ffffff" },
+    label: { fill: "#1e1810", stroke: "#ffffff" },
+    curve: { stroke: "#504838" },
+    freehand: { fill: "#504838" },
+    labelFontName: "Archivo Black",
 };
 
 // --- Cyberpunk neon on black ---
@@ -132,6 +152,11 @@ export const neon: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#ff006e", active: true },
     railways: { stroke: "#8338ec", active: true },
     paths: { stroke: "#3a86ff", active: true },
+    point: { fill: "#ffffff", stroke: "#ff006e" },
+    label: { fill: "#ffffff", stroke: "#ff006e" },
+    curve: { stroke: "#3a86ff" },
+    freehand: { fill: "#3a86ff" },
+    labelFontName: "Orbitron",
 };
 
 // --- Mediterranean terracotta & sea ---
@@ -160,6 +185,11 @@ export const terracotta: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#703818", active: true },
     railways: { stroke: "#502508", active: true },
     paths: { stroke: "#a06030", active: true },
+    point: { fill: "#4a2410", stroke: "#f5e8d0" },
+    label: { fill: "#4a2410", stroke: "#f5e8d0" },
+    curve: { stroke: "#a06030" },
+    freehand: { fill: "#a06030" },
+    labelFontName: "Lora",
 };
 
 // --- Bubblegum candy ---
@@ -188,6 +218,11 @@ export const candy: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#ff70c0", active: true },
     railways: { stroke: "#bb20a0", active: true },
     paths: { stroke: "#70ccff", active: true },
+    point: { fill: "#4a1030", stroke: "#ffffff" },
+    label: { fill: "#4a1030", stroke: "#ffffff" },
+    curve: { stroke: "#70ccff" },
+    freehand: { fill: "#70ccff" },
+    labelFontName: "Fredoka",
 };
 
 // --- Vintage aged parchment map ---
@@ -219,6 +254,11 @@ export const sepia: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#603810", active: true },
     railways: { stroke: "#401808", active: true },
     paths: { stroke: "#806030", active: true },
+    point: { fill: "#381008", stroke: "#f2ddb0" },
+    label: { fill: "#381008", stroke: "#f2ddb0" },
+    curve: { stroke: "#806030" },
+    freehand: { fill: "#806030" },
+    labelFontName: "IM Fell English",
 };
 
 
@@ -247,6 +287,11 @@ export const poster: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#e63946", active: true },
     railways: { stroke: "#1d3557", active: true },
     paths: { stroke: "#c07840", active: true },
+    point: { fill: "#111111", stroke: "#ffffff" },
+    label: { fill: "#111111", stroke: "#ffffff" },
+    curve: { stroke: "#c07840" },
+    freehand: { fill: "#c07840" },
+    labelFontName: "Bebas Neue",
 };
 
 // --- Ultra-minimal cartographic light (Positron-inspired) ---
@@ -269,6 +314,11 @@ export const positron: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#b0b0aa", active: true },
     railways: { stroke: "#989890", active: true },
     paths: { stroke: "#c0beb8", active: true },
+    point: { fill: "#33414a", stroke: "#ffffff" },
+    label: { fill: "#33414a", stroke: "#ffffff" },
+    curve: { stroke: "#c0beb8" },
+    freehand: { fill: "#c0beb8" },
+    labelFontName: "Inter",
 };
 
 // --- Scandinavian fjord, cold & clean ---
@@ -291,6 +341,11 @@ export const nordic: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#7a8fa0", active: true },
     railways: { stroke: "#586878", active: true },
     paths: { stroke: "#9aaab8", active: true },
+    point: { fill: "#2e3e4c", stroke: "#ffffff" },
+    label: { fill: "#2e3e4c", stroke: "#ffffff" },
+    curve: { stroke: "#9aaab8" },
+    freehand: { fill: "#9aaab8" },
+    labelFontName: "Josefin Sans",
 };
 
 // --- Arid desert, saharan dunes ---
@@ -318,6 +373,11 @@ export const desert: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#8a5820", active: true },
     railways: { stroke: "#604010", active: true },
     paths: { stroke: "#a07030", active: true },
+    point: { fill: "#803010", stroke: "#e8d498" },
+    label: { fill: "#803010", stroke: "#e8d498" },
+    curve: { stroke: "#a07030" },
+    freehand: { fill: "#a07030" },
+    labelFontName: "Rokkitt",
 };
 
 // --- Japanese sakura season ---
@@ -343,6 +403,11 @@ export const cherry: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#2a2060", active: true },
     railways: { stroke: "#180c50", active: true },
     paths: { stroke: "#d86098", active: true },
+    point: { fill: "#2a2060", stroke: "#ffffff" },
+    label: { fill: "#2a2060", stroke: "#ffffff" },
+    curve: { stroke: "#d86098" },
+    freehand: { fill: "#d86098" },
+    labelFontName: "Cormorant Garamond",
 };
 
 // --- Spring pastels: peach, mint, lavender ---
@@ -365,6 +430,11 @@ export const blossom: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#d0a8c0", active: true },
     railways: { stroke: "#b888a8", active: true },
     paths: { stroke: "#e0c0d8", active: true },
+    point: { fill: "#5a3a4a", stroke: "#ffffff" },
+    label: { fill: "#5a3a4a", stroke: "#ffffff" },
+    curve: { stroke: "#e0c0d8" },
+    freehand: { fill: "#e0c0d8" },
+    labelFontName: "Shadows Into Light",
 };
 
 // --- True black + near-white buildings, maximum contrast ---
@@ -387,6 +457,11 @@ export const obsidian: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#c8c8c8", active: true },
     railways: { stroke: "#909090", active: true },
     paths: { stroke: "#a0a0a0", active: true },
+    point: { fill: "#f0f0ee", stroke: "#000000" },
+    label: { fill: "#f0f0ee", stroke: "#000000" },
+    curve: { stroke: "#a0a0a0" },
+    freehand: { fill: "#a0a0a0" },
+    labelFontName: "Manrope",
 };
 
 
@@ -413,6 +488,11 @@ export const jade: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#70c0a8", active: true },
     railways: { stroke: "#409880", active: true },
     paths: { stroke: "#88d0b8", active: true },
+    point: { fill: "#f5e8c8", stroke: "#0c3530" },
+    label: { fill: "#f5e8c8", stroke: "#0c3530" },
+    curve: { stroke: "#88d0b8" },
+    freehand: { fill: "#88d0b8" },
+    labelFontName: "Crimson Text",
 };
 
 // --- Vivid festive primaries: cobalt, amber, scarlet ---
@@ -438,6 +518,11 @@ export const carnival: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#282828", active: true },
     railways: { stroke: "#101010", active: true },
     paths: { stroke: "#484848", active: true },
+    point: { fill: "#111111", stroke: "#ffffff" },
+    label: { fill: "#111111", stroke: "#ffffff" },
+    curve: { stroke: "#484848" },
+    freehand: { fill: "#484848" },
+    labelFontName: "Bungee",
 };
 
 // --- Art Deco glamour: emerald, gold, sapphire on charcoal ---
@@ -463,6 +548,11 @@ export const gatsby: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#b09030", active: true },
     railways: { stroke: "#806020", active: true },
     paths: { stroke: "#c8a840", active: true },
+    point: { fill: "#d4af37", stroke: "#0c0c16" },
+    label: { fill: "#d4af37", stroke: "#0c0c16" },
+    curve: { stroke: "#c8a840" },
+    freehand: { fill: "#c8a840" },
+    labelFontName: "Cinzel",
 };
 
 // --- Japanese woodblock print: vermilion, indigo, ochre on washi ---
@@ -491,6 +581,11 @@ export const ukiyo: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#1a2848", active: true },
     railways: { stroke: "#101838", active: true },
     paths: { stroke: "#704828", active: true },
+    point: { fill: "#181018", stroke: "#e8d8b8" },
+    label: { fill: "#181018", stroke: "#e8d8b8" },
+    curve: { stroke: "#704828" },
+    freehand: { fill: "#704828" },
+    labelFontName: "Bitter",
 };
 
 // --- 1980s Miami Vice: hot pink, electric teal, coral on cream ---
@@ -513,6 +608,11 @@ export const miami: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#1c1a38", active: true },
     railways: { stroke: "#100e28", active: true },
     paths: { stroke: "#302858", active: true },
+    point: { fill: "#1c1a38", stroke: "#ffffff" },
+    label: { fill: "#1c1a38", stroke: "#ffffff" },
+    curve: { stroke: "#302858" },
+    freehand: { fill: "#302858" },
+    labelFontName: "Righteous",
 };
 
 // --- Autumn foliage: amber, burnt orange, burgundy on dark earth ---
@@ -538,5 +638,10 @@ export const autumn: Partial<MicroPaletteWithBorder> = {
     roads: { stroke: "#382010", active: true },
     railways: { stroke: "#241408", active: true },
     paths: { stroke: "#805020", active: true },
+    point: { fill: "#e8c090", stroke: "#18100a" },
+    label: { fill: "#e8c090", stroke: "#18100a" },
+    curve: { stroke: "#805020" },
+    freehand: { fill: "#805020" },
+    labelFontName: "Merriweather",
 };
 

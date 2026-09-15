@@ -3,19 +3,22 @@
     import MicroLayerParams from "src/components/MicroLayerParams.svelte";
     import { cancelPendingCutout, drawPrettyMap, generateCssFromState, initLayersState } from "src/micro/drawing";
     import { type MicroParams } from "src/params";
-    import { appState, microState } from "src/state.svelte";
-    import type {
-        Color,
-        MicroLayerId,
-        MicroPalette,
-        MicroPaletteWithBorder,
-        StateMicro,
-        SvgSelection,
+    import { appState, commonState, microState } from "src/state.svelte";
+    import {
+        NON_LAYER_PALETTE_KEYS,
+        type Color,
+        type MicroLayerDefinition,
+        type MicroLayerId,
+        type MicroPalette,
+        type MicroPaletteWithBorder,
+        type StateMicro,
+        type SvgSelection,
     } from "src/types";
     import * as _microPalettes from "../microPalettes";
     import { onMicroParamChange, replaceCssSheetContent, updateSvgPatterns } from "../change";
     import { saveState } from "src/util/save";
     import { exportStyleSheet } from "src/util/dom";
+    import { resolveBunnyFontByName } from "src/util/bunnyFonts";
     import { addProtocol, Map, Point, setWorkerUrl } from "maplibre-gl";
     import type { StyleSpecification } from "@maplibre/maplibre-gl-style-spec";
     import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
@@ -45,8 +48,10 @@
 
     function matchesPalette(current: MicroPalette, palette: Partial<MicroPaletteWithBorder>): boolean {
         const initialized = initLayersState(palette);
-        for (const [layerId, curDef] of Object.entries(current)) {
-            if (layerId === "borderParams") continue;
+        const layerEntries = Object.entries(current).filter(
+            ([layerId]) => !NON_LAYER_PALETTE_KEYS.has(layerId),
+        ) as [MicroLayerId, MicroLayerDefinition][];
+        for (const [layerId, curDef] of layerEntries) {
             const palDef = initialized[layerId as MicroLayerId];
             if (!palDef) return false;
             for (const field of LAYER_DATA_FIELDS) {
@@ -61,6 +66,14 @@
                 }
             }
         }
+        if (JSON.stringify(current.point ?? {}) !== JSON.stringify(palette.point ?? {})) return false;
+        // `current.label` may carry a resolved "font-family" that `palette.label` never has directly
+        // (see `labelFontName`, resolved and applied asynchronously once its Bunny font is loaded).
+        const { "font-family": _currentFont, ...currentLabelRest } = current.label ?? {};
+        if (JSON.stringify(currentLabelRest) !== JSON.stringify(palette.label ?? {})) return false;
+        if ((current.labelFontName ?? undefined) !== (palette.labelFontName ?? undefined)) return false;
+        if (JSON.stringify(current.curve ?? {}) !== JSON.stringify(palette.curve ?? {})) return false;
+        if (JSON.stringify(current.freehand ?? {}) !== JSON.stringify(palette.freehand ?? {})) return false;
         if (palette.borderParams) {
             const b = microState.microParams.Border;
             const pb = palette.borderParams;
@@ -254,7 +267,7 @@
         saveState();
     }
 
-    function handleMicroPaletteChange(paletteId: string) {
+    async function handleMicroPaletteChange(paletteId: string) {
         const palette = microPalettes[paletteId];
         if (palette.borderParams) {
             microState.microParams["Border"] = {
@@ -270,6 +283,20 @@
         replaceCssSheetContent(microState.microLayerDefinitions);
         draw();
         saveState();
+
+        // Bunny fonts aren't natively available: load the palette's preset label font (if any)
+        // asynchronously, same mechanism as manually picking one via FontPicker.
+        if (palette.labelFontName) {
+            const font = await resolveBunnyFontByName(palette.labelFontName);
+            if (!font || microState.microLayerDefinitions.labelFontName !== palette.labelFontName) return;
+            if (!commonState.providedFonts.some((f) => f.slug === font.slug && f.weight === font.weight && f.style === font.style)) {
+                commonState.providedFonts.push(font);
+            }
+            microState.microLayerDefinitions.label = { ...(microState.microLayerDefinitions.label ?? {}), "font-family": font.name };
+            replaceCssSheetContent(microState.microLayerDefinitions);
+            draw();
+            saveState();
+        }
     }
 </script>
 
