@@ -948,9 +948,7 @@
         const clampedLat = clamp(lat, -90, 90);
         const clampedLng = clamp(lng, -180, 180);
         commonState.providedShapes[entity.index] = { ...shapeDef, pos: [clampedLng, clampedLat] };
-        drawAndSetupShapes(); // rebuilds #points-labels from scratch
-        // DOM nodes were recreated — re-point the overlay, the panel, and label callbacks
-        refreshOverlay();
+        drawAndSetupShapes(); // rebuilds #points-labels from scratch and re-points the overlay
         const el = document.getElementById(shapeDef.id);
         if (el) propertiesPanel?.open(el);
         if (shapeDef.text !== undefined) setupLabelOverlayCallbacks(shapeDef.id, entity.index);
@@ -1057,6 +1055,9 @@
         );
         drawFreeHandShapes(svg, commonState.providedFreeHand, commonState.elementLinks ?? {});
         applyStyles(commonState.inlineStyles);
+        // Covers the drawCustomPaths/drawFreeHandShapes DOM rebuilds above (drawAndSetupShapes
+        // already re-points the overlay for shapes/labels on its own).
+        refreshOverlay();
     }
 
     function restoreStyleState(parsed: Record<string, any>): void {
@@ -1085,7 +1086,6 @@
             commonState.elementAnnotations = parsed.elementAnnotations ?? {};
             restoreStyleState(parsed);
             redrawEntities();
-            refreshOverlay();
             saveState();
         } finally {
             setRestoring(false);
@@ -1103,7 +1103,6 @@
             commonState.elementAnnotations = parsed.elementAnnotations ?? {};
             restoreStyleState(parsed);
             redrawEntities();
-            refreshOverlay();
             saveState();
         } finally {
             setRestoring(false);
@@ -1583,6 +1582,7 @@
         closeMenu();
         if (created) {
             toggleSelection({ type: 'shape', index: created.index, id: created.id }, false);
+            setupLabelOverlayCallbacks(created.id, created.index);
             const el = document.getElementById(created.id);
             if (el) propertiesPanel?.open(el);
         }
@@ -1608,7 +1608,6 @@
     function onLabelCommit(entityIndex: number, newText: string): void {
         commonState.providedShapes[entityIndex].text = newText;
         drawAndSetupShapes();
-        refreshOverlay(); // re-point overlay to the newly created DOM element
         const shape = commonState.providedShapes[entityIndex];
         if (shape) setupLabelOverlayCallbacks(shape.id, entityIndex);
         saveState();
@@ -1624,6 +1623,9 @@
         select(container).attr("clip-path", "url(#clipMapBorder)");
         drawShapes(commonState.providedShapes, container, appState.projection!, commonState.elementLinks ?? {});
         applyInlineStyles();
+        // This rebuilds shape/label DOM nodes from scratch — re-point any active overlay at
+        // the fresh ones rather than relying on every caller to remember to do it.
+        refreshOverlay();
     }
 
     function showMenu(e: MouseEvent, target: EventTarget | null = null): void {

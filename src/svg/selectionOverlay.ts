@@ -1,5 +1,5 @@
 import type { SelectedEntity } from "../selection.svelte";
-import { getTranslateFromTransform, setTransformTranslate, setTransformRotation, getRotationFromTransform, pathStringFromParsed } from "./svg";
+import { getTranslateFromTransform, setTransformTranslate, setTransformScale, setTransformRotation, getRotationFromTransform, pathStringFromParsed } from "./svg";
 import { appState, commonState } from "../state.svelte";
 import { saveState } from "../util/save";
 
@@ -503,11 +503,7 @@ export class SelectionOverlay {
         const state = this.dragState!;
         const ax = state.anchorX!;
         const ay = state.anchorY!;
-
-        // Compute scale factor from diagonal distance. Clamped on both ends so a
-        // degenerate origDiag (or a stray large pointer jump) can't blow up the scale.
-        const newDiag = Math.sqrt((pt.x - ax) ** 2 + (pt.y - ay) ** 2);
-        const scaleFactor = Math.min(100, Math.max(0.1, newDiag / state.origDiag!));
+        const scaleFactor = this.computeResizeScale(pt, ax, ay, state.origDiag!);
 
         for (let i = 0; i < this.elements.length; i++) {
             const el = this.elements[i];
@@ -517,34 +513,13 @@ export class SelectionOverlay {
 
             if (entity.type === "shape") {
                 // Reposition: new pos = anchor + (orig - anchor) * scale
-                const newX = ax + (orig.x - ax) * scaleFactor;
-                const newY = ay + (orig.y - ay) * scaleFactor;
+                const { x: newX, y: newY } = this.scaledPosition(orig, ax, ay, scaleFactor);
                 setTransformTranslate(el, `translate(${newX} ${newY})`);
-                // Visual scale via transform
-                const existingTransform = el.getAttribute("transform") || "";
-                const baseScale = existingTransform.match(/scale\(([0-9.]+)\)/);
-                // We'll apply a temporary scale marker
-                if (!baseScale) {
-                    el.setAttribute(
-                        "transform",
-                        `${el.getAttribute("transform") || ""} scale(${scaleFactor})`,
-                    );
-                } else {
-                    // Just update scale in transform - original scale is on shapeDef
-                    const origScale = commonState.providedShapes[entity.index]?.scale || 1;
-                    el.setAttribute(
-                        "transform",
-                        existingTransform.replace(
-                            /scale\([0-9.]+\)/,
-                            `scale(${origScale * scaleFactor})`,
-                        ),
-                    );
-                }
+                // Visual scale via transform — original scale (if any) lives on shapeDef
+                const origScale = commonState.providedShapes[entity.index]?.scale || 1;
+                setTransformScale(el, `scale(${origScale * scaleFactor})`);
             } else if (entity.type === "path" || entity.type === "freehand") {
                 // For paths/freehand, apply a transform group
-                const newX = ax + (orig.x - ax) * scaleFactor;
-                const newY = ay + (orig.y - ay) * scaleFactor;
-                // Apply visual transform
                 el.setAttribute(
                     "transform",
                     `translate(${ax} ${ay}) scale(${scaleFactor}) translate(${-ax} ${-ay})`,
@@ -552,6 +527,23 @@ export class SelectionOverlay {
             }
         }
         this.positionFromBbox();
+    }
+
+    // Scale factor from diagonal distance, clamped on both ends so a degenerate origDiag
+    // (or a stray large pointer jump) can't blow up the scale.
+    private computeResizeScale(pt: { x: number; y: number }, ax: number, ay: number, origDiag: number): number {
+        const newDiag = Math.sqrt((pt.x - ax) ** 2 + (pt.y - ay) ** 2);
+        return Math.min(100, Math.max(0.1, newDiag / origDiag));
+    }
+
+    // New position after scaling a point around an anchor: anchor + (orig - anchor) * scale.
+    private scaledPosition(
+        orig: { x: number; y: number },
+        ax: number,
+        ay: number,
+        scaleFactor: number,
+    ): { x: number; y: number } {
+        return { x: ax + (orig.x - ax) * scaleFactor, y: ay + (orig.y - ay) * scaleFactor };
     }
 
     private applyRotateVisual(pt: { x: number; y: number }): void {
@@ -635,8 +627,7 @@ export class SelectionOverlay {
         } else if (state.mode === "resize") {
             const ax = state.anchorX!;
             const ay = state.anchorY!;
-            const newDiag = Math.sqrt((pt.x - ax) ** 2 + (pt.y - ay) ** 2);
-            const scaleFactor = Math.min(100, Math.max(0.1, newDiag / state.origDiag!));
+            const scaleFactor = this.computeResizeScale(pt, ax, ay, state.origDiag!);
 
             // Creation resize: if the pointer never moved, keep scale: 1 as-is.
             if (state.creation && !state.started) {
@@ -667,8 +658,7 @@ export class SelectionOverlay {
                 if (!orig) return { entity, dx: 0, dy: 0, scale: scaleFactor };
 
                 // Compute position delta from scaling around anchor
-                const newX = ax + (orig.x - ax) * scaleFactor;
-                const newY = ay + (orig.y - ay) * scaleFactor;
+                const { x: newX, y: newY } = this.scaledPosition(orig, ax, ay, scaleFactor);
                 return {
                     entity,
                     dx: newX - orig.x,
