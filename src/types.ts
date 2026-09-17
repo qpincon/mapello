@@ -86,6 +86,21 @@ export interface ContourParams {
     fillColor: Color;
 }
 
+/**
+ * Concentric contour rings echoing outward from the land layer's coastline (a "waterline"
+ * effect). `color: null` means auto (derived from the sea color) — see resolveWaterlineColor
+ * in src/svg/contourMethods.ts. Kept separate from ContourParams: that type is also
+ * MacroPalette.land and is compared field-by-field in findMatchingPaletteId, so adding fields
+ * there would silently break palette matching and palette application.
+ */
+export interface WaterlineParams {
+    enabled: boolean;
+    count: number;
+    spacing: number;
+    thickness: number;
+    color: Color | null;
+}
+
 /** A one-click macro map style: sea/graticule, border, land contour, glow, and default country/adm CSS. */
 export interface MacroPalette {
     background: MacroBackgroundParams;
@@ -93,6 +108,7 @@ export interface MacroPalette {
     land: ContourParams;
     /** null = no glow filter on any layer. `enabled` is decided per-layer when the palette is applied. */
     glow: Omit<GlowParams, "enabled"> | null;
+    waterline: WaterlineParams;
     country: CssDict;
     countryHovered: CssDict;
     adm: CssDict;
@@ -312,6 +328,7 @@ export interface StateMacro {
     zonesGlow: Record<string, GlowParams>;
     // Use for land contour
     contourParams: ContourParams;
+    waterlineParams: WaterlineParams;
     // TODO: check what this is actually
     colorDataDefs: Record<string, ColorDef>;
     legendDefs: Record<string, LegendDef>;

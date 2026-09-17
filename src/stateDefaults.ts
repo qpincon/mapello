@@ -1,6 +1,6 @@
 import { initLayersState } from "./micro/drawing";
 import type { GlowParams, MacroParams, MicroParams } from "./params";
-import type { InlinePropsMacro, InlinePropsMicro, LegendDef, ColorDef, ContourParams, GlobalState, Color } from "./types";
+import type { InlinePropsMacro, InlinePropsMicro, LegendDef, ColorDef, ContourParams, WaterlineParams, GlobalState, Color } from "./types";
 import { playful } from './micro/microPalettes'
 import defaultBaseCssMacro from "./assets/pagestyleMacro.css?raw";
 const defaultMacroParams: MacroParams = {
@@ -85,6 +85,14 @@ const defaultContourParams: ContourParams = {
     fillColor: "#ffffff",
 };
 
+const defaultWaterlineParams: WaterlineParams = {
+    enabled: false,
+    count: 4,
+    spacing: 6,
+    thickness: 1,
+    color: null,
+};
+
 export const defaultColorDef: ColorDef = {
     enabled: false,
     colorScale: "category",
@@ -164,6 +172,7 @@ export const defaultState: GlobalState = {
         zonesData: {},
         zonesGlow: defaultZonesGlow,
         contourParams: defaultContourParams,
+        waterlineParams: defaultWaterlineParams,
         colorDataDefs: { countries: defaultColorDef },
         legendDefs: { "countries": defaultLegendDef },
         tooltipDefs: {

@@ -55,7 +55,7 @@
 
     import dataExplanation from "../../assets/dataColor.svg";
     import { applyInlineStyles, drawMacroBase, handleChangeProp, projectAndDraw, visibleOrderedTabs } from "../drawing";
-    import { appendCountryImageNew } from "src/svg/contourMethods";
+    import { appendCountryImageNew, resolveWaterlineColor } from "src/svg/contourMethods";
     import { glowFilterId } from "src/svg/svgDefs";
     import { defaultGlowParams } from "src/stateDefaults";
     import { dragged, updateVisibleAreaScale, zoomed } from "../interactions";
@@ -92,6 +92,7 @@
     let tooltipMenuOpenedByTab = $state<Record<string, boolean>>({});
     let colorDataMenuOpenedByTab = $state<Record<string, boolean>>({});
     let glowMenuOpenedByTab = $state<Record<string, boolean>>({});
+    let waterlineMenuOpened = $state<boolean>(true);
     let commonStyleSheetElem: HTMLStyleElement;
 
     const macroColorPalettes = Object.fromEntries(
@@ -881,6 +882,78 @@
                                     drawDebounced();
                                 }}
                             ></ColorPickerPreview>
+                        {/if}
+                        <div
+                            class="d-flex align-items-center layer-row mt-2"
+                            onclick={() => { if (macroState.waterlineParams.enabled) waterlineMenuOpened = !waterlineMenuOpened; }}
+                        >
+                            <div class="mx-2 form-check form-switch" onclick={(e) => e.stopPropagation()}>
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    role="switch"
+                                    id="waterlineToggle"
+                                    checked={macroState.waterlineParams.enabled}
+                                    onchange={(e) => {
+                                        macroState.waterlineParams.enabled = (e.target as HTMLInputElement).checked;
+                                        if (macroState.waterlineParams.enabled) waterlineMenuOpened = true;
+                                        drawDebounced();
+                                    }}
+                                />
+                                <label class="form-check-label" for="waterlineToggle">Waterlines</label>
+                            </div>
+                            {#if macroState.waterlineParams.enabled}
+                                <div class="toggle" class:opened={waterlineMenuOpened}></div>
+                            {/if}
+                        </div>
+                        {#if macroState.waterlineParams.enabled && waterlineMenuOpened}
+                            <div class="mx-2 mt-1">
+                                <div class="field">
+                                    <RangeInput
+                                        id="waterline-count"
+                                        title="Rings"
+                                        onChange={() => drawDebounced()}
+                                        bind:value={macroState.waterlineParams.count}
+                                        min={1}
+                                        max={6}
+                                        step={1}
+                                    ></RangeInput>
+                                </div>
+                                <div class="field">
+                                    <RangeInput
+                                        id="waterline-spacing"
+                                        title="Spacing"
+                                        onChange={() => drawDebounced()}
+                                        bind:value={macroState.waterlineParams.spacing}
+                                        min={3}
+                                        max={10}
+                                        step={0.5}
+                                    ></RangeInput>
+                                </div>
+                                <div class="field">
+                                    <RangeInput
+                                        id="waterline-thickness"
+                                        title="Thickness"
+                                        onChange={() => drawDebounced()}
+                                        bind:value={macroState.waterlineParams.thickness}
+                                        min={0.1}
+                                        max={1.5}
+                                        step={0.1}
+                                    ></RangeInput>
+                                </div>
+                                <div class="field">
+                                    <ColorPickerPreview
+                                        id="waterline-color"
+                                        popup="right"
+                                        title="Color"
+                                        value={macroState.waterlineParams.color ?? resolveWaterlineColor(macroState.waterlineParams, macroState.macroParams.Background.seaColor)}
+                                        onChange={(col) => {
+                                            macroState.waterlineParams.color = col;
+                                            drawDebounced();
+                                        }}
+                                    ></ColorPickerPreview>
+                                </div>
+                            </div>
                         {/if}
                     </div>
                 {/if}

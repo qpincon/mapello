@@ -1,3 +1,10 @@
+// NOTE: do not add 'removeUnknownsAndDefaults' to this plugin list. It is the only SVGO
+// plugin that strips attributes it doesn't recognize, and its absence is the only reason the
+// custom `image-*` (src/svg/contourMethods.ts) and `wl-*` (waterline) attributes survive
+// optimization — both live only inside data-URI-embedded SVGs that SVGO never even parses,
+// but were this plugin enabled it would also strip them from the host document's own
+// attributes wherever they briefly appear there (e.g. on the raw <g> during export, see
+// exportMacro in src/macro/export.ts).
 export default {
   plugins: [
     'removeDoctype',

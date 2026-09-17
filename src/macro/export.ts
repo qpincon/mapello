@@ -9,7 +9,7 @@ const svgoConfig = {
     plugins: [...svgoConfigBase.plugins, 'removeOffCanvasPaths'],
 };
 import { discriminateCssForExport, download, htmlToElement, indexBy, pick, randomString, xhtmlifyHtml, jsonForScript } from 'src/util/common';
-import { encodeSVGDataImageStr, getContourSource, imageFromSpecialGElemStr } from 'src/svg/contourMethods';
+import { appendWaterlinesStr, encodeSVGDataImageStr, getContourSource, imageFromSpecialGElemStr } from 'src/svg/contourMethods';
 import { transitionCssMacro } from 'src/svg/transition';
 
 // Import export-only scripts as raw strings
@@ -164,6 +164,13 @@ export async function exportMacro(
             .replaceAll('__HEIGHT__', stateMacro.macroParams.General.height.toString())
         : '';
 
+    // Only ship the ring-building code when it's actually used, so maps that don't use
+    // waterlines don't pay for it — see appendWaterlinesStr in src/svg/contourMethods.ts for
+    // why imageFromSpecialGElem tolerates appendWaterlines being absent here.
+    const waterlineCode = stateMacro.waterlineParams.enabled && stateMacro.waterlineParams.count > 0
+        ? appendWaterlinesStr
+        : '';
+
     // Build intersection observer code with animation end handler
     const animationCode = animate
         ? intersectionObserverScript.replaceAll('__ON_ANIMATION_END__', 'gElemsToImages(true);')
@@ -211,6 +218,7 @@ export async function exportMacro(
         const mapElement = document.currentScript.parentNode;
 
         ${encodeSVGDataImageStr}
+        ${waterlineCode}
         ${imageFromSpecialGElemStr}
         ${gElemsToImagesScript}
         ${tooltipCode}

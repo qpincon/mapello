@@ -304,6 +304,8 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
                 height,
                 borderWidth,
                 macroState.contourParams,
+                macroState.waterlineParams,
+                macroState.macroParams.Background.seaColor,
                 geometriesState.land,
                 appState.pathLarger!,
                 macroState.zonesGlow["land"]?.enabled ? macroState.zonesGlow["land"] : undefined,

@@ -1,6 +1,7 @@
 import { select } from 'd3-selection'
 import { appendGlow, glowFilterId } from './svgDefs';
-import type { ContourParams, InlineStyles, SvgSelection } from 'src/types';
+import { color as d3Color, hsl } from 'd3-color';
+import type { Color, ContourParams, InlineStyles, SvgSelection, WaterlineParams } from 'src/types';
 import type { Feature, FeatureCollection, Polygon } from 'geojson';
 import type { GlowParams } from 'src/params';
 import type { GeoPath } from 'd3-geo';
@@ -22,6 +23,120 @@ export function encodeSVGDataImage(data: string) {
     return `data:image/svg+xml,${data}`
 }
 export const encodeSVGDataImageStr = encodeSVGDataImage.toString();
+
+/**
+ * Builds the waterline `<mask>` (appended into `defs`) and the masked `<rect>` (returned, for
+ * the caller to place in the use container) for a land `<g>` — concentric contour rings
+ * echoing outward from the coastline, driven by `wl-*` attributes set on `gElem` (see
+ * appendLandImageNew). Returns `null` when waterlines aren't enabled for this layer.
+ *
+ * Kept as its own function, shipped into the exported SVG via `Function.prototype.toString()`
+ * exactly like imageFromSpecialGElem (see appendWaterlinesStr below and the note on
+ * imageFromSpecialGElemStr) — but included in the export script only when at least one layer
+ * has waterlines enabled (see exportMacro in src/macro/export.ts), so a map that doesn't use
+ * the feature doesn't ship the ring-building code. Must stay fully self-contained for the same
+ * reason imageFromSpecialGElem must: no imports, no module-level consts, no closures.
+ *
+ * A round-joined stroke of width 2*o is the Minkowski sum of the path with a disc of radius o,
+ * i.e. exactly {p : dist(p, path) <= o}. Painting a wide "grow" copy in opaque white then an
+ * inner "erase" copy in opaque black leaves the annulus
+ * {p outside land : o-w < dist(p, coastline) <= o} — a true distance band, not an offset curve,
+ * so concave coastlines and archipelagos (all land features share this one mask) are handled
+ * exactly rather than self-intersecting. Only pure white/black ever appear in the mask (the
+ * per-ring fade is a wrapping `<g opacity>`, applied once after the grow+erase pair is
+ * flattened): mask value is luminance x alpha, and lum(#fff)=1 / lum(#000)=0 in every color
+ * space, so this renders identically under SVG 1.1's linearRGB and the sRGB browsers actually
+ * use. A plain gray level, or fading via stroke-opacity on the grow/erase `<use>`s directly,
+ * would not have that guarantee — and stroke-opacity would additionally double-blend wherever
+ * two islands' wide strokes overlap, since `#s` holds one `<path>` per landmass.
+ * `stroke-linejoin="round"` is required, not a style choice: it's the only join that produces a
+ * true offset disc (bevel cuts peninsula tips, miter spikes them).
+ */
+export function appendWaterlines(gElem: SVGGElement, defs: SVGDefsElement): SVGRectElement | null {
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const wlCount = parseInt(gElem.getAttribute('wl-count') || '0', 10);
+    if (wlCount <= 0) return null;
+
+    const spacing = parseFloat(gElem.getAttribute('wl-spacing') || '0');
+    const thickness = parseFloat(gElem.getAttribute('wl-thickness') || '0');
+    const wlColor = gElem.getAttribute('wl-color') || '#000';
+    // Offset from the coastline stroke's own outer edge, so rings never collide with the
+    // contour regardless of how strokeWidth/spacing/thickness are set.
+    const base = parseFloat(gElem.getAttribute('stroke-width') || '0') / 2;
+    // Guards against thickness >= spacing, which would make (o - w) go negative for the
+    // innermost ring — an invalid (and, per spec, ignored) negative stroke-width.
+    const w = Math.min(thickness, spacing * 0.9);
+    const viewBoxParts = (gElem.getAttribute('viewBox') || '0 0 0 0').split(' ').map(Number);
+    const [vx, vy, vw, vh] = viewBoxParts;
+
+    const mask = document.createElementNS(svgNs, 'mask');
+    mask.setAttribute('id', 'w');
+    mask.setAttribute('maskUnits', 'userSpaceOnUse');
+    mask.setAttribute('x', String(vx));
+    mask.setAttribute('y', String(vy));
+    mask.setAttribute('width', String(vw));
+    mask.setAttribute('height', String(vh));
+    // SVG 1.1 mandates linearRGB mask luminance; only Firefox follows that, Chrome uses
+    // sRGB — irrelevant here since the mask is pure white/black (see docstring above),
+    // kept only as cheap insurance.
+    mask.setAttribute('style', 'color-interpolation:sRGB');
+    // Opaque black floor under every ring: makes each ring's own erase pass compose the
+    // same way regardless of paint order (an outer ring's black otherwise sits on a
+    // transparent backdrop, which is equivalent here but shouldn't be relied on) — cheap
+    // (~60 bytes) insurance for an invariant (grow/erase bands staying disjoint across
+    // rings) that already holds given `w < spacing` above, but is easy to disturb later.
+    const floor = document.createElementNS(svgNs, 'rect');
+    floor.setAttribute('x', String(vx));
+    floor.setAttribute('y', String(vy));
+    floor.setAttribute('width', String(vw));
+    floor.setAttribute('height', String(vh));
+    floor.setAttribute('fill', '#000');
+    mask.appendChild(floor);
+    for (let i = wlCount - 1; i >= 0; i--) {
+        // (i+1), not i: the innermost ring (i=0) sits a full `spacing` out from the coastline,
+        // same as every other ring, rather than being adjacent to it regardless of spacing.
+        const o = base + w + (i + 1) * spacing;
+        const ring = document.createElementNS(svgNs, 'g');
+        ring.setAttribute('opacity', String((wlCount - i) / wlCount));
+        const grow = document.createElementNS(svgNs, 'use');
+        grow.setAttribute('href', '#s');
+        grow.setAttribute('fill', 'none');
+        grow.setAttribute('stroke', '#fff');
+        grow.setAttribute('stroke-width', String(2 * o));
+        grow.setAttribute('stroke-linejoin', 'round');
+        grow.setAttribute('stroke-linecap', 'round');
+        grow.setAttribute('stroke-dasharray', 'none');
+        ring.appendChild(grow);
+        const erase = document.createElementNS(svgNs, 'use');
+        erase.setAttribute('href', '#s');
+        erase.setAttribute('fill', '#000');
+        erase.setAttribute('stroke', '#000');
+        erase.setAttribute('stroke-width', String(Math.max(0, 2 * (o - w))));
+        erase.setAttribute('stroke-linejoin', 'round');
+        erase.setAttribute('stroke-linecap', 'round');
+        erase.setAttribute('stroke-dasharray', 'none');
+        ring.appendChild(erase);
+        mask.appendChild(ring);
+    }
+    defs.appendChild(mask);
+
+    const waterlineRect = document.createElementNS(svgNs, 'rect');
+    waterlineRect.setAttribute('x', String(vx));
+    waterlineRect.setAttribute('y', String(vy));
+    waterlineRect.setAttribute('width', String(vw));
+    waterlineRect.setAttribute('height', String(vh));
+    waterlineRect.setAttribute('fill', wlColor);
+    // Must be explicit: the embedded <svg> root inherits stroke/stroke-width/stroke-dasharray
+    // from contourParams (see the attribute loop in imageFromSpecialGElem), which would
+    // otherwise paint a stray contour-colored frame line around the whole canvas.
+    waterlineRect.setAttribute('stroke', 'none');
+    waterlineRect.setAttribute('mask', 'url(#w)');
+    return waterlineRect;
+}
+// Wrapped for the same reason as imageFromSpecialGElemStr below: production minification may
+// rename this function, but it's referenced by the literal name `appendWaterlines` from inside
+// imageFromSpecialGElem's own stringified body.
+export const appendWaterlinesStr = `const appendWaterlines = ${appendWaterlines.toString()};`;
 
 /**
  * Builds a standalone `<svg>` from a contour `<g>` (geometry + an optional embedded glow
@@ -46,8 +161,10 @@ export const encodeSVGDataImageStr = encodeSVGDataImage.toString();
  * `<image>` actually renders with comes from the embedded copy instead (see embedRefClone).
  * `image-class` is a pure marker for gElemsToImages.js's `g[image-class]` lookup and carries no
  * value of its own. Attributes prefixed `image-` (besides `image-class`) move onto the `<image>`
- * too (dropping the prefix); everything else moves onto the embedded `<svg>` root, where it is
- * inherited by both `<use>`s exactly as it would be inherited by the original `<g>`'s children.
+ * too (dropping the prefix); attributes prefixed `wl-` are consumed by appendWaterlines to
+ * build an optional waterline `<mask>`/`<rect>` pair and go nowhere else; everything remaining
+ * moves onto the embedded `<svg>` root, where it is inherited by both
+ * `<use>`s exactly as it would be inherited by the original `<g>`'s children.
  */
 export function imageFromSpecialGElem(gElem: SVGGElement) {
     // Everything this function touches must be self-contained: it's shipped into the exported
@@ -74,9 +191,20 @@ export function imageFromSpecialGElem(gElem: SVGGElement) {
     defs.appendChild(geomGroup);
     embeddedSvg.appendChild(defs);
 
+    // Waterlines: concentric contour rings echoing outward from the coastline, driven by wl-*
+    // attributes on gElem (see appendLandImageNew). appendWaterlines is a separate function
+    // (rather than inlined here) so it can be shipped into the export script only when at
+    // least one layer actually uses waterlines — see appendWaterlinesStr below and exportMacro.
+    // `typeof` (not a plain call) because it may legitimately be absent from the export's IIFE
+    // scope when unused; `typeof` on a name that was never declared at all returns 'undefined'
+    // rather than throwing, unlike a bare reference.
+    const waterlineRect = typeof appendWaterlines === 'function' ? appendWaterlines(gElem, defs) : null;
+
     // Both <use>s share one clip application when a frame clip is embedded.
     const useContainer = hostClip ? document.createElementNS(svgNs, 'g') : embeddedSvg;
     if (hostClip) useContainer.setAttribute('clip-path', `url(#${hostClip.getAttribute('id')})`);
+    // Rings paint first so they sit under both the glow and the coastline stroke below.
+    if (waterlineRect) useContainer.appendChild(waterlineRect);
 
     const rootFill = gElem.getAttribute('fill');
     if (hostFilter) {
@@ -101,8 +229,11 @@ export function imageFromSpecialGElem(gElem: SVGGElement) {
         // export-animation window before gElemsToImages swaps it for this <image> — see
         // appendLandImageNew / appendCountryImageNew). Copying it here would either land on the
         // outer <image> (which we deliberately keep clip-path-free) or on embeddedSvg, where the
-        // host id it references doesn't exist — a dangling reference.
-        if (attr.nodeName === 'image-class' || attr.nodeName === 'clip-path') return;
+        // host id it references doesn't exist — a dangling reference. wl-* attributes are
+        // consumed above to build the waterline mask/rect and have no meaning on embeddedSvg
+        // itself — skip them too, rather than let them ride along as junk that
+        // encodeSVGDataImage would also percent-encode.
+        if (attr.nodeName === 'image-class' || attr.nodeName === 'clip-path' || attr.nodeName.startsWith('wl-')) return;
         if (attr.nodeName === 'id' || attr.nodeName === 'class' || attr.nodeName === 'style') {
             imageElem.setAttribute(attr.nodeName, attr.nodeValue!);
         }
@@ -173,8 +304,23 @@ function applyImageAttrs(target: SVGImageElement, built: SVGImageElement): void 
     });
 }
 
+/**
+ * Resolves the waterline ring color: the user's explicit choice if any, otherwise a darkened
+ * version of the sea color so rings read as depth contours and follow palette changes. Runs
+ * only in the app (the resolved value is stamped into the `wl-color` attribute before it ever
+ * reaches imageFromSpecialGElem / export), unlike that function it does not need to be
+ * self-contained.
+ */
+export function resolveWaterlineColor(waterlineParams: WaterlineParams, seaColor: Color): Color {
+    if (waterlineParams.color) return waterlineParams.color;
+    const parsed = d3Color(seaColor);
+    if (!parsed) return seaColor;
+    return hsl(parsed)!.darker(1.2).formatHex8() as Color;
+}
+
 export function appendLandImageNew(this: SVGImageElement, showSource: boolean,
-    width: number, height: number, borderWidth: number, contourParams: ContourParams, land: FeatureCollection<Polygon> | Polygon,
+    width: number, height: number, borderWidth: number, contourParams: ContourParams, waterlineParams: WaterlineParams,
+    seaColor: Color, land: FeatureCollection<Polygon> | Polygon,
     pathLarger: GeoPath, glowParams: GlowParams | undefined) {
     // for not having glow effect on sides of view where there is land
     const offCanvasWithBorder = 20 - (borderWidth / 2);
@@ -207,6 +353,15 @@ export function appendLandImageNew(this: SVGImageElement, showSource: boolean,
         .attr('image-width', width + (offCanvasWithBorder))
         .attr('image-height', height + (offCanvasWithBorder))
         .attr('image-class', 'contour-to-dup');
+    // Emitted only when enabled: never stamp an empty wl-* value (SVGO's removeEmptyAttrs
+    // would delete it anyway) and cost nothing — no attribute, no mask, no rect — for maps
+    // that don't use waterlines. Consumed inside imageFromSpecialGElem.
+    if (waterlineParams.enabled && waterlineParams.count > 0) {
+        gElem.attr('wl-count', waterlineParams.count)
+            .attr('wl-spacing', waterlineParams.spacing)
+            .attr('wl-thickness', waterlineParams.thickness)
+            .attr('wl-color', resolveWaterlineColor(waterlineParams, seaColor));
+    }
 
     gElem.selectAll('path')
         // @ts-expect-error

@@ -2,7 +2,7 @@ import { color } from "d3-color";
 import type { GlowParams } from "../params";
 import { commonState, macroState } from "../state.svelte";
 import { defaultGlowParams } from "../stateDefaults";
-import type { CssDict, MacroPalette } from "../types";
+import type { CssDict, MacroPalette, WaterlineParams } from "../types";
 import { exportStyleSheet, findStyleSheet, updateStyleSheetOrGenerateCss } from "../util/dom";
 import { resolveBunnyFontByName } from "../util/bunnyFonts";
 
@@ -26,6 +26,9 @@ export const atlas: MacroPalette = {
     border: { borderRadius: 1.5, borderWidth: 1, borderColor: "#b8b8b8" },
     land: { strokeWidth: 1, strokeColor: "#a0a0a07d", strokeDash: 0, fillColor: "#ffffff" },
     glow: { ...defaultGlowParams },
+    // Matches defaultWaterlineParams (see stateDefaults.ts): atlas reproduces the app's own
+    // defaults, and waterlines default to off.
+    waterline: { enabled: false, count: 4, spacing: 6, thickness: 1, color: null },
     country: { fill: "#f3efec", stroke: "#bfbfbf", "stroke-width": "1px" },
     countryHovered: { fill: "#f9f2eb" },
     adm: { fill: "#ffffffd0", stroke: "#c4b8a3ff", "stroke-width": "1px" },
@@ -51,6 +54,8 @@ export const positron: MacroPalette = {
     border: { borderRadius: 1.5, borderWidth: 1, borderColor: "#c9c9c2" },
     land: { strokeWidth: 0.6, strokeColor: "#d3d3ccff", strokeDash: 0, fillColor: "#f2f3f0ff" },
     glow: null,
+    // Flat/minimal design language — no glow, no waterlines.
+    waterline: { enabled: false, count: 4, spacing: 6, thickness: 1, color: null },
     country: { fill: "#f2f3f0ff", stroke: "#c9c9c2ff", "stroke-width": "0.6px" },
     countryHovered: { fill: "#e4e6e0ff" },
     adm: { fill: "#f7f8f5ff", stroke: "#d3d3ccff", "stroke-width": "0.6px" },
@@ -84,6 +89,9 @@ export const parchment: MacroPalette = {
         outerStrength: 0.35,
         outerColor: "#6b4a28ff",
     },
+    // Engraved-chart rings, sepia-tinted — the antique-atlas cousin of a nautical depth
+    // contour, tight-spaced for a hand-etched look.
+    waterline: { enabled: true, count: 5, spacing: 5, thickness: 0.8, color: "#8a6a3e80" },
     country: { fill: "#ece0c2ff", stroke: "#ab8f61ff", "stroke-width": "1px" },
     countryHovered: { fill: "#f3e9cdff" },
     adm: { fill: "#f5ecd6ff", stroke: "#ab8f61ff", "stroke-width": "1px" },
@@ -117,6 +125,8 @@ export const midnight: MacroPalette = {
         outerStrength: 0.1,
         outerColor: "#2c5f75ff",
     },
+    // Faint cyan rings echoing the glow's own outer color, like sonar contours in the dark.
+    waterline: { enabled: true, count: 5, spacing: 5, thickness: 0.8, color: "#2c5f7590" },
     country: { fill: "#14212eff", stroke: "#3c5a75ff", "stroke-width": "1px" },
     countryHovered: { fill: "#1c2f3fff" },
     adm: { fill: "#182838ff", stroke: "#3c5a75ff", "stroke-width": "1px" },
@@ -150,6 +160,9 @@ export const expedition: MacroPalette = {
         outerStrength: 0.4,
         outerColor: "#8a7550ff",
     },
+    // color: null auto-derives from seaColor (darkened), reading as depth contours in the
+    // expedition's muted teal water.
+    waterline: { enabled: true, count: 4, spacing: 6, thickness: 1, color: null },
     country: { fill: "#f0e6ccff", stroke: "#6b5738ff", "stroke-width": "1px" },
     countryHovered: { fill: "#e6d8b0ff" },
     adm: { fill: "#f5eeddff", stroke: "#8a7550ff", "stroke-width": "1px" },
@@ -176,6 +189,9 @@ export const meridian: MacroPalette = {
     border: { borderRadius: 0, borderWidth: 1.5, borderColor: "#333333" },
     land: { strokeWidth: 0.8, strokeColor: "#5a7a52ff", strokeDash: 0, fillColor: "#c8e6c0ff" },
     glow: null,
+    // Fine bathymetric-style contour rings, textbook-physical-map convention — no glow needed
+    // for these to read correctly.
+    waterline: { enabled: true, count: 5, spacing: 5, thickness: 0.6, color: null },
     country: { fill: "#eaf3e0ff", stroke: "#4d4d4dff", "stroke-width": "0.8px" },
     countryHovered: { fill: "#dcefe0ff" },
     adm: { fill: "#f2f7ecff", stroke: "#7a9a72ff", "stroke-width": "0.8px" },
@@ -202,6 +218,8 @@ export const newsprint: MacroPalette = {
     border: { borderRadius: 0, borderWidth: 1, borderColor: "#1a1a1a" },
     land: { strokeWidth: 1, strokeColor: "#555555ff", strokeDash: 0, fillColor: "#ffffffff" },
     glow: null,
+    // Flat monochrome print style — no glow, no waterlines.
+    waterline: { enabled: false, count: 4, spacing: 6, thickness: 1, color: null },
     country: { fill: "#f5f5f5ff", stroke: "#333333ff", "stroke-width": "1px" },
     countryHovered: { fill: "#e0e0e0ff" },
     adm: { fill: "#fafafaff", stroke: "#777777ff", "stroke-width": "0.8px" },
@@ -230,6 +248,7 @@ export async function applyMacroPalette(palette: MacroPalette): Promise<void> {
     Object.assign(macroState.macroParams.Background, palette.background);
     Object.assign(macroState.macroParams.Border, palette.border);
     Object.assign(macroState.contourParams, palette.land);
+    Object.assign(macroState.waterlineParams, palette.waterline);
 
     if (palette.glow) {
         for (const layer of Object.keys(macroState.zonesGlow)) {
@@ -311,6 +330,17 @@ const glowMatches = (actual: GlowParams | undefined, expected: Omit<GlowParams, 
     );
 };
 
+const waterlineMatches = (actual: WaterlineParams, expected: WaterlineParams): boolean => {
+    if (!expected.enabled) return !actual.enabled;
+    if (!actual.enabled) return false;
+    return (
+        actual.count === expected.count &&
+        actual.spacing === expected.spacing &&
+        actual.thickness === expected.thickness &&
+        hex8(actual.color) === hex8(expected.color)
+    );
+};
+
 /** Returns the id of the palette matching current macro state, or "" ("Custom") if none does. */
 export function findMatchingPaletteId(palettes: Record<string, MacroPalette>): string {
     const country = extractRuleProps(macroState.baseCss, ".country");
@@ -338,6 +368,7 @@ export function findMatchingPaletteId(palettes: Record<string, MacroPalette>): s
                 land.strokeDash === p.land.strokeDash &&
                 hex8(land.fillColor) === hex8(p.land.fillColor) &&
                 glowMatches(macroState.zonesGlow.land, p.glow) &&
+                waterlineMatches(macroState.waterlineParams, p.waterline) &&
                 cssDictMatches(country, p.country) &&
                 cssDictMatches(curve, p.curve) &&
                 cssDictMatches(point, p.point) &&
