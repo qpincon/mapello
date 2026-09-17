@@ -140,14 +140,6 @@ export async function fetchFontSubsetAsDataUrl(font: ProvidedFont, subset: strin
     }
 }
 
-export async function fontsToCssEmbed(fonts: ProvidedFont[]): Promise<string> {
-    const results = await Promise.all(fonts.map(async font => {
-        const dataUrl = await fetchFontAsDataUrl(font);
-        return `@font-face { font-family: ${font.name}; src: url("${dataUrl}"); }`;
-    }));
-    return results.join('\n') || '';
-}
-
 /**
  * Embeds all needed font subsets as base64 @font-face rules.
  */

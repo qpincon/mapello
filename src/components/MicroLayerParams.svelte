@@ -5,7 +5,7 @@
     import { camelCaseToSentence, initTooltips, pascalCaseToSentence } from "../util/common";
     import { log } from "../util/log";
     import { NON_LAYER_PALETTE_KEYS, type Color, type MicroLayerId, type MicroPalette, type MicroPaletteWithBorder } from "src/types";
-    import { buildPalettePreviewSvg } from "src/micro/palettePreview";
+    import { buildPalettePreviewImageSrc } from "src/micro/palettePreview";
     import { appState } from "src/state.svelte";
 
     interface Props {
@@ -52,7 +52,7 @@
         return Object.fromEntries(
             Object.keys(availablePalettes).map((id) => [
                 id,
-                buildPalettePreviewSvg(id, availablePalettes[id]),
+                buildPalettePreviewImageSrc(id, availablePalettes[id]),
             ]),
         ) as Record<string, string>;
     });
@@ -111,7 +111,9 @@
                 aria-expanded={paletteOpen}
             >
                 {#if currentPaletteId && previews[currentPaletteId]}
-                    <span class="palette-thumb">{@html previews[currentPaletteId]}</span>
+                    <span class="palette-thumb">
+                        <img src={previews[currentPaletteId]} alt="" decoding="async" />
+                    </span>
                     <span class="palette-name">{camelCaseToSentence(currentPaletteId)}</span>
                 {:else}
                     <span class="palette-name text-muted">Custom</span>
@@ -128,7 +130,9 @@
                             aria-selected={paletteId === currentPaletteId}
                             onclick={() => { paletteChanged(paletteId); paletteOpen = false; }}
                         >
-                            <span class="palette-thumb">{@html previews[paletteId]}</span>
+                            <span class="palette-thumb">
+                                <img src={previews[paletteId]} alt="" loading="lazy" decoding="async" />
+                            </span>
                             <span>{camelCaseToSentence(paletteId)}</span>
                         </li>
                     {/each}
@@ -348,10 +352,11 @@
         justify-content: center;
         background: #f0f0f0;
 
-        :global(svg) {
+        :global(img) {
             width: 100%;
             height: 100%;
             display: block;
+            object-fit: cover;
         }
     }
 

@@ -17,7 +17,6 @@
         postClipSimple,
     } from "./svg/svg";
     import { drawShapes } from "./svg/shape";
-    import iso3Data from "./assets/data/iso3_filtered.json";
     import { freeHandDrawPath, cancelFreeHandDrawPath } from "./svg/freeHandPath";
     import Modal from "./components/Modal.svelte";
     import LabelEditor from "./components/LabelEditor.svelte";

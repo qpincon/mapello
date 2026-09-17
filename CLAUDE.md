@@ -20,14 +20,12 @@ There is also common code for the two modes (in `App.svelte`). This common code 
 
 The project is organized into several directories, each with a specific purpose:
 
-- **`.github`**: Contains GitHub Actions workflows, such as the one for checking GeoBoundaries releases.
-- **`dist`**: This directory holds the built and bundled assets for the application, which are ready for deployment.
 - **`node_modules`**: This directory contains all the project's dependencies.
 - **`release-versions`**: This directory contains a text file with the latest version of GeoBoundaries.
+- **`build`**: adapter-node build output, produced by `vite build`. Gitignored.
 - **`src`**: This is the main source code directory for the Svelte application.
   - **`assets`**: This directory contains static assets like images, styles, and data.
   - **`components`**: This directory contains reusable Svelte components that are used throughout the application.
-  - **`examples`**: This directory contains example projects that can be loaded into the application.
   - **`lib`**: SvelteKit `$lib` alias root. Contains `auth-client.ts` (browser auth client) and `server/` (server-only: `auth.ts`, `db.ts`, `schema.ts`, `auth-schema.ts`).
   - **`macro`**: This directory contains code related to the "macro" view of the map.
   - **`micro`**: This directory contains code related to the "micro" view of the map.
@@ -71,8 +69,8 @@ Default values for all state are defined in `src/stateDefaults.ts`. Types are de
 This is the most complex of the 2 modes. The main logic is contained in `src/macro/components/MacroSidebar.svelte` and `src/macro/drawing.ts`.
 
 It allows rich customization of a view of the world. The geometry data of the world is from the GeoBoundaries repository, which is preprocessed by the `getAndSimplifyWorld.ts` script, and the output of that script is stored inside `src/assets/layers`. This folder contains topojson files:
-- `world_land_very_simplified.topojson`: This is a very simplified version of the whole land, used when the user drags the map, for fast rendering
-- `world_adm0_simplified.topojson`, which contains geometries for all the countries in the world
+- `world_land_very_simplified_topo.json`: This is a very simplified version of the whole land, used when the user drags the map, for fast rendering
+- `world_adm0_simplified_topo.json`, which contains geometries for all the countries in the world
 - `adm1` folder contains all ADM1 (region) geometries for all the countries of the world (if it exists for this country)
 - `adm2` folder contains all ADM2 (more detailed regions than ADM1) geometries for all the countries of the world (if it exists for this country)
 

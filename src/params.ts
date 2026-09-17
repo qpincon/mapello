@@ -1,6 +1,4 @@
-import type { Color, Flatten, Prettify, UnionToIntersection } from "./types";
-
-
+import type { Color } from "./types";
 
 export interface GlowParams {
     enabled: boolean;
@@ -57,19 +55,6 @@ export interface MicroParams {
     Border: MicroBorderParams;
 }
 
-export const microDefaultParams: MicroParams = {
-    General: {
-        width: 700,
-        height: 700,
-    },
-    Border: {
-        borderRadius: 1.5,
-        borderPadding: 15,
-        borderWidth: 1,
-        borderColor: "#b8b8b8",
-    },
-};
-
 export interface RangeDefinition {
     type: 'range';
     min: number;
@@ -84,7 +69,7 @@ export interface SelectDefinition {
 
 export type ParamDefinition = RangeDefinition | SelectDefinition;
 
-export type ParamDefinitions = { [paramName: string]: ParamDefinition };
+type ParamDefinitions = { [paramName: string]: ParamDefinition };
 export const paramDefs: ParamDefinitions = {
     width: { type: 'range', min: 100, max: 1000, step: 10 },
     height: { type: 'range', min: 100, max: 1000, step: 10 },
@@ -100,28 +85,4 @@ export const paramDefs: ParamDefinitions = {
     borderWidth: { type: 'range', min: 0, max: 10, step: 0.2 },
     borderPadding: { type: 'range', min: 0, max: 30 },
     projection: { type: 'select', choices: ['satellite', 'mercator', 'equalEarth', 'geoNaturalEarth', 'geoAlbersUsa', 'geoBaker', 'geoEckert4'] }
-};
-
-export type OtherParams = {
-    [param: string]: {
-        disabled?: boolean;
-        rename?: string;
-    }
-}
-export const noSatelliteParams: OtherParams = {
-    fieldOfView: {
-        disabled: true,
-    },
-    altitude: {
-        rename: 'scale',
-    }
-};
-export type ParamKey = Prettify<keyof Flatten<MacroParams> | keyof MacroParams | keyof GlowParams>;
-export type HelpParams = Partial<Record<ParamKey, string>>;
-const blurHelp = "The quantity of blur applied on the glow.";
-const strengthHelp = "The thickness of the glow effect.";
-export const helpParams: HelpParams = {
-    innerBlur: blurHelp,
-    innerStrength: strengthHelp,
-    showGraticule: "A graticule is the grid of latitude and longitude lines overlaid on the map.",
 };

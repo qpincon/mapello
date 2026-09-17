@@ -15,11 +15,6 @@ export type Prettify<T> = {
     [K in keyof T]: T[K];
 } & {};
 
-type FlattenObject<T> = T[keyof T];
-// Helper utility to convert union to intersection
-export type UnionToIntersection<U> =
-    (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
-export type Flatten<T> = UnionToIntersection<FlattenObject<T>>;
 type RGB = `rgb(${number}, ${number}, ${number})`;
 type RGBA = `rgba(${number}, ${number}, ${number}, ${number})`;
 export type HEX = `#${string}`;

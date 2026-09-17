@@ -16,9 +16,7 @@
   ],
   "exclude": [
     "node_modules/*",
-    "./dist/**/*",
     "src/assets/layers/**/*",
-    "src/examples/**/*",
     "src/svg/exportScripts/**/*"
   ]
 }

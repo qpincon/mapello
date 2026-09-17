@@ -12,8 +12,32 @@ import { patternGenerator } from "src/svg/patternGenerator";
 import { NON_LAYER_PALETTE_KEYS, type MicroLayerDefinition, type MicroLayerId, type MicroPaletteWithBorder, type PatternDefinition } from "src/types";
 
 const cache = new Map<string, string>();
+const dataUriCache = new Map<string, string>();
 
-export function buildPalettePreviewSvg(
+/**
+ * Same as {@link buildPalettePreviewSvg}, but returns a `data:image/svg+xml;base64,…` URI
+ * suitable for an `<img src>`. Rendering thumbnails as `<img>` instead of inline `{@html}` SVG
+ * keeps ~20 full copies of the preview artwork (each with its own scoped <style>/<defs>) out of
+ * the live DOM/CSSOM, letting the browser treat them as plain rasterizable resources instead.
+ * Base64 (rather than a raw `data:image/svg+xml,...` URI) is used because the SVG contains `#`
+ * in its scoped CSS selectors and `"` in attributes, which would otherwise need careful escaping
+ * to avoid silently truncating the URI — encoding cost doesn't matter since results are cached.
+ */
+export function buildPalettePreviewImageSrc(
+    scopeId: string,
+    palette: Partial<MicroPaletteWithBorder>,
+): string {
+    if (dataUriCache.has(scopeId)) return dataUriCache.get(scopeId)!;
+
+    const svg = buildPalettePreviewSvg(scopeId, palette);
+    const base64 = btoa(unescape(encodeURIComponent(svg)));
+    const dataUri = `data:image/svg+xml;base64,${base64}`;
+
+    dataUriCache.set(scopeId, dataUri);
+    return dataUri;
+}
+
+function buildPalettePreviewSvg(
     scopeId: string,
     palette: Partial<MicroPaletteWithBorder>,
 ): string {
