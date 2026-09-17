@@ -218,6 +218,12 @@ export function imageFromSpecialGElem(gElem: SVGGElement) {
     }
     const strokeUse = document.createElementNS(svgNs, 'use');
     strokeUse.setAttribute('href', '#s');
+    // Without an explicit fill this inherits rootFill from the embedded <svg> root. When a glow
+    // filter is present, glowUse above already paints the fill (merged back in via SourceGraphic
+    // when showSource is on) plus the inner glow on top of it; inheriting rootFill here as well
+    // would repaint the shape's interior over that inner glow, hiding it. Forcing 'none' also
+    // avoids double-painting a translucent fill twice. Harmless when rootFill is already 'none'.
+    if (hostFilter) strokeUse.setAttribute('fill', 'none');
     useContainer.appendChild(strokeUse);
     if (hostClip) embeddedSvg.appendChild(useContainer);
 

@@ -113,6 +113,10 @@
     }
 
     let computedOrderedTabs = $derived(visibleOrderedTabs(macroState.orderedTabs));
+    // Mirrors orderTabsForPainting() in src/macro/drawing.ts: with nothing else to sit above, land
+    // is painted at index 0 regardless of landOnTop — i.e. always "below other layers", always
+    // filled — so the placement choice is moot and the fill color must stay editable.
+    let hasNonLandLayers = $derived(computedOrderedTabs.some((t) => t !== "land"));
     function setLandPlacement(onTop: boolean): void {
         macroState.inlinePropsMacro.landOnTop = onTop;
         drawMacroTotal();
@@ -812,6 +816,7 @@
                         <div class="layer-item-body p-2">
                 {#if currentMacroLayerTab === "land"}
                     <div>
+                        {#if hasNonLandLayers}
                         <div class="field field-column">
                             <label class="form-label mb-1">Land placement</label>
                             <div class="form-check">
@@ -837,6 +842,7 @@
                                 <label class="form-check-label" for="landAbove">Above other layers</label>
                             </div>
                         </div>
+                        {/if}
                         <div class="field">
                             <RangeInput
                                 id="contourwidth"
@@ -871,17 +877,19 @@
                                 step={0.5}
                             ></RangeInput>
                         </div>
-                        {#if !macroState.inlinePropsMacro.landOnTop}
-                            <ColorPickerPreview
-                                id="fillpicker"
-                                popup="right"
-                                title="Fill color"
-                                value={macroState.contourParams.fillColor}
-                                onChange={(col) => {
-                                    macroState.contourParams.fillColor = col;
-                                    drawDebounced();
-                                }}
-                            ></ColorPickerPreview>
+                        {#if !hasNonLandLayers || !macroState.inlinePropsMacro.landOnTop}
+                            <div class="field">
+                                <ColorPickerPreview
+                                    id="fillpicker"
+                                    popup="right"
+                                    title="Fill color"
+                                    value={macroState.contourParams.fillColor}
+                                    onChange={(col) => {
+                                        macroState.contourParams.fillColor = col;
+                                        drawDebounced();
+                                    }}
+                                ></ColorPickerPreview>
+                            </div>
                         {/if}
                         <div
                             class="d-flex align-items-center layer-row mt-2"
