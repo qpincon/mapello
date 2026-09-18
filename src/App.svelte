@@ -454,6 +454,9 @@
                 if (addingLabel) validateLabel();
                 propertiesPanel?.close();
                 closeMenu();
+            })
+            .on("end", () => {
+                if (commonState.currentMode === "macro") macroSidebar!.onDragEnd();
             });
 
         zoomFunc = zoom()

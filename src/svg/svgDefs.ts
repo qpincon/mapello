@@ -105,6 +105,40 @@ export function appendClip(selection: SvgSelection, width: number, height: numbe
         .attr('y', y);
 }
 
+/**
+ * True when the projected `{type: "Sphere"}` outline has degenerated to a plain axis-aligned
+ * rectangle — i.e. its own postclip bounds — meaning the view is zoomed in close enough that the
+ * earth cap covers the whole clip area and no horizon curve is actually visible. d3-geo emits a
+ * real horizon (circular or narrowed by tilt) as an adaptively-sampled polygon of many short line
+ * segments, never as a bare 4-point rectangle, so matching that exact shape reliably tells the two
+ * apart without any DOM/geometry work.
+ */
+function isPlainRectangleOutline(outlinePathD: string): boolean {
+    return /^M-?[\d.]+,-?[\d.]+(?:L-?[\d.]+,-?[\d.]+){3}Z$/.test(outlinePathD);
+}
+
+/**
+ * Clip path following the globe's horizon (the projected `{type: "Sphere"}` outline), used to
+ * keep waterline rings (see appendWaterlines in contourMethods.ts) from bulging past the globe
+ * in the satellite projection — unlike every other layer, they're built by stroke-dilating an
+ * already-projected path in flat SVG space, so they aren't bounded by the projection's own
+ * spherical preclip. Skips creating the clip (removing any existing one instead) when it would be
+ * a no-op: `outlinePathD` is `null` outside the satellite projection, or the horizon curve isn't
+ * actually visible (see isPlainRectangleOutline) — e.g. zoomed in close enough that the frame
+ * shows only ground, no horizon.
+ */
+export function appendGlobeClip(selection: SvgSelection, outlinePathD: string | null) {
+    let defs: DefsSelection = selection.select('defs');
+    if (defs.empty()) defs = selection.append('defs');
+    selection.select('#clipGlobe').remove();
+    if (!outlinePathD || isPlainRectangleOutline(outlinePathD)) return;
+    const clip = defs.append('clipPath')
+        .attr('id', 'clipGlobe')
+        .attr('clipPathUnits', 'userSpaceOnUse');
+
+    clip.append('path').attr('d', outlinePathD);
+}
+
 // function frontFilter(selection) {
 //     let defs = selection.select('defs');
 //     if (defs.empty()) defs = selection.append('defs');

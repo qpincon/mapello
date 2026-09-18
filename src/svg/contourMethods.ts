@@ -142,7 +142,16 @@ export function imageFromSpecialGElem(gElem: SVGGElement) {
     embeddedSvg.setAttribute('preserveAspectRatio', 'none');
 
     const hostFilter = gElem.querySelector(':scope > defs > filter');
-    const hostClip = gElem.querySelector(':scope > defs > clipPath');
+    // Matched by role, not id: gElem's clipPath ids get rewritten by exportMacro's
+    // changeIdAndReferences() before this ever runs client-side in the exported file — see
+    // embedRefClone's role param for why data-clip-role survives that rename and an id-based
+    // selector wouldn't.
+    const hostClip = gElem.querySelector(':scope > defs > clipPath[data-clip-role="frame"]');
+    // Only present when the map uses the satellite/globe projection — see appendGlobeClip in
+    // svgDefs.ts. Clips just the waterline rings (below) to the globe's horizon, since they're
+    // built by stroke-dilating an already-projected path in flat SVG space and so aren't bounded
+    // by the projection's own spherical preclip the way every other layer's geometry is.
+    const hostGlobeClip = gElem.querySelector(':scope > defs > clipPath[data-clip-role="globe"]');
 
     const geomGroup = document.createElementNS(svgNs, 'g');
     geomGroup.setAttribute('id', 's');
@@ -154,6 +163,7 @@ export function imageFromSpecialGElem(gElem: SVGGElement) {
     const defs = document.createElementNS(svgNs, 'defs');
     if (hostFilter) defs.appendChild(hostFilter.cloneNode(true));
     if (hostClip) defs.appendChild(hostClip.cloneNode(true));
+    if (hostGlobeClip) defs.appendChild(hostGlobeClip.cloneNode(true));
     defs.appendChild(geomGroup);
     embeddedSvg.appendChild(defs);
 
@@ -165,7 +175,18 @@ export function imageFromSpecialGElem(gElem: SVGGElement) {
     const useContainer = hostClip ? document.createElementNS(svgNs, 'g') : embeddedSvg;
     if (hostClip) useContainer.setAttribute('clip-path', `url(#${hostClip.getAttribute('id')})`);
     // Rings paint first so they sit under both the glow and the coastline stroke below.
-    if (waterlineRect) useContainer.appendChild(waterlineRect);
+    if (waterlineRect) {
+        if (hostGlobeClip) {
+            // Nested clip-path: intersects with useContainer's frame clip above, so rings stay
+            // both inside the frame and inside the globe.
+            const globeClippedRings = document.createElementNS(svgNs, 'g');
+            globeClippedRings.setAttribute('clip-path', `url(#${hostGlobeClip.getAttribute('id')})`);
+            globeClippedRings.appendChild(waterlineRect);
+            useContainer.appendChild(globeClippedRings);
+        } else {
+            useContainer.appendChild(waterlineRect);
+        }
+    }
 
     const rootFill = gElem.getAttribute('fill');
     if (hostFilter) {
@@ -213,15 +234,24 @@ export const imageFromSpecialGElemStr = `const imageFromSpecialGElem = ${imageFr
 /**
  * Clones a host element (by id) into `gElem`'s own `<defs>` under a fixed local id, plus an empty
  * sibling `<g [attrName]="url(#[localId])">` stub that keeps SVGO from treating the clone as
- * unreferenced and dropping it. This makes the referenced element (glow `<filter>` or frame
+ * unreferenced and dropping it. This makes the referenced element (glow `<filter>` or frame/globe
  * `<clipPath>`) travel with `gElem.innerHTML`, so imageFromSpecialGElem can pick it up with no
  * cross-document lookup — both in-app and inside the stringified export script.
+ *
+ * `role`, when given, is stamped on the clone as `data-clip-role` so imageFromSpecialGElem can
+ * tell apart the two clipPaths gElem may carry (frame vs. globe — see hostClip/hostGlobeClip)
+ * without relying on `localId`: exportMacro's changeIdAndReferences() renames every id inside a
+ * `<defs>` (prefixing it with the map id) before imageFromSpecialGElem ever runs client-side in
+ * the exported file, so a selector matching the literal `localId` would only work in-app.
+ * `data-clip-role` isn't an id or a reference-bearing attribute, so that rename pass leaves it
+ * alone (same reason the `wl-*`/`image-*` attributes survive — see svgoExport.config.ts).
  */
-function embedRefClone(gElem: SVGGElement, hostId: string, localId: string, attrName: string): void {
+function embedRefClone(gElem: SVGGElement, hostId: string, localId: string, attrName: string, role?: string): void {
     const hostEl = document.getElementById(hostId);
     if (!hostEl) return;
     const clone = hostEl.cloneNode(true) as Element;
     clone.setAttribute('id', localId);
+    if (role) clone.setAttribute('data-clip-role', role);
     let defs = gElem.querySelector(':scope > defs');
     if (!defs) {
         defs = document.createElementNS(SVG_NS, 'defs');
@@ -347,7 +377,10 @@ export function appendLandImageNew(this: SVGImageElement, opts: LandImageOptions
         }
         embedRefClone(gElem.node() as SVGGElement, filterName, 'f', 'filter');
     }
-    embedRefClone(gElem.node() as SVGGElement, 'clipMapBorder', 'c', 'clip-path');
+    embedRefClone(gElem.node() as SVGGElement, 'clipMapBorder', 'c', 'clip-path', 'frame');
+    // No-ops (embedRefClone returns early) when #clipGlobe doesn't exist, i.e. outside the
+    // satellite projection — see appendGlobeClip in svgDefs.ts / drawMacroBase in drawing.ts.
+    embedRefClone(gElem.node() as SVGGElement, 'clipGlobe', 'gc', 'clip-path', 'globe');
 
     applyImageAttrs(this, imageFromSpecialGElem(gElem.node() as SVGGElement));
     contourSources.set(this, gElem.node() as SVGGElement);
@@ -391,7 +424,7 @@ export function appendCountryImageNew(this: SVGImageElement, countryData: Featur
         .attr('d', path(countryData))
         .attr('pathLength', 1);
     if (filter) embedRefClone(gElem.node() as SVGGElement, filter, 'f', 'filter');
-    embedRefClone(gElem.node() as SVGGElement, 'clipMapBorder', 'c', 'clip-path');
+    embedRefClone(gElem.node() as SVGGElement, 'clipMapBorder', 'c', 'clip-path', 'frame');
 
     const pathElem = gElem.select('path');
     if (ref) {

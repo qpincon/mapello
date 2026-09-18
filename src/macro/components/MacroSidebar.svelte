@@ -176,7 +176,14 @@
 
     export function onDrag(e: d3.D3DragEvent<SVGSVGElement, unknown, unknown>) {
         dragged(e);
-        handleChangeProp("longitude", drawSimplifyThenReal);
+        // Only the cheap simplified draw runs during the drag itself; the real draw is
+        // deferred to onDragEnd, which fires once the user actually releases the mouse button.
+        handleChangeProp("longitude", () => draw(true));
+    }
+
+    export function onDragEnd(): void {
+        clearTimeout(drawTimeoutId);
+        drawReal();
     }
 
     export async function drawMacroTotal(simplified = false) {
@@ -254,13 +261,14 @@
     }
 
     let drawTimeoutId: number;
+    async function drawReal(): Promise<void> {
+        await updateLayerSimplification();
+        draw(false);
+    }
     function drawSimplifyThenReal(): void {
         draw(true);
         clearTimeout(drawTimeoutId);
-        drawTimeoutId = window.setTimeout(async () => {
-            await updateLayerSimplification();
-            draw(false);
-        }, 500);
+        drawTimeoutId = window.setTimeout(drawReal, 500);
     }
 
     const saveDebounced = debounce(saveState, 200);

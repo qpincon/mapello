@@ -4,7 +4,7 @@ import { select } from "d3-selection";
 import { geoGraticule, geoPath } from "d3-geo";
 import { GEO_META_KEYS, geometriesState, initializeAdms, resolvedAdmCountryOutline, resolvedAdmGeometry } from "./geometry-data";
 import type { Color, FrameSelection, MacroGroupData, SvgSelection } from "src/types";
-import { appendClip, appendGlow, glowFilterId } from "src/svg/svgDefs";
+import { appendClip, appendGlobeClip, appendGlow, glowFilterId } from "src/svg/svgDefs";
 import type { Feature, Geometry, MultiLineString, Polygon } from "geojson";
 import { appendCountryImageNew, appendLandImageNew } from "src/svg/contourMethods";
 import { getNumericCols, sortBy } from "src/util/common";
@@ -131,6 +131,13 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     // border is drawn; appendClip() is idempotent (replaces any existing #clipMapBorder).
     const earlyFrameRect = macroFrameRect(width, height, macroState.macroParams.Border.borderWidth, macroState.macroParams.Border.borderRadius);
     appendClip(svg, earlyFrameRect.width, earlyFrameRect.height, earlyFrameRect.rx, earlyFrameRect.x, earlyFrameRect.y);
+
+    // #clipGlobe must exist before drawMacro() runs too, for the same reason as #clipMapBorder
+    // above: the land image layer embeds it (when present) into its data URI at build time to
+    // keep waterline rings from bulging past the globe's horizon — see embedRefClone/hostGlobeClip
+    // in contourMethods.ts. Only the satellite projection has a horizon to clip to.
+    const isGlobe = macroState.macroParams.General.projection === 'satellite';
+    appendGlobeClip(svg, isGlobe ? appState.pathLarger!({ type: "Sphere" } as const) : null);
 
     drawMacro(svg, graticule, computedOrderedTabs);
 
