@@ -687,7 +687,7 @@
                         data-bs-toggle="tooltip"
                         data-bs-trigger="hover"
                         data-bs-placement="right"
-                        title="Display a filled land layer underneath country borders. Useful as a base colour for the map."
+                        title="Display a filled land layer underneath country borders. Useful as a base for the map."
                     > Show land</label>
                 </div>
                 <div class="form-check form-switch">
@@ -915,7 +915,7 @@
                             {/if}
                         </div>
                         {#if macroState.waterlineParams.enabled && waterlineMenuOpened}
-                            <div class="mx-2 mt-1">
+                            <div class="mt-1 ps-2 ms-4 border-start border-1">
                                 <div class="field">
                                     <RangeInput
                                         id="waterline-count"
@@ -1271,7 +1271,7 @@
                         {/if}
                     </div>
                     {#if macroState.zonesGlow[currentMacroLayerTab]?.enabled && (glowMenuOpenedByTab[currentMacroLayerTab] ?? true)}
-                        <div class="mx-2 mt-1">
+                        <div class="mt-1 ps-2 ms-4 border-start border-1">
                             <p class="glow-section-label">Inner</p>
                             <div class="field">
                                 <RangeInput id="ge-inner-blur" title="Blur"

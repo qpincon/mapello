@@ -2,8 +2,9 @@ import type { DataType } from 'csstype';
 import type { GlowParams, MacroBackgroundParams, MacroBorderParams, MacroParams, MicroBorderParams, MicroParams } from './params';
 import * as markers from './svg/markerDefs';
 import * as shapes from './svg/shapeDefs';
-import type { Feature, FeatureCollection, Geometry, MultiLineString, Polygon } from 'geojson';
+import type { Feature, Polygon } from 'geojson';
 import type { AnyScaleKey } from './util/color-scales';
+import type { GeoPermissibleObjects } from 'd3-geo';
 
 export type SvgSelection = d3.Selection<SVGSVGElement, any, SVGSVGElement, any>;
 export type DefsSelection = d3.Selection<SVGDefsElement, any, SVGDefsElement, any>;
@@ -54,19 +55,18 @@ export interface ProjectionParams {
     projectionName?: string;
 };
 
-export interface MacroGroupData {
-    name?: string;
-    type?: string;
-    data?: FeatureCollection<Geometry> | MultiLineString[] | [{ type: string }]
-    id?: string | null;
-    // TODO: delete
-    props?: unknown[];
-    class?: string;
-    countryData?: Feature<Polygon, { name: string }>;
-    filter?: string | null;
-    showSource?: boolean;
-    containerClass?: string;
-}
+export type MacroGroupData =
+    | {
+          kind: 'paths';
+          name: string;
+          data: GeoPermissibleObjects[];
+          keyByName: boolean;
+          choro: boolean;
+          class: string;
+          filter: string | null;
+      }
+    | { kind: 'landImg'; name: 'land'; isBaseLayer: boolean }
+    | { kind: 'filterImg'; name: string; countryData: Feature<Polygon, { name: string }>; filter: string | null };
 
 export type InlinePropsMacro = Prettify<Pick<ProjectionParams, 'longitude' | 'latitude' | 'translateX' | 'translateY' | 'altitude' | 'rotation' | 'tilt'> & {
     showLand: boolean;

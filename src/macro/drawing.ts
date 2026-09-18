@@ -5,7 +5,7 @@ import { geoGraticule, geoPath } from "d3-geo";
 import { GEO_META_KEYS, geometriesState, initializeAdms, resolvedAdmCountryOutline, resolvedAdmGeometry } from "./geometry-data";
 import type { Color, FrameSelection, MacroGroupData, SvgSelection } from "src/types";
 import { appendClip, appendGlow, glowFilterId } from "src/svg/svgDefs";
-import type { Feature, MultiLineString, Polygon } from "geojson";
+import type { Feature, Geometry, MultiLineString, Polygon } from "geojson";
 import { appendCountryImageNew, appendLandImageNew } from "src/svg/contourMethods";
 import { getNumericCols, sortBy } from "src/util/common";
 import { applyStyles } from "src/util/dom";
@@ -117,7 +117,6 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     svg.attr("width", `${width}`).attr("height", `${height}`);
     container.style("width", `${width}px`).style("height", `${height}px`);
 
-    const groupData: MacroGroupData[] = [];
     Object.entries(macroState.zonesGlow).forEach(([layer, glowParams]) => {
         if (!glowParams.enabled) return;
         appendGlow(svg, glowFilterId(layer), false, glowParams);
@@ -133,7 +132,7 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     const earlyFrameRect = macroFrameRect(width, height, macroState.macroParams.Border.borderWidth, macroState.macroParams.Border.borderRadius);
     appendClip(svg, earlyFrameRect.width, earlyFrameRect.height, earlyFrameRect.rx, earlyFrameRect.x, earlyFrameRect.y);
 
-    drawMacro(svg, graticule, groupData, computedOrderedTabs);
+    drawMacro(svg, graticule, computedOrderedTabs);
 
     // Re-raise annotation groups so they render on top of the recreated macro layers
     svg.select('#points-labels').raise();
@@ -166,25 +165,28 @@ export async function drawMacroBase(svg: SvgSelection, simplified = false): Prom
     }, 500);
 }
 
-function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: MacroGroupData[], computedOrderedTabs: string[]): void {
+function drawMacro(svg: SvgSelection, graticule: MultiLineString, computedOrderedTabs: string[]): void {
     const width = macroState.macroParams.General.width;
     const height = macroState.macroParams.General.height;
     const borderWidth = macroState.macroParams.Border.borderWidth;
-    const outline = { type: "Sphere" };
+    const outline = { type: "Sphere" } as const;
     svg.selectAll('.macro-layer').remove();
+    const groupData: MacroGroupData[] = [];
     groupData.push({
+        kind: "paths",
         name: "outline",
         data: [outline],
-        id: null,
-        props: [],
+        keyByName: false,
+        choro: false,
         class: "outline",
         filter: null,
     });
     groupData.push({
+        kind: "paths",
         name: "graticule",
         data: [graticule],
-        id: null,
-        props: [],
+        keyByName: false,
+        choro: false,
         class: "graticule",
         filter: null,
     });
@@ -222,31 +224,28 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
                 // getZonesDataFormatters();
             }
             groupData.push({
+                kind: "paths",
                 name: "countries",
                 data: outlineOverrideByCountryName.size
-                    ? {
-                          ...geometriesState.countries,
-                          features: geometriesState.countries.features.map(
-                              (f) => outlineOverrideByCountryName.get(f.properties.name) ?? f,
-                          ),
-                      }
-                    : geometriesState.countries,
-                id: "name",
-                props: [],
-                containerClass: "choro",
+                    ? geometriesState.countries.features.map(
+                          (f) => outlineOverrideByCountryName.get(f.properties.name) ?? f,
+                      )
+                    : geometriesState.countries.features,
+                keyByName: true,
+                choro: true,
                 class: "country",
                 filter: filter,
             });
         }
-        if (layer === "land" && macroState.inlinePropsMacro.showLand) groupData.push({ type: "landImg", showSource: i === 0 });
+        if (layer === "land" && macroState.inlinePropsMacro.showLand) groupData.push({ kind: "landImg", name: "land", isBaseLayer: i === 0 });
         // selected country
         else if (layer !== "countries") {
             groupData.push({
+                kind: "paths",
                 name: layer,
-                data: resolvedAdmGeometry[layer],
-                id: "name",
-                props: [],
-                containerClass: "choro",
+                data: resolvedAdmGeometry[layer].features,
+                keyByName: true,
+                choro: true,
                 class: "adm",
                 filter: null,
             });
@@ -255,26 +254,13 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
                 outlineOverrideByCountryName.get(countryOutlineId) ??
                 geometriesState.countries?.features.find((country) => country.properties.name === countryOutlineId);
             groupData.push({
+                kind: "filterImg",
                 name: `${countryOutlineId}-img`,
-                type: "filterImg",
-                countryData,
+                countryData: countryData!,
                 filter,
             });
         }
     });
-    // groupData.push({
-    //     name: "paths",
-    //     data: [],
-    //     props: [],
-    //     filter: null,
-    // });
-    // groupData.push({
-    //     name: "points-labels",
-    //     data: [],
-    //     props: [],
-    //     filter: null,
-    // });
-    // const groups = svg.selectAll('svg').data(groupData).join('svg').attr('id', d => d.name);
     // Image-backed layers (land, per-country glow outlines) render their <image> directly as
     // the .macro-layer element — no wrapping <g> (see appendLandImageNew / appendCountryImageNew
     // in src/svg/contourMethods.ts) — while every other layer is still a <g> of <path>s. d3's
@@ -283,10 +269,10 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     // order and appending each element right after the previous one, regardless of tag.
     const svgNode = svg.node()!;
     const groups = groupData.map((d) => {
-        const isImageLayer = d.type === "landImg" || d.type === "filterImg";
+        const isImageLayer = d.kind === "landImg" || d.kind === "filterImg";
         const el = document.createElementNS("http://www.w3.org/2000/svg", isImageLayer ? "image" : "g");
         el.classList.add("macro-layer");
-        if (d.name) el.setAttribute("id", d.name);
+        el.setAttribute("id", d.name);
         // Image layers (land, per-country glow outlines) embed the frame clip inside their data
         // URI instead — see embedRefClone in contourMethods.ts — so the clip stays off the live
         // host attribute and the <image> can be treated as a self-contained raster.
@@ -296,47 +282,42 @@ function drawMacro(svg: SvgSelection, graticule: MultiLineString, groupData: Mac
     });
 
     function drawPaths(this: Element, data: MacroGroupData) {
-        if (data.type === "landImg")
-            return appendLandImageNew.call(
-                this as SVGImageElement,
-                data.showSource ?? false,
+        if (data.kind === "landImg")
+            return appendLandImageNew.call(this as SVGImageElement, {
+                isBaseLayer: data.isBaseLayer,
                 width,
                 height,
                 borderWidth,
-                macroState.contourParams,
-                macroState.waterlineParams,
-                macroState.macroParams.Background.seaColor,
-                geometriesState.land,
-                appState.pathLarger!,
-                macroState.zonesGlow["land"]?.enabled ? macroState.zonesGlow["land"] : undefined,
-            );
-        if (data.type === "filterImg")
+                contourParams: macroState.contourParams,
+                waterlineParams: macroState.waterlineParams,
+                seaColor: macroState.macroParams.Background.seaColor,
+                land: geometriesState.land,
+                pathLarger: appState.pathLarger!,
+                glowParams: macroState.zonesGlow["land"]?.enabled ? macroState.zonesGlow["land"] : undefined,
+            });
+        if (data.kind === "filterImg")
             return appendCountryImageNew.call(
                 this as SVGImageElement,
-                data.countryData!,
-                data.filter ?? null,
+                data.countryData,
+                data.filter,
                 appState.path!,
                 commonState.inlineStyles,
                 width,
                 height,
             );
-        if (!data.data) return;
         const parentPathElem = select(this).style("will-change", "opacity");
-        if (data.containerClass) parentPathElem.classed(data.containerClass, true);
+        if (data.choro) parentPathElem.classed("choro", true);
         const pathElem = parentPathElem
             .selectAll("path")
-            // @ts-expect-error
-            .data(data.data.features ? data.data.features : data.data)
+            .data(data.data)
             .join("path")
             .attr("pathLength", 1)
             .attr("d", (d) => {
                 return appState.path!(d);
             });
-        // @ts-expect-error
-        if (data.id) pathElem.attr("id", (d) => d.properties[data.id]);
-        if (data.class) pathElem.attr("class", data.class);
+        if (data.keyByName) pathElem.attr("id", (d) => (d as Feature<Geometry, { name: string }>).properties.name);
+        pathElem.attr("class", data.class);
         if (data.filter) parentPathElem.attr("filter", `url(#${data.filter})`);
-        // data.props?.forEach((prop) => pathElem.attr(prop, (d) => d.properties[prop]));
     }
     groups.forEach((el, i) => drawPaths.call(el, groupData[i]));
     svg.select("#graticule").selectAll("path")
