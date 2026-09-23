@@ -214,6 +214,9 @@
     }
 
     function cleanFontName(v: string) { return v.trim().replace(/^['"]|['"]$/g, "").trim(); }
+    /** First family in a font-family stack (e.g. "'Patrick Hand', sans-serif" → "Patrick Hand"). */
+    function firstFontFamily(v: string): string { return v ? cleanFontName(v.split(",")[0]) : ""; }
+    function inheritedFontFamily(): string { return computedVal("font-family"); }
     function applyFont(name: string)  { apply("font-family", name.includes(" ") ? `'${name}'` : name); }
     function closeDropdowns()         { widthOpen = dashOpen = fontOpen = false; }
 
@@ -649,14 +652,16 @@
 
                 <!-- Font family (text elements only) -->
                 {#if isTextElement}
-                <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" style="min-height:38px"
+                {@const inheritedFont = currentFontFamily ? "" : inheritedFontFamily()}
+                {@const displayFontName = cleanFontName(currentFontFamily) || firstFontFamily(inheritedFont)}
+                <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentFontFamily} style="min-height:38px"
                     onmouseenter={() => highlightProp("font-family")} onmouseleave={clearHighlight}>
                     <span class="sp-icon" onmouseenter={(e) => showTip(e, 'Font family')} onmouseleave={hideTip}>{@html IC.font}</span>
                     <div class="dropdown flex-grow-1" bind:this={fontDropEl}>
                         <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center gap-1 text-start"
-                            style="font-family:{currentFontFamily || 'inherit'}"
+                            style="font-family:{currentFontFamily || inheritedFont || 'inherit'}"
                             onclick={() => { fontOpen = !fontOpen; widthOpen = dashOpen = false; }}>
-                            <span class="flex-grow-1" style="font-size:12px">{cleanFontName(currentFontFamily) || "—"}</span>
+                            <span class="flex-grow-1" style="font-size:12px">{displayFontName || "—"}</span>
                             <span class="text-muted" style="font-size:10px">▾</span>
                         </button>
                         {#if fontOpen}
@@ -666,7 +671,7 @@
                                 <li><hr class="dropdown-divider my-1"></li>
                                 {#each allFonts as font}
                                     <li><button type="button" class="dropdown-item small"
-                                        class:active={cleanFontName(currentFontFamily) === font}
+                                        class:active={displayFontName === font}
                                         style="font-family:'{font}'"
                                         onclick={() => { applyFont(font); fontOpen = false; }}>{font}</button></li>
                                 {/each}

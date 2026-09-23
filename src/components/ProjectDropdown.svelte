@@ -3,6 +3,7 @@
     import { Dropdown } from "bootstrap";
     import type { GlobalState } from "../types";
     import { defaultState } from "../stateDefaults";
+    import { commonState } from "../state.svelte";
     import { saveProjectToServer } from "../util/save";
     import Icon from "./Icon.svelte";
     import { icons } from "../shared/icons";
@@ -260,7 +261,11 @@
                         class="btn btn-sm btn-warning"
                         type="button"
                         onclick={async () => {
-                            await applyState(defaultState);
+                            const currentMode = commonState.currentMode;
+                            await applyState({
+                                ...defaultState,
+                                stateCommon: { ...defaultState.stateCommon, currentMode },
+                            });
                             confirmReset = false;
                             dropdown.hide();
                         }}>Reset</button

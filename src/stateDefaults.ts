@@ -34,10 +34,10 @@ const defaultMicroParams: MicroParams = {
         height: 700,
     },
     Border: {
-        borderRadius: 1.5,
-        borderPadding: 15,
-        borderWidth: 1,
-        borderColor: "#b8b8b8",
+        borderRadius: 7,
+        borderPadding: 20,
+        borderWidth: 3,
+        borderColor: "#aaa",
     },
 };
 

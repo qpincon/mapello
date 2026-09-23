@@ -5,7 +5,7 @@
     import { drag } from "d3-drag";
     import { zoom } from "d3-zoom";
     import PropertiesPanel from "./components/PropertiesPanel.svelte";
-    import {  debounce, clamp } from "lodash-es";
+    import {  debounce, clamp, cloneDeep } from "lodash-es";
     import { drawCustomPaths, parseAndUnprojectPath } from "./svg/paths";
     import PathEditor from "./svg/pathEditor";
     import Geocoding from "./components/Geocoding.svelte";
@@ -599,7 +599,7 @@
         setRestoring(true);
         macroSidebar?.resetTabSelection();
         try {
-            Object.assign(commonState, state.stateCommon);
+            Object.assign(commonState, cloneDeep(state.stateCommon));
             // Migration: states saved before per-layer glow used zonesFilter (string) + macroParams.firstGlow/secondGlow
             if (state.stateMacro && !state.stateMacro.zonesGlow && (state.stateMacro as any).zonesFilter) {
                 const oldFilter: Record<string, string> = (state.stateMacro as any).zonesFilter;
@@ -617,9 +617,17 @@
                     if (glow.enabled === undefined) glow.enabled = true;
                 }
             }
-            Object.assign(macroState, state.stateMacro.macroParams ? state.stateMacro : defaultState.stateMacro);
+            const sourceMacro = cloneDeep(state.stateMacro.macroParams ? state.stateMacro : defaultState.stateMacro);
+            Object.assign(macroState, sourceMacro);
+            // `labelFontName` is optional: Object.assign only overwrites keys present on the
+            // source, so if it's absent there (e.g. defaultState's macro has none) a stale
+            // value from before would otherwise survive and break palette-match detection.
+            macroState.labelFontName = sourceMacro.labelFontName;
             if (!macroState.baseCss) macroState.baseCss = defaultState.stateMacro.baseCss;
-            Object.assign(microState, state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro);
+            Object.assign(
+                microState,
+                cloneDeep(state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro),
+            );
             await tick();
             await switchMode(state.stateCommon.currentMode, false);
             if (state.stateCommon.currentMode === "micro") {
@@ -2038,7 +2046,7 @@
             >
                 <div id="map-container" class="col mx-4"></div>
                 <div id="maplibre-map"></div>
-                <ResizeHandles onResize={onSvgResize} />
+                <ResizeHandles onResize={onSvgResize} disabled={activeTool === 'curve' || activeTool === 'freehand'} />
                 {#if isDraggingImage}
                     <div class="drop-overlay">
                         <div class="drop-label">

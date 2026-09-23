@@ -4,9 +4,10 @@
 
     interface Props {
         onResize: (w: number, h: number) => void;
+        disabled?: boolean;
     }
 
-    let { onResize }: Props = $props();
+    let { onResize, disabled = false }: Props = $props();
 
     const MIN = (paramDefs.width as { min: number }).min;
     const MAX = (paramDefs.width as { max: number }).max;
@@ -98,6 +99,7 @@
     }
 
     function onPointerDown(edge: Edge, e: PointerEvent) {
+        if (disabled) return;
         if (e.button !== 0) return;
         e.preventDefault();
         e.stopPropagation();
@@ -164,7 +166,7 @@
         target.addEventListener("pointercancel", onUp);
     }
 
-    const edges: Edge[] = ["n", "s", "e", "w", "ne", "nw", "se", "sw"];
+    const edges: Edge[] = ["s", "e", "ne", "se", "sw"];
 </script>
 
 <div
@@ -176,16 +178,18 @@
             <span class="resize-label">{Math.round(params.width)} × {Math.round(params.height)}</span>
         </div>
     {/if}
-    {#each edges as edge}
-        <div
-            class="handle handle-{edge}"
-            onpointerdown={(e) => onPointerDown(edge, e)}
-            oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        ></div>
-    {/each}
-    {#each (["s", "e"] as Edge[]) as edge}
-        <div class="grip grip-{edge}" class:visible={isHoveringMap || isResizing}></div>
-    {/each}
+    {#if !disabled}
+        {#each edges as edge}
+            <div
+                class="handle handle-{edge}"
+                onpointerdown={(e) => onPointerDown(edge, e)}
+                oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            ></div>
+        {/each}
+        {#each (["s", "e"] as Edge[]) as edge}
+            <div class="grip grip-{edge}" class:visible={isHoveringMap || isResizing}></div>
+        {/each}
+    {/if}
 </div>
 
 <style>
@@ -224,37 +228,24 @@
     }
 
     /* Edge handles — thin strips along each side */
-    .handle-n,
     .handle-s {
         left: 8px;
         right: 8px;
         height: 8px;
         cursor: ns-resize;
-    }
-    .handle-n {
-        top: -4px;
-    }
-    .handle-s {
         bottom: -4px;
     }
 
-    .handle-e,
-    .handle-w {
+    .handle-e {
         top: 8px;
         bottom: 8px;
         width: 8px;
         cursor: ew-resize;
-    }
-    .handle-e {
         right: -4px;
-    }
-    .handle-w {
-        left: -4px;
     }
 
     /* Corner handles */
     .handle-ne,
-    .handle-nw,
     .handle-se,
     .handle-sw {
         width: 14px;
@@ -264,11 +255,6 @@
         top: -7px;
         right: -7px;
         cursor: nesw-resize;
-    }
-    .handle-nw {
-        top: -7px;
-        left: -7px;
-        cursor: nwse-resize;
     }
     .handle-se {
         bottom: -7px;
@@ -296,22 +282,15 @@
     }
 
     /* Edge hover: thin blue line along the edge */
-    .handle-n::before {
-        border-top: 2px solid #4a90d9;
-    }
     .handle-s::before {
         border-bottom: 2px solid #4a90d9;
     }
     .handle-e::before {
         border-right: 2px solid #4a90d9;
     }
-    .handle-w::before {
-        border-left: 2px solid #4a90d9;
-    }
 
     /* Corner hover: small square dot */
     .handle-ne::before,
-    .handle-nw::before,
     .handle-se::before,
     .handle-sw::before {
         background: #4a90d9;
@@ -321,7 +300,6 @@
         margin: auto;
     }
     .handle-ne::before { position: absolute; top: 0; right: 0; }
-    .handle-nw::before { position: absolute; top: 0; left: 0; }
     .handle-se::before { position: absolute; bottom: 0; right: 0; }
     .handle-sw::before { position: absolute; bottom: 0; left: 0; }
 
