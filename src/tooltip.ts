@@ -35,7 +35,7 @@ function createTooltipHost(map: SVGSVGElement): Tooltip {
 
     const div = document.createElementNS('http://www.w3.org/1999/xhtml', 'div') as HTMLDivElement;
     div.style.cssText = 'position:absolute;left:0;top:0;width:max-content;opacity:0;pointer-events:none;'
-        + 'transform-origin:0 0;will-change:transform,opacity;overflow-wrap:break-word';
+        + 'transform-origin:0 0;will-change:transform,opacity;overflow-wrap:break-word;font-family:system-ui';
     fo.appendChild(div);
 
     return { shapeId: null, fo, div };
@@ -292,6 +292,7 @@ function instanciateTooltip(
     tooltip.innerHTML = formatUnicorn(cleanTemplate, formattedRow || {});
 
     // Apply container styles + runtime properties
+    tooltip.style.setProperty('font-family', 'system-ui');
     const cs = tooltipDefs?.[groupId]?.containerStyle;
     if (cs) {
         for (const [prop, val] of Object.entries(cs)) {

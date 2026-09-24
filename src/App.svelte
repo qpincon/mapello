@@ -226,6 +226,9 @@
 
     let zoomFunc: d3.ZoomBehavior<any, any> | null = $state(null);
     let dragFunc: d3.DragBehavior<any, any, any> | null = $state(null);
+    // d3-drag fires "start"/"end" on every mousedown/mouseup, even a plain click with no movement.
+    // Tracks whether "drag" actually fired in between, so onDragEnd's redraw only runs for real pans.
+    let didDrag = false;
     let serverSyncError = $state("");
 
     let showProjectLoginModal = $state(false);
@@ -389,6 +392,10 @@
                     if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
                     e.preventDefault();
                     pasteFromClipboard(() => redrawEntities());
+                    if (selectionState.selected.length === 1) {
+                        const pastedEl = document.getElementById(selectionState.selected[0].id);
+                        if (pastedEl) propertiesPanel?.open(pastedEl);
+                    }
                 }
             } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
                 const target = e.target as HTMLElement;
@@ -447,16 +454,19 @@
         const container = select("#map-container");
         dragFunc = drag()
             .filter((e) => commonState.currentMode === "macro" && !e.button) // Remove ctrlKey
+            .clickDistance(3)
             .on("drag", (e) => {
+                didDrag = true;
                 if (commonState.currentMode === "macro") macroSidebar!.onDrag(e);
             })
             .on("start", () => {
+                didDrag = false;
                 if (addingLabel) validateLabel();
                 propertiesPanel?.close();
                 closeMenu();
             })
             .on("end", () => {
-                if (commonState.currentMode === "macro") macroSidebar!.onDragEnd();
+                if (didDrag && commonState.currentMode === "macro") macroSidebar!.onDragEnd();
             });
 
         zoomFunc = zoom()
@@ -543,6 +553,14 @@
             },
             { passive: false },
         );
+        // Without this, right-click (and Ctrl+click on Mac, where the OS/browser treats
+        // Ctrl+click as a secondary click) opens the native context menu over the SVG,
+        // interrupting Ctrl/right-click drags before they register: the micro-mode
+        // MapLibre tilt/rotate gesture, the macro-mode satellite tilt/rotate drag
+        // (src/macro/interactions.ts), and path editing's Ctrl+click add/delete point
+        // (src/svg/pathEditor.ts). None of these modes have a legitimate use for the
+        // native context menu, so it's suppressed unconditionally here.
+        svg.node()?.addEventListener("contextmenu", (e: MouseEvent) => e.preventDefault());
 
         if (commonState.currentMode === "macro") {
             await macroSidebar!.drawMacroTotal(simplified);
@@ -725,52 +743,63 @@
         }
     }
 
+    // Forwards a mousedown (and its matching mouseup) from the SVG overlay to the MapLibre
+    // canvas beneath it, so MapLibre's own drag handlers (pan, and right-click/Ctrl+click
+    // drag-rotate for tilt) see the gesture despite the SVG intercepting the real event.
+    function forwardMouseDownToCanvas(e: MouseEvent): void {
+        const canvas = document.querySelector("#maplibre-map canvas") as HTMLCanvasElement | null;
+        if (!canvas) return;
+        canvas.dispatchEvent(
+            new MouseEvent("mousedown", {
+                bubbles: true,
+                cancelable: true,
+                clientX: e.clientX,
+                clientY: e.clientY,
+                button: e.button,
+                buttons: e.buttons || 1,
+                ctrlKey: e.ctrlKey,
+                shiftKey: e.shiftKey,
+                altKey: e.altKey,
+                metaKey: e.metaKey,
+            }),
+        );
+        function onDragEnd(ev: MouseEvent) {
+            document.removeEventListener("mouseup", onDragEnd);
+            canvas!.dispatchEvent(
+                new MouseEvent("mouseup", {
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: ev.clientX,
+                    clientY: ev.clientY,
+                    button: ev.button,
+                    buttons: ev.buttons,
+                    ctrlKey: ev.ctrlKey,
+                    shiftKey: ev.shiftKey,
+                    altKey: ev.altKey,
+                    metaKey: ev.metaKey,
+                }),
+            );
+        }
+        document.addEventListener("mouseup", onDragEnd);
+    }
+
     // Intercepts mousedown on selectable entities before D3's drag handler.
     // For labels: disambiguates click (enter edit) vs drag (move).
     // For non-labels: immediately selects + starts overlay drag.
     // Calls stopPropagation so onSvgClick won't also fire for selectable entities.
     function onSvgMouseDown(e: MouseEvent): void {
         // if (commonState.currentMode !== "macro") return;
-        if (e.button !== 0) return;
         if (isDrawingFreeHand || isDrawingPath || editingPath) return;
+        if (e.button === 2) {
+            // Right-click drag tilts/rotates the map in micro mode; never selects an
+            // entity, so forward it straight to the canvas rather than running click logic.
+            if (commonState.currentMode === "micro") forwardMouseDownToCanvas(e);
+            return;
+        }
+        if (e.button !== 0) return;
         const entity = identifyClickedEntity(e.target as Element) ?? identifyClickedPath(e);
         if (!entity) {
-            if (commonState.currentMode === "micro" && !isDrawingFreeHand && !isDrawingPath && !editingPath) {
-                const canvas = document.querySelector("#maplibre-map canvas") as HTMLCanvasElement | null;
-                if (!canvas) return;
-                canvas.dispatchEvent(
-                    new MouseEvent("mousedown", {
-                        bubbles: true,
-                        cancelable: true,
-                        clientX: e.clientX,
-                        clientY: e.clientY,
-                        button: e.button,
-                        buttons: e.buttons || 1,
-                        ctrlKey: e.ctrlKey,
-                        shiftKey: e.shiftKey,
-                        altKey: e.altKey,
-                        metaKey: e.metaKey,
-                    }),
-                );
-                function onDragEnd(ev: MouseEvent) {
-                    document.removeEventListener("mouseup", onDragEnd);
-                    canvas!.dispatchEvent(
-                        new MouseEvent("mouseup", {
-                            bubbles: true,
-                            cancelable: true,
-                            clientX: ev.clientX,
-                            clientY: ev.clientY,
-                            button: ev.button,
-                            buttons: ev.buttons,
-                            ctrlKey: ev.ctrlKey,
-                            shiftKey: ev.shiftKey,
-                            altKey: ev.altKey,
-                            metaKey: ev.metaKey,
-                        }),
-                    );
-                }
-                document.addEventListener("mouseup", onDragEnd);
-            }
+            if (commonState.currentMode === "micro") forwardMouseDownToCanvas(e);
             return;
         }
         e.stopPropagation();

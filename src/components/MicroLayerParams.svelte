@@ -145,7 +145,7 @@
         <div
             class="d-flex align-items-center layer-row"
             class:layer-empty={appState.microEmptyLayers.includes(title as MicroLayerId)}
-            onclick={() => { if (def.active && !def.disabled) collapseLayer(title as MicroLayerId); }}
+            onclick={() => { if (def.active) collapseLayer(title as MicroLayerId); }}
             onmouseenter={() => highlightLayer(title as MicroLayerId, def.active)}
             onmouseleave={clearHighlight}
         >

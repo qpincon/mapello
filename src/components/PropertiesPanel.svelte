@@ -411,7 +411,7 @@
 
 <!-- Full color property row (fill / stroke) -->
 {#snippet colorField(prop: string, currentVal: string, icon: string, tipLabel: string, openPicker: (el: HTMLElement) => void)}
-{@const barColor = inheritedColor(prop)}
+{@const barColor = currentVal === "none" ? "" : currentVal ? displayColor(currentVal) : inheritedColor(prop)}
 <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentVal} style="min-height:38px"
     onmouseenter={() => highlightProp(prop)} onmouseleave={clearHighlight}>
     <button type="button" class="sp-icon sp-icon-btn sp-color-icon-btn"

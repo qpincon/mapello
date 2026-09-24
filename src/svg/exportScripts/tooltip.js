@@ -30,7 +30,7 @@ ttFO.style.cssText = 'overflow:visible;pointer-events:none';
 mapElement.append(ttFO);
 const ttDiv = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
 ttDiv.classList.add('body');
-ttDiv.style.cssText = 'position:absolute;left:0;top:0;width:max-content;opacity:0;pointer-events:none;transform-origin:0 0;will-change:transform,opacity;overflow-wrap:break-word';
+ttDiv.style.cssText = 'position:absolute;left:0;top:0;width:max-content;opacity:0;pointer-events:none;transform-origin:0 0;will-change:transform,opacity;overflow-wrap:break-word;font-family:system-ui';
 ttFO.appendChild(ttDiv);
 
 // Mirrors escapeHtml() in src/util/common.ts — duplicated because this script runs standalone

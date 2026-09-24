@@ -67,7 +67,7 @@ export function showElementPopover(
     const wrapper = document.createElementNS('http://www.w3.org/1999/xhtml', 'div') as HTMLElement;
     // overflow-wrap/word-wrap so long unbreakable strings wrap within max-width instead of
     // overflowing it — the tooltip's host div already sets this; the popover's didn't.
-    wrapper.style.cssText = 'display:inline-block;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));overflow-wrap:break-word;word-wrap:break-word;';
+    wrapper.style.cssText = 'display:inline-block;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));overflow-wrap:break-word;word-wrap:break-word;font-family:system-ui;';
     wrapper.addEventListener('click', (e) => e.stopPropagation());
 
     // The popover HTML's own root div carries its width/max-width constraint (e.g.

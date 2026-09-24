@@ -13,7 +13,7 @@ mapElement.append(_ttFO);
 var _ttCurrentId = '';
 var _ttMeasuring = false;
 var _ttDiv = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-_ttDiv.style.cssText = 'position:absolute;left:0;top:0;width:max-content;opacity:0;pointer-events:none;transform-origin:0 0;will-change:transform,opacity;overflow-wrap:break-word';
+_ttDiv.style.cssText = 'position:absolute;left:0;top:0;width:max-content;opacity:0;pointer-events:none;transform-origin:0 0;will-change:transform,opacity;overflow-wrap:break-word;font-family:system-ui';
 _ttFO.appendChild(_ttDiv);
 
 var _poFO = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
@@ -181,7 +181,7 @@ for (var _annId in _annData) {
                 // overflow-wrap/word-wrap so long unbreakable strings wrap within max-width
                 // instead of overflowing it — the tooltip's host div already sets this;
                 // the popover's didn't.
-                _poWrapper.style.cssText = 'display:inline-block;width:max-content;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));overflow-wrap:break-word;word-wrap:break-word;';
+                _poWrapper.style.cssText = 'display:inline-block;width:max-content;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));overflow-wrap:break-word;word-wrap:break-word;font-family:system-ui;';
                 _poWrapper.addEventListener('pointerup', function (e) { e.stopPropagation(); });
                 _poWrapper.addEventListener('click', function (e) { e.stopPropagation(); });
                 // The popover HTML's own root div carries its width/max-width constraint

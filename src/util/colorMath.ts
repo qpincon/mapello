@@ -40,9 +40,9 @@ export function hexToHsv(hex: string): { h: number; s: number; v: number } {
 /** Parse any CSS color string → { hex: 6-char uppercase without #, alpha: 0-100 } */
 export function parseColorValue(v: string): { hex: string; alpha: number } {
     if (!v || v === "none") return { hex: "", alpha: 100 };
-    const rgba = v.match(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)/);
+    const rgba = v.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/);
     if (rgba)
-        return { hex: channelsToHex(rgba[1], rgba[2], rgba[3]), alpha: Math.round(parseFloat(rgba[4]) * 100) };
+        return { hex: channelsToHex(rgba[1], rgba[2], rgba[3]), alpha: rgba[4] !== undefined ? Math.round(parseFloat(rgba[4]) * 100) : 100 };
     if (v.startsWith("#") && v.length === 9)
         return { hex: v.slice(1, 7).toUpperCase(), alpha: hexToAlpha(v.slice(7, 9)) };
     if (v.startsWith("#") && v.length >= 7)
