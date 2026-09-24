@@ -6,8 +6,11 @@
     import QuillResizeImage from "quill-resize-image";
     import "quill/dist/quill.snow.css";
     import StyleColorPicker from "./StyleColorPicker.svelte";
+    import FontFamilyDropdown from "./FontFamilyDropdown.svelte";
     import { popoverPosition } from "../util/colorMath";
-    import type { Color } from "src/types";
+    import { commonState } from "../state.svelte";
+    import { saveState } from "../util/save";
+    import type { Color, ProvidedFont } from "src/types";
 
     // Override Block to use <div> instead of <p>
     const Block = Quill.import("blots/block") as any;
@@ -64,6 +67,9 @@
         // Text formatting (color, font-size, font-family) to seed as the typing format when the
         // editor starts out empty. Ignored once there is existing content to preserve its formatting.
         defaultTextFormat?: Record<string, string>;
+        // Opens the shared FontPicker modal, handing it a callback to invoke with whatever font
+        // the user picks — this component decides what to do with it (register + apply here).
+        onOpenFontPicker?: (onFontAdded: (font: ProvidedFont) => void) => void;
     }
 
     let {
@@ -74,13 +80,35 @@
         fonts = [],
         containerStyle = $bindable(),
         defaultTextFormat,
+        onOpenFontPicker,
     }: Props = $props();
 
+    // Whether this editor has container-styling toolbar rows (Container/Block). Captured once —
+    // both callers always pass containerStyle, so this doesn't need to be reactive.
+    const hasContainerStyle = !!containerStyle;
+
     let editorContainer: HTMLDivElement;
+    let toolbarEl: HTMLDivElement;
     let quillInstance: Quill | null = null;
     let isInternalUpdate = false;
     // Text format (color/size/font) tracked at the caret, so we can remember "the last font used".
     let lastKnownFormat: Record<string, any> = {};
+    // Font at the caret, mirrored for the FontFamilyDropdown trigger.
+    let currentFont = $state("");
+
+    // Opens the shared FontPicker modal (owned by a parent), registering whatever font the user
+    // picks in commonState.providedFonts (so its @font-face is available) and applying it to the
+    // current selection right away — the picker itself only adds fonts, it doesn't know about
+    // this editor's selection.
+    function handleOpenFontPicker(): void {
+        onOpenFontPicker?.((font) => {
+            if (!commonState.providedFonts.some((f) => f.name === font.name)) {
+                commonState.providedFonts.push(font);
+                saveState();
+            }
+            quillInstance?.format("font", font.name, "user");
+        });
+    }
 
     // ColorPicker instances for toolbar buttons that need color selection
     let containerBgPicker: StyleColorPicker | null = $state(null);
@@ -345,27 +373,11 @@
     }
 
     onMount(() => {
-        const allFonts = [...defaultFonts, ...fonts];
-        FontStyle.whitelist = allFonts;
+        // No whitelist: the font-family field is now driven by FontFamilyDropdown rather than
+        // Quill's own ql-font picker, so any font name (including ones from the Bunny catalogue
+        // picked mid-session) must be allowed through.
+        FontStyle.whitelist = null;
         SizeStyle.whitelist = sizeValues;
-
-        const hasContainerStyle = !!containerStyle;
-
-        // Build toolbar — container settings first (own row), then text formatting
-        const toolbarConfig: any[][] = [];
-        if (hasContainerStyle) {
-            toolbarConfig.push(["container-bg", "container-border", "container-radius"]);
-        }
-        toolbarConfig.push(
-            ["bold", "italic", "underline"],
-            ["text-color", "text-bg"],
-            [{ font: allFonts }, { size: sizeValues }],
-            [{ align: [] }],
-        );
-        if (hasContainerStyle) {
-            toolbarConfig.push(["blockBorder", "borderBottom", "blockPadding"]);
-        }
-        toolbarConfig.push(["image", "link"], ["clean"]);
 
         const handlers: Record<string, () => void> = {
             image: openImageMenu,
@@ -386,7 +398,7 @@
             theme: "snow",
             modules: {
                 toolbar: {
-                    container: toolbarConfig,
+                    container: toolbarEl,
                     handlers,
                 },
                 resize: {
@@ -396,87 +408,51 @@
             placeholder: placeholder,
         });
 
-        const toolbar = editorContainer.previousElementSibling;
-        if (toolbar) {
-            textColorBtn = toolbar.querySelector(".ql-text-color") as HTMLElement | null;
-            textBgBtn = toolbar.querySelector(".ql-text-bg") as HTMLElement | null;
-            containerBgBtn = toolbar.querySelector(".ql-container-bg") as HTMLElement | null;
-            containerBorderBtn = toolbar.querySelector(".ql-container-border") as HTMLElement | null;
-            blockBorderBtn = toolbar.querySelector(".ql-blockBorder") as HTMLElement | null;
-            borderBottomBtn = toolbar.querySelector(".ql-borderBottom") as HTMLElement | null;
-            imageBtn = toolbar.querySelector(".ql-image") as HTMLElement | null;
+        textColorBtn = toolbarEl.querySelector(".ql-text-color") as HTMLElement | null;
+        textBgBtn = toolbarEl.querySelector(".ql-text-bg") as HTMLElement | null;
+        containerBgBtn = toolbarEl.querySelector(".ql-container-bg") as HTMLElement | null;
+        containerBorderBtn = toolbarEl.querySelector(".ql-container-border") as HTMLElement | null;
+        blockBorderBtn = toolbarEl.querySelector(".ql-blockBorder") as HTMLElement | null;
+        borderBottomBtn = toolbarEl.querySelector(".ql-borderBottom") as HTMLElement | null;
+        imageBtn = toolbarEl.querySelector(".ql-image") as HTMLElement | null;
 
-            // Inject SVG icons into custom toolbar buttons
-            for (const [cls, svg] of Object.entries(toolbarIcons)) {
-                const btn = toolbar.querySelector(`.ql-${cls}`);
-                if (btn) btn.innerHTML = svg;
-            }
-
-            // Force container toolbar group onto its own line by inserting a flex line-break after it
-            if (hasContainerStyle) {
-                const firstFormats = toolbar.querySelector(".ql-formats");
-                if (firstFormats) {
-                    const lineBreak = document.createElement("div");
-                    lineBreak.className = "ql-toolbar-line-break";
-                    firstFormats.after(lineBreak);
-                }
-            }
-
-            // Fix font picker: set data-label and font-family on each item
-            toolbar.querySelectorAll(".ql-font .ql-picker-item").forEach((item) => {
-                const val = item.getAttribute("data-value");
-                if (val) {
-                    item.setAttribute("data-label", val);
-                    (item as HTMLElement).style.fontFamily = val;
-                } else {
-                    item.setAttribute("data-label", "Default");
-                }
-            });
-            const fontLabel = toolbar.querySelector(".ql-font .ql-picker-label");
-            if (fontLabel && !fontLabel.getAttribute("data-value")) {
-                fontLabel.setAttribute("data-label", "Default");
-            }
-
-            // Fix size picker: set data-label on each item
-            toolbar.querySelectorAll(".ql-size .ql-picker-item").forEach((item) => {
-                const val = item.getAttribute("data-value");
-                if (val) {
-                    item.setAttribute("data-label", val);
-                } else {
-                    item.setAttribute("data-label", "Default");
-                }
-            });
-            const sizeLabel = toolbar.querySelector(".ql-size .ql-picker-label");
-            if (sizeLabel && !sizeLabel.getAttribute("data-value")) {
-                sizeLabel.setAttribute("data-label", "Default");
-            }
-
-            // Add tooltips to toolbar buttons
-            const tooltips: Record<string, string> = {
-                bold: "Bold",
-                italic: "Italic",
-                underline: "Underline",
-                image: "Insert image",
-                link: "Insert link",
-                clean: "Clear formatting",
-                "text-color": "Text color",
-                "text-bg": "Text background",
-                font: "Font family",
-                size: "Font size",
-                blockBorder: "Block border (toggle)",
-                borderBottom: "Border bottom (toggle)",
-                "container-bg": "Container background",
-                "container-border": "Container border color",
-                "container-radius": "Container border radius",
-                blockPadding: "Block padding (cycle)",
-            };
-            for (const [format, label] of Object.entries(tooltips)) {
-                const btn = toolbar.querySelector(`.ql-${format}`);
-                if (btn) btn.setAttribute("title", label);
-            }
-            const alignBtn = toolbar.querySelector(".ql-align");
-            if (alignBtn) alignBtn.setAttribute("title", "Text alignment");
+        // Inject SVG icons into custom toolbar buttons
+        for (const [cls, svg] of Object.entries(toolbarIcons)) {
+            const btn = toolbarEl.querySelector(`.ql-${cls}`);
+            if (btn) btn.innerHTML = svg;
         }
+
+        // The size picker's items get their data-label for free from each <option>'s text
+        // content; only the "nothing selected" state needs a manual label so it isn't blank.
+        const sizeLabel = toolbarEl.querySelector(".ql-size .ql-picker-label");
+        if (sizeLabel && !sizeLabel.getAttribute("data-value")) {
+            sizeLabel.setAttribute("data-label", "Default");
+        }
+
+        // Add tooltips to toolbar buttons
+        const tooltips: Record<string, string> = {
+            bold: "Bold",
+            italic: "Italic",
+            underline: "Underline",
+            image: "Insert image",
+            link: "Insert link",
+            clean: "Clear formatting",
+            "text-color": "Text color",
+            "text-bg": "Text background",
+            size: "Font size",
+            blockBorder: "Block border (toggle)",
+            borderBottom: "Border bottom (toggle)",
+            "container-bg": "Container background",
+            "container-border": "Container border color",
+            "container-radius": "Container border radius",
+            blockPadding: "Block padding (cycle)",
+        };
+        for (const [format, label] of Object.entries(tooltips)) {
+            const btn = toolbarEl.querySelector(`.ql-${format}`);
+            if (btn) btn.setAttribute("title", label);
+        }
+        const alignBtn = toolbarEl.querySelector(".ql-align");
+        if (alignBtn) alignBtn.setAttribute("title", "Text alignment");
 
         // Set initial content
         if (value) {
@@ -529,7 +505,10 @@
         quillInstance.on("editor-change", (eventName: string) => {
             if (eventName !== "text-change" && eventName !== "selection-change") return;
             const range = quillInstance!.getSelection();
-            if (range) lastKnownFormat = quillInstance!.getFormat(range.index, range.length);
+            if (range) {
+                lastKnownFormat = quillInstance!.getFormat(range.index, range.length);
+                currentFont = (lastKnownFormat.font as string) ?? "";
+            }
         });
     });
 
@@ -588,6 +567,71 @@
 </script>
 
 <div class="quill-wrapper" class:is-invalid={hasError}>
+    <div bind:this={toolbarEl}>
+        {#if hasContainerStyle}
+            <div class="ql-row">
+                <span class="ql-row-label">Container</span>
+                <span class="ql-formats">
+                    <button type="button" class="ql-container-bg"></button>
+                    <button type="button" class="ql-container-border"></button>
+                    <button type="button" class="ql-container-radius"></button>
+                </span>
+            </div>
+        {/if}
+        <div class="ql-row">
+            <span class="ql-row-label">Text</span>
+            <span class="ql-formats">
+                <button type="button" class="ql-bold"></button>
+                <button type="button" class="ql-italic"></button>
+                <button type="button" class="ql-underline"></button>
+            </span>
+            <span class="ql-formats">
+                <button type="button" class="ql-text-color"></button>
+                <button type="button" class="ql-text-bg"></button>
+            </span>
+            <span class="ql-formats">
+                <FontFamilyDropdown
+                    value={currentFont}
+                    availableFonts={fonts}
+                    extraFonts={defaultFonts}
+                    compact={true}
+                    preserveFocus={true}
+                    onSelect={(name) => quillInstance?.format("font", name, "user")}
+                    onOpenFontPicker={handleOpenFontPicker}
+                />
+            </span>
+            <span class="ql-formats">
+                <select class="ql-size">
+                    {#each sizeValues as size (size)}
+                        <option value={size}>{size}</option>
+                    {/each}
+                </select>
+            </span>
+            <span class="ql-formats">
+                <select class="ql-align"></select>
+            </span>
+        </div>
+        {#if hasContainerStyle}
+            <div class="ql-row">
+                <span class="ql-row-label">Block</span>
+                <span class="ql-formats">
+                    <button type="button" class="ql-blockBorder"></button>
+                    <button type="button" class="ql-borderBottom"></button>
+                    <button type="button" class="ql-blockPadding"></button>
+                </span>
+            </div>
+        {/if}
+        <div class="ql-row">
+            <span class="ql-row-label">Insert</span>
+            <span class="ql-formats">
+                <button type="button" class="ql-image"></button>
+                <button type="button" class="ql-link"></button>
+            </span>
+            <span class="ql-formats">
+                <button type="button" class="ql-clean"></button>
+            </span>
+        </div>
+    </div>
     <div bind:this={editorContainer}></div>
     <!-- Hidden StyleColorPicker instances used by toolbar handlers (open/setColor called imperatively) -->
     <div class="color-pickers-container">
@@ -677,8 +721,25 @@
         border-top-right-radius: 0.375rem;
         padding: 4px 6px;
         display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .quill-wrapper :global(.ql-row) {
+        display: flex;
         flex-wrap: wrap;
         align-items: center;
+    }
+
+    .quill-wrapper :global(.ql-row-label) {
+        flex: 0 0 auto;
+        width: 80px;
+        margin-right: 4px;
+        font-size: 11px;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
     }
 
     .quill-wrapper :global(.ql-container) {
@@ -690,17 +751,7 @@
         margin-right: 8px;
     }
 
-    /* Force a line break after the container toolbar group */
-    .quill-wrapper :global(.ql-toolbar-line-break) {
-        flex-basis: 100%;
-        height: 0;
-    }
-
-    /* Use data-label for font/size picker items (overrides Snow theme defaults) */
-    .quill-wrapper :global(.ql-font .ql-picker-item[data-label]:not([data-label=""])::before),
-    .quill-wrapper :global(.ql-font .ql-picker-label[data-label]:not([data-label=""])::before) {
-        content: attr(data-label) !important;
-    }
+    /* Use data-label for the size picker items (overrides Snow theme defaults) */
     .quill-wrapper :global(.ql-size .ql-picker-item[data-label]:not([data-label=""])::before),
     .quill-wrapper :global(.ql-size .ql-picker-label[data-label]:not([data-label=""])::before) {
         content: attr(data-label) !important;

@@ -15,6 +15,10 @@
     let { onFontSelected, existingFontNames, iconOnly = false, hidden = false }: Props = $props();
 
     let showModal = $state(false);
+    // Lets a caller (e.g. QuillEditor) take over the selection callback for a single session,
+    // instead of the default onFontSelected — used to add a font without the side effects
+    // onFontSelected normally has (re-fonting every auto-font map label).
+    let overrideHandler: ((f: ProvidedFont) => void) | null = null;
     let searchQuery = $state("");
     let selectedCategory = $state("all");
     let catalog: BunnyFontCatalog | null = $state(null);
@@ -116,13 +120,15 @@
         }
     }
 
-    export function openPicker(): void {
+    export function openPicker(handler?: (f: ProvidedFont) => void): void {
+        overrideHandler = handler ?? null;
         showModal = true;
         fetchCatalog();
     }
 
     function closePicker(): void {
         showModal = false;
+        overrideHandler = null;
         cleanupPreviewFonts();
     }
 
@@ -138,7 +144,8 @@
         const weights = data.weights ?? [];
         if (weights.length > 0 && !weights.includes(weight)) return;
 
-        onFontSelected(toProvidedFont(slug, data, weight));
+        (overrideHandler ?? onFontSelected)(toProvidedFont(slug, data, weight));
+        closePicker();
     }
 
     function isAlreadyAdded(familyName: string): boolean {
@@ -151,7 +158,7 @@
 </script>
 
 {#if !hidden}
-<button class="navbar-btn" onclick={openPicker} title={iconOnly ? "Add font" : undefined}>
+<button class="navbar-btn" onclick={() => openPicker()} title={iconOnly ? "Add font" : undefined}>
     <Icon svg={icons["font"]} />{#if !iconOnly} Add font{/if}
 </button>
 {/if}

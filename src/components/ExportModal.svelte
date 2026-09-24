@@ -59,6 +59,22 @@
         }
         return false;
     });
+    // Macro zone tooltips render as HTML injected at hover time by the exported <script>, same
+    // as element annotations above — never as inline-styled SVG text — so they need the same
+    // "always embed as CSS, never convert to path" treatment.
+    const fontUsedInTooltipDefs = $derived.by(() => {
+        if (mode !== "macro") return false;
+        const fontNames = commonState.providedFonts.map((f) => f.name);
+        if (fontNames.length === 0) return false;
+        for (const def of Object.values(macroState.tooltipDefs)) {
+            if (!def.enabled) continue;
+            const html = (def.template || "") + Object.values(def.containerStyle || {}).join(" ");
+            for (const name of fontNames) {
+                if (html.includes(name)) return true;
+            }
+        }
+        return false;
+    });
     let sizeText = $state("");
     let isLargeExport = $state(false);
     let previewLoading = $state(false);
@@ -70,7 +86,7 @@
     function getExportFontChoice(): ExportFontChoice {
         if (!inlineFontUsed) return ExportFontChoice.convertToPath;
         if (fontUsedElsewhere) return ExportFontChoice.noExport;
-        if (fontUsedInAnnotations) return ExportFontChoice.embedFontFace;
+        if (fontUsedInAnnotations || fontUsedInTooltipDefs) return ExportFontChoice.embedFontFace;
         return ExportFontChoice.smallest;
     }
 

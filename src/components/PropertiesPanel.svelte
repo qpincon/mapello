@@ -4,6 +4,7 @@
     import { rgbToHex, parseColorValue, resolveColorToHex } from "../util/colorMath";
     import { getMatchedCSSRules, getRuleValue, setRuleValue, getElementsAffectedByProp, type StyleRule, type PropAffectResult } from "../util/cssRules";
     import StyleColorPicker from "./StyleColorPicker.svelte";
+    import FontFamilyDropdown from "./FontFamilyDropdown.svelte";
     import * as markers from "../svg/markerDefs";
 
     // ── Bootstrap tooltip action ─────────────────────────────────────
@@ -77,11 +78,6 @@
         { label: "Long dash", value: "12 4" },
     ];
 
-    const SYSTEM_FONTS = [
-        "Arial", "Verdana", "Helvetica", "Tahoma", "Trebuchet MS",
-        "Georgia", "Palatino Linotype", "Times New Roman", "Courier New", "Impact",
-    ];
-
     const IC = {
         font:    `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="currentColor"><text x="1" y="13" font-size="13" font-weight="700" font-family="serif">A</text></svg>`,
         fill:    `<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="currentColor"><path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15a1.49 1.49 0 000 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/></svg>`,
@@ -101,7 +97,7 @@
     let isAlreadyOnTop = $state(false);
     let matchedRules: StyleRule[] = $state([]);
     let selectedRuleIndex = $state(0);
-    let widthOpen = $state(false); let dashOpen = $state(false); let fontOpen = $state(false);
+    let widthOpen = $state(false); let dashOpen = $state(false);
 
     let currentFill = $state(""); let currentStroke = $state("");
     let currentStrokeWidth = $state(""); let currentDasharray = $state("");
@@ -109,7 +105,6 @@
 
     const isTextElement = $derived(!!element && ["text", "tspan"].includes(element.tagName.toLowerCase()));
     const isMacroRegion = $derived(!!element && (element.classList.contains("country") || element.classList.contains("adm")));
-    const allFonts = $derived([...availableFonts.filter((f) => !SYSTEM_FONTS.includes(f)), ...SYSTEM_FONTS]);
     const selectedRule = $derived(matchedRules[selectedRuleIndex] ?? null);
 
     // Active element id: prefer entity id, fall back to the panel's current element id.
@@ -218,7 +213,7 @@
     function firstFontFamily(v: string): string { return v ? cleanFontName(v.split(",")[0]) : ""; }
     function inheritedFontFamily(): string { return computedVal("font-family"); }
     function applyFont(name: string)  { apply("font-family", name.includes(" ") ? `'${name}'` : name); }
-    function closeDropdowns()         { widthOpen = dashOpen = fontOpen = false; }
+    function closeDropdowns()         { widthOpen = dashOpen = false; }
 
     function getElementInfo() {
         if (!element) return "";
@@ -255,7 +250,6 @@
     let panelEl: HTMLElement | null = $state(null);
     let widthDropEl: HTMLDivElement | null = $state(null);
     let dashDropEl:  HTMLDivElement | null = $state(null);
-    let fontDropEl:  HTMLDivElement | null = $state(null);
     let tipText = $state(""); let tipX = $state(0); let tipY = $state(0); let tipVisible = $state(false);
     function showTip(e: MouseEvent, text: string) { tipText = text; tipX = e.clientX; tipY = e.clientY; tipVisible = true; }
     function hideTip() { tipVisible = false; }
@@ -265,7 +259,6 @@
             const t = e.target as Node;
             if (widthOpen && !widthDropEl?.contains(t)) widthOpen = false;
             if (dashOpen  && !dashDropEl?.contains(t))  dashOpen  = false;
-            if (fontOpen  && !fontDropEl?.contains(t))  fontOpen  = false;
             if (!element || panelEl?.contains(t)) return;
             if (document.getElementById("static-svg-map")?.contains(t)) return;
             if (!document.getElementById("map-area")?.contains(t)) return;
@@ -657,27 +650,12 @@
                 <div class="d-flex align-items-center px-3 border-bottom gap-2 sp-field-row" class:sp-inherited-row={!currentFontFamily} style="min-height:38px"
                     onmouseenter={() => highlightProp("font-family")} onmouseleave={clearHighlight}>
                     <span class="sp-icon" onmouseenter={(e) => showTip(e, 'Font family')} onmouseleave={hideTip}>{@html IC.font}</span>
-                    <div class="dropdown flex-grow-1" bind:this={fontDropEl}>
-                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center gap-1 text-start"
-                            style="font-family:{currentFontFamily || inheritedFont || 'inherit'}"
-                            onclick={() => { fontOpen = !fontOpen; widthOpen = dashOpen = false; }}>
-                            <span class="flex-grow-1" style="font-size:12px">{displayFontName || "—"}</span>
-                            <span class="text-muted" style="font-size:10px">▾</span>
-                        </button>
-                        {#if fontOpen}
-                            <ul class="dropdown-menu show w-100 overflow-y-auto py-1" style="max-height:280px">
-                                <li><button type="button" class="dropdown-item small fw-medium text-teal"
-                                    onclick={() => { fontOpen = false; onOpenFontPicker?.(); }}>More fonts…</button></li>
-                                <li><hr class="dropdown-divider my-1"></li>
-                                {#each allFonts as font}
-                                    <li><button type="button" class="dropdown-item small"
-                                        class:active={displayFontName === font}
-                                        style="font-family:'{font}'"
-                                        onclick={() => { applyFont(font); fontOpen = false; }}>{font}</button></li>
-                                {/each}
-                            </ul>
-                        {/if}
-                    </div>
+                    <FontFamilyDropdown
+                        value={displayFontName}
+                        buttonFont={currentFontFamily || inheritedFont || "inherit"}
+                        {availableFonts}
+                        {onOpenFontPicker}
+                        onSelect={applyFont} />
                     {@render resetBtn("font-family", currentFontFamily)}
                 </div>
                 {/if}

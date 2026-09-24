@@ -1,6 +1,6 @@
 import { addAttribution, addFrameShadow, addTexture, additionnalCssExport, changeIdAndReferences, ExportFontChoice, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
 import type { ElementAnnotations, ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
-import { DOM_PARSER, fontsToCssMultiSubset, fontsToCssEmbedMultiSubset, getUsedInlineFonts } from 'src/util/dom';
+import { DOM_PARSER, fontsToCssMultiSubset, fontsToCssEmbedMultiSubset, getFontsUsedInHtml, getUsedInlineFonts } from 'src/util/dom';
 import svgoConfigBase from '../svgoExport.config';
 import type { Config } from 'svgo/browser';
 
@@ -83,7 +83,20 @@ export async function exportMacro(
         svgNode.querySelectorAll('#svg-map-legend rect').forEach(el => el.setAttribute('pathLength', '1'));
     }
 
+    // Macro zone tooltips and element annotations render their font-family as HTML injected by
+    // the exported <script> at hover/click time, not as inline-styled SVG nodes — collect fonts
+    // referenced there too, or their @font-face would silently be dropped from the export.
+    const tooltipTemplates = [...stateMacro.chosenCountriesAdm, 'countries']
+        .filter(groupId => stateMacro.tooltipDefs[groupId]?.enabled)
+        .map(groupId => getFinalTooltipTemplate(groupId, stateMacro.tooltipDefs));
+    const annotationHtml = elementAnnotations
+        ? Object.values(elementAnnotations).flatMap(ann => [ann.tooltip, ann.popover])
+        : [];
+
     const usedFonts = getUsedInlineFonts(svgNode);
+    for (const name of getFontsUsedInHtml(providedFonts, [...tooltipTemplates, ...annotationHtml])) {
+        usedFonts.add(name);
+    }
     const usedProvidedFonts = providedFonts.filter(font => usedFonts.has(font.name));
 
     const SVGO = await import('svgo/browser');

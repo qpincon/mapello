@@ -25,7 +25,7 @@
     import macroImg from "./assets/img/macro.png";
     import microImg from "./assets/img/micro.png";
     import Icon from "./components/Icon.svelte";
-    import { exportStyleSheet, getUsedInlineFonts, fontsToCss, applyStyles } from "./util/dom";
+    import { exportStyleSheet, getUsedInlineFonts, getFontsUsedInHtml, fontsToCss, applyStyles } from "./util/dom";
     import { getState, saveState, registerServerSync } from "./util/save";
     import { defaultGlowParams, defaultAnnotationStyle } from "./stateDefaults";
     import { undo, redo, setRestoring, clearHistory } from "./util/history";
@@ -65,7 +65,7 @@
     import { appState, commonState, macroState, microState } from "./state.svelte";
     import { icons } from "./shared/icons";
     import { defaultState } from "./stateDefaults";
-    import { exportMacro } from "./macro/export";
+    import { exportMacro, getFinalTooltipTemplate } from "./macro/export";
     import MicroSidebar from "./micro/components/MicroSidebar.svelte";
     import SettingsStrip from "./components/SettingsStrip.svelte";
     import ToolStrip from "./components/ToolStrip.svelte";
@@ -1769,6 +1769,17 @@
     function openExportModal() {
         track('export_open', { mode: commonState.currentMode });
         const usedFonts = getUsedInlineFonts(svg.node()!);
+        // Macro tooltips / annotations only render their font as HTML at hover/click time (see
+        // getFontsUsedInHtml), so a live DOM scan alone can miss fonts only used there.
+        const tooltipTemplates = commonState.currentMode === "macro"
+            ? Object.entries(macroState.tooltipDefs).filter(([, def]) => def.enabled).map(([groupId]) => getFinalTooltipTemplate(groupId, macroState.tooltipDefs))
+            : [];
+        const annotationHtml = commonState.elementAnnotations
+            ? Object.values(commonState.elementAnnotations).flatMap((ann) => [ann.tooltip, ann.popover])
+            : [];
+        for (const name of getFontsUsedInHtml(commonState.providedFonts, [...tooltipTemplates, ...annotationHtml])) {
+            usedFonts.add(name);
+        }
         const usedProvidedFonts = commonState.providedFonts.filter((font) => usedFonts.has(font.name));
         inlineFontUsed = usedProvidedFonts.length > 0;
         showExportConfirm = true;
@@ -1844,6 +1855,7 @@
                 defaultTextFormat={annotationDefaultTextFormat}
                 placeholder=""
                 fonts={commonState.providedFonts.map((f) => f.name)}
+                onOpenFontPicker={(handler) => fontPicker?.openPicker(handler)}
             />
         </div>
     {/snippet}
@@ -1906,7 +1918,7 @@
             </div>
             <div id="main-menu" class="mt-4">
                 {#if commonState.currentMode === "macro"}
-                    <MacroSidebar bind:this={macroSidebar} {draw} {svg} openPropertiesPanel={(el) => propertiesPanel?.open(el)}></MacroSidebar>
+                    <MacroSidebar bind:this={macroSidebar} {draw} {svg} openPropertiesPanel={(el) => propertiesPanel?.open(el)} onOpenFontPicker={(handler) => fontPicker?.openPicker(handler)}></MacroSidebar>
                 {:else}
                     <MicroSidebar
                         bind:this={microSidebar}

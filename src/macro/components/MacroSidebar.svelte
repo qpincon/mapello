@@ -23,6 +23,7 @@
         LegendColor,
         MacroPalette,
         OrdinalMapping,
+        ProvidedFont,
         SvgGSelection,
         SvgSelection,
         ZoneData,
@@ -132,11 +133,12 @@
 
     interface Props {
         openPropertiesPanel: (el: Element) => void;
+        onOpenFontPicker: (onFontAdded: (font: ProvidedFont) => void) => void;
         svg: SvgSelection;
         draw: (simplified?: boolean) => void;
     }
 
-    let { openPropertiesPanel, svg, draw }: Props = $props();
+    let { openPropertiesPanel, onOpenFontPicker, svg, draw }: Props = $props();
 
     let drawDebounced = debounce((simplified?: boolean) => draw(simplified), 100);
     onMount(() => {
@@ -1037,6 +1039,7 @@
                                 onchange={onTemplateChange}
                                 hasError={!!templateErrorMessages[currentMacroLayerTab]}
                                 fonts={commonState.providedFonts.map(f => f.name)}
+                                {onOpenFontPicker}
                             />
                             {#if templateErrorMessages[currentMacroLayerTab]}
                                 <div class="invalid-feedback d-block">

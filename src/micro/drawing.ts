@@ -4,7 +4,7 @@ import { select, type Selection } from "d3-selection";
 import { bboxContains, bboxIntersects, getRenderedFeatures, type RenderedFeature, type RenderedFeaturePoly } from "../util/geometryStitch";
 import { cloneDeep, kebabCase, random, size } from "lodash-es";
 import { color, hsl } from "d3-color";
-import { DOM_PARSER, findStyleSheet, fontsToCssMultiSubset, fontsToCssEmbedMultiSubset, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
+import { DOM_PARSER, findStyleSheet, fontsToCssMultiSubset, fontsToCssEmbedMultiSubset, getFontsUsedInHtml, getUsedInlineFonts, updateStyleSheetOrGenerateCss } from "../util/dom";
 import { patternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download, randomString, xhtmlifyHtml, jsonForScript } from "../util/common";
@@ -281,6 +281,17 @@ export async function drawPrettyMap(
         .attr('height', height)
         .attr('rx', outerFrameRx);
 
+    // computeFeatureUuid() derives uuid from a feature's rounded center coordinate, computed
+    // once before stitching/exploding — a single source feature that gets split into several
+    // rendered <path> pieces (e.g. a multi-part building polygon) has all its pieces inherit
+    // the same uuid. Assigning that directly as the DOM id would produce duplicate ids: harmless
+    // for the live editor (hover matching walks up from the actual hovered element), but fatal
+    // for the exported SVG's element-annotation script, which finds its target via
+    // getElementById() — that returns only the first of several same-id elements, so a tooltip
+    // saved on a later duplicate silently never fires (see elementAnnotations.js). Suffix
+    // collisions to keep every id unique; the first occurrence keeps the bare uuid so existing
+    // saved annotations keep resolving to the same element they always did.
+    const seenFeatureIds = new Map<string, number>();
     svg.append('g')
         .attr('id', 'micro')
         .attr("clip-path", "url(#clipMapBorder)")
@@ -307,7 +318,12 @@ export async function drawPrettyMap(
         // (e.g. the per-layer "#micro .water { stroke-width }" rule), which
         // would otherwise clobber this per-feature MapLibre-computed width.
         .style("stroke-width", d => d.properties.paint!['line-width'] ?? null)
-        .attr("id", d => d.properties.uuid!)
+        .attr("id", d => {
+            const uuid = d.properties.uuid!;
+            const count = seenFeatureIds.get(uuid) ?? 0;
+            seenFeatureIds.set(uuid, count + 1);
+            return count === 0 ? uuid : `${uuid}-${count}`;
+        })
         .attr("mask", d =>
             cutoutFeatures.length > 0 && CUTOUT_TARGET_LAYERS.includes(d.properties.mapLayerId!)
                 ? 'url(#cutoutMask)'
@@ -975,7 +991,17 @@ export async function exportMicro(
     const borderRadius = stateMicro.microParams.Border.borderRadius;
     const svgNode = svg.node()! as SVGSVGElement;
 
+    // Element annotations render their font-family as HTML injected by the exported <script> at
+    // hover/click time, not as inline-styled SVG nodes — collect fonts referenced there too, or
+    // their @font-face would silently be dropped from the export.
+    const annotationHtml = elementAnnotations
+        ? Object.values(elementAnnotations).flatMap(ann => [ann.tooltip, ann.popover])
+        : [];
+
     const usedFonts = getUsedInlineFonts(svgNode);
+    for (const name of getFontsUsedInHtml(providedFonts, annotationHtml)) {
+        usedFonts.add(name);
+    }
     const usedProvidedFonts = providedFonts.filter(font => usedFonts.has(font.name));
     const { optimize } = await import('svgo/browser');
 

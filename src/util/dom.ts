@@ -172,6 +172,21 @@ export function getUsedInlineFonts(svg: SVGSVGElement): Set<string> {
     return fonts;
 }
 
+// Macro tooltip templates and element annotations (tooltip/popover) are HTML strings rendered
+// into a <foreignObject> only at runtime (live preview) or by the exported <script> (in the
+// visitor's browser) — they're never attached as real inline-styled SVG nodes, so
+// getUsedInlineFonts can't see fonts referenced only there. Fall back to a substring search,
+// same approach already used ad hoc in ExportModal.svelte for annotations.
+export function getFontsUsedInHtml(providedFonts: ProvidedFont[], htmlStrings: (string | undefined)[]): Set<string> {
+    const fonts = new Set<string>();
+    const haystack = htmlStrings.filter(Boolean).join('\n');
+    if (!haystack) return fonts;
+    for (const font of providedFonts) {
+        if (haystack.includes(font.name)) fonts.add(font.name);
+    }
+    return fonts;
+}
+
 function styleSheetToText(sheet: CSSStyleSheet): string {
     let styleTxt = '';
     const rules = sheet.cssRules;
