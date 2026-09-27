@@ -1,4 +1,4 @@
-import { addAttribution, addFrameShadow, addTexture, additionnalCssExport, changeIdAndReferences, ExportFontChoice, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, type ExportOptions } from 'src/svg/export';
+import { addAttribution, addFrameShadow, addTexture, additionnalCssExport, changeIdAndReferences, ExportFontChoice, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, stripExportKeyword, type ExportOptions } from 'src/svg/export';
 import type { ElementAnnotations, ProvidedFont, StateMacro, SvgSelection, TooltipDefs, ZonesData } from 'src/types';
 import { DOM_PARSER, fontsToCssMultiSubset, fontsToCssEmbedMultiSubset, getFontsUsedInHtml, getUsedInlineFonts } from 'src/util/dom';
 import svgoConfigBase from '../svgoExport.config';
@@ -11,6 +11,7 @@ const svgoConfig = {
 import { discriminateCssForExport, download, htmlToElement, indexBy, pick, randomString, xhtmlifyHtml, jsonForScript } from 'src/util/common';
 import { appendWaterlinesStr, encodeSVGDataImageStr, getContourSource, imageFromSpecialGElemStr } from 'src/svg/contourMethods';
 import { transitionCssMacro } from 'src/svg/transition';
+import { normalizeLengthsInStyleObject, normalizeLengthsInCss } from 'src/svg/overlay';
 
 // Import export-only scripts as raw strings
 import hoverScript from 'src/svg/exportScripts/hover.js?raw';
@@ -18,6 +19,12 @@ import tooltipScript from 'src/svg/exportScripts/tooltip.js?raw';
 import gElemsToImagesScript from 'src/svg/exportScripts/gElemsToImages.js?raw';
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.js?raw';
+import overlayScriptRaw from 'src/svg/overlay.js?raw';
+
+// The overlay geometry/placement helpers (src/svg/overlay.js) are shared between the app and
+// this export: it's a normal ES module for the app, and textually concatenated (with its
+// `export` keywords stripped, since this becomes a plain IIFE body) here for the export.
+const overlayScript = stripExportKeyword(overlayScriptRaw);
 
 interface FinalDataByGroup {
     data: { [groupId: string]: { [shapeId: string]: any } };
@@ -171,11 +178,7 @@ export async function exportMacro(
     const annotationTooltipIds = elementAnnotations
         ? Object.entries(elementAnnotations).filter(([, v]) => v.tooltip).map(([k]) => k)
         : [];
-    const tooltipCode = tooltipEnabled
-        ? tooltipScript
-            .replaceAll('__WIDTH__', stateMacro.macroParams.General.width.toString())
-            .replaceAll('__HEIGHT__', stateMacro.macroParams.General.height.toString())
-        : '';
+    const tooltipCode = tooltipEnabled ? tooltipScript : '';
 
     // Only ship the ring-building code when it's actually used, so maps that don't use
     // waterlines don't pay for it — see appendWaterlinesStr in src/svg/contourMethods.ts for
@@ -215,8 +218,12 @@ export async function exportMacro(
             const resolvedId = optimizedSVG.getElementById(id) ? id : `${mapId}-${id}`;
             if (optimizedSVG.getElementById(resolvedId)) {
                 resolvedAnnotations[resolvedId] = {
-                    tooltip: ann.tooltip ? xhtmlifyHtml(ann.tooltip) : undefined,
-                    popover: ann.popover ? xhtmlifyHtml(ann.popover) : undefined,
+                    // normalizeLengthsInStyleObject-equivalent for a full HTML string (rem/em
+                    // already saved into an annotation's inline style — see overlay.js) — must
+                    // happen before shipping, since the exported file can be pasted onto a page
+                    // with any root font-size.
+                    tooltip: ann.tooltip ? xhtmlifyHtml(normalizeLengthsInCss(ann.tooltip)) : undefined,
+                    popover: ann.popover ? xhtmlifyHtml(normalizeLengthsInCss(ann.popover)) : undefined,
                 };
             }
         }
@@ -226,6 +233,11 @@ export async function exportMacro(
         }
     }
 
+    // overlay.js (tooltip/popover geometry+placement) is only needed once, shared by
+    // tooltipCode and annotationCode — never inject it twice, and skip it entirely when
+    // neither is present.
+    const overlayCode = (tooltipCode || annotationCode) ? overlayScript : '';
+
     let finalScript = `
     (function() {
         const mapElement = document.currentScript.parentNode;
@@ -234,6 +246,7 @@ export async function exportMacro(
         ${waterlineCode}
         ${imageFromSpecialGElemStr}
         ${gElemsToImagesScript}
+        ${overlayCode}
         ${tooltipCode}
         ${hoverScript}
         ${annotationCode}
@@ -341,8 +354,15 @@ export async function exportMacro(
 }
 
 export function getFinalTooltipTemplate(groupId: string, tooltipDefs: TooltipDefs): string {
-    const cs = tooltipDefs[groupId].containerStyle || {};
-    const runtimeProps = { "will-change": "opacity", "z-index": "1000", "width": "max-content", "max-width": "15rem", "line-height": "1.42", "overflow-wrap": "break-word" };
+    // Defensively normalize any rem/em in user-authored containerStyle to px — see
+    // normalizeLengthsInStyleObject in src/svg/overlay.js for why.
+    const cs = normalizeLengthsInStyleObject(tooltipDefs[groupId].containerStyle || {});
+    // px, not rem, for max-width: an inline SVG's foreignObject content is laid out relative to
+    // the *host* page's root font-size, so a rem-based max-width would silently rescale the
+    // tooltip depending on where the exported SVG is pasted. 210px = 15rem at the app's own root
+    // font-size (14px, see src/assets/global.scss) — this keeps the shipped size matching what
+    // the author saw while editing. Must stay identical to instanciateTooltip() in src/tooltip.ts.
+    const runtimeProps = { "will-change": "opacity", "z-index": "1000", "width": "max-content", "max-width": "210px", "box-sizing": "border-box", "line-height": "1.42", "overflow-wrap": "break-word" };
     const all = { ...cs, ...runtimeProps };
     const styleStr = Object.entries(all).map(([k, v]) => `${k}: ${v}`).join("; ");
     return `<div style="${styleStr}">${tooltipDefs[groupId].template}</div>`;

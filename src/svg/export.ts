@@ -632,3 +632,10 @@ export function changeIdAndReferences(exportedMapElem: Element, newMapId: string
     });
 }
 
+
+// Strips `export ` from a raw-imported plain-JS module's source (e.g. src/svg/overlay.js) so it
+// can be textually concatenated into a plain <script> IIFE for the exported SVG. The module has
+// no other TS/ESM-only syntax, so this is the only rewrite needed before it's valid standalone JS.
+export function stripExportKeyword(rawModuleSource: string): string {
+    return rawModuleSource.replace(/^export /gm, '');
+}

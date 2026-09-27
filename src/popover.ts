@@ -10,24 +10,51 @@
  * is extracted to color the arrow tip for visual continuity.
  */
 import type { ElementAnnotations } from './types';
+import { createOverlayHost, placeOverlayAnchored, normalizeLengthsInCss } from './svg/overlay';
 
-// Module-level state: only one popover can be active at a time
+// Module-level state: only one popover can be active at a time.
 let _activeId: string | null = null;
-let _fo: SVGForeignObjectElement | null = null;
+let _host: ReturnType<typeof createOverlayHost> | null = null;
+let _svgEl: SVGSVGElement | null = null;
+let _targetEl: Element | null = null;
+let _arrowEl: HTMLElement | null = null;
+let _bgColor = 'white';
+let _repositionScheduled = false;
 
 export function getActivePopoverId(): string | null {
     return _activeId;
 }
 
+function stopTrackingReposition(): void {
+    window.removeEventListener('resize', reposition);
+    window.removeEventListener('scroll', reposition, true);
+}
+
 export function hidePopover(): void {
-    if (_fo) { _fo.remove(); _fo = null; }
+    if (_host) { _host.fo.remove(); _host = null; }
     _activeId = null;
+    _svgEl = null;
+    _targetEl = null;
+    _arrowEl = null;
+    stopTrackingReposition();
+}
+
+// Since placement is derived entirely from getBoundingClientRect() (see src/svg/overlay.js),
+// anything that can move the map or the target on screen without emitting a mousemove/click —
+// window resize, or the page (or an ancestor) scrolling — must re-run it while a popover stays
+// open, or it silently drifts away from its target.
+function reposition(): void {
+    if (_repositionScheduled || !_host || !_svgEl || !_targetEl || !_arrowEl) return;
+    _repositionScheduled = true;
+    requestAnimationFrame(() => {
+        _repositionScheduled = false;
+        if (!_host || !_svgEl || !_targetEl || !_arrowEl) return;
+        placeOverlayAnchored(_host, _targetEl, _svgEl, _arrowEl, _bgColor);
+    });
 }
 
 /**
  * Shows (or toggles off) a popover for the given element.
- * Creates a foreignObject with 1x1 size + overflow:visible so the popover
- * content can extend beyond its bounds without clipping.
  */
 export function showElementPopover(
     elemId: string,
@@ -39,81 +66,53 @@ export function showElementPopover(
     const ann = elementAnnotations[elemId];
     if (!ann?.popover) return;
     hidePopover();
-    _activeId = elemId;
 
-    // Compute center of the target element in SVG coordinate space
     const el = svgEl.getElementById(elemId);
-    const svgRect = svgEl.getBoundingClientRect();
-    const rect = el ? el.getBoundingClientRect() : svgRect;
-    const centerX = rect.left + rect.width / 2 - svgRect.left;
-    const centerY = rect.top + rect.height / 2 - svgRect.top;
+    if (!el) return;
 
     // Parse stored HTML to extract background color for the arrow and strip box-shadow
-    // (shadow is applied via CSS filter on the wrapper instead, for cleaner rendering)
+    // (shadow is applied via CSS filter on the wrapper instead, for cleaner rendering).
+    // Normalize any rem/em already saved into this annotation's inline style (see
+    // normalizeLengthsInCss) — applied at render time so already-saved projects are fixed
+    // without a migration.
     const tmpDiv = document.createElement('div');
-    tmpDiv.innerHTML = ann.popover;
+    tmpDiv.innerHTML = normalizeLengthsInCss(ann.popover);
     const outerEl = tmpDiv.firstElementChild as HTMLElement | null;
     const bgColor = outerEl?.style?.backgroundColor || 'white';
     if (outerEl) outerEl.style.boxShadow = '';
 
-    const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') as SVGForeignObjectElement;
-    fo.setAttribute('width', '1');
-    fo.setAttribute('height', '1');
-    fo.style.overflow = 'visible';
-    fo.style.opacity = '0';
-    svgEl.appendChild(fo);
-    _fo = fo;
-
-    const wrapper = document.createElementNS('http://www.w3.org/1999/xhtml', 'div') as HTMLElement;
-    // overflow-wrap/word-wrap so long unbreakable strings wrap within max-width instead of
-    // overflowing it — the tooltip's host div already sets this; the popover's didn't.
-    wrapper.style.cssText = 'display:inline-block;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));overflow-wrap:break-word;word-wrap:break-word;font-family:system-ui;';
-    wrapper.addEventListener('click', (e) => e.stopPropagation());
+    const host = createOverlayHost(svgEl, { pointerEvents: true });
+    // filter/drop-shadow on the same element that shrink-wraps its content (rather than an
+    // extra wrapper level) — WebKitGTK (GNOME Web) has been observed to not respect a
+    // descendant's max-width for shrink-to-fit sizing through an extra plain wrapper level,
+    // letting text overflow.
+    host.div.style.filter = 'drop-shadow(0 2px 6px rgba(0,0,0,.3))';
+    host.div.addEventListener('click', (e) => e.stopPropagation());
 
     // The popover HTML's own root div carries its width/max-width constraint (e.g.
-    // max-width:15rem) inline. Setting it directly as wrapper's content (rather than through
-    // an extra unstyled wrapper div) matches the tooltip's structure — WebKitGTK (GNOME Web)
-    // has been observed to not respect a descendant's max-width for shrink-to-fit sizing when
-    // there's an extra plain wrapper level in between, letting text overflow.
-    wrapper.innerHTML = tmpDiv.innerHTML;
-    wrapper.querySelectorAll('img').forEach(img => { img.style.maxWidth = '100%'; img.style.height = 'auto'; });
+    // max-width:210px) inline — set directly as the host's content.
+    host.div.innerHTML = tmpDiv.innerHTML;
+    host.div.querySelectorAll('img').forEach(img => { (img as HTMLImageElement).style.maxWidth = '100%'; (img as HTMLImageElement).style.height = 'auto'; });
 
     const arrow = document.createElement('div');
-    wrapper.appendChild(arrow);
-    fo.appendChild(wrapper);
+    host.div.appendChild(arrow);
 
-    // Place roughly centered above the element; refined in rAF once layout is measured
-    fo.setAttribute('x', (centerX - 140).toString());
-    fo.setAttribute('y', (centerY - 128).toString());
+    _activeId = elemId;
+    _host = host;
+    _svgEl = svgEl;
+    _targetEl = el;
+    _arrowEl = arrow;
+    _bgColor = bgColor;
 
     // Measure actual size and finalize position + arrow placement
     requestAnimationFrame(() => {
-        if (!_fo) return;
-        const w = wrapper.offsetWidth || 280;
-        const h = wrapper.offsetHeight || 120;
-        const svgW = parseFloat(svgEl.getAttribute('width') ?? '800');
-
-        // Horizontal: centered on element, clamped to SVG bounds
-        let x = centerX - w / 2;
-        x = Math.max(8, Math.min(x, svgW - w - 8));
-
-        // Vertical: prefer above the element, fall back to below if not enough space
-        const yAbove = centerY - h - 8;
-        const isAbove = yAbove >= 0;
-        const y = isAbove ? yAbove : centerY + 8;
-
-        _fo.setAttribute('x', x.toString());
-        _fo.setAttribute('y', y.toString());
-        _fo.style.opacity = '1';
-
-        // Arrow: CSS triangle centered on the element's centerX, clamped inside the popover
-        const arrowLeft = Math.max(8, Math.min(Math.round(centerX - x - 8), w - 24));
-        if (isAbove) {
-            arrow.style.cssText = `position:absolute;bottom:-8px;left:${arrowLeft}px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid ${bgColor};border-bottom:none;`;
-        } else {
-            arrow.style.cssText = `position:absolute;top:-8px;left:${arrowLeft}px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:8px solid ${bgColor};border-top:none;`;
-        }
+        if (_activeId !== elemId || !_host) return;
+        placeOverlayAnchored(_host, el, svgEl, arrow, bgColor);
+        _host.div.style.opacity = '1';
     });
+
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);
 }
 
 /** Sets cursor:pointer on all SVG elements that have a popover annotation. */

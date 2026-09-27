@@ -57,6 +57,7 @@
     import QuillEditor from "./components/QuillEditor.svelte";
     import { addElementAnnotationListener } from "./tooltip";
     import { showElementPopover, hidePopover, getActivePopoverId, setupPopoverCursors } from "./popover";
+    import { normalizeLengthsInStyleObject } from "./svg/overlay";
     import { Dropdown } from "bootstrap";
     import { applyInlineStyles, changeProjection, handleChangeProp } from "./macro/drawing";
     import { updateLayerSimplification } from "./macro/geometry-data";
@@ -1510,9 +1511,11 @@
                     style[prop] = tmp.style.getPropertyValue(prop);
                 }
             }
+            // Normalize any rem/em already saved from before container styles became px-based
+            // (see normalizeLengthsInStyleObject) — re-saving then ships the fixed value.
             annotationContainerStyle =
                 Object.keys(style).length > 0
-                    ? style
+                    ? normalizeLengthsInStyleObject(style)
                     : { ...(commonState.lastUsedAnnotationStyle?.[type] ?? defaultAnnotationStyle) };
             // Existing content already carries its own per-character formatting — don't override it.
             annotationDefaultTextFormat = undefined;

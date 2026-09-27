@@ -140,14 +140,21 @@ export const defaultTooltipStyle: Record<string, string> = {
     "box-shadow": "0 2px 6px #00000026",
 };
 
+// px, not rem: an inline SVG's foreignObject content is laid out relative to the *host* page's
+// root font-size, so rem-based values would silently rescale the annotation depending on where
+// the exported SVG is pasted. 11.5px = 0.82rem and 210px = 15rem at the app's own root font-size
+// (14px, see src/assets/global.scss) — this keeps the shipped size matching what the author saw
+// while editing. See also normalizeLengthsInCss in src/svg/overlay.js, which fixes up any
+// rem/em already saved from before this was px-based.
 /** Default container style for a brand-new element tooltip/popover annotation (no prior one to copy). */
 export const defaultAnnotationStyle: Record<string, string> = {
     "background-color": "white",
     "padding": "4px 8px",
     "border-radius": "4px",
     "font-family": "system-ui",
-    "font-size": "0.82rem",
-    "max-width": "15rem",
+    "font-size": "11.5px",
+    "max-width": "210px",
+    "box-sizing": "border-box",
     "width": "max-content",
 };
 

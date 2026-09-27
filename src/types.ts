@@ -127,10 +127,15 @@ export interface MacroPalette {
 
 export type InlineStyles = { [elemId: string]: CssDict };
 export type CssDict = { [cssProp: string]: string };
+// Carries every field of an overlay host (see createOverlayHost in src/svg/overlay.js) plus the
+// tooltip's own bookkeeping, so the whole object can be handed straight to placeOverlay(). Build
+// it by spreading the host — never by listing fields, or a newly added one gets silently dropped.
 export interface Tooltip {
     shapeId: string | null;
     fo: SVGForeignObjectElement;
-    div: HTMLDivElement;
+    // HTMLElement, not HTMLDivElement: created via createElementNS('...xhtml', 'div'), which
+    // TypeScript's DOM lib types as HTMLElement rather than the more specific HTMLDivElement.
+    div: HTMLElement;
     html?: string;
     measuring?: boolean;
 }

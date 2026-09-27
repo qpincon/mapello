@@ -8,9 +8,11 @@ import { DOM_PARSER, findStyleSheet, fontsToCssMultiSubset, fontsToCssEmbedMulti
 import { patternGenerator } from "../svg/patternGenerator";
 import { appendClip } from "../svg/svgDefs";
 import { discriminateCssForExport, download, randomString, xhtmlifyHtml, jsonForScript } from "../util/common";
-import { addAttribution, addFrameShadow, addTexture, additionnalCssExport, changeIdAndReferences, exportFontChoices, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, type ExportOptions } from "../svg/export";
+import { addAttribution, addFrameShadow, addTexture, additionnalCssExport, changeIdAndReferences, exportFontChoices, FRAME_SHADOW_MARGIN, inlineFontVsPath, rgb2hex, stripExportKeyword, type ExportOptions } from "../svg/export";
 import intersectionObserverScript from 'src/svg/exportScripts/intersectionObserver.js?raw';
 import elementAnnotationsScript from 'src/svg/exportScripts/elementAnnotations.js?raw';
+import overlayScriptRaw from 'src/svg/overlay.js?raw';
+import { normalizeLengthsInCss } from '../svg/overlay';
 import { createRoundedRectangleGeoJSON } from '../util/geometry';
 import bboxPolygon from '@turf/bbox-polygon';
 import booleanDisjoint from '@turf/boolean-disjoint';
@@ -33,6 +35,8 @@ import { yieldToMain } from '../util/polyfills';
 import { distance } from '@turf/distance';
 import { polygonizeWaterLines } from './waterPolygonize';
 
+// See src/macro/export.ts for why this is stripped before concatenation.
+const overlayScript = stripExportKeyword(overlayScriptRaw);
 
 // Interfaces for building grouping
 export interface GroupedFeature extends RenderedFeaturePoly {
@@ -1085,8 +1089,11 @@ export async function exportMicro(
             const resolvedId = optimizedSVG.getElementById(id) ? id : `${mapId}-${id}`;
             if (optimizedSVG.getElementById(resolvedId)) {
                 resolvedAnnotations[resolvedId] = {
-                    tooltip: ann.tooltip ? xhtmlifyHtml(ann.tooltip) : undefined,
-                    popover: ann.popover ? xhtmlifyHtml(ann.popover) : undefined,
+                    // rem/em already saved into an annotation's inline style (see overlay.js)
+                    // must be normalized before shipping — the exported file can be pasted onto
+                    // a page with any root font-size.
+                    tooltip: ann.tooltip ? xhtmlifyHtml(normalizeLengthsInCss(ann.tooltip)) : undefined,
+                    popover: ann.popover ? xhtmlifyHtml(normalizeLengthsInCss(ann.popover)) : undefined,
                 };
             }
         }
@@ -1131,8 +1138,12 @@ export async function exportMicro(
     }
 
     if (animate || hasAnnotations) {
+        // overlay.js (tooltip/popover geometry+placement) is only needed when annotations are
+        // present — micro exports never ship data tooltips.
+        const overlayCode = annotationCode ? overlayScript : '';
         let js = `(function() {
         const mapElement = document.currentScript.parentNode;
+        ${overlayCode}
         ${animationCode}
         ${annotationCode}
     })()`;
