@@ -70,7 +70,7 @@
           </li>
         </ul>
         <p class="small">
-          Both modes share common drawing tools (paths, freehand, labels,
+          Both modes share common drawing tools (curves, freehand, labels,
           shapes) available in the toolbar above the map.
         </p>
         <div class="mt-4">
@@ -196,15 +196,15 @@
 
         <h6 class="section-title mt-3">Editing a curve</h6>
         <ul class="tip-list">
-          <li>Click and drag anywhere on the path to move the whole path</li>
+          <li>Click and drag anywhere on the curve to move the whole curve</li>
           <li>
-            <kbd>Ctrl</kbd> + click anywhere on the path to <strong>add</strong>
+            <kbd>Ctrl</kbd> + click anywhere on the curve to <strong>add</strong>
             a point
           </li>
           <li>
             <kbd>Ctrl</kbd> + click on an existing point to
             <strong>remove</strong> it (removing the second-to-last point deletes
-            the path)
+            the curve)
           </li>
         </ul>
 
@@ -308,7 +308,7 @@
 
         <h6 class="section-title mt-3">Selection</h6>
         <ul class="tip-list">
-          <li>Click a shape, path, or freehand drawing to select it</li>
+          <li>Click a shape, curve, or freehand drawing to select it</li>
           <li><kbd>Shift</kbd> + click to add to the selection</li>
           <li>Drag the bounding box handles to resize or move the selection</li>
           <li><kbd>Ctrl</kbd> + <kbd>C</kbd> — copy</li>

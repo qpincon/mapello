@@ -6,7 +6,7 @@
     import { zoom } from "d3-zoom";
     import PropertiesPanel from "./components/PropertiesPanel.svelte";
     import {  debounce, clamp, cloneDeep } from "lodash-es";
-    import { drawCustomPaths, parseAndUnprojectPath } from "./svg/paths";
+    import { drawCustomPaths, parseAndUnprojectPath, unmarkCurveActive } from "./svg/paths";
     import PathEditor from "./svg/pathEditor";
     import Geocoding from "./components/Geocoding.svelte";
     import { initTooltips, sleep } from "./util/common";
@@ -63,6 +63,16 @@
     import { updateLayerSimplification } from "./macro/geometry-data";
     import MacroSidebar from "./macro/components/MacroSidebar.svelte";
     import ResizeHandles from "./components/ResizeHandles.svelte";
+    import MapLockToggle from "./components/MapLockToggle.svelte";
+    import {
+        viewLockUi,
+        isViewGestureBlocked,
+        noteAnnotationAdded,
+        noteBlockedGesture,
+        toggleViewLock,
+        unlockView,
+        resetViewLockSession,
+    } from "./util/viewLock.svelte";
     import { appState, commonState, macroState, microState } from "./state.svelte";
     import { icons } from "./shared/icons";
     import { defaultState } from "./stateDefaults";
@@ -358,10 +368,17 @@
         restoreStateFromSave();
         attachListeners();
         // maplibreMap.showTileBoundaries = true;
+        document.addEventListener("mousedown", onDocumentMousedownCancelTool);
         window.addEventListener("keydown", (e) => {
             if (e.code === "Escape") {
                 if (contextualMenu?.opened) {
                     closeMenu();
+                    return;
+                }
+                if (editingPath) {
+                    // Exit editing rather than closing the panel — same as the "Exit editing"
+                    // button and the panel's own close button (see PropertiesPanel's onClose).
+                    currentPathEditor?.finish();
                     return;
                 }
                 if (propertiesPanel?.isOpen()) {
@@ -436,6 +453,7 @@
                 }
             }
         });
+
         setTimeout(() => maybeStartTour({ loggedIn: !!currentUser }), 600);
 
         // Show the drop overlay as soon as a file is dragged anywhere on the page.
@@ -451,10 +469,24 @@
         document.addEventListener('drop', () => { isDraggingImage = false; }, true);
     });
 
+    // Shared by the drag and zoom behaviours below: middle-button drag always pans (an escape
+    // hatch that works regardless of the view lock), other buttons besides left are rejected,
+    // and a left-button/wheel gesture is rejected while the view is locked.
+    function macroGestureFilter(e: MouseEvent | WheelEvent): boolean {
+        if (commonState.currentMode !== "macro") return false;
+        if ((e as MouseEvent).button === 1) return true;
+        if ((e as MouseEvent).button) return false;
+        if (isViewGestureBlocked()) {
+            noteBlockedGesture();
+            return false;
+        }
+        return true;
+    }
+
     function attachListeners(): void {
         const container = select("#map-container");
         dragFunc = drag()
-            .filter((e) => commonState.currentMode === "macro" && !e.button) // Remove ctrlKey
+            .filter(macroGestureFilter) // Remove ctrlKey
             .clickDistance(3)
             .on("drag", (e) => {
                 didDrag = true;
@@ -471,7 +503,7 @@
             });
 
         zoomFunc = zoom()
-            .filter((e) => commonState.currentMode === "macro" && !e.button)
+            .filter(macroGestureFilter)
             .wheelDelta((event) => -event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002))
             .on("zoom", (e) => {
                 if (commonState.currentMode === "macro") macroSidebar!.onZoom(e);
@@ -480,14 +512,25 @@
                 propertiesPanel?.close();
                 closeMenu();
             });
+        // Middle-click mousedown opens the browser's native autoscroll widget; suppress it so
+        // middle-drag can act as the view-lock escape hatch instead.
+        container.on("mousedown.middle-pan-guard", (e: MouseEvent) => {
+            if (e.button === 1) e.preventDefault();
+        });
         container.call(dragFunc);
         container.call(zoomFunc);
     }
 
-    async function switchMode(newMode: Mode, redrawAfter=true): Promise<void> {
+    // `resetLock` is false when called from applyState() while restoring a saved project: that
+    // path should keep whatever viewLocked value the loaded project carries, not force-unlock.
+    async function switchMode(newMode: Mode, redrawAfter=true, resetLock=true): Promise<void> {
         // if (commonState.currentMode === newMode) return;
         propertiesPanel?.close();
         track('mode_switch', { to: newMode });
+        if (resetLock) {
+            unlockView();
+            resetViewLockSession();
+        }
         commonState.currentMode = newMode;
         select("#map-container").html("");
         await tick();
@@ -532,6 +575,10 @@
             "wheel",
             (e: WheelEvent) => {
                 if (commonState.currentMode !== "micro" || isDrawingFreeHand || isDrawingPath || editingPath) return;
+                if (isViewGestureBlocked()) {
+                    noteBlockedGesture();
+                    return;
+                }
                 const canvas = document.querySelector("#maplibre-map canvas") as HTMLCanvasElement | null;
                 if (!canvas) return;
                 e.preventDefault();
@@ -600,6 +647,8 @@
     }
 
     function onSvgResize(w: number, h: number) {
+        // Resizing the canvas is a deliberate re-framing of the map, not an accidental nudge.
+        unlockView();
         if (commonState.currentMode === "macro") {
             macroState.macroParams.General.width = w;
             macroState.macroParams.General.height = h;
@@ -648,7 +697,9 @@
                 cloneDeep(state.stateMicro.microParams ? state.stateMicro : defaultState.stateMicro),
             );
             await tick();
-            await switchMode(state.stateCommon.currentMode, false);
+            // `resetLock: false` — keep the viewLocked value just restored above by
+            // Object.assign(commonState, ...) instead of switchMode's default force-unlock.
+            await switchMode(state.stateCommon.currentMode, false, false);
             if (state.stateCommon.currentMode === "micro") {
                 microSidebar?.applyLayerStyles();
                 microSidebar?.applyMapPosition();
@@ -659,6 +710,7 @@
             saveState();
         } finally {
             setRestoring(false);
+            resetViewLockSession();
             // Record initial drawing state as baseline for undo
             saveState();
         }
@@ -747,17 +799,25 @@
     // Forwards a mousedown (and its matching mouseup) from the SVG overlay to the MapLibre
     // canvas beneath it, so MapLibre's own drag handlers (pan, and right-click/Ctrl+click
     // drag-rotate for tilt) see the gesture despite the SVG intercepting the real event.
-    function forwardMouseDownToCanvas(e: MouseEvent): void {
+    // `forceLeftButton` remaps the synthetic event to button 0 — used for the middle-button
+    // pan escape hatch, since MapLibre's DragPanHandler only reacts to the left button.
+    function forwardMouseDownToCanvas(e: MouseEvent, { forceLeftButton = false } = {}): void {
+        if (!forceLeftButton && isViewGestureBlocked()) {
+            noteBlockedGesture();
+            return;
+        }
         const canvas = document.querySelector("#maplibre-map canvas") as HTMLCanvasElement | null;
         if (!canvas) return;
+        const button = forceLeftButton ? 0 : e.button;
+        const buttons = forceLeftButton ? 1 : (e.buttons || 1);
         canvas.dispatchEvent(
             new MouseEvent("mousedown", {
                 bubbles: true,
                 cancelable: true,
                 clientX: e.clientX,
                 clientY: e.clientY,
-                button: e.button,
-                buttons: e.buttons || 1,
+                button,
+                buttons,
                 ctrlKey: e.ctrlKey,
                 shiftKey: e.shiftKey,
                 altKey: e.altKey,
@@ -772,8 +832,8 @@
                     cancelable: true,
                     clientX: ev.clientX,
                     clientY: ev.clientY,
-                    button: ev.button,
-                    buttons: ev.buttons,
+                    button: forceLeftButton ? 0 : ev.button,
+                    buttons: forceLeftButton ? 0 : ev.buttons,
                     ctrlKey: ev.ctrlKey,
                     shiftKey: ev.shiftKey,
                     altKey: ev.altKey,
@@ -795,6 +855,14 @@
             // Right-click drag tilts/rotates the map in micro mode; never selects an
             // entity, so forward it straight to the canvas rather than running click logic.
             if (commonState.currentMode === "micro") forwardMouseDownToCanvas(e);
+            return;
+        }
+        if (e.button === 1) {
+            // Middle-click drag is the view-lock escape hatch: it always pans, regardless of
+            // lock state. In macro mode this falls through to bubble up to d3-drag on
+            // #map-container (whose filter allows button 1 unconditionally); in micro mode
+            // MapLibre isn't listening to the container, so forward it to the canvas directly.
+            if (commonState.currentMode === "micro") forwardMouseDownToCanvas(e, { forceLeftButton: true });
             return;
         }
         if (e.button !== 0) return;
@@ -1185,7 +1253,26 @@
         if (pendingPlacement) cancelPlacement();
     }
 
+    // A click anywhere outside the map while a tool is armed de-selects that tool, the same as
+    // Escape. Gated on the drawing/placement flags rather than `activeTool` because `activeTool`
+    // stays 'label' while the label-entry textarea is open even though `pendingPlacement` has
+    // already been cleared — that state must survive a click inside the label menu.
+    function onDocumentMousedownCancelTool(e: MouseEvent): void {
+        if (!isDrawingPath && !isDrawingFreeHand && !pendingPlacement) return;
+        const t = e.target as HTMLElement | null;
+        if (!t) return;
+        if (t.closest('#map-content')) return; // inside the map — the tool owns this click
+        if (t.closest('#tool-strip')) return; // the tool buttons themselves
+        if (t.closest('.shape-picker')) return; // the Point shape dropdown
+        if (contextualMenu?.opened) return; // label entry menu (portalled to document.body)
+        cancelActiveTool();
+    }
+
     function toolDrawCurve(): void {
+        if (isDrawingPath) {
+            cancelDrawPath();
+            return;
+        }
         cancelActiveTool();
         activeTool = 'curve';
         addPath();
@@ -1343,16 +1430,26 @@
         freeHandDrawPath(svg.node() as SVGSVGElement, (finishedElem) => {
             log("finishedElem", finishedElem);
             const d = finishedElem.getAttribute("d");
-            if (!d) return;
             cleanupPathDrawListeners();
             removeMapCursorListeners();
             attachListeners();
+            if (!d) {
+                // A click with no drag produces an empty path — discard it rather than leaving
+                // it orphaned in #paths and the tool armed with no listeners left to finish it.
+                finishedElem.remove();
+                isDrawingPath = false;
+                isActivelyDrawingPath = false;
+                activeTool = null;
+                return;
+            }
+            unmarkCurveActive(finishedElem);
             const pathIndex = commonState.providedPaths.length;
             const id = `path-${pathIndex}`;
             finishedElem.setAttribute("id", id);
             commonState.providedPaths.push({ d: parseAndUnprojectPath(d, appState.projection!) });
             toggleSelection({ type: 'path', index: pathIndex, id }, false);
             propertiesPanel?.open(finishedElem);
+            noteAnnotationAdded();
             saveDebounced();
             setTimeout(() => {
                 isDrawingPath = false;
@@ -1459,6 +1556,7 @@
         toggleSelection({ type: 'freehand', index: freehandIndex, id: freehandId }, false);
         const el = document.getElementById(freehandId);
         if (el) propertiesPanel?.open(el);
+        noteAnnotationAdded();
         saveState();
     }
 
@@ -1627,6 +1725,7 @@
             setupLabelOverlayCallbacks(created.id, created.index);
             const el = document.getElementById(created.id);
             if (el) propertiesPanel?.open(el);
+            noteAnnotationAdded();
         }
     }
 
@@ -1699,6 +1798,7 @@
             commonState.inlineStyles[shapeId] = { ...commonState.inlineStyles[lastPoint.id] };
         }
         drawAndSetupShapes();
+        noteAnnotationAdded();
         return { id: shapeId, index: newIndex };
     }
 
@@ -2081,6 +2181,13 @@
                     {serverSyncError}
                 </div>
             {/if}
+            <MapLockToggle
+                locked={!!commonState.viewLocked}
+                onToggle={toggleViewLock}
+                flashes={viewLockUi.flashes}
+                showNotice={viewLockUi.autoLockNotice}
+                onDismissNotice={() => (viewLockUi.autoLockNotice = false)}
+            />
             <div
                 id="map-content"
                 class:placing={!!pendingPlacement}
@@ -2140,6 +2247,7 @@
         </div>
         <PropertiesPanel
         bind:this={propertiesPanel}
+        onClose={() => { if (editingPath) currentPathEditor?.finish(); }}
         suppressRing={editingPath || selectionState.selected.length > 0}
         availableFonts={commonState.providedFonts.map((f) => f.name)}
         onOpenFontPicker={() => fontPicker?.openPicker()}

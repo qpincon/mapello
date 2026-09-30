@@ -33,6 +33,7 @@
     import mapStyle from "./mapstyle.json";
     import { initTooltips } from "src/util/common";
     import type { SearchResult } from "src/components/Geocoding.svelte";
+    import { unlockView } from "src/util/viewLock.svelte";
 
     // maplibre-gl v6 is ESM-only: under a bundler, import.meta.url inside the
     // package doesn't resolve to the worker file, so it must be pointed here.
@@ -172,6 +173,8 @@
     }
 
     export function onPlaceSelected(result: SearchResult): void {
+        // Searching for a place is a deliberate re-framing of the map, not an accidental nudge.
+        unlockView();
         maplibreMap!.jumpTo({
             center: [parseFloat(result.lon), parseFloat(result.lat)],
             zoom: 14,

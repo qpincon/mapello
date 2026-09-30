@@ -1,4 +1,5 @@
 import fitCurve from 'fit-curve';
+import { markCurveActive } from './paths';
 
 // ── Speed-aware fitting constants ────────────────────────────────────────────
 const MIN_ERROR   = 5;    // tight/detailed fit (slow strokes)
@@ -44,6 +45,7 @@ function onMouseDown(): void {
     const pathsContainer = svgElem?.querySelector('#paths');
     if (pathsContainer && fittedCurve) {
         pathsContainer.append(fittedCurve);
+        markCurveActive(fittedCurve);
     }
     isMouseDown = true;
 }

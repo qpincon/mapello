@@ -14,6 +14,7 @@ import { addTooltipListener } from "src/tooltip";
 import { getProjection } from "src/util/projections";
 import { macroPositionVars } from "src/stateDefaults";
 import { changeAltitudeScale } from "./interactions";
+import { unlockView } from "src/util/viewLock.svelte";
 import { updateZonesDataFormatters } from "./formatting";
 import { updateMacroRoads } from "./roads";
 import { updateMacroWater } from "./water";
@@ -424,6 +425,8 @@ export function handleChangeProp(event: CustomEvent<{ prop: string; value: unkno
     if (prop === "projection") {
         macroState.inlinePropsMacro.translateX = 0;
         macroState.inlinePropsMacro.translateY = 0;
+        // A projection swap is a deliberate re-framing of the whole map, not an accidental nudge.
+        unlockView();
     }
     if ((prop === "width" || prop === "height") && value) {
         const w = prop === "width" ? value as number : macroState.macroParams.General.width;

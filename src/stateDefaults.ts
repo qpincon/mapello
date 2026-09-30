@@ -216,6 +216,7 @@ export const defaultState: GlobalState = {
         elementAnnotations: {},
         shapeCount: 0,
         currentMode: "macro",
+        viewLocked: false,
     },
 };
 

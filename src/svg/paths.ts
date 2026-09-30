@@ -6,6 +6,42 @@ import { select } from 'd3-selection';
 import type { D3Selection, InlineStyles, MarkerName, ParsedPath, PathDef, SvgSelection } from 'src/types';
 import type { GeoProjection } from 'd3-geo';
 
+// Properties forced onto a curve while it is being drawn or edited, so it stays visible no matter
+// what style (stylesheet rule or per-curve inline style) the user has applied to it.
+const CURVE_ACTIVE_STYLE: Record<string, string> = {
+    stroke: '#000',
+    'stroke-opacity': '1',
+    'stroke-dasharray': 'none',
+    fill: 'none',
+};
+
+// Prior value + priority of every property we override, so unmarkCurveActive can restore the
+// element's own style (including any pre-existing `!important`) exactly as it was.
+const curveActivePriorStyles = new WeakMap<SVGPathElement, Record<string, { value: string; priority: string }>>();
+
+/** Force a curve to render as a solid black line while it is being drawn or edited. */
+export function markCurveActive(el: SVGPathElement): void {
+    if (curveActivePriorStyles.has(el)) return; // already marked
+    const prior: Record<string, { value: string; priority: string }> = {};
+    for (const prop of Object.keys(CURVE_ACTIVE_STYLE)) {
+        prior[prop] = { value: el.style.getPropertyValue(prop), priority: el.style.getPropertyPriority(prop) };
+    }
+    curveActivePriorStyles.set(el, prior);
+    for (const [prop, value] of Object.entries(CURVE_ACTIVE_STYLE)) {
+        el.style.setProperty(prop, value, 'important');
+    }
+}
+
+/** Restore whatever inline style a curve had before markCurveActive was called on it. */
+export function unmarkCurveActive(el: SVGPathElement): void {
+    const prior = curveActivePriorStyles.get(el);
+    if (!prior) return;
+    curveActivePriorStyles.delete(el);
+    for (const [prop, { value, priority }] of Object.entries(prior)) {
+        if (value) el.style.setProperty(prop, value, priority);
+        else el.style.removeProperty(prop);
+    }
+}
 
 export function drawCustomPaths(
     pathDefs: PathDef[],

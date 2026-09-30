@@ -368,6 +368,9 @@ export interface StateCommon {
     lastUsedAnnotationStyle?: { tooltip?: CssDict; popover?: CssDict };
     // Last-used text formatting (color, font-size, font-family) typed inside a tooltip/popover.
     lastUsedAnnotationFont?: { tooltip?: CssDict; popover?: CssDict };
+    // Suppresses map pan/zoom gestures (manually toggled, or auto-engaged once the user has
+    // settled on a view and started annotating). See src/util/viewLock.svelte.ts.
+    viewLocked?: boolean;
 }
 
 export interface GlobalState {

@@ -1,5 +1,6 @@
 import parsePath from 'parse-svg-path';
 import { closestDistance, type DistanceQueryResult } from './svg';
+import { markCurveActive, unmarkCurveActive } from './paths';
 import { pointer } from 'd3';
 import type { Point } from 'src/types';
 
@@ -90,9 +91,11 @@ export default class PathEditor {
         document.addEventListener('keydown', this.keydownFunc);
         this.createPoints();
         this.setupPathOverlay();
+        markCurveActive(this.pathElem);
     }
 
     cleanup(): void {
+        unmarkCurveActive(this.pathElem);
         this.editorContainer.remove();
         this.svgContainer.removeEventListener('mousemove', this.svgMouseMoveFunc);
         document.removeEventListener('keydown', this.keydownFunc);

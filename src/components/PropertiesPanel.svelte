@@ -23,6 +23,7 @@
         cssRuleFilter?: (el: Element, cssSelector: string) => boolean;
         getCssRuleName?: (ruleName: string, el: Element) => string;
         onStyleChanged?: (target: Element, rule: StyleRule, prop: string, value: string) => void;
+        onClose?: () => void;
         suppressRing?: boolean;
         availableFonts?: string[];
         onOpenFontPicker?: () => void;
@@ -55,7 +56,7 @@
     }
 
     let {
-        cssRuleFilter, getCssRuleName, onStyleChanged = () => {}, suppressRing = false,
+        cssRuleFilter, getCssRuleName, onStyleChanged = () => {}, onClose, suppressRing = false,
         availableFonts = [], onOpenFontPicker,
         entityType = null, entityId = null, isEditingPath = false,
         onEditPath, onExitEditPath, onDelete, onSaveLink,
@@ -112,6 +113,19 @@
     const resolvedAnnotations = $derived(activeId ? (getAnnotations?.(activeId) ?? null) : null);
     const resolvedLink = $derived(activeId ? (getLink?.(activeId) ?? null) : null);
     const resolvedPathImage = $derived(entityType === "path" && activeId ? (getPathImage?.(activeId) ?? null) : null);
+
+    // Local slider drafts: kept separate from resolvedPathImage so dragging updates the readout
+    // live without re-running onChange (and a full map redraw) on every pointer move — only on
+    // "change" (drag release / arrow key / typed value). Re-synced whenever the committed values
+    // change from outside a drag (selecting a different curve, importing a new image).
+    let pathImageDurationDraft = $state(10);
+    let pathImageWidthDraft = $state(20);
+    let pathImageHeightDraft = $state(10);
+    $effect(() => {
+        pathImageDurationDraft = resolvedPathImage?.duration ?? 10;
+        pathImageWidthDraft = resolvedPathImage?.width ?? 20;
+        pathImageHeightDraft = resolvedPathImage?.height ?? 10;
+    });
     const resolvedPathMarker = $derived(entityType === "path" && activeId ? (getPathMarker?.(activeId) ?? null) : null);
     const resolvedShapePos = $derived(entityType === "shape" && activeId ? (getShapePosition?.(activeId) ?? null) : null);
     const roundCoord = (v: number) => Math.round(v * 1e6) / 1e6;
@@ -262,7 +276,7 @@
             if (!element || panelEl?.contains(t)) return;
             if (document.getElementById("static-svg-map")?.contains(t)) return;
             if (!document.getElementById("map-area")?.contains(t)) return;
-            element = null; ringVisible = false;
+            requestClose();
         }
         document.addEventListener("mousedown", handleDocMousedown);
         return () => document.removeEventListener("mousedown", handleDocMousedown);
@@ -363,12 +377,40 @@
 
     export function open(el: Element) { element = el; isAlreadyOnTop = isOnTop ? isOnTop(el) : false; closeDropdowns(); }
     export function close() { clearHighlight(); element = null; isAlreadyOnTop = false; ringVisible = false; closeDropdowns(); }
+    // User-initiated close (× button, click-away) — notifies the host first (e.g. to exit curve
+    // editing) so nothing is left dangling, then closes as usual. `close()` itself stays silent:
+    // it is also called *from* the curve-editing finish callback, and calling onClose from there
+    // too would recurse.
+    function requestClose(): void { onClose?.(); close(); }
     export function notifyBroughtToFront() { if (element) isAlreadyOnTop = isOnTop ? isOnTop(element) : false; }
     export function isOpen() { return element !== null; }
     export function getElement() { return element; }
 </script>
 
 <!-- ── Snippets ──────────────────────────────────────────────────── -->
+
+<!-- Image-along-curve slider row: label above, range + editable number below.
+     onDraft updates the live readout while dragging; onCommit fires the actual state
+     change (and the map redraw it triggers) only once, on release/typed value. -->
+{#snippet pathImageSlider(label: string, value: number, min: number, max: number,
+    onDraft: (v: number) => void, onCommit: (v: number) => void)}
+<div class="px-3 py-1 border-bottom">
+    <span class="text-secondary" style="font-size:11px">{label}</span>
+    <div class="d-flex align-items-center gap-2 mt-1">
+        <input type="range" class="form-range flex-grow-1" {min} {max} step="1"
+            {value}
+            oninput={(e) => onDraft(parseInt((e.target as HTMLInputElement).value))}
+            onchange={(e) => onCommit(parseInt((e.target as HTMLInputElement).value))} />
+        <input type="number" class="form-control form-control-sm sp-no-spinner text-center" style="width:40px" {min} {max}
+            {value}
+            onchange={(e) => {
+                const v = Math.min(max, Math.max(min, parseInt((e.target as HTMLInputElement).value) || min));
+                onDraft(v);
+                onCommit(v);
+            }} />
+    </div>
+</div>
+{/snippet}
 
 <!-- Reusable SVG line preview (width + dash style dropdowns) -->
 {#snippet linePrev(w: number, dash: string)}
@@ -446,7 +488,7 @@
         <div class="d-flex align-items-center justify-content-between px-3" style="min-height:32px">
             <span class="sp-panel-title">Properties</span>
             {#if element}
-                <button type="button" class="btn-close flex-shrink-0" onclick={close} aria-label="Close" style="font-size:0.6rem"></button>
+                <button type="button" class="btn-close flex-shrink-0" onclick={requestClose} aria-label="Close" style="font-size:0.6rem"></button>
             {/if}
         </div>
         {#if element}
@@ -465,13 +507,13 @@
             <div class="px-3 py-2 border-bottom">
                 {#if isEditingPath}
                 <div class="d-flex flex-column gap-1">
-                    <span class="text-secondary" style="font-size:10px">Ctrl+click path to add point · Ctrl+click node to delete</span>
+                    <span class="text-secondary" style="font-size:10px">Ctrl+click curve to add point · Ctrl+click node to delete</span>
                     <button type="button" class="btn btn-sm btn-primary w-100"
                         onclick={() => onExitEditPath?.()}>Exit editing</button>
                 </div>
                 {:else}
                 <button type="button" class="btn btn-sm btn-outline-secondary w-100"
-                    onclick={() => onEditPath?.()}>Edit path</button>
+                    onclick={() => onEditPath?.()}>Edit curve</button>
                 {/if}
             </div>
             {/if}
@@ -563,7 +605,7 @@
                         <button type="button" class="sp-act-btn" onclick={() => pathImageInputEl?.click()}>Change</button>
                         <button type="button" class="sp-act-btn text-danger" onclick={() => onDeletePathImage?.()}>×</button>
                     {:else}
-                        <span class="flex-grow-1 text-secondary" style="font-size:11px">Image along path</span>
+                        <span class="flex-grow-1 text-secondary" style="font-size:11px">Image along curve</span>
                         <button type="button" class="sp-act-btn" onclick={() => pathImageInputEl?.click()}>Import</button>
                     {/if}
                     <input bind:this={pathImageInputEl} type="file" accept=".png,.jpg,.svg" style="display:none"
@@ -574,24 +616,12 @@
                         }} />
                 </div>
                 {#if resolvedPathImage}
-                <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:34px">
-                    <span class="flex-grow-1 text-secondary" style="font-size:11px">Duration (s)</span>
-                    <input type="number" class="form-control form-control-sm" style="width:64px"
-                        value={resolvedPathImage.duration ?? 10}
-                        onchange={(e) => onChangePathImageDuration?.(parseInt((e.target as HTMLInputElement).value))} />
-                </div>
-                <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:34px">
-                    <span class="flex-grow-1 text-secondary" style="font-size:11px">Width</span>
-                    <input type="number" class="form-control form-control-sm" style="width:64px"
-                        value={resolvedPathImage.width ?? 20}
-                        onchange={(e) => onChangePathImageWidth?.(parseInt((e.target as HTMLInputElement).value))} />
-                </div>
-                <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:34px">
-                    <span class="flex-grow-1 text-secondary" style="font-size:11px">Height</span>
-                    <input type="number" class="form-control form-control-sm" style="width:64px"
-                        value={resolvedPathImage.height ?? 10}
-                        onchange={(e) => onChangePathImageHeight?.(parseInt((e.target as HTMLInputElement).value))} />
-                </div>
+                {@render pathImageSlider("Duration (s)", pathImageDurationDraft, 1, 60,
+                    (v) => pathImageDurationDraft = v, (v) => onChangePathImageDuration?.(v))}
+                {@render pathImageSlider("Width", pathImageWidthDraft, 1, 200,
+                    (v) => pathImageWidthDraft = v, (v) => onChangePathImageWidth?.(v))}
+                {@render pathImageSlider("Height", pathImageHeightDraft, 1, 200,
+                    (v) => pathImageHeightDraft = v, (v) => onChangePathImageHeight?.(v))}
                 <div class="d-flex align-items-center px-3 border-bottom gap-2" style="min-height:34px">
                     <span class="flex-grow-1 text-secondary" style="font-size:11px">Rotate with curve</span>
                     <input type="checkbox" class="form-check-input"
